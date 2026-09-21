@@ -1,0 +1,25 @@
+// Prisma schema — split by domain (multi-file schema):
+//   users.prisma    users, stations, sessions
+//   catalog.prisma  categories, products, product units, price history, stock
+//   stock.prisma    stock movements, reservations, import batches
+//   sales.prisma    customers, orders, order lines, discount requests and codes
+//   payments.prisma register sessions, payment methods, payments, invoices, credit notes
+//   system.prisma   deliveries, audit log, settings
+//
+// Conventions (CDC technique §5): UUID v7 ids, money NUMERIC(14,2), quantities NUMERIC(12,2)
+// in base unit, factors NUMERIC(12,3), timestamptz everywhere, snake_case in PostgreSQL.
+// Constraints Prisma cannot express (partial unique indexes, CHECKs, immutability triggers)
+// live in hand-written SQL inside prisma/migrations.
+
+generator client {
+  provider               = "prisma-client"
+  output                 = "../../src/generated/prisma"
+  moduleFormat           = "esm"
+  runtime                = "nodejs"
+  importFileExtension    = "js"
+  generatedFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}

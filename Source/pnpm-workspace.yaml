@@ -5,4 +5,6 @@ packages:
 # pnpm ≥ 10 refuses lifecycle scripts unless listed here (supply-chain guard).
 # esbuild's postinstall only copies its platform binary.
 allowBuilds:
+  '@prisma/engines': true
   esbuild: true
+  prisma: true

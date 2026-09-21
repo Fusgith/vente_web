@@ -1,0 +1,139 @@
+// Register sessions, payment methods, payments, gap-free numbering, invoices, credit notes — RG-CAI, RG-PAY, RG-FAC, RG-ANN.
+
+enum InvoiceStatus {
+  ISSUED
+  CREDITED
+  PARTIALLY_CREDITED
+
+  @@map("invoice_status")
+}
+
+/// Period opened by a cashier on a register (RG-CAI-*); one open session per cashier (partial index).
+model RegisterSession {
+  id               String    @id @default(uuid(7)) @db.Uuid
+  stationId        String    @map("station_id") @db.Uuid
+  cashierId        String    @map("cashier_id") @db.Uuid
+  openedAt         DateTime  @default(now()) @map("opened_at") @db.Timestamptz(6)
+  openingFloat     Decimal   @default(0) @map("opening_float") @db.Decimal(14, 2)
+  closedAt         DateTime? @map("closed_at") @db.Timestamptz(6)
+  countedCash      Decimal?  @map("counted_cash") @db.Decimal(14, 2)
+  /// { "<method code>": "<amount>" } computed at closing.
+  expectedByMethod Json?     @map("expected_by_method")
+  variance         Decimal?  @db.Decimal(14, 2)
+  note             String?
+  validatedById    String?   @map("validated_by") @db.Uuid
+
+  station     Station   @relation(fields: [stationId], references: [id])
+  cashier     User      @relation("RegisterCashier", fields: [cashierId], references: [id])
+  validatedBy User?     @relation("RegisterValidatedBy", fields: [validatedById], references: [id])
+  payments    Payment[]
+
+  @@index([cashierId, openedAt])
+  @@map("register_sessions")
+}
+
+/// Configurable list (RG-PAY-01): cash, mobile money, card, transfer, cheque…
+model PaymentMethod {
+  id                String  @id @default(uuid(7)) @db.Uuid
+  code              String  @unique @db.VarChar(32)
+  label             String  @db.VarChar(60)
+  /// Mobile money, transfer and cheque require a reference (RG-PAY-03).
+  requiresReference Boolean @default(false) @map("requires_reference")
+  isActive          Boolean @default(true) @map("is_active")
+  sortOrder         Int     @default(0) @map("sort_order")
+
+  paymentLines PaymentLine[]
+  creditNotes  CreditNote[]
+
+  @@map("payment_methods")
+}
+
+/// Full settlement of an order, made of one or more lines (RG-PAY-02); immutable (SQL role rights).
+model Payment {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  orderId           String   @map("order_id") @db.Uuid
+  invoiceId         String?  @unique @map("invoice_id") @db.Uuid
+  registerSessionId String   @map("register_session_id") @db.Uuid
+  cashierId         String   @map("cashier_id") @db.Uuid
+  totalDue          Decimal  @map("total_due") @db.Decimal(14, 2)
+  cashReceived      Decimal  @default(0) @map("cash_received") @db.Decimal(14, 2)
+  changeGiven       Decimal  @default(0) @map("change_given") @db.Decimal(14, 2)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  order           Order           @relation(fields: [orderId], references: [id])
+  invoice         Invoice?        @relation(fields: [invoiceId], references: [id])
+  registerSession RegisterSession @relation(fields: [registerSessionId], references: [id])
+  cashier         User            @relation(fields: [cashierId], references: [id])
+  lines           PaymentLine[]
+
+  @@index([orderId])
+  @@index([registerSessionId])
+  @@map("payments")
+}
+
+model PaymentLine {
+  id        String  @id @default(uuid(7)) @db.Uuid
+  paymentId String  @map("payment_id") @db.Uuid
+  methodId  String  @map("method_id") @db.Uuid
+  amount    Decimal @db.Decimal(14, 2)
+  reference String? @db.VarChar(80)
+
+  payment Payment       @relation(fields: [paymentId], references: [id])
+  method  PaymentMethod @relation(fields: [methodId], references: [id])
+
+  @@index([paymentId])
+  @@map("payment_lines")
+}
+
+/// Gap-free counters (RG-FAC-01), e.g. key "INVOICE-2026"; read with SELECT … FOR UPDATE
+/// inside the payment transaction so a failed transaction never consumes a number.
+model NumberSequence {
+  key       String @id @db.VarChar(32)
+  nextValue Int    @default(1) @map("next_value")
+
+  @@map("number_sequences")
+}
+
+/// Legal document issued at payment; nothing changes after issue except status (RG-FAC-01/02).
+model Invoice {
+  id       String        @id @default(uuid(7)) @db.Uuid
+  number   String        @unique @db.VarChar(32)
+  year     Int
+  seq      Int
+  orderId  String        @unique @map("order_id") @db.Uuid
+  issuedAt DateTime      @default(now()) @map("issued_at") @db.Timestamptz(6)
+  /// Full snapshot (store, customer, lines, totals, legal mentions) used to render the PDF.
+  snapshot Json
+  pdfPath  String?       @map("pdf_path")
+  status   InvoiceStatus @default(ISSUED)
+
+  order       Order        @relation(fields: [orderId], references: [id])
+  payment     Payment?
+  creditNotes CreditNote[]
+
+  @@unique([year, seq])
+  @@map("invoices")
+}
+
+/// Total or partial cancellation of an invoice with its refund (RG-ANN-02/03, RG-FAC-05).
+model CreditNote {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  number          String   @unique @db.VarChar(32)
+  invoiceId       String   @map("invoice_id") @db.Uuid
+  amount          Decimal  @db.Decimal(14, 2)
+  reason          String
+  refundMethodId  String?  @map("refund_method_id") @db.Uuid
+  refundReference String?  @map("refund_reference") @db.VarChar(80)
+  issuedById      String   @map("issued_by") @db.Uuid
+  approvedById    String?  @map("approved_by") @db.Uuid
+  pdfPath         String?  @map("pdf_path")
+  issuedAt        DateTime @default(now()) @map("issued_at") @db.Timestamptz(6)
+
+  invoice      Invoice        @relation(fields: [invoiceId], references: [id])
+  refundMethod PaymentMethod? @relation(fields: [refundMethodId], references: [id])
+  issuedBy     User           @relation("CreditNoteIssuedBy", fields: [issuedById], references: [id])
+  approvedBy   User?          @relation("CreditNoteApprovedBy", fields: [approvedById], references: [id])
+
+  @@index([invoiceId])
+  @@map("credit_notes")
+}

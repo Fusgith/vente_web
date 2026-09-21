@@ -17,3 +17,6 @@ Dist/*
 Source/**/dev-dist/
 Source/**/coverage/
 *.tsbuildinfo
+
+# Client Prisma généré (pnpm --filter @vente-web/api exec prisma generate)
+Source/apps/api/src/generated/

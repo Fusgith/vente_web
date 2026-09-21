@@ -1,0 +1,102 @@
+// Users, stations and sessions — CDC métier §3, annexe B ; CDC technique §5.
+
+/// Fixed roles: the admin assigns them, never creates new ones (RG-USR-01).
+enum Role {
+  admin
+  manager
+  sales
+  cashier
+  warehouse
+  owner
+
+  @@map("role")
+}
+
+/// Any number of stations per type; at most one active DISPLAY (H11, partial unique index).
+enum StationType {
+  SALES
+  REGISTER
+  DELIVERY
+  DISPLAY
+
+  @@map("station_type")
+}
+
+enum SessionOrigin {
+  LAN
+  REMOTE
+
+  @@map("session_origin")
+}
+
+model User {
+  id           String   @id @default(uuid(7)) @db.Uuid
+  username     String   @unique @db.VarChar(64)
+  fullName     String   @map("full_name") @db.VarChar(120)
+  roles        Role[]
+  /// Credentials are filled by T-012 (argon2 hashes, TOTP for owner/admin).
+  pinHash      String?  @map("pin_hash")
+  passwordHash String?  @map("password_hash")
+  totpSecret   String?  @map("totp_secret")
+  /// Ticket letter of a sales user (RG-TKT-01); unique among active sales users (partial index).
+  ticketLetter String?  @map("ticket_letter") @db.Char(1)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  sessions            Session[]
+  pricesSet           ProductPrice[]    @relation("PriceSetBy")
+  stockMovements      StockMovement[]
+  importBatches       ImportBatch[]
+  ordersAsSales       Order[]           @relation("OrderSalesUser")
+  ordersAsCashier     Order[]           @relation("OrderCashierUser")
+  discountRequests    DiscountRequest[] @relation("DiscountRequestedBy")
+  discountDecisions   DiscountRequest[] @relation("DiscountDecidedBy")
+  discountCodes       DiscountCode[]
+  registerSessions    RegisterSession[] @relation("RegisterCashier")
+  registerApprovals   RegisterSession[] @relation("RegisterValidatedBy")
+  payments            Payment[]
+  creditNotesIssued   CreditNote[]      @relation("CreditNoteIssuedBy")
+  creditNotesApproved CreditNote[]      @relation("CreditNoteApprovedBy")
+  deliveries          Delivery[]
+  auditEntries        AuditLog[]
+  settingsUpdated     Setting[]
+
+  @@map("users")
+}
+
+model Station {
+  id         String      @id @default(uuid(7)) @db.Uuid
+  type       StationType
+  name       String      @db.VarChar(80)
+  /// Key typed on the public display to pair it, no account needed (RG-DSP-01).
+  displayKey String?     @unique @map("display_key") @db.VarChar(64)
+  isActive   Boolean     @default(true) @map("is_active")
+  createdAt  DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  sessions         Session[]
+  ordersAtRegister Order[]           @relation("OrderRegisterStation")
+  registerSessions RegisterSession[]
+  deliveries       Delivery[]
+  auditEntries     AuditLog[]
+
+  @@map("stations")
+}
+
+model Session {
+  id         String        @id @default(uuid(7)) @db.Uuid
+  userId     String        @map("user_id") @db.Uuid
+  activeRole Role          @map("active_role")
+  stationId  String?       @map("station_id") @db.Uuid
+  origin     SessionOrigin
+  expiresAt  DateTime      @map("expires_at") @db.Timestamptz(6)
+  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user    User     @relation(fields: [userId], references: [id])
+  station Station? @relation(fields: [stationId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}

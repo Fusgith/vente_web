@@ -2,6 +2,29 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 22/09/2026 — T-011 schéma Prisma, migration initiale, seed de démonstration — agent : Claude Code (Opus 5)
+
+Travail mené sur `feat/T-010-scaffolding` à la suite de T-010 (« on fera PR plus tard »), à travers deux crashs du PC (aucune perte : tout est sur disque). Fin de session : l'utilisateur déclenche la création de la PR ; les deux tâches partent en **deux commits** sur la même branche.
+
+**Fait** :
+- `apps/api/prisma/schema/` — schéma **multi-fichiers** (`schema.prisma` générateur + datasource ; `users`, `catalog`, `stock`, `sales`, `payments`, `system`), conforme au CDC technique §5 : UUID v7, `Decimal(14,2)` montants, `Decimal(12,2)` quantités en unité de base, `Decimal(12,3)` facteurs, `Timestamptz`, `snake_case` via `@map`. 27 modèles, 15 enums.
+- `prisma.config.ts` (Prisma 7 : plus de `url` dans le schéma, plus de chargement automatique de `.env`) : lit `Source/.env` via `dotenv` ; la datasource n'est déclarée que si la commande se connecte, pour que `prisma generate` (donc `pnpm typecheck` et la CI) marche sans base.
+- Client généré dans `apps/api/src/generated/prisma/` (ignoré par git, ESLint, Prettier) ; `src/db.ts` (`createDb(url)` avec `@prisma/adapter-pg`) ; `env.ts` exige `DATABASE_URL` postgres (test ajouté, ADR-0001).
+- Migration `20260921154803_init` = DDL généré par Prisma **+ bloc SQL manuel** (ce que Prisma n'exprime pas) : index uniques partiels (lettre de ticket par commercial actif, un seul écran actif, une unité de base par article, un seul prix courant par unité, téléphone client actif, une demande de remise en attente par commande, une session de caisse ouverte par caissier), index `lower(sku)` / `lower(username)`, contraintes CHECK (facteur > 0, base = 1, `base_qty = round(qty × factor, 2)`, stock ≥ 0 et réservé ≤ en stock, plafonds 0–100, code de remise % **ou** montant…), **triggers d'immuabilité** : `audit_log`, `stock_movements`, `payments`, `payment_lines` en ajout seul ; `product_prices` modifiable uniquement pour clôturer `effective_to` (RG-ART-07) ; `invoices` figées sauf `status`/`pdf_path` (RG-FAC-01) ; `credit_notes` figés sauf `pdf_path` ; `product_units.factor` gelé dès qu'une ligne de commande l'utilise (RG-ART-06). Vérifié à la main : chaque écriture interdite lève bien l'erreur.
+- Seed `prisma/seed.ts` + `seed/data.ts` + `seed/catalog.ts` (**idempotent**, refusé si `NODE_ENV=production`) : 21 paramètres (§13), 7 moyens de paiement (RG-PAY-01), 8 comptes (un par rôle, deux commerciaux A/B, **sans identifiants** : T-012), 7 postes, 4 catégories, 9 articles / 18 unités de vente (dont l'exemple SAV-001 pièce ×1 / paquet ×6 / carton ×72 de RG-ART-06) avec prix `source = IMPORT` rattachés à un lot d'import COMMITTED et stock d'ouverture passé par `stock_movements` (comme un vrai import), 5 clients.
+- CI : service PostgreSQL 16 ; `db:deploy` puis **seed exécuté deux fois** (preuve d'idempotence) avant les tests.
+- **Résultats** : `prisma migrate dev` ✅ (« Already in sync » au second passage) · seed ×2 ✅ · `pnpm check` ✅ (lint, typecheck 3 paquets, 17 tests, Prettier) · `pnpm build` ✅.
+
+**Décisions techniques** (aucune ne contredit un ADR) :
+- **Port hôte 5433** pour le PostgreSQL de dev (`POSTGRES_PORT`, défaut compose) : la machine a un PostgreSQL 18 natif sur 5432 qui interceptait la connexion (`P1010`). ⚠️ `Source/.env.example` dit encore 5432 : l'agent ne peut pas l'éditer (règle `deny Read(**/.env.*)` de `.claude/settings.json`) → **à corriger par l'utilisateur** (ou restreindre la règle à `.env` seul).
+- Écarts au modèle du CDC technique §5, à reporter dans le CDC (T-011 suite, ou au fil de l'eau) : `discount_requests.discount_code_id` supprimé au profit de `discount_codes.request_id` unique (une seule direction pour le lien 1-1) ; `order_lines.position` ajouté (ordre d'affichage stable) ; `order_lines.product_price_id` nullable tant que la commande est DRAFT ; `reservations.closed_at` ajouté ; `audit_log` **non partitionné** pour l'instant (volume MVP faible, partition mensuelle = tâche ultérieure) ; retrait des droits SQL UPDATE/DELETE au rôle applicatif reporté à T-014/T-080 (les triggers protègent déjà quel que soit le rôle).
+- Le seed enregistre prix et stock **via un lot d'import** plutôt que par écriture directe : même chemin que la production, et les triggers d'ajout seul restent respectés.
+- Docker Desktop : après un crash, des sockets corrompus dans `%LOCALAPPDATA%\Docker\run\` et `%LOCALAPPDATA%\docker-secrets-engine\` empêchent le démarrage (« The file cannot be accessed by the system », suppression impossible) ; remède : renommer ces dossiers en `*.broken-<date>`, recréer des dossiers vides, `wsl --shutdown`, relancer Docker Desktop.
+
+**Dépendances ajoutées (justification, 03 §3.2)** — prod : `@prisma/client` 7.10 (ORM figé par ADR-0003 ; la 8.0 est encore en RC), `@prisma/adapter-pg` + `pg` 8.23 (Prisma 7 n'embarque plus de moteur : le pilote est le client `pg` officiel) ; dev : `prisma` 7.10 (CLI migrations/génération), `@types/pg`, `dotenv` 18 (uniquement pour `prisma.config.ts` et le seed, Prisma 7 ne charge plus `.env` ; l'API elle-même utilise `--env-file-if-exists` de Node).
+
+**Reste** : PR `feat/T-010-scaffolding` → `main` (T-010 + T-011) ; `.env.example` → 5433 (utilisateur) ; reporter les écarts ci-dessus dans le CDC technique §5 ; T-012 ensuite. Suivi inchangé : T-010b, T-010c, H14–H17.
+
 ## 21/09/2026 (suite 3) — **GO donné le 21/09/2026** — T-010 scaffolding — agent : Claude Code (Opus 5)
 
 **GO pour coder donné par l'utilisateur le 21/09/2026** (message : « Go pour le codage maintenant »). Fin de la phase spécification ; `CLAUDE.md` mis à jour. Points H14–H17 non tranchés : on code selon les hypothèses écrites (⚠️ maintenues dans le CDC métier), à confirmer.

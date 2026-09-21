@@ -9,11 +9,30 @@ defaults:
   run:
     working-directory: Source
 
+env:
+  DATABASE_URL: postgresql://vente:vente@localhost:5432/vente_web
+
 jobs:
   check:
-    name: Lint, typecheck, test, build
+    name: Lint, typecheck, migrate, seed, test, build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: vente
+          POSTGRES_PASSWORD: vente
+          POSTGRES_DB: vente_web
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U vente -d vente_web"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v4
 
@@ -31,5 +50,9 @@ jobs:
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm typecheck
+      # Migrations must apply cleanly on an empty database and the seed must run twice (idempotent).
+      - run: pnpm --filter @vente-web/api db:deploy
+      - run: pnpm --filter @vente-web/api db:seed
+      - run: pnpm --filter @vente-web/api db:seed
       - run: pnpm test
       - run: pnpm build

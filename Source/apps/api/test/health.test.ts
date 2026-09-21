@@ -4,11 +4,16 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { loadEnv } from '../src/env.js';
 
+const DATABASE_URL = 'postgresql://vente:vente@localhost:5432/vente_web_test';
+
 describe('GET /healthz', () => {
   let app: FastifyInstance;
 
   beforeAll(async () => {
-    app = await buildApp({ env: loadEnv({ NODE_ENV: 'test' }), fastify: { logger: false } });
+    app = await buildApp({
+      env: loadEnv({ NODE_ENV: 'test', DATABASE_URL }),
+      fastify: { logger: false },
+    });
     await app.ready();
   });
 
@@ -24,12 +29,17 @@ describe('GET /healthz', () => {
 
 describe('loadEnv', () => {
   it('applies defaults and coerces the port', () => {
-    const env = loadEnv({ API_PORT: '4000' });
+    const env = loadEnv({ API_PORT: '4000', DATABASE_URL });
     expect(env.API_PORT).toBe(4000);
     expect(env.NODE_ENV).toBe('development');
   });
 
   it('rejects an invalid port', () => {
-    expect(() => loadEnv({ API_PORT: 'abc' })).toThrow(/Invalid environment/);
+    expect(() => loadEnv({ API_PORT: 'abc', DATABASE_URL })).toThrow(/Invalid environment/);
+  });
+
+  it('requires a PostgreSQL DATABASE_URL (ADR-0001: one master database)', () => {
+    expect(() => loadEnv({})).toThrow(/DATABASE_URL/);
+    expect(() => loadEnv({ DATABASE_URL: 'mysql://x' })).toThrow(/DATABASE_URL/);
   });
 });

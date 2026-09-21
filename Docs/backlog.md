@@ -32,10 +32,10 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-006 | — | Choisir le nom de domaine et le fournisseur DNS/tunnel | À faire | E00 | Conditionne T1 |
 | T-007 | — | Premier commit du dépôt (docs seulement) et premier push vers `origin/main` | Fait | E00 | Commit e8d73a1 le 21/09/2026 |
 | T-008 | — | **GO pour coder** consigné dans le journal | Fait | E00 | GO donné le 21/09/2026 |
-| T-010 | MVP | Scaffolding monorepo, Docker Compose dev, CI lint/typecheck/test | En cours | E01 | Code prêt sur `feat/T-010-scaffolding` (lint, typecheck, 16 tests, build ✅) ; PR à fusionner |
+| T-010 | MVP | Scaffolding monorepo, Docker Compose dev, CI lint/typecheck/test | En cours | E01 | PR `feat/T-010-scaffolding` → `main` ouverte le 22/09 (avec T-011) ; à fusionner |
 | T-010b | MVP | Pré-commit local (Husky ou hook git manuel) — racine git ≠ `Source/` | À faire | E01 | CI = garde-fou en attendant |
 | T-010c | MVP | Icônes PWA PNG 192/512 depuis le logo du magasin | À faire | E01 | Logo à déposer dans `Autres/` par l'utilisateur ; SVG provisoire en place |
-| T-011 | MVP | Schéma Prisma initial + migrations + seed de démonstration | À faire | E01 | CDC technique §5 |
+| T-011 | MVP | Schéma Prisma initial + migrations + seed de démonstration | En cours | E01 | Code prêt (migration `init` + SQL manuel, seed idempotent, CI avec PostgreSQL ✅) ; même PR que T-010. Reste : `.env.example` → port 5433, écarts à reporter dans le CDC technique §5 |
 | T-012 | MVP | Auth : PIN local, mot de passe, TOTP boss/admin, sessions, verrouillage | À faire | E01 | RG-USR-03 à 06 |
 | T-015 | MVP | Postes : déclaration libre (tablettes, caisses, comptoirs, écran 0/1), modifiable à chaud | À faire | E01 | §13 `stations`, H11 |
 | T-013 | MVP | Module de permissions (annexe B) + tests | À faire | E01 | |

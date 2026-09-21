@@ -1,0 +1,59 @@
+// Deliveries, audit log and settings — RG-LIV, RG-AUD, CDC métier §13.
+
+/// Physical hand-over by a warehouse user at a delivery counter (RG-LIV-01 à 04, RG-USR-08).
+model Delivery {
+  id              String    @id @default(uuid(7)) @db.Uuid
+  orderId         String    @map("order_id") @db.Uuid
+  warehouseUserId String    @map("warehouse_user_id") @db.Uuid
+  stationId       String?   @map("station_id") @db.Uuid
+  startedAt       DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  readyAt         DateTime? @map("ready_at") @db.Timestamptz(6)
+  deliveredAt     DateTime? @map("delivered_at") @db.Timestamptz(6)
+  issueNote       String?   @map("issue_note")
+
+  order         Order    @relation(fields: [orderId], references: [id])
+  warehouseUser User     @relation(fields: [warehouseUserId], references: [id])
+  station       Station? @relation(fields: [stationId], references: [id])
+
+  @@index([orderId])
+  @@map("deliveries")
+}
+
+/// Immutable trace of every sensitive operation: who, when, what, before → after (RG-AUD-01).
+/// Append-only (trigger in the migration). Monthly partitioning deferred until volume requires it.
+model AuditLog {
+  id         String         @id @default(uuid(7)) @db.Uuid
+  at         DateTime       @default(now()) @db.Timestamptz(6)
+  userId     String?        @map("user_id") @db.Uuid
+  activeRole Role?          @map("active_role")
+  stationId  String?        @map("station_id") @db.Uuid
+  origin     SessionOrigin?
+  /// Dotted verb, e.g. "order.submit", "price.set", "stock.adjust".
+  action     String         @db.VarChar(80)
+  entityType String         @map("entity_type") @db.VarChar(40)
+  /// Text, not uuid: settings are keyed by name.
+  entityId   String?        @map("entity_id") @db.VarChar(64)
+  before     Json?
+  after      Json?
+  reason     String?
+
+  user    User?    @relation(fields: [userId], references: [id])
+  station Station? @relation(fields: [stationId], references: [id])
+
+  @@index([at])
+  @@index([entityType, entityId])
+  @@index([userId, at])
+  @@map("audit_log")
+}
+
+/// Admin-editable configuration (CDC métier §13); every change is audited.
+model Setting {
+  key         String   @id @db.VarChar(64)
+  value       Json
+  updatedById String?  @map("updated_by") @db.Uuid
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  updatedBy User? @relation(fields: [updatedById], references: [id])
+
+  @@map("settings")
+}
