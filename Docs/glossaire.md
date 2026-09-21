@@ -4,11 +4,19 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 
 | Français | Code (EN) | Définition |
 |---|---|---|
-| Article | `product` | Marchandise vendable, identifiée par une référence unique. |
-| Référence | `sku` | Identifiant métier unique d'un article (issu de l'Excel). |
+| Article | `product` | Marchandise vendable, identifiée par un code unique. |
+| Code article (référence) | `sku` | Identifiant métier unique d'un article (colonne `code` de l'Excel). |
 | Code-barres | `barcode` | Code scannable optionnel, unique s'il est renseigné. |
 | Catégorie | `category` | Regroupement d'articles. |
-| Unité | `unit` | Unité de vente (pièce, kg, lot…). |
+| Unité de base (unité de comptage) | `base_unit` | Unité dans laquelle le stock de l'article est compté (pièce, kg, m, litre…) ; quantités décimales. Toute quantité vendue y est convertie. |
+| Unité de vente | `product_unit` | Conditionnement dans lequel l'article se vend (pièce, paquet, carton…), avec son facteur et son prix ; un article en a une ou plusieurs. |
+| Facteur (de conversion) | `factor` | Nombre d'unités de base contenues dans une unité de vente (1 pour l'unité de base ; carton de 12 = 12). |
+| Grille de prix | `price_list` | Ensemble des unités de vente d'un article avec leur prix en vigueur. |
+| Prix (historisé) | `product_price` | Une valeur de prix d'une unité de vente, avec date d'effet et date de fin ; jamais écrasée. |
+| Prix en vigueur | `current_price` | Le prix dont la date d'effet est passée et qui n'a pas de date de fin. |
+| Date d'effet | `effective_from` | Date à partir de laquelle un prix s'applique. |
+| Historique des prix | `price_history` | Suite des prix d'une unité de vente dans le temps, avec origine (import, saisie) et auteur. |
+| Quantité en unité de base | `base_qty` | Quantité d'une ligne convertie (`qty × factor`) ; sert à la réservation et à la sortie de stock. |
 | Stock théorique | `on_hand` | Somme des entrées moins somme des sorties. |
 | Stock réservé | `reserved` | Quantité bloquée par des commandes validées non livrées. |
 | Stock disponible | `available` | `on_hand - reserved`. |
@@ -16,20 +24,21 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 | Réservation | `reservation` | Blocage temporaire ou ferme de quantité pour une commande. |
 | Ajustement | `adjustment` | Mouvement correctif manuel avec motif (responsable). |
 | Inventaire | `stocktake` | Import en mode remplacement des quantités. |
-| Import (lot) | `import_batch` | Un fichier Excel importé, avec son résultat. |
-| Client | `customer` | Personne (optionnelle) rattachée à un devis ou une commande. |
+| Import (lot) | `import_batch` | Un fichier Excel importé : prévisualisé, puis validé ou annulé ; porte la date d'import et la date d'entrée. |
+| Client | `customer` | Personne rattachée à un devis ou une commande ; nom et téléphone obligatoires. |
 | Devis | `quote` | Commande à l'état brouillon, non engageante. |
 | Commande | `order` | Devis validé par le commercial ; porte le ticket d'appel. |
-| Ligne de commande | `order_line` | Article × quantité × prix figé × remise. |
+| Ligne de commande | `order_line` | Article × unité de vente × quantité × prix figé × remise ; porte aussi la quantité en unité de base. |
 | Ticket d'appel | `ticket` | Code « lettre + numéro » (A15) appelé à la caisse et à la livraison. |
 | File d'attente | `queue` | Liste ordonnée des commandes en attente (caisse ou livraison). |
 | Rang | `queue_rank` | Position dans la file, modifiable par le responsable. |
-| Appel | `call` | Action d'afficher un ticket sur l'écran public avec le poste. |
+| Appel | `call` | Action d'annoncer un ticket : sur l'écran public avec le poste, ou de vive voix (ticket + nom du client). |
 | Absent | `no_show` | Client appelé qui ne s'est pas présenté. |
 | Remise | `discount` | Réduction en % ou en montant, sur une ligne ou globale. |
-| Politique de remise | `discount_policy` | `FREE` (libre jusqu'à un plafond) / `APPROVAL` (soumise à validation) / `FORBIDDEN` (interdite). |
-| Validation de remise | `discount_approval` | Décision d'un caissier ou du responsable sur une remise proposée. |
-| Poste | `station` | Point physique : caisse 1, comptoir livraison, tablette, écran public. |
+| Plafond de remise | `max_discount_pct` | Remise maximale applicable sans le boss ; définie par unité de vente, sinon par article, sinon par catégorie, sinon paramètre global (0 = interdite). |
+| Demande de remise exceptionnelle | `discount_request` | Demande adressée au boss pour dépasser le plafond ; accordée ou refusée par lui seul. |
+| Code de remise | `discount_code` | Code à usage unique émis par le boss, qui applique une remise au-delà du plafond ; expire en fin de journée. |
+| Poste | `station` | Point physique déclaré par l'admin : tablette, caisse, comptoir de livraison, écran public ; nombre libre. |
 | Caisse | `register` | Poste d'encaissement. |
 | Session de caisse | `register_session` | Période ouverte par un caissier sur une caisse, avec fond de caisse. |
 | Clôture de caisse | `register_closing` | Comptage de fin de session, écarts, rapport. |
@@ -45,13 +54,14 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 | Retour | `return` | Marchandise rapportée après livraison. |
 | Journal d'audit | `audit_log` | Trace immuable de toute opération sensible. |
 | Paramètres | `settings` | Configuration modifiable par l'admin. |
-| Écran public | `public_display` | Affichage des numéros appelés, sans compte. |
+| Écran public | `public_display` | Affichage des numéros appelés, sans compte ; optionnel (0 ou 1). |
 | Tableau de bord | `dashboard` | Indicateurs du boss et du responsable. |
 | TVA | `vat` | Taxe optionnelle. |
 | Ariary | `MGA` | Devise (code ISO 4217). |
+| Fin de journée | `day_end_time` | Heure paramétrable à laquelle expirent les réservations non payées et les codes de remise. |
 | Admin | rôle `admin` | Comptes, paramètres, corrections assistées, sauvegardes. |
-| Responsable | rôle `manager` | Import, politique de remise, files, ajustements, validations. |
+| Responsable | rôle `manager` | Import, plafonds de remise, files, ajustements, validations. |
 | Commercial | rôle `sales` | Devis et commandes sur tablette. |
 | Caissier | rôle `cashier` | Contrôle, paiement, facture, session de caisse. |
 | Magasinier | rôle `warehouse` | Préparation et remise de la marchandise. |
-| Boss | rôle `owner` | Tableau de bord et rapports, en lecture, à distance. |
+| Boss | rôle `owner` | Tableau de bord et rapports à distance ; seule action : accorder les remises exceptionnelles (codes). |

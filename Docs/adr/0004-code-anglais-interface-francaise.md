@@ -1,6 +1,6 @@
 # ADR-0004 — Code en anglais, interface et documentation en français, glossaire figé
 
-Date : 21/09/2026 · Statut : **Proposé** (à accepter par l'utilisateur)
+Date : 21/09/2026 · Statut : **Accepté** par l'utilisateur le 21/09/2026
 
 ## Contexte
 Les utilisateurs et la documentation sont francophones. Les bibliothèques, conventions et la majorité du corpus des agents IA sont en anglais. Mélanger les deux dans le code (`getFacture`, `commandeStatus`) produit des incohérences ; traduire librement (`quote`/`estimate`, `order`/`command`) produit des malentendus.

@@ -1,6 +1,6 @@
 # Cahier des charges TECHNIQUE — Vente Web
 
-Version 0.1 — 21/09/2026 — Statut : **brouillon soumis à validation**
+Version 0.3 — 21/09/2026 — Statut : **hypothèses T1–T8 validées, ADR 0001–0004 acceptés par l'utilisateur le 21/09/2026** ; modèle de données aligné sur le CDC métier v0.3 (unités de vente avec facteur, grille et historique des prix, remises par plafond + code du boss, import en quatre temps, client obligatoire, postes libres).
 
 Ce document traduit le CDC métier en architecture, stack et règles d'implémentation. Les décisions structurantes sont figées par ADR (`adr/`). Les choix marqués « recommandé » peuvent être remplacés par un nouvel ADR ; les choix marqués « figé » ne le peuvent qu'avec l'accord explicite de l'utilisateur.
 
@@ -18,7 +18,7 @@ Ce document traduit le CDC métier en architecture, stack et règles d'implémen
 ```
                       MAGASIN — réseau Wi-Fi local (infrastructure critique)
  ┌──────────────────────────────────────────────────────────────────────────┐
- │  Tablettes (PWA)   PC caisse (PWA)   Tablette livraison   TV écran public │
+ │  Tablettes (PWA)   PC caisse (PWA)   Tablette livraison   TV écran public (opt.) │
  │        └───────────────┴─────────────────┴──────────────────┘             │
  │                         https://app.<domaine>  (DNS local → IP mini-PC)   │
  │                                      │                                    │
@@ -49,7 +49,7 @@ Ce document traduit le CDC métier en architecture, stack et règles d'implémen
 ### 2.2 Accès distant
 
 - Tunnel sortant (recommandé : Cloudflare Tunnel ; alternative : Tailscale Funnel). Aucun port ouvert sur la box.
-- Le trafic distant arrive avec un en-tête d'origine ; l'API l'utilise pour exiger la 2FA des rôles `owner` et `admin` (RG-USR-04) et refuser les rôles opérationnels hors du magasin ⚠️ HYPOTHÈSE (un commercial n'a pas de raison de vendre depuis l'extérieur).
+- Le trafic distant arrive avec un en-tête d'origine ; l'API l'utilise pour exiger la 2FA des rôles `owner` et `admin` (RG-USR-04) et refuser les rôles opérationnels hors du magasin (T3, validé : un commercial n'a pas de raison de vendre depuis l'extérieur). Le rôle `owner` doit pouvoir traiter une demande de remise depuis l'extérieur (RG-REM-03) : notification push via le service worker de la PWA quand le tunnel est joignable.
 
 ### 2.3 Sauvegarde et reprise
 
@@ -130,23 +130,26 @@ Vente WEB/
 
 ## 5. Modèle de données (esquisse)
 
-Identifiants : UUID v7 (ordonnés dans le temps). Montants : `NUMERIC(14,2)`. Quantités : `NUMERIC(12,3)`. Horodatages : `timestamptz`. Tous les noms en anglais selon `glossaire.md`.
+Identifiants : UUID v7 (ordonnés dans le temps). Montants : `NUMERIC(14,2)`. Quantités : `NUMERIC(12,2)` (RG-ART-04), toujours en **unité de base** dans les tables de stock. Facteurs de conversion : `NUMERIC(12,3)`. Horodatages : `timestamptz`. Tous les noms en anglais selon `glossaire.md`.
 
 | Table | Champs principaux | Contraintes / notes |
 |---|---|---|
 | `users` | username, full_name, roles[] (enum), pin_hash, password_hash, totp_secret, ticket_letter, is_active | `ticket_letter` unique parmi les actifs ayant le rôle `sales` |
-| `stations` | type (SALES, REGISTER, DELIVERY, DISPLAY), name, display_key | |
+| `stations` | type (SALES, REGISTER, DELIVERY, DISPLAY), name, display_key, is_active | Nombre libre par type ; au plus un DISPLAY actif (H11) |
 | `sessions` | user_id, active_role, station_id, origin (LAN/REMOTE), expires_at | |
-| `categories` | name | |
-| `products` | sku, barcode, name, category_id, unit, unit_price, discount_policy (enum), max_discount_pct, alert_threshold, allow_decimal_qty, is_active | `sku` unique (insensible à la casse), `barcode` unique si non nul |
-| `product_stock` | product_id (PK), on_hand, reserved | `CHECK (on_hand >= 0 AND reserved >= 0 AND reserved <= on_hand)` ; mis à jour dans la même transaction que le mouvement ; contrôle d'intégrité nocturne contre `stock_movements` |
-| `stock_movements` | product_id, type (IMPORT, ADJUSTMENT, DELIVERY, RETURN, STOCKTAKE), qty (signée), import_batch_id, order_id, user_id, reason, created_at | Ajout seul (pas d'UPDATE/DELETE : révoqués au niveau du rôle SQL applicatif) |
-| `reservations` | order_id, product_id, qty, expires_at (null = ferme), status (ACTIVE, RELEASED, CONSUMED) | Index sur `expires_at` pour le balayage |
-| `import_batches` | file_path, file_name, mode (ENTRY, STOCKTAKE), user_id, rows_total, rows_ok, rows_error, summary (jsonb), created_at | |
-| `customers` | name, phone, notes | |
+| `categories` | name, max_discount_pct (nullable) | |
+| `products` | sku (= code article), name, category_id, base_unit (libellé de l'unité de base), max_discount_pct (nullable → catégorie → paramètre), alert_threshold, is_active, last_entry_at | `sku` unique (insensible à la casse) ; **aucun prix sur l'article** (RG-ART-03) ; « vendable » = existe une `product_units` active avec un `product_prices` en vigueur (H14) |
+| `product_units` | product_id, label, factor (`numeric(12,3)`, > 0), is_base, barcode, max_discount_pct (nullable → surcharge, RG-REM-01), is_active, created_at | `UNIQUE (product_id, label)` ; **une seule** ligne `is_base` par produit (index partiel unique), avec `factor = 1` ; `barcode` unique si non nul ; `factor` gelé dès qu'une `order_lines` la référence (contrôle applicatif + trigger) (RG-ART-06) |
+| `product_prices` | product_unit_id, price, effective_from, effective_to (nullable = en vigueur), source (IMPORT, MANUAL), import_batch_id (nullable), set_by, created_at | **Ajout seul** (pas d'UPDATE sauf `effective_to`, pas de DELETE) ; **au plus une** ligne avec `effective_to IS NULL` par unité (index partiel unique) ; `CHECK (effective_to IS NULL OR effective_to > effective_from)` ; nouveau prix = dans une transaction : clôture de l'ancien à `effective_from` + insertion (RG-ART-07) ; prix en vigueur à l'instant *t* = `effective_from <= t AND (effective_to IS NULL OR effective_to > t)` (gère les dates d'effet futures [V1.1]) ; index `(product_unit_id, effective_from DESC)` |
+| `product_stock` | product_id (PK), on_hand, reserved | En **unité de base** ; `CHECK (on_hand >= 0 AND reserved >= 0 AND reserved <= on_hand)` ; mis à jour dans la même transaction que le mouvement ; contrôle d'intégrité nocturne contre `stock_movements` |
+| `stock_movements` | product_id, type (IMPORT, ADJUSTMENT, DELIVERY, RETURN, STOCKTAKE), qty (signée, unité de base), product_unit_id, unit_qty (quantité telle que saisie, dans l'unité), import_batch_id, entry_date, order_id, user_id, reason, created_at | Ajout seul (pas d'UPDATE/DELETE : révoqués au niveau du rôle SQL applicatif) ; `qty = unit_qty × factor` au moment du mouvement |
+| `reservations` | order_id, product_id, qty (unité de base), expires_at (null = ferme), status (ACTIVE, RELEASED, CONSUMED) | `expires_at` = fin de journée `day_end_time` (RG-STK-02) ; index pour le balayage |
+| `import_batches` | file_path, file_name, mode (ENTRY, STOCKTAKE), status (PREVIEW, COMMITTED, CANCELLED), entry_date, user_id, rows_total, rows_ok, rows_error, preview (jsonb), summary (jsonb), created_at, committed_at | Le fichier est analysé et la prévisualisation stockée à l'étape 2 ; les mouvements ne sont créés qu'au passage COMMITTED (RG-IMP-04) |
+| `customers` | name, phone, notes, is_active, merged_into_id | `name` et `phone` obligatoires ; `phone` unique parmi les actifs (RG-DEV-04) |
 | `orders` | number, status (enum §5.2 du CDC métier), sales_user_id, customer_id, ticket_letter, ticket_seq, ticket_date, queue_rank, priority, no_show_count, register_station_id, cashier_user_id, subtotal, discount_total, vat_total, rounding, total, expires_at, submitted_at, called_at, paid_at, ready_at, delivered_at, cancel_reason, version | `UNIQUE (ticket_date, ticket_letter, ticket_seq)` ; `version` pour le verrouillage optimiste |
-| `order_lines` | order_id, product_id, sku, name, unit, unit_price, qty, discount_pct, discount_amount, line_total, discount_status (NONE, PENDING, APPROVED, REJECTED), delivered_qty | Snapshot des attributs article |
-| `discount_approvals` | order_id, line_id (null = globale), requested_pct, decided_pct, status, requested_by, decided_by, reason, decided_at | |
+| `order_lines` | order_id, product_id, product_unit_id, product_price_id, sku, name, unit_label, factor, qty (dans l'unité de vente), base_qty (= qty × factor, unité de base), unit_price, max_discount_pct (figé), discount_pct, discount_amount, discount_source (NONE, WITHIN_CAP, CODE), discount_code_id, line_total, delivered_qty | Snapshot des attributs article, unité, facteur et plafond compris ; `product_price_id` = prix en vigueur à la validation (RG-CMD-04, RG-ART-07) ; réservation et sortie de stock sur `base_qty` |
+| `discount_requests` | order_id, line_id (null = globale), customer_id, requested_pct, requested_amount, reason, status (PENDING, GRANTED, REJECTED), requested_by, decided_by, decided_pct, decided_at, discount_code_id | Une seule demande PENDING par commande ; décideur = rôle `owner` uniquement (RG-REM-03) |
+| `discount_codes` | code, pct, amount, order_id (nullable), customer_id (nullable), request_id (nullable), issued_by, issued_at, expires_at, status (ACTIVE, USED, EXPIRED, REVOKED), used_at, used_on_order_id, revoked_at | `code` unique ; usage unique garanti par `UPDATE … WHERE status = 'ACTIVE'` dans la transaction de rattachement (RG-REM-04) |
 | `register_sessions` | station_id, cashier_id, opened_at, opening_float, closed_at, counted_cash, expected_by_method (jsonb), variance, note, validated_by | Une seule ouverte par caissier (index partiel unique) |
 | `payment_methods` | code, label, requires_reference, is_active, sort_order | |
 | `payments` | order_id, invoice_id, register_session_id, cashier_id, total_due, cash_received, change_given, created_at | |
@@ -161,14 +164,17 @@ Identifiants : UUID v7 (ordonnés dans le temps). Montants : `NUMERIC(14,2)`. Qu
 Points d'attention :
 
 - **Numérotation sans trou** (RG-FAC-01) : le numéro est pris dans la transaction qui enregistre le paiement et crée la facture ; si la transaction échoue, le numéro n'est pas consommé. Test de concurrence obligatoire (10 paiements simultanés → 10 numéros consécutifs).
-- **Réservation** (RG-STK-02) : `UPDATE product_stock SET reserved = reserved + qty WHERE product_id = ? AND on_hand - reserved >= qty` ; zéro ligne affectée = indisponible. Balayage des expirations toutes les 30 s par une tâche interne de l'API (pas de service séparé).
-- **Sortie de stock** (RG-STK-04) : à la livraison, `on_hand -= qty ; reserved -= qty` + mouvement `DELIVERY`, dans une transaction.
-- **Immutabilité** : le rôle SQL utilisé par l'API n'a pas les droits `UPDATE`/`DELETE` sur `audit_log`, `stock_movements`, `payments`, `payment_lines`, `invoices` (hors `status`) et `credit_notes`. Les corrections passent par des écritures compensatoires.
+- **Conversion d'unité** (RG-ART-06) : `base_qty = round(qty × factor, 2)` calculé une seule fois, à la validation, dans `Source/packages/shared` ; toutes les écritures de stock utilisent `base_qty`. Les lignes d'une même commande portant le même `product_id` sont cumulées avant le contrôle de disponibilité (RG-CMD-02).
+- **Réservation** (RG-STK-02) : `UPDATE product_stock SET reserved = reserved + base_qty WHERE product_id = ? AND on_hand - reserved >= base_qty` ; zéro ligne affectée = indisponible.
+- **Nouveau prix** (RG-ART-07) : transaction `UPDATE product_prices SET effective_to = :from WHERE product_unit_id = ? AND effective_to IS NULL` puis `INSERT` ; l'index partiel unique refuse toute course. Le prix « en vigueur » est résolu côté serveur à chaque lecture du catalogue (jamais mis en cache sur l'article), et un événement `catalog.changed` fait recharger les tablettes.
+- **Immutabilité des prix** : `product_prices` n'admet ni `DELETE` ni `UPDATE` hors `effective_to` (trigger) ; l'historique est complet par construction. Balayage des expirations toutes les 30 s par une tâche interne de l'API (pas de service séparé).
+- **Sortie de stock** (RG-STK-04) : à la livraison, `on_hand -= base_qty ; reserved -= base_qty` + mouvement `DELIVERY`, dans une transaction.
+- **Immutabilité** : le rôle SQL utilisé par l'API n'a pas les droits `UPDATE`/`DELETE` sur `audit_log`, `stock_movements`, `product_prices` (hors `effective_to`), `payments`, `payment_lines`, `invoices` (hors `status`) et `credit_notes`. Les corrections passent par des écritures compensatoires.
 
 ## 6. API
 
-- REST JSON sous `/api/v1`, validée par les schémas zod de `Source/packages/shared` ; erreurs au format `{ code, message, details }` avec codes stables (ex. `STOCK_UNAVAILABLE`, `DISCOUNT_APPROVAL_REQUIRED`, `INVOICE_SEQUENCE_CONFLICT`).
-- Ressources principales : `auth`, `users`, `stations`, `products`, `stock` (movements, adjustments, imports), `customers`, `orders` (+ actions `submit`, `call`, `no-show`, `cancel`, `reactivate`, `approve-discount`), `payments`, `invoices`, `credit-notes`, `queues` (+ `reorder`), `deliveries`, `register-sessions`, `reports`, `exports`, `settings`, `audit`.
+- REST JSON sous `/api/v1`, validée par les schémas zod de `Source/packages/shared` ; erreurs au format `{ code, message, details }` avec codes stables (ex. `STOCK_UNAVAILABLE`, `PRODUCT_NOT_SELLABLE`, `UNIT_FACTOR_LOCKED`, `DISCOUNT_ABOVE_CAP`, `DISCOUNT_CODE_INVALID`, `DISCOUNT_REQUEST_PENDING`, `CUSTOMER_REQUIRED`, `INVOICE_SEQUENCE_CONFLICT`).
+- Ressources principales : `auth`, `users`, `stations`, `products` (+ sous-ressources `units`, `units/{id}/prices` : GET = historique, POST = nouveau prix daté ; `price-history` en lecture), `categories`, `stock` (movements, adjustments), `imports` (+ actions `preview`, `commit`, `cancel`), `customers`, `orders` (+ actions `submit`, `call`, `no-show`, `cancel`, `reactivate`, `redeem-code`), `discount-requests` (+ actions `grant`, `reject`), `discount-codes` (+ action `revoke`), `payments`, `invoices`, `credit-notes`, `queues` (+ `reorder`), `deliveries` (+ `claim`, `release`), `register-sessions`, `reports`, `exports`, `settings`, `audit`.
 - Idempotence des actions sensibles (paiement, validation) par clé `Idempotency-Key` fournie par le client : une double soumission réseau ne crée pas deux paiements.
 - Verrouillage optimiste sur `orders.version` : une modification concurrente (caissier et responsable) est rejetée proprement avec rechargement.
 - Documentation OpenAPI générée depuis les schémas ; servie sur `/api/docs` en dev uniquement.
@@ -182,8 +188,11 @@ Salles : `role:<role>`, `station:<id>`, `queue:register`, `queue:delivery`, `dis
 | `queue.changed` | entrée, sortie, réordonnancement, absence | files concernées, manager, owner |
 | `ticket.called` | appel caisse ou livraison | display, files, order |
 | `order.status_changed` | toute transition | order, manager, owner, station d'origine |
-| `discount.approval_requested` / `.decided` | demande / décision | cashier, manager, order |
+| `discount.request_created` | demande de remise exceptionnelle | **owner** (push + app, y compris à distance), manager (lecture), order |
+| `discount.request_decided` / `discount.code_issued` | décision du boss / code émis | order, station d'origine, cashier, manager |
+| `ticket.verbal_call` | appel sans écran public (RG-DSP-05) | station appelante, station du commercial de la commande |
 | `stock.alert` | disponible ≤ seuil | manager, owner |
+| `catalog.changed` | nouveau prix en vigueur, unité créée/désactivée, import validé | sales, cashier, manager (rechargement du catalogue, RG-ART-07) |
 | `dashboard.tick` | après tout paiement/avoir/livraison | owner, manager |
 
 Le client applique l'événement puis **revalide** la ressource via l'API (jamais de confiance aveugle dans le contenu d'un événement).
@@ -211,7 +220,7 @@ Le client applique l'événement puis **revalide** la ressource via l'API (jamai
 
 ## 9. Import / export / PDF
 
-- **Import** : parsing exceljs en flux ; validation par ligne avec les schémas zod ; prévisualisation renvoyée au client (compteurs + erreurs) ; import définitif dans une transaction (tout ou rien) ou en mode « lignes valides seulement » ; fichier archivé dans le volume `files/imports/<batch_id>/`.
+- **Import** : parsing exceljs en flux ; validation par ligne avec les schémas zod, puis **regroupement par `code`** (une ligne par unité de vente, RG-IMP-01 : contrôle de l'unité de base unique, cohérence catégorie/désignation, facteurs gelés) ; conversion des quantités en unité de base ; comparaison des prix au prix en vigueur (création de `product_prices` uniquement si différent, `source = IMPORT`) ; prévisualisation renvoyée au client (compteurs + erreurs + variations de prix) ; import définitif dans une transaction (tout ou rien) ou en mode « lignes valides seulement » ; fichier archivé dans le volume `files/imports/<batch_id>/`.
 - **Export** : génération serveur exceljs, colonnes définies dans `Source/packages/shared/exports.ts` (source unique de vérité pour les en-têtes) ; nombres natifs avec format `# ##0,00`.
 - **PDF** : gabarits pdfmake dans `Source/apps/api/src/pdf/templates/` ; fichier écrit dans `files/invoices/<year>/<number>.pdf` à l'émission ; réimpression = envoi du fichier existant (RG-FAC-04). Polices embarquées (pas de dépendance système).
 
@@ -245,9 +254,9 @@ Mini-PC 4 cœurs, 16 Go RAM, SSD 256 Go, Ethernet vers le point d'accès, **ondu
 
 ## 11. Tests et qualité
 
-- **Unitaires** (`Source/packages/shared`, services de l'API) : totaux et remises (RG-REM-04), politiques (RG-REM-01/03), machine à états (RG-CMD-06), numérotation (RG-FAC-01, avec test de concurrence), réservation et expiration (RG-STK-02, RG-CMD-08), formatage (RG-FMT-01), validation d'import (RG-IMP-04).
-- **Intégration API** : chaque ressource contre une base PostgreSQL de test (conteneur éphémère), permissions de l'annexe B.
-- **Bout-en-bout Playwright** : parcours complet devis → commande → appel → validation de remise → paiement mixte → facture PDF → livraison → sortie de stock ; parcours expiration ; parcours annulation après paiement.
+- **Unitaires** (`Source/packages/shared`, services de l'API) : totaux et répartition des remises (RG-REM-06), résolution du plafond article → catégorie → paramètre (RG-REM-01/02), codes de remise (unicité, usage unique sous concurrence, expiration, révocation — RG-REM-04), machine à états (RG-CMD-06), numérotation (RG-FAC-01, avec test de concurrence), réservation et expiration en fin de journée (RG-STK-02, RG-CMD-08), disponible = théorique − réservé sur tous les états non livrés (RG-STK-01), formatage montants et quantités décimales (RG-FMT-01, RG-ART-04), conversion unité de vente → unité de base et cumul des lignes d'un même article (RG-ART-06, RG-CMD-02), historique des prix (jamais deux prix en vigueur, résolution du prix à une date, prix figé sur la ligne — RG-ART-07, RG-CMD-04), résolution du plafond unité → article → catégorie → paramètre (RG-REM-01), validation et prévisualisation d'import multi-lignes (RG-IMP-01/03/04).
+- **Intégration API** : chaque ressource contre une base PostgreSQL de test (conteneur éphémère), permissions de l'annexe B (dont : seul `owner` peut `grant`/`reject` une demande de remise ; `cashier` ne peut modifier aucune remise).
+- **Bout-en-bout Playwright** : parcours complet client → devis → commande → appel → paiement mixte → facture PDF → livraison → sortie de stock ; parcours remise exceptionnelle (demande → notification boss → code → rattachement → facture) ; parcours import en quatre temps avec annulation puis validation (fichier multi-unités, changement de prix visible dans l'historique) ; parcours vente en carton (réservation et sortie de stock en pièces) ; parcours expiration en fin de journée ; parcours annulation après paiement ; parcours sans écran public (appel verbal).
 - **Definition of Done** d'une tâche : code + tests verts + lint/typecheck OK + règle `RG` référencée dans le test + documentation mise à jour (CDC si la règle change, journal) + revue.
 - Couverture visée : 90 % sur `Source/packages/shared`, 80 % sur l'API.
 - CI (GitHub Actions ou équivalent) : lint, typecheck, tests, build des images.
@@ -255,19 +264,19 @@ Mini-PC 4 cœurs, 16 Go RAM, SSD 256 Go, Ethernet vers le point d'accès, **ondu
 ## 12. Performance et dimensionnement
 
 - Cibles : ≤ 30 clients simultanés, ≤ 2 000 commandes/jour, ≤ 50 000 articles ; réponse API p95 < 300 ms en local ; propagation temps réel < 2 s.
-- Index sur `products(sku)`, `products(barcode)`, `products(name)` (trigram pour la recherche), `orders(status, queue_rank)`, `reservations(expires_at)`, `invoices(year, seq)`, `audit_log(at)`.
+- Index sur `products(sku)`, `product_units(barcode)`, `products(name)` (trigram pour la recherche), `product_prices(product_unit_id, effective_from DESC)`, `orders(status, queue_rank)`, `reservations(expires_at)`, `invoices(year, seq)`, `audit_log(at)`.
 - Recherche catalogue côté serveur avec pagination ; cache court (30 s) des indicateurs du tableau de bord.
 - 10 ans d'historique : ~5 M lignes d'audit ; partitionnement mensuel de `audit_log` et archivage annuel possible.
 
-## 13. Hypothèses techniques à valider ⚠️
+## 13. Hypothèses techniques — validées le 21/09/2026
 
-| # | Hypothèse | Alternative |
+| # | Hypothèse | Décision | Alternative écartée |
 |---|---|---|
-| T1 | Cloudflare Tunnel + nom de domaine chez Cloudflare (gratuit) | Tailscale ; VPN maison |
-| T2 | Stockage des sauvegardes : Backblaze B2 ou Cloudflare R2 (quelques centimes/mois) | Google Drive via rclone |
-| T3 | Rôles opérationnels refusés hors du magasin | Autoriser avec 2FA |
-| T4 | Mini-PC dédié sous Linux (pas le PC de caisse Windows) | Docker Desktop sur le PC de caisse (déconseillé : redémarrages, verrouillage, performances) |
-| T5 | Sessions cookie plutôt que JWT | JWT si un client natif (TWA) exige des jetons |
-| T6 | pdfmake plutôt que HTML→PDF par navigateur headless | Playwright PDF si la fidélité visuelle prime |
-| T7 | Un seul écran public (deux files affichées ensemble) | Un écran par file |
-| T8 | Impression thermique en V1.1 via serveur ESC/POS | Dès le MVP |
+| T1 | Cloudflare Tunnel + nom de domaine chez Cloudflare (gratuit) | **OK** | Tailscale ; VPN maison |
+| T2 | Stockage des sauvegardes : Backblaze B2 ou Cloudflare R2 (quelques centimes/mois) | **OK** | Google Drive via rclone |
+| T3 | Rôles opérationnels refusés hors du magasin (le boss, lui, agit à distance : demandes de remise) | **OK** | Autoriser avec 2FA |
+| T4 | Mini-PC dédié sous Linux (pas le PC de caisse Windows) | **OK** | Docker Desktop sur le PC de caisse (déconseillé : redémarrages, verrouillage, performances) |
+| T5 | Sessions cookie plutôt que JWT | **OK** | JWT si un client natif (TWA) exige des jetons |
+| T6 | pdfmake plutôt que HTML→PDF par navigateur headless | **OK** | Playwright PDF si la fidélité visuelle prime |
+| T7 | Un seul écran public (deux files affichées ensemble) | **OK**, et écran optionnel : 0 ou 1 (H11, appel verbal sinon) | Un écran par file |
+| T8 | Impression thermique en V1.1 via serveur ESC/POS | **OK** | Dès le MVP |

@@ -1,6 +1,6 @@
 # ADR-0002 — Application web progressive (PWA) plutôt qu'un APK Android
 
-Date : 21/09/2026 · Statut : **Proposé** (à accepter par l'utilisateur)
+Date : 21/09/2026 · Statut : **Accepté** par l'utilisateur le 21/09/2026
 
 ## Contexte
 Le besoin exprimé est « une icône sur l'écran d'accueil des tablettes Android pour ouvrir l'interface sans installation lourde ». Un APK impose une chaîne de construction Android, une signature, une distribution (Play Store ou fichier) et des mises à jour manuelles sur chaque tablette.

@@ -4,8 +4,9 @@
 
 ## Mission
 Application web (PWA) de gestion des ventes d'un magasin de marchandise générale à Madagascar :
-commercial sur tablette (devis → commande), caisse (contrôle des remises, paiement, facture),
-livraison, appel des clients par numéro, tableau de bord du boss accessible à distance.
+commercial sur tablette (devis → commande, remises dans les plafonds), caisse (paiement, facture),
+livraison par plusieurs magasiniers, appel des clients par numéro ou verbal, boss à distance
+(tableau de bord ; remises exceptionnelles accordées par code à usage unique).
 
 ## ⛔ Statut : PHASE SPÉCIFICATION — AUCUN CODE SANS « GO »
 - Tant que l'utilisateur n'a pas écrit explicitement **GO** (ou « GO pour coder ») dans la conversation,
@@ -38,7 +39,9 @@ Distant `origin` : https://github.com/Fusgith/vente_web.git — branche principa
 - Toute opération sensible (remise, paiement, annulation, mouvement de stock, correction admin) est
   journalisée : qui, quand, quoi, avant → après (RG-AUD-01). Jamais d'écriture directe en base.
 - Une seule base de données maître : le serveur local du magasin. Pas de synchro bidirectionnelle (ADR-0001).
-- Stock : réservé à la validation commerciale, sorti à la livraison (RG-STK-02, RG-STK-04).
+- Stock : réservé à la validation commerciale, sorti à la livraison (RG-STK-02, RG-STK-04) ; un seul stock par
+  article, en **unité de base** ; les unités de vente s'y convertissent par leur facteur (RG-ART-06).
+- Prix : porté par l'unité de vente, jamais écrasé — tout changement crée un nouveau prix daté (RG-ART-07).
 - Devise MGA (Ariary). Affichage `1 250 000,00 Ar` : espace insécable pour les milliers, virgule décimale,
   2 décimales (RG-FMT-01).
 - TVA optionnelle (paramètre), désactivée par défaut (RG-FAC-03).

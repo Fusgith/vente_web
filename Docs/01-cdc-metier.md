@@ -1,11 +1,13 @@
 # Cahier des charges MÉTIER — Vente Web
 
-Version 0.1 — 21/09/2026 — Statut : **brouillon soumis à validation**
+Version 0.3 — 21/09/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16) ; ADR 0001–0004 acceptés ; points à confirmer : H14–H17.
+
+Nouveautés v0.3 : **grille de prix par unité de vente** (article stocké dans une unité de base, vendu dans une ou plusieurs unités avec facteur de conversion et prix propre), **historique des prix** avec date d'effet, import « une ligne par couple article × unité ».
 
 ## 0. Comment lire ce document
 
 - Les règles de gestion sont numérotées `RG-XXX-nn`. Elles font foi pour le code et les tests ; chaque règle doit être couverte par au moins un test automatisé une fois le développement lancé.
-- `⚠️ HYPOTHÈSE` : choix fait par le consultant faute de réponse, à confirmer ou corriger. Toutes sont récapitulées au §16.
+- `⚠️ HYPOTHÈSE` : choix fait par le consultant faute de réponse, à confirmer ou corriger. Toutes sont récapitulées au §16 (les hypothèses tranchées y restent, avec la décision).
 - Priorité : **[MVP]** indispensable pour la première mise en service · **[V1.1]** peu après · **[V2]** plus tard.
 - Vocabulaire : voir `glossaire.md`.
 
@@ -26,8 +28,8 @@ Objectifs mesurables :
 | Objectif | Indicateur |
 |---|---|
 | Plus de file physique | 100 % des clients ont un numéro d'appel ; temps d'attente moyen mesuré et affiché au responsable |
-| Remises maîtrisées | 100 % des remises tracées ; 0 remise hors politique sans validation |
-| Boss informé | Encaissements et quantités du jour consultables à distance, à jour à quelques secondes près |
+| Remises maîtrisées | 100 % des remises tracées ; 0 remise au-delà des plafonds sans code du boss |
+| Boss informé | Encaissements et quantités consultables à distance par heure, jour, semaine, mois, à jour à quelques secondes près |
 | Zéro ressaisie | Facture générée automatiquement à chaque paiement |
 | Continuité | Le magasin vend même sans Internet |
 
@@ -35,23 +37,24 @@ Objectifs mesurables :
 
 ### 2.1 Dans le périmètre
 
-- Catalogue d'articles alimenté par import Excel ; stock théorique (entrées par import, sorties par livraison, ajustements motivés).
+- Catalogue d'articles alimenté par import Excel (code unique, catégorie, désignation, unité de comptage, quantité, date d'entrée) ; **grille de prix par unité de vente** (pièce, paquet, carton… avec facteur de conversion) et **historique des prix** ; stock théorique tenu dans l'unité de base (entrées par import, sorties par livraison, ajustements motivés).
 - Parcours de vente complet : devis → commande → file caisse → paiement → facture → file livraison → remise de la marchandise.
-- Politique de remise à trois niveaux avec validation.
-- Appel des clients par numéro, écran public, réordonnancement par le responsable.
+- Remises **paramétrées d'avance** (plafond par article ou catégorie) ; remise exceptionnelle uniquement sur **code délivré par le boss**.
+- Appel des clients par numéro : écran public (optionnel) ou appel verbal ; réordonnancement par le responsable.
+- Clients identifiés (nom + contact obligatoires) ; répertoire clients simple.
 - Tous moyens de paiement, y compris mixte.
 - Factures, devis, avoirs, bons de livraison en PDF ; exports Excel.
 - Sessions et clôtures de caisse.
-- Tableau de bord du boss (encaissements, quantités vendues, files en direct), accessible à distance.
+- Tableau de bord du boss (encaissements, quantités vendues, files en direct) par heure / jour / semaine / mois, accessible à distance ; notification des demandes de remise exceptionnelle.
 - Journal d'audit complet.
-- Six rôles + écran public.
+- Six rôles + écran public ; nombre de postes (tablettes, caisses, comptoirs) libre et paramétrable.
 
 ### 2.2 Hors périmètre (explicitement)
 
 - Gestion des achats, fournisseurs, commandes de réapprovisionnement.
 - Trésorerie (dépenses, banque, soldes), comptabilité, paie.
 - E-commerce, vente en ligne, réservation par le client.
-- Multi-magasins **[V2]**, programme de fidélité avancé **[V2]**, articles à variantes (taille/couleur) **[V2]**.
+- Multi-magasins **[V2]** (un seul magasin en V1, décision H1 ; plusieurs magasiniers et plusieurs comptoirs dans ce magasin), programme de fidélité avancé **[V2]**, articles à variantes (taille/couleur) **[V2]**.
 
 > Clarification « ce n'est pas une appli de gestion de stock » : l'application tient malgré tout un **stock théorique fiable**, sinon elle ne peut pas dire au commercial ce qui est disponible. Les seules entrées sont les imports Excel ; les seules sorties sont les livraisons ; le responsable peut corriger un écart par un ajustement motivé. Rien de plus.
 
@@ -61,13 +64,13 @@ Objectifs mesurables :
 
 | Rôle | Où | Mission | Appareil type |
 |---|---|---|---|
-| **Commercial** | Surface de vente | Conseiller, construire le devis, valider la commande, remettre le numéro d'appel | Tablette Android 10" |
-| **Caissier** | Caisse | Appeler, contrôler la commande et les remises, encaisser, émettre la facture, clôturer sa caisse | PC ou tablette + imprimante |
-| **Magasinier** | Comptoir livraison / réserve | Préparer, appeler, remettre la marchandise, signaler les anomalies | Tablette ou PC |
-| **Responsable** | Magasin | Importer les articles, définir la politique de remise, superviser les files en direct et les réordonner, valider les remises hors plafond, ajuster le stock, valider les annulations après paiement et les clôtures | PC + tablette |
-| **Boss** | Partout (à distance) | Suivre encaissements, quantités vendues, files, remises, performance — en lecture | Téléphone, PC |
-| **Admin** | Magasin / à distance | Créer et désactiver les comptes, attribuer les rôles, gérer les paramètres, exécuter les corrections assistées, superviser sauvegardes et restauration | PC |
-| **Écran public** | Mur du magasin | Afficher les numéros appelés (pas un utilisateur : un poste sans compte) | TV + mini-PC/Chromecast |
+| **Commercial** | Surface de vente | Conseiller, identifier le client, construire le devis, appliquer les remises dans les plafonds, demander une remise exceptionnelle au boss si besoin, valider la commande, remettre le numéro d'appel | Tablette Android 10" |
+| **Caissier** | Caisse | Appeler, contrôler la commande, saisir un code de remise du boss le cas échéant, encaisser, émettre la facture, clôturer sa caisse | PC ou tablette + imprimante |
+| **Magasinier** | Comptoir livraison / réserve (plusieurs magasiniers, chacun sur un comptoir) | Préparer, appeler, remettre la marchandise, signaler les anomalies | Tablette ou PC |
+| **Responsable** | Magasin | Importer les articles, paramétrer les plafonds de remise, superviser les files en direct et les réordonner, ajuster le stock, valider les annulations après paiement et les clôtures | PC + tablette |
+| **Boss** | Partout (à distance) | Suivre le tableau de bord (horaire, journalier, hebdomadaire, mensuel) ; recevoir les demandes de remise exceptionnelle et délivrer les codes de remise ; tout le reste en lecture | Téléphone, PC |
+| **Admin** | Magasin / à distance | Créer et désactiver les comptes, attribuer les rôles, déclarer les postes, gérer les paramètres, exécuter les corrections assistées, superviser sauvegardes et restauration | PC |
+| **Écran public** | Mur du magasin (optionnel) | Afficher les numéros appelés (pas un utilisateur : un poste sans compte). Sans écran, l'appel est verbal (RG-DSP-05) | TV + mini-PC/Chromecast |
 
 ### 3.2 Règles sur les rôles
 
@@ -77,7 +80,8 @@ Objectifs mesurables :
 - **RG-USR-04** Boss et admin : double authentification (code à usage unique) obligatoire pour tout accès depuis l'extérieur du magasin.
 - **RG-USR-05** Blocage du compte 15 min après 5 tentatives échouées ; événement journalisé.
 - **RG-USR-06** Un compte ne se supprime jamais, il se désactive (l'historique doit rester lisible).
-- **RG-USR-07** Chaque commercial porte une **lettre de ticket** unique (paramètre du compte) ⚠️ HYPOTHÈSE, voir RG-TKT-01.
+- **RG-USR-07** Chaque commercial porte une **lettre de ticket** unique (paramètre du compte), voir RG-TKT-01. *(Décision H2.)*
+- **RG-USR-08** Plusieurs magasiniers travaillent en même temps, chacun connecté sur son comptoir (poste). Une commande en préparation est prise en charge par **un seul** magasinier ; les autres voient qui l'a ; le responsable peut la réaffecter. *(Décision H1.)*
 
 ### 3.3 Ce que l'admin ne fait pas (choix volontaire)
 
@@ -91,20 +95,25 @@ La matrice détaillée des droits est en **annexe B**.
 
 | Objet | Description | Attributs clés |
 |---|---|---|
-| Article | Marchandise vendable | référence (unique), désignation, catégorie, unité, prix de vente, politique de remise, remise max %, seuil d'alerte, code-barres, actif |
-| Stock | État quantitatif d'un article | théorique, réservé, disponible |
-| Mouvement de stock | Entrée/sortie tracée | type (IMPORT, AJUSTEMENT, LIVRAISON, RETOUR), quantité signée, référence d'origine, auteur, motif, date |
-| Import | Un fichier Excel traité | fichier, mode, auteur, date, lignes OK / en erreur, résumé |
-| Client | Optionnel | nom, téléphone, notes |
-| Devis / Commande | Même objet, états différents | numéro, état, commercial, client, ticket, lignes, totaux, remises, horodatages de chaque étape |
-| Ligne | Article dans une commande | référence et désignation figées, quantité, prix unitaire figé, remise, statut de validation de la remise |
+| Article | Marchandise vendable | **code** (unique), désignation, catégorie, **unité de base** (unité de comptage du stock), remise max %, seuil d'alerte, code-barres, actif, date de dernière entrée |
+| Unité de vente | Conditionnement dans lequel l'article se vend (grille de prix) | article, libellé (pièce, paquet, carton, kg…), **facteur** (nombre d'unités de base ; 1 pour l'unité de base), prix en vigueur, remise max % (surcharge facultative), actif |
+| Prix | Une valeur de prix d'une unité de vente, historisée | unité de vente, montant, **date d'effet**, date de fin (vide = en vigueur), origine (import n°… / saisie), auteur, date de saisie |
+| Catégorie | Regroupement d'articles | nom, remise max % par défaut |
+| Stock | État quantitatif d'un article, **en unité de base** | théorique, réservé, disponible |
+| Mouvement de stock | Entrée/sortie tracée | type (IMPORT, AJUSTEMENT, LIVRAISON, RETOUR), quantité signée, référence d'origine, auteur, motif, date, date d'entrée (import) |
+| Import | Un fichier Excel traité | fichier, mode, auteur, date d'import, date d'entrée, statut (PRÉVISUALISÉ, VALIDÉ, ANNULÉ), lignes OK / en erreur, résumé |
+| Client | **Obligatoire** sur devis et commande | nom, téléphone (contact), notes |
+| Devis / Commande | Même objet, états différents | numéro, état, commercial, client, ticket, lignes, totaux, remises, code de remise éventuel, horodatages de chaque étape |
+| Ligne | Article dans une commande | code et désignation figés, **unité de vente et facteur figés**, quantité (dans l'unité de vente), quantité en unité de base, prix unitaire figé, remise, origine de la remise (plafond / code) |
 | Ticket d'appel | Numéro du client | lettre, numéro du jour, date |
-| Validation de remise | Décision sur une remise | demandeur, décideur, % demandé, % accordé, motif, date |
+| Demande de remise exceptionnelle | Demande adressée au boss | commande, client, demandeur, % ou montant demandé, motif, décision (accordée / refusée / modifiée), décideur, date |
+| Code de remise | Autorisation du boss, à usage unique | code, % ou montant, commande ou client visé, émis par, date, expiration, statut (ACTIF, UTILISÉ, EXPIRÉ, RÉVOQUÉ) |
 | Session de caisse | Période d'encaissement | caisse, caissier, ouverture, fond de caisse, clôture, comptage, écarts |
 | Paiement | Règlement d'une commande | lignes (moyen, montant, référence), reçu, rendu, session de caisse |
 | Facture | Document légal | numéro, date, contenu figé, PDF, statut |
 | Avoir | Annulation totale/partielle | numéro, facture d'origine, montant, motif, remboursement |
-| Livraison | Remise physique | magasinier, poste, horodatages, anomalies |
+| Livraison | Remise physique | magasinier, comptoir, horodatages, anomalies |
+| Poste | Point physique déclaré | type (tablette, caisse, comptoir, écran), nom, actif |
 | Journal d'audit | Trace immuable | qui, rôle, poste, quand, action, objet, avant, après, motif |
 | Paramètres | Configuration | voir §13 |
 
@@ -113,22 +122,24 @@ La matrice détaillée des droits est en **annexe B**.
 ### 5.1 Vue d'ensemble
 
 ```
-   COMMERCIAL                  CAISSE                        LIVRAISON
-   ──────────                  ──────                        ─────────
+   COMMERCIAL                     CAISSE                        LIVRAISON
+   ──────────                     ──────                        ─────────
+   Client (nom + contact)
    Devis (brouillon)
+   remises ≤ plafond : libres
+   > plafond : demande au boss ──► code
         │ valider
         ▼
-   Commande validée ──────►  File CAISSE (rang, écran public)
+   Commande validée ──────►  File CAISSE (rang, écran ou appel verbal)
    ticket A15                     │ appeler A15 → « A15 → Caisse 2 »
-   stock réservé 30 min           ▼
-                             Contrôle : lignes, remises
-                             (validation caissier / responsable)
+   stock réservé jusqu'à          ▼
+   la fin de la journée      Contrôle : lignes, remises (plafond ou code)
                                   │ encaisser (moyens multiples)
                                   ▼
                              Payée + FACTURE F-2026-000123 ─────►  File LIVRAISON
                              réservation ferme                         │ préparer
                                                                        ▼
-                                                                  Prête → appel « A15 → Comptoir »
+                                                                  Prête → appel « A15 → Comptoir 1 »
                                                                        │ remettre
                                                                        ▼
                                                                   Livrée = sortie de stock
@@ -139,14 +150,14 @@ La matrice détaillée des droits est en **annexe B**.
 | État (FR) | Code | Signification | Sorties possibles |
 |---|---|---|---|
 | Devis | `DRAFT` | Brouillon, non engageant, pas de réservation | Validée · Abandonné |
-| Validée (en file caisse) | `SUBMITTED` | Ticket attribué, stock réservé avec échéance | Appelée caisse · Expirée · Annulée |
-| Appelée à la caisse | `AT_REGISTER` | Affichée sur l'écran public, en cours de contrôle | Payée · Retour en file (absent) · Annulée |
+| Validée (en file caisse) | `SUBMITTED` | Ticket attribué, stock réservé jusqu'à la fin de la journée | Appelée caisse · Expirée · Annulée |
+| Appelée à la caisse | `AT_REGISTER` | Affichée sur l'écran public (ou appelée verbalement), en cours de contrôle | Payée · Retour en file (absent) · Annulée |
 | Payée (à livrer) | `PAID` | Facture émise, réservation ferme | En préparation · Annulée après paiement |
-| En préparation | `PREPARING` | Prise en charge par le magasinier | Prête · Anomalie |
-| Prête (appelée livraison) | `READY` | Affichée sur l'écran public côté livraison | Livrée · Retour en file (absent) · Anomalie |
+| En préparation | `PREPARING` | Prise en charge par un magasinier | Prête · Anomalie |
+| Prête (appelée livraison) | `READY` | Appelée côté livraison | Livrée · Retour en file (absent) · Anomalie |
 | Anomalie | `ISSUE` | Article manquant ou abîmé, décision du responsable attendue | Prête · Livrée partiellement + avoir |
 | Livrée | `DELIVERED` | Marchandise remise, stock sorti — **état final** | Retour [V1.1] |
-| Expirée | `EXPIRED` | Non payée dans le délai, réservation libérée | Réactivée (→ Validée) |
+| Expirée | `EXPIRED` | Non payée à la fin de la journée, réservation libérée | Réactivée (→ Validée) |
 | Annulée | `CANCELLED` | Annulée avant paiement — final | — |
 | Annulée après paiement | `REFUNDED` | Avoir émis — final | — |
 
@@ -154,9 +165,9 @@ La matrice détaillée des droits est en **annexe B**.
 
 ### 5.3 Étape 1 — Conseil et devis (commercial)
 
-1. Le commercial ouvre un nouveau devis (client anonyme par défaut ; nom/téléphone optionnels).
-2. Il recherche les articles (texte, catégorie, scan du code-barres avec la caméra de la tablette) et voit pour chacun : prix, **stock disponible**, **politique de remise et plafond**.
-3. Il ajoute des lignes, ajuste les quantités, saisit éventuellement une remise par ligne ou une remise globale. L'application indique immédiatement si la remise est libre, soumise à validation ou interdite.
+1. Le commercial ouvre un nouveau devis et **identifie le client** : recherche dans le répertoire par téléphone ou nom ; sinon création en deux champs (nom, téléphone). *(Décision H12.)*
+2. Il recherche les articles (texte, catégorie, scan du code-barres avec la caméra de la tablette) et voit pour chacun : les **unités de vente** avec leur prix (ex. « pièce 4 500 Ar · carton de 12 : 50 000 Ar »), le **stock disponible** (en unité de base, et converti dans l'unité choisie), la **remise max autorisée**.
+3. Il ajoute des lignes en choisissant l'**unité de vente**, ajuste les quantités, saisit éventuellement une remise par ligne ou une remise globale **dans la limite des plafonds** ; l'interface refuse toute saisie au-delà. Si le client demande davantage, le commercial envoie une **demande de remise exceptionnelle au boss** (RG-REM-03) ou saisit un **code de remise** déjà reçu du boss (RG-REM-04).
 4. Il peut enregistrer le devis (client qui réfléchit), l'imprimer/l'envoyer en PDF, et le reprendre plus tard.
 
 Règles :
@@ -164,34 +175,35 @@ Règles :
 - **RG-DEV-01** Un devis ne réserve pas de stock et n'a pas de ticket.
 - **RG-DEV-02** Numérotation `D-AAAA-nnnnnn` (trous tolérés). Validité : paramètre, défaut 7 jours ; au-delà, reprise possible avec revalorisation des prix et re-contrôle des disponibilités.
 - **RG-DEV-03** Un devis peut être repris par un autre commercial (le devis reste rattaché à son créateur ; la commande porte le commercial qui valide).
+- **RG-DEV-04** Le client est **obligatoire** : nom + téléphone. Le répertoire clients détecte un téléphone déjà connu et propose la fiche existante (pas de doublon sur le téléphone). Un client ne se supprime pas ; il se fusionne ou se désactive (responsable). *(Décision H12.)*
 
 ### 5.4 Étape 2 — Validation de la commande (commercial)
 
 - **RG-CMD-01** Une commande a un commercial responsable (celui qui valide). Le responsable peut la réaffecter.
-- **RG-CMD-02** La validation n'est possible que si, pour chaque ligne, `disponible ≥ quantité`. Sinon, message précis par ligne (« Réf. X : 3 disponibles, 5 demandés ») et proposition de réduire la quantité.
+- **RG-CMD-02** La validation n'est possible que si, pour chaque ligne, `disponible ≥ quantité × facteur` (contrôle en **unité de base**, RG-ART-06 ; toutes les lignes d'un même article se cumulent), le **disponible** déduisant toutes les commandes validées non encore livrées — en file caisse, appelées, payées non livrées, en préparation (RG-STK-01). Un commercial ne peut donc pas vendre un article déjà engagé par une commande qui attend à la caisse. Sinon, message précis par ligne (« Code X : 3 disponibles, 5 demandés ») et proposition de réduire la quantité. *(Décision H6.)*
 - **RG-CMD-03** À la validation, dans une seule opération indivisible : numéro de commande, ticket d'appel (RG-TKT), réservation de stock (RG-STK-02), entrée en file caisse (RG-FIL-01), notification des caisses.
-- **RG-CMD-04** Les prix unitaires et désignations sont **figés** à la validation. Un changement ultérieur du prix de l'article n'affecte pas la commande.
+- **RG-CMD-04** Les prix unitaires, désignations, unités de vente et facteurs sont **figés** à la validation (la ligne référence le prix historisé qui était en vigueur, RG-ART-07). Un changement ultérieur du prix ou de la grille de l'article n'affecte pas la commande.
 - **RG-CMD-05** Le commercial communique le ticket au client (affiché en gros sur la tablette ; impression d'un mini-ticket **[V1.1]**).
-- **RG-CMD-07** Une commande dont une remise est « à valider » peut être validée ; la remise reste en attente et sera tranchée à la caisse (RG-REM-06).
+- **RG-CMD-07** Une commande peut être validée avec une demande de remise exceptionnelle **en attente** ; la remise demandée n'est pas appliquée tant qu'un code valide n'est pas rattaché (RG-REM-05). La caisse voit l'état de la demande.
 
 ### 5.5 Étape 3 — File d'attente caisse et appel
 
 - **RG-FIL-01** Deux files : **CAISSE** (commandes `SUBMITTED`) et **LIVRAISON** (commandes `PAID`, `PREPARING`, `READY`). Ordre par défaut : ordre d'entrée dans la file.
 - **RG-FIL-02** Le **responsable** peut réordonner (rang), marquer prioritaire, retirer ou réaffecter ; chaque modification est journalisée avec motif facultatif.
-- **RG-FIL-03** Le caissier appelle en priorité le premier de la file ; il peut appeler un ticket précis si le client est devant lui (journalisé). L'appel affiche « A15 → Caisse 2 » sur l'écran public et passe la commande en `AT_REGISTER`.
+- **RG-FIL-03** Le caissier appelle en priorité le premier de la file ; il peut appeler un ticket précis si le client est devant lui (journalisé). L'appel affiche « A15 → Caisse 2 » sur l'écran public s'il existe (RG-DSP-01), sinon le caissier appelle verbalement le ticket et le nom du client (RG-DSP-05) ; la commande passe en `AT_REGISTER`.
 - **RG-FIL-04** Client absent : le caissier clique « Absent » ; la commande revient en file **en dernière position** avec un compteur d'absences ; la réservation continue de courir (RG-STK-02). Après 2 absences, le responsable est notifié.
 - **RG-FIL-05** Le temps d'attente (entrée en file → appel) et le temps de traitement (appel → paiement) sont conservés pour les statistiques.
-- **RG-FIL-06** Les mêmes règles s'appliquent à la file LIVRAISON (appel par le magasinier, absence, réordonnancement).
+- **RG-FIL-06** Les mêmes règles s'appliquent à la file LIVRAISON (appel par le magasinier, absence, réordonnancement), avec autant de comptoirs que déclarés.
 
 ### 5.6 Étape 4 — Contrôle et paiement (caissier)
 
-1. Le caissier voit la commande : lignes, prix, remises avec leur statut (libre / à valider / interdite).
-2. Il peut **modifier avant paiement** : supprimer une ligne, réduire une quantité, modifier une remise (RG-CMD-05b). Toute modification est journalisée avec l'état avant/après ; une augmentation de quantité déclenche un re-contrôle de stock.
-3. Il tranche les remises dans son plafond ; au-delà, il **demande la validation du responsable** (notification instantanée ; le responsable valide depuis n'importe quel poste).
+1. Le caissier voit la commande : client, lignes, prix, remises avec leur origine (« dans le plafond » ou « code boss n° … », ou « demande au boss en attente »).
+2. Il peut **modifier avant paiement** : supprimer une ligne, réduire une quantité, saisir un code de remise (RG-CMD-05b). Toute modification est journalisée avec l'état avant/après.
+3. Il **ne décide d'aucune remise** : les plafonds sont appliqués par l'application, les dépassements n'existent que par code du boss. *(Décision H4.)*
 4. Il enregistre le paiement : un ou plusieurs moyens (RG-PAY).
 5. Le paiement complet **génère la facture** (RG-FAC-01) et notifie la livraison.
 
-- **RG-CMD-05b** Modifications autorisées à la caisse avant paiement : suppression de ligne, baisse de quantité, remise. Un ajout d'article passe par le commercial (renvoi en un clic, la commande garde son ticket).
+- **RG-CMD-05b** Modifications autorisées à la caisse avant paiement : suppression de ligne, baisse de quantité, saisie d'un code de remise, retrait d'une remise non couverte (avec l'accord du client). Un ajout d'article ou un changement de remise dans le plafond passe par le commercial (renvoi en un clic, la commande garde son ticket).
 
 ### 5.7 Étape 5 — Facture
 
@@ -199,8 +211,8 @@ Voir RG-FAC. La facture est produite en PDF, imprimable en A4 et, en option, en 
 
 ### 5.8 Étape 6 — Préparation et livraison (magasinier)
 
-- **RG-LIV-01** Dès le paiement, la commande entre dans la file LIVRAISON ; le poste livraison est notifié (son + visuel).
-- **RG-LIV-02** Le magasinier prend en charge (`PREPARING`), prépare, puis déclare **prête** : le ticket est appelé sur l'écran public (« A15 → Comptoir livraison »).
+- **RG-LIV-01** Dès le paiement, la commande entre dans la file LIVRAISON ; les comptoirs sont notifiés (son + visuel).
+- **RG-LIV-02** Un magasinier prend en charge (`PREPARING`, verrou à son nom, RG-USR-08), prépare, puis déclare **prête** : le ticket est appelé sur l'écran public (« A15 → Comptoir 1 ») ou verbalement.
 - **RG-LIV-03** À la remise, il confirme la livraison ligne par ligne (case à cocher) : la commande passe `DELIVERED` et la **sortie de stock** est enregistrée (RG-STK-04).
 - **RG-LIV-04** Anomalie (article manquant, abîmé) : le magasinier signale ; état `ISSUE` ; le responsable décide : livraison partielle + avoir sur le manquant (RG-ANN-03), ou attente. La facture d'origine n'est jamais modifiée.
 - **RG-LIV-05** Livraison différée : une commande payée peut rester « à livrer » (client qui revient plus tard) sans limite, avec réservation ferme. Le responsable et le boss voient la liste « payé non livré ».
@@ -208,7 +220,7 @@ Voir RG-FAC. La facture est produite en PDF, imprimable en A4 et, en option, en 
 
 ### 5.9 Cas particuliers
 
-- **RG-CMD-08 Expiration** : une commande `SUBMITTED` non payée à l'échéance de la réservation passe `EXPIRED` ; le stock est libéré ; la caisse et le commercial sont notifiés. Le commercial peut la **réactiver** : nouveau contrôle de stock, nouvelle échéance, même ticket si le jour n'a pas changé (sinon nouveau ticket).
+- **RG-CMD-08 Expiration** : une commande `SUBMITTED` non payée à la **fin de la journée** (RG-STK-02) passe `EXPIRED` ; le stock est libéré ; le commercial est notifié. Le commercial peut la **réactiver** le lendemain ou plus tard : nouveau contrôle de stock, nouveau ticket (le jour a changé), nouvelle échéance en fin de journée.
 - **RG-ANN-01 Annulation avant paiement** : par le commercial (ses commandes), le caissier ou le responsable, motif obligatoire ; réservation libérée ; ticket clos.
 - **RG-ANN-02 Annulation après paiement, avant livraison** : par le caissier **avec validation du responsable** ; émet un **avoir total**, enregistre le remboursement (moyen, référence), libère la réservation ; état `REFUNDED`.
 - **RG-ANN-03 Avoir partiel** : suite à une anomalie de livraison, avoir sur les lignes ou quantités non livrées ; la sortie de stock ne porte que sur le livré.
@@ -219,33 +231,38 @@ Voir RG-FAC. La facture est produite en PDF, imprimable en A4 et, en option, en 
 
 ### 6.1 Articles et stock
 
-- **RG-ART-01** Un article est identifié par une **référence** unique (insensible à la casse, espaces de bord ignorés). Le code-barres est optionnel mais unique s'il est renseigné.
+- **RG-ART-01** Un article est identifié par un **code** unique (insensible à la casse, espaces de bord ignorés). Le code-barres est optionnel mais unique s'il est renseigné. *(Décision H7.)*
 - **RG-ART-02** Un article n'est jamais supprimé : il est **désactivé** (invisible à la vente, historique conservé).
-- **RG-ART-03** Le prix de vente est modifiable par import ou par le responsable (journalisé). Les commandes déjà validées ne sont pas affectées (RG-CMD-04).
-- **RG-ART-04** Quantités entières par défaut ; les décimales (jusqu'à 3) sont autorisées si l'article le permet (colonne d'import `qte_decimale = OUI`) ⚠️ HYPOTHÈSE.
-- **RG-STK-01** `théorique = Σ entrées − Σ sorties` ; `disponible = théorique − réservé`. Le stock affiché au commercial est toujours le **disponible**.
-- **RG-STK-02** La validation d'une commande crée une réservation par ligne, d'une durée = paramètre `reservation_ttl_minutes` (défaut **30 min**) ⚠️ HYPOTHÈSE. À l'échéance : RG-CMD-08.
+- **RG-ART-03 Prix par unité de vente.** Le prix de vente n'est pas porté par l'article mais par chacune de ses **unités de vente** (RG-ART-06). Il est modifiable par import ou par le responsable, toujours par création d'un nouveau prix daté (RG-ART-07), journalisé. Les commandes déjà validées ne sont pas affectées (RG-CMD-04). Un article dont **aucune** unité de vente active n'a de prix en vigueur est importable mais **non vendable** tant que le responsable n'a pas saisi un prix ⚠️ HYPOTHÈSE H14.
+- **RG-ART-04** Toutes les quantités sont **décimales** (2 décimales, RG-FMT-01 ; les décimales nulles ne s'affichent pas : `12` et non `12,00`). L'**unité de base** (unité de comptage : pièce, kg, m, litre, sac, carton…) est obligatoire ; c'est l'unité dans laquelle le stock est compté. Sur devis, factures et exports, chaque ligne affiche l'unité de vente et, si elle diffère de l'unité de base, l'équivalence (« 5 cartons (× 12 pièces) »). *(Décision H7.)*
+- **RG-ART-05** Chaque article porte la **date de sa dernière entrée** (import) ; chaque mouvement d'entrée porte la date d'import (horodatage système) et la **date d'entrée** déclarée à l'import (défaut : jour de l'import). *(Décision H7.)*
+- **RG-ART-06 Unités de vente et grille de prix.** *(Décision H18.)* Un article possède **une ou plusieurs unités de vente**, chacune avec un libellé unique pour l'article, un **facteur** = nombre d'unités de base qu'elle représente (décimal, 3 décimales max, > 0), un prix en vigueur et, facultativement, un plafond de remise propre (RG-REM-01). L'unité de base est créée automatiquement comme unité de vente de facteur **1** ; elle peut être désactivée si l'article ne se vend qu'en conditionnement. Exemple : article `SAV-001`, unité de base « pièce » ; unités de vente : pièce (× 1, 4 500 Ar), paquet (× 6, 25 000 Ar), carton (× 72, 280 000 Ar). Toute quantité vendue est **convertie en unité de base** (`quantité × facteur`) pour le disponible, la réservation et la sortie de stock : il n'existe qu'**un seul stock** par article. Une unité de vente ne se supprime pas : elle se **désactive** (les commandes passées la référencent). Le facteur d'une unité utilisée par au moins une commande n'est plus modifiable : on crée une nouvelle unité.
+- **RG-ART-07 Historique des prix.** *(Décision H18.)* Un prix n'est jamais **écrasé** : toute modification crée un nouveau prix avec une **date d'effet** (défaut : immédiate) et clôt le précédent à cette date ; l'ancien reste consultable. Il n'y a jamais deux prix en vigueur en même temps pour une même unité de vente. Chaque prix porte son origine (import n°… ou saisie manuelle), son auteur et sa date de saisie. La **fiche article** montre, par unité de vente, le prix en vigueur et l'**historique complet** (tableau : date d'effet, prix, variation en % et en Ar, origine, auteur ; courbe d'évolution sur la période choisie). Un prix à **date d'effet future** (ex. « nouveaux prix lundi ») est saisissable et devient automatiquement le prix en vigueur à sa date **[V1.1]**. Chaque ligne de commande référence le prix qui était en vigueur à sa validation (RG-CMD-04) : on peut toujours retrouver à quel prix un article a été vendu et pourquoi. L'historique s'exporte (RG-EXP-01).
+- **RG-STK-01** Toutes les quantités de stock sont en **unité de base**. `théorique = Σ entrées − Σ sorties` ; `réservé = Σ quantités (× facteur) des commandes validées non livrées` (états `SUBMITTED`, `AT_REGISTER`, `PAID`, `PREPARING`, `READY`, `ISSUE`) ; `disponible = théorique − réservé`. Le stock affiché au commercial est toujours le **disponible**, dans l'unité de base et converti dans l'unité de vente sélectionnée (« 150 pièces = 2 cartons + 6 pièces »).
+- **RG-STK-02** La validation d'une commande crée une réservation par ligne, **sans limite de durée dans la journée** : elle expire à la **fin de la journée** (paramètre `day_end_time`, défaut 23:59 heure d'Antananarivo ⚠️ HYPOTHÈSE H16). À l'échéance : RG-CMD-08. *(Décision H3.)*
 - **RG-STK-03** Le paiement rend la réservation **ferme** (sans échéance) jusqu'à la livraison.
-- **RG-STK-04** La sortie de stock est enregistrée **à la livraison**, pas au paiement. Conséquence : « payé non livré » = stock encore en réserve mais non disponible à la vente.
+- **RG-STK-04** La sortie de stock est enregistrée **à la livraison**, pas au paiement. Conséquence : « payé non livré » = stock encore en réserve mais non disponible à la vente. *(Décision H6.)*
 - **RG-STK-05** Ajustement manuel : responsable uniquement, motif obligatoire parmi une liste paramétrable (casse, vol, erreur d'import, inventaire…) + commentaire libre ; journalisé. Jamais de modification directe d'une quantité.
 - **RG-STK-06** Le stock théorique ne peut pas devenir négatif. Une sortie qui le rendrait négatif est refusée avec message.
 - **RG-STK-07** Alerte (responsable, boss) quand `disponible ≤ seuil d'alerte` de l'article.
 
 ### 6.2 Remises
 
-- **RG-REM-01** Chaque article porte une politique : **LIBRE** (remise autorisée jusqu'à `remise_max_pct` sans validation), **VALIDATION** (toute remise > 0 doit être validée), **INTERDIT** (aucune remise). Valeur par défaut d'un article importé sans colonne : paramètre `default_discount_policy` (défaut : VALIDATION).
-- **RG-REM-02** Le commercial voit la politique et le plafond de chaque article **avant** de proposer quoi que ce soit au client ; l'interface l'empêche de saisir une remise sur un article INTERDIT.
-- **RG-REM-03** Plafonds d'approbation par rôle (paramètres) : commercial = plafond de l'article en LIBRE, 0 sinon ; caissier = jusqu'à `cashier_max_discount_pct` (défaut **10 %**) ⚠️ HYPOTHÈSE ; responsable = sans plafond, motif obligatoire.
-- **RG-REM-04** Remise saisissable en % ou en montant ; le contrôle s'effectue toujours sur l'équivalent en %. Une **remise globale** est répartie au prorata sur les lignes remisables ; les lignes INTERDIT en sont exclues.
-- **RG-REM-05** Motif obligatoire (liste paramétrable + texte libre) pour toute remise qui dépasse le niveau libre.
-- **RG-REM-06** Une remise en attente de validation **bloque le paiement** jusqu'à décision : approuvée, modifiée (le décideur fixe un autre %) ou refusée. La décision, son auteur et l'heure sont journalisés et visibles sur la commande.
-- **RG-REM-07** Les remises approuvées apparaissent sur la facture ligne par ligne et en total.
+Principe *(décisions H4, H5, H13)* : les remises sont **paramétrées d'avance** sous forme de plafonds ; dans le plafond, le commercial les applique librement, sans validation par la caisse ni le responsable ; au-delà, seul le **boss** peut accorder une remise, matérialisée par un **code à usage unique**.
+
+- **RG-REM-01 Plafonds paramétrés.** Chaque article porte une `remise_max_pct` (0 = aucune remise possible). Si elle n'est pas renseignée, le plafond de sa **catégorie** s'applique ; sinon le paramètre global `default_max_discount_pct` (défaut **0**). Une **unité de vente** peut porter sa propre `remise_max_pct` qui **surcharge** celle de l'article pour cette unité seulement (ex. carton remisable à 5 %, pièce non remisable) *(décision H18)* ; ordre de résolution : unité de vente → article → catégorie → paramètre. Paramétrage par le responsable (fiche article, fiche catégorie ou colonne d'import) ⚠️ HYPOTHÈSE H15 ; toute modification est journalisée et visible du boss.
+- **RG-REM-02 Application dans le plafond.** Le commercial voit le plafond de chaque article **avant** de proposer quoi que ce soit ; l'interface refuse toute saisie au-delà. Une remise ≤ plafond est appliquée immédiatement, sans validation ni motif.
+- **RG-REM-03 Demande de remise exceptionnelle.** Pour dépasser le plafond, le commercial (ou le caissier, ou le responsable) crée une **demande** : commande, client, lignes concernées ou remise globale, % ou montant demandé, motif obligatoire. Le **boss** reçoit une **notification immédiate** (application, y compris à distance) avec le détail du client et de la commande. Il **accorde** (au % demandé ou à un autre %), ou **refuse** ; personne d'autre ne peut trancher. La décision est journalisée et visible sur la commande.
+- **RG-REM-04 Code de remise.** Toute remise accordée par le boss est matérialisée par un **code unique** (8 caractères lisibles, ex. `R7K4-29QP`) : % ou montant accordé, commande visée (ou client visé si émis avant la commande), émis par le boss, date, **valable jusqu'à la fin de la journée** (paramètre), **usage unique**, révocable par le boss tant qu'il n'est pas utilisé. Le boss peut aussi émettre un code **sans demande préalable** (client spécial qui l'a contacté directement) en indiquant le client et le %. Le code est saisi par le commercial (avant validation) ou par le caissier (avant paiement) ; s'il a été émis en réponse à une demande sur cette commande, l'application le rattache **automatiquement** dès l'accord ⚠️ HYPOTHÈSE H17. Un code rattaché applique la remise à la commande, à la facture et au paiement, puis passe UTILISÉ. Émission, usage, expiration et révocation sont journalisés.
+- **RG-REM-05 Blocage.** Sans code valide, une remise hors plafond ne peut pas être appliquée : le paiement est bloqué tant que la commande porte une demande en attente. Le caissier peut, avec l'accord du client, **retirer** la remise demandée et encaisser au plafond, ou laisser la commande en file en attendant la réponse du boss (elle n'expire qu'en fin de journée).
+- **RG-REM-06 Calcul.** Remise saisissable en % ou en montant ; le contrôle s'effectue toujours sur l'équivalent en %. Une **remise globale** est répartie au prorata sur les lignes remisables (plafond > 0 ou code) ; les lignes à plafond 0 en sont exclues sauf code du boss les couvrant.
+- **RG-REM-07 Traçabilité.** Les remises apparaissent sur la facture ligne par ligne et en total, avec la mention du code de remise le cas échéant. Le boss voit dans son tableau de bord les remises du jour (dans plafond / par code), les demandes en attente et les codes émis.
 
 ### 6.3 Ticket d'appel
 
-- **RG-TKT-01** Ticket = **lettre** + **numéro**. Lettre = celle du commercial qui valide (permet à la caisse de savoir qui a vendu) ⚠️ HYPOTHÈSE. Numéro = séquence quotidienne **par lettre**, démarrant à 1 chaque jour à 00:00 (heure d'Antananarivo).
+- **RG-TKT-01** Ticket = **lettre** + **numéro**. Lettre = celle du commercial qui valide (permet à la caisse de savoir qui a vendu). Numéro = séquence quotidienne **par lettre**, démarrant à 1 chaque jour à 00:00 (heure d'Antananarivo). *(Décision H2.)*
 - **RG-TKT-02** Un ticket est unique dans la journée et suit la commande jusqu'à la livraison.
-- **RG-TKT-03** L'affichage du ticket est grand et lisible à 5 m sur l'écran public.
+- **RG-TKT-03** L'affichage du ticket est grand et lisible à 5 m sur l'écran public ; sur les postes, le ticket est toujours accompagné du **nom du client** pour permettre l'appel verbal.
 
 ### 6.4 Paiements
 
@@ -260,12 +277,12 @@ Voir RG-FAC. La facture est produite en PDF, imprimable en A4 et, en option, en 
 ### 6.5 Factures, avoirs, TVA
 
 - **RG-FAC-01** Numéro de facture **séquentiel par année, sans trou** : `F-AAAA-nnnnnn` (préfixe paramétrable). Attribué au moment exact du paiement complet, dans la même opération indivisible. Jamais réutilisé, jamais modifié.
-- **RG-FAC-02** Contenu figé : mentions légales du magasin, numéro, date/heure, ticket, commercial, caissier, client (si renseigné), lignes (référence, désignation, quantité, unité, PU, remise, total ligne), total brut, total remises, [HT / TVA / TTC si TVA active], net à payer, lignes de paiement (moyen, référence, montant), reçu et rendu, pied de page paramétrable.
+- **RG-FAC-02** Contenu figé : mentions légales du magasin, numéro, date/heure, ticket, commercial, caissier, **client (nom, téléphone)**, lignes (code, désignation, quantité, unité de vente — et équivalence en unité de base si différente —, PU, remise, total ligne), total brut, total remises (avec code de remise éventuel), [HT / TVA / TTC si TVA active], net à payer, lignes de paiement (moyen, référence, montant), reçu et rendu, pied de page paramétrable.
 - **RG-FAC-03** TVA : paramètres `vat_enabled` (défaut **non**), `vat_rate` (défaut 20 %), `prices_include_vat` (défaut oui). Si désactivée : aucune ligne TVA, mention paramétrable (ex. « TVA non applicable »).
 - **RG-FAC-04** Le PDF est généré et **stocké** à l'émission ; toute réimpression restitue le même fichier (jamais régénéré avec les paramètres du moment).
 - **RG-FAC-05** Avoir : `AV-AAAA-nnnnnn`, séquentiel sans trou, référence la facture d'origine, motif, remboursement (moyen, référence, montant).
 - **RG-FAC-06** Devis PDF : mention « Devis — valable jusqu'au JJ/MM/AAAA — ne vaut pas facture ».
-- **RG-FAC-07** Mentions légales paramétrables : raison sociale, adresse, téléphone, NIF, STAT, RCS, logo, texte de pied de page. ⚠️ HYPOTHÈSE : à vérifier avec le comptable du magasin pour les obligations malgaches.
+- **RG-FAC-07** Mentions légales paramétrables : raison sociale, adresse, téléphone, **NIF, STAT, RCS**, logo, texte de pied de page. *(Décision H9.)*
 
 ### 6.6 Sessions et clôtures de caisse
 
@@ -277,7 +294,7 @@ Voir RG-FAC. La facture est produite en PDF, imprimable en A4 et, en option, en 
 
 ### 6.7 Formats
 
-- **RG-FMT-01** Montants : `1 250 000,00 Ar` — espace insécable pour les milliers, virgule décimale, **2 décimales**, symbole « Ar » après le nombre. Calculs et stockage avec 2 décimales, arrondi au plus proche (demi-supérieur).
+- **RG-FMT-01** Montants : `1 250 000,00 Ar` — espace insécable pour les milliers, virgule décimale, **2 décimales**, symbole « Ar » après le nombre. Calculs et stockage avec 2 décimales, arrondi au plus proche (demi-supérieur). Quantités : même séparateur de milliers, jusqu'à 2 décimales, décimales nulles masquées.
 - **RG-FMT-02** Dans les exports Excel, les montants et quantités sont des **nombres** (pas du texte) avec le format d'affichage appliqué.
 - **RG-FMT-03** Dates : `JJ/MM/AAAA`, heures `HH:MM`, fuseau **Indian/Antananarivo (UTC+3)**.
 - **RG-FMT-04** Paramètre optionnel `cash_rounding` (défaut : aucun) pour arrondir le net à payer en espèces (ex. à 100 Ar) ; l'arrondi apparaît comme une ligne distincte sur la facture.
@@ -285,29 +302,35 @@ Voir RG-FAC. La facture est produite en PDF, imprimable en A4 et, en option, en 
 ### 6.8 Journal d'audit
 
 - **RG-AUD-01** Journal **immuable** (ajout seul) : horodatage, utilisateur, rôle actif, poste, action, objet concerné, état avant, état après, motif. Consultable par admin, responsable et boss ; exportable.
-- **RG-AUD-02** Événements journalisés au minimum : connexion/déconnexion et échecs ; création, validation, modification, annulation, expiration, réactivation de commande ; toute remise et toute décision de remise ; paiement, facture, avoir ; appel, absence, réordonnancement de file ; import, ajustement, livraison, anomalie, retour ; ouverture et clôture de caisse ; modification de paramètre, de compte, de prix ; correction assistée.
+- **RG-AUD-02** Événements journalisés au minimum : connexion/déconnexion et échecs ; création, validation, modification, annulation, expiration, réactivation de commande ; toute remise, toute demande de remise exceptionnelle, toute décision du boss, tout code émis / utilisé / révoqué ; paiement, facture, avoir ; appel, absence, réordonnancement de file ; import (prévisualisation, validation, annulation), ajustement, livraison, anomalie, retour ; ouverture et clôture de caisse ; modification de paramètre, de plafond de remise, de compte, de poste ; création, désactivation d'unité de vente ; **tout nouveau prix** (ancien → nouveau, origine) ; correction assistée.
 - **RG-AUD-03** Les corrections de l'admin passent par des écrans dédiés qui produisent des opérations compensatoires (ajustement, avoir, réaffectation) — jamais d'écriture directe.
 
 ## 7. Files d'attente et écran public
 
-- **RG-DSP-01** L'écran public affiche en temps réel, par file, les **5 derniers tickets appelés** avec le poste (« A15 → Caisse 2 », « C22 → Comptoir »), le dernier appel en surbrillance, en très gros caractères.
+- **RG-DSP-01** S'il est déclaré (paramètre `display.enabled`, un seul écran), l'écran public affiche en temps réel, par file, les **5 derniers tickets appelés** avec le poste (« A15 → Caisse 2 », « C22 → Comptoir 1 »), le dernier appel en surbrillance, en très gros caractères. *(Décision H11.)*
 - **RG-DSP-02** Signal sonore optionnel à chaque nouvel appel (paramètre).
 - **RG-DSP-03** L'écran public se connecte avec une **clé de poste** (URL dédiée), sans compte utilisateur, en lecture seule ; il se reconnecte seul après coupure.
-- **RG-DSP-04** Le responsable dispose d'une **vue de supervision en direct** : les deux files avec rang, ticket, commercial, montant, temps d'attente, statut des remises ; glisser-déposer pour réordonner ; indicateurs de la journée (attente moyenne, commandes en cours, payé non livré).
+- **RG-DSP-04** Le responsable dispose d'une **vue de supervision en direct** : les deux files avec rang, ticket, client, commercial, montant, temps d'attente, état des remises (demande en attente) ; glisser-déposer pour réordonner ; indicateurs de la journée (attente moyenne, commandes en cours, payé non livré).
+- **RG-DSP-05 Appel verbal.** Sans écran public, l'appel se fait de vive voix : le poste appelant affiche en grand le **ticket et le nom du client** à annoncer, et la tablette du commercial concerné reçoit une notification (il peut prévenir le client). Le fonctionnement des files est identique avec ou sans écran. *(Décision H11.)*
 
 ## 8. Import Excel des articles
 
-- **RG-IMP-01** Modèle de fichier figé (annexe A), téléchargeable depuis l'application, première ligne = en-têtes. Formats acceptés : `.xlsx` (et `.csv` UTF-8) ⚠️ HYPOTHÈSE.
-- **RG-IMP-02** Deux modes : **ENTRÉE** (défaut) — la quantité du fichier **s'ajoute** au stock ; **INVENTAIRE** — la quantité du fichier **remplace** le stock théorique (responsable, double confirmation, chaque écart devient un ajustement motivé « inventaire »).
-- **RG-IMP-03** Référence connue → mise à jour des attributs renseignés (colonnes vides = inchangé) + mouvement de stock ; référence inconnue → création.
-- **RG-IMP-04** **Prévisualisation obligatoire** avant import : nombre de créations, mises à jour, quantités entrantes, et liste des erreurs ligne par ligne (référence manquante, doublon dans le fichier, prix non numérique, quantité négative, politique inconnue…).
-- **RG-IMP-05** Import **tout ou rien** par défaut ; option « importer uniquement les lignes valides » avec rapport des lignes ignorées.
-- **RG-IMP-06** Chaque import est historisé : fichier conservé, auteur, date, mode, résumé, mouvements générés. Un import ne s'annule pas ; on le corrige par un import inverse ou des ajustements.
+- **RG-IMP-01** Modèle de fichier figé (annexe A), téléchargeable depuis l'application, première ligne = en-têtes. **Une ligne par couple article × unité de vente** *(décision H18)* : un article vendu en pièce, paquet et carton occupe trois lignes portant le même `code`. Colonnes **obligatoires** : `code`, `categorie`, `designation`, `unite`, `quantite` ; `facteur` vide ou `1` désigne l'**unité de base**, qui doit exister exactement une fois par article (dans le fichier ou déjà connue). Formats acceptés : `.xlsx` et `.csv` UTF-8. *(Décisions H7, H8.)*
+- **RG-IMP-02** Deux modes : **ENTRÉE** (défaut) — la quantité de chaque ligne, **exprimée dans l'unité de la ligne** et convertie en unité de base, **s'ajoute** au stock (« 5 cartons » + « 20 pièces » = 380 pièces si carton × 72) ; **INVENTAIRE** — la somme des quantités converties **remplace** le stock théorique (responsable, double confirmation, chaque écart devient un ajustement motivé « inventaire »). Une ligne à `quantite` = 0 ne sert qu'à créer ou mettre à jour l'unité de vente et son prix.
+- **RG-IMP-03** Code connu → mise à jour des attributs renseignés (colonnes vides = inchangé) + mouvement de stock ; code inconnu → création. Unité connue pour ce code → mise à jour (prix, plafond, actif) ; unité inconnue → création de l'unité de vente. Un `prix_vente` différent du prix en vigueur crée un **nouveau prix daté** (RG-ART-07) avec pour origine le numéro de l'import ; un prix identique ne crée rien. Sur les lignes d'un même article, `categorie` et `designation` sont lues sur la première ligne et peuvent être vides ensuite ; des valeurs **différentes** entre lignes sont une erreur bloquante. Un `facteur` différent de celui d'une unité déjà utilisée par une commande est une erreur bloquante (RG-ART-06).
+- **RG-IMP-04 Déroulement en quatre temps** *(décision H8)* :
+  1. **Dépôt** du fichier ; choix du mode et de la **date d'entrée** (défaut : aujourd'hui).
+  2. **Visualisation** des données telles qu'elles seront enregistrées : tableau complet ligne par ligne (création / mise à jour d'article ou d'unité de vente, quantité convertie en unité de base et stock avant → après, prix avant → après avec variation en %), totaux (créations, mises à jour, quantités entrantes, **prix modifiés**), erreurs bloquantes ligne par ligne (code manquant, doublon code × unité dans le fichier, quantité, facteur ou prix non numérique, quantité négative, facteur nul, unité manquante, article sans unité de base, désignation ou catégorie divergente entre lignes d'un même code…) et avertissements (aucun prix → article non vendable, catégorie nouvelle, **variation de prix supérieure à ±30 %**…).
+  3. **Annulation** possible à tout moment avant validation : rien n'est enregistré, l'import est tracé « annulé ».
+  4. **Validation** par le responsable : enregistrement en une seule opération indivisible, horodatée (date d'import) ; mouvements de stock créés avec la date d'entrée.
+- **RG-IMP-05** Import **tout ou rien** : une erreur bloquante empêche la validation. Option « importer uniquement les lignes valides » avec rapport des lignes ignorées.
+- **RG-IMP-06** Chaque import est historisé : fichier conservé, auteur, date d'import, date d'entrée, mode, statut, résumé, mouvements générés. Un import **validé** ne s'annule pas ; on le corrige par un import inverse ou des ajustements.
 - **RG-IMP-07** Import réservé au **responsable** (et à l'admin).
+- **RG-IMP-08** La date d'import et la date d'entrée sont visibles sur la fiche article (dernière entrée) et sur chaque mouvement ; l'export des mouvements est filtrable par import.
 
 ## 9. Exports Excel
 
-- **RG-EXP-01** Exports disponibles (filtres par période, article, acteur selon le cas) : mouvements de stock ; état du stock (théorique, réservé, disponible, valeur au prix de vente) ; ventes (factures et lignes) ; encaissements par moyen de paiement ; remises accordées ; clôtures de caisse ; journal d'audit ; files d'attente et temps d'attente.
+- **RG-EXP-01** Exports disponibles (filtres par période, article, acteur selon le cas) : mouvements de stock (en unité de base, avec l'unité et la quantité saisies) ; état du stock (théorique, réservé, disponible en unité de base, valeur au prix en vigueur de l'unité de base, date de dernière entrée) ; **grille de prix** (article × unité de vente, facteur, prix en vigueur, plafond) ; **historique des prix** (article, unité, date d'effet, prix, variation, origine, auteur) ; ventes (factures et lignes, avec unité de vente et quantité en unité de base) ; encaissements par moyen de paiement ; remises accordées (dans plafond / par code) ; codes de remise émis ; clôtures de caisse ; journal d'audit ; files d'attente et temps d'attente ; clients.
 - **RG-EXP-02** Colonnes définies et stables (les agents ne les renomment pas sans mettre à jour ce document) ; en-têtes en français ; nombres natifs (RG-FMT-02).
 - **RG-EXP-03** Accès : boss et responsable (tous), caissier (ses clôtures), admin (journal).
 
@@ -322,23 +345,25 @@ Voir RG-FAC. La facture est produite en PDF, imprimable en A4 et, en option, en 
 | Bon de livraison | À la livraison | A4 | [V1.1] |
 | Reçu d'acompte | Si paiement partiel activé | A4 / 80 mm | [V1.1] |
 
-- **RG-PDF-01** Impression depuis le navigateur (dialogue d'impression) en MVP ; impression directe sur imprimante thermique via le serveur **[V1.1]**.
+- **RG-PDF-01** Impression depuis le navigateur (dialogue d'impression) en MVP ; impression directe sur imprimante thermique via le serveur **[V1.1]**. *(Décision H10.)*
 
 ## 11. Tableau de bord du boss
 
-Accessible à distance sur téléphone et PC, en lecture seule, actualisé en temps réel.
+Accessible à distance sur téléphone et PC, actualisé en temps réel. *(Décision H13 : le boss consulte ; sa seule action est d'accorder les remises exceptionnelles.)*
 
-- **RG-DSH-01** Indicateurs du jour (et sur toute période choisie) : **total encaissé** et détail **par moyen de paiement** ; nombre de factures ; **quantités vendues** (total, par article, par catégorie) ; panier moyen ; remises accordées (montant, % du brut) ; avoirs ; ventes par commercial ; ventes par heure.
+- **RG-DSH-01** Indicateurs par **heure, jour, semaine, mois** et période libre : **total encaissé** et détail **par moyen de paiement** ; nombre de factures ; **quantités vendues** (par article en unité de base, détail par unité de vente, par catégorie) ; panier moyen ; remises accordées (montant, % du brut, dans plafond / par code) ; avoirs ; ventes par commercial ; ventes par heure de la journée.
 - **RG-DSH-02** Files en direct : nombre en attente caisse / livraison, temps d'attente moyen et maximum du jour, payé non livré.
-- **RG-DSH-03** Stock : articles sous le seuil d'alerte, top 20 des ventes avec disponible restant.
+- **RG-DSH-03** Stock : articles sous le seuil d'alerte, top 20 des ventes avec disponible restant. Prix : **modifications de prix de la période** (article, unité, ancien → nouveau, %, origine, auteur) et courbe d'évolution d'un article choisi (RG-ART-07).
 - **RG-DSH-04** Comparaisons : veille, même jour de la semaine précédente, semaine, mois.
-- **RG-DSH-05** Notifications au boss **[V1.1]** : résumé de fin de journée, remise supérieure à un seuil, clôture avec écart, stock sous seuil.
-- **RG-DSH-06** Le responsable voit le même tableau de bord, limité au magasin, plus la supervision des files (RG-DSP-04).
+- **RG-DSH-05** Notifications au boss : **[MVP]** demande de remise exceptionnelle (RG-REM-03), avec accord/refus en un geste et affichage du code émis ; **[V1.1]** résumé de fin de journée, clôture avec écart, stock sous seuil.
+- **RG-DSH-06** Le responsable voit le même tableau de bord, limité au magasin, plus la supervision des files (RG-DSP-04) ; il ne voit pas les demandes de remise adressées au boss autrement qu'en lecture.
+- **RG-DSH-07** Hors remises exceptionnelles (RG-REM-03/04), le boss ne modifie rien ; s'il veut agir comme responsable, l'admin lui attribue aussi ce rôle (RG-USR-02) et ses actions sont journalisées sous ce rôle.
 
 ## 12. Historique
 
-- Fiche commande : chronologie complète (création, validation, appels, remises, paiement, facture, livraison) avec acteur et heure.
-- Fiche article : mouvements de stock et ventes.
+- Fiche commande : chronologie complète (création, validation, appels, remises et codes, paiement, facture, livraison) avec acteur et heure.
+- Fiche article : mouvements de stock (avec dates d'import et d'entrée) et ventes.
+- Fiche client : commandes, factures, remises et codes obtenus.
 - Fiche utilisateur : activité (commandes, paiements, décisions).
 - Journal d'audit global filtrable (RG-AUD).
 
@@ -351,69 +376,96 @@ Accessible à distance sur téléphone et PC, en lecture seule, actualisé en te
 | `vat_enabled` / `vat_rate` / `prices_include_vat` | non / 20 % / oui | TVA optionnelle |
 | `cash_rounding` | aucun | Arrondi espèces (RG-FMT-04) |
 | `invoice_prefix` / `credit_note_prefix` / `quote_prefix` | F / AV / D | Préfixes de numérotation |
-| `reservation_ttl_minutes` | 30 | Durée de réservation avant expiration |
+| `day_end_time` | 23:59 | Fin de journée : expiration des réservations (RG-STK-02) et des codes de remise (RG-REM-04) ⚠️ H16 |
 | `quote_validity_days` | 7 | Validité d'un devis |
-| `default_discount_policy` / `default_max_discount_pct` | VALIDATION / 0 | Politique par défaut à l'import |
-| `cashier_max_discount_pct` | 10 | Plafond d'approbation du caissier |
-| `discount_reasons` / `adjustment_reasons` | listes | Motifs proposés |
+| `default_max_discount_pct` | 0 | Plafond de remise si ni l'article ni sa catégorie n'en ont |
+| `discount_code.length` | 8 | Longueur des codes de remise |
+| `discount_reasons` / `adjustment_reasons` | listes | Motifs proposés (demande de remise exceptionnelle, ajustement) |
 | `payment_methods` | 7 moyens | Liste, référence obligatoire, ordre |
 | `allow_partial_payment` | non | Acomptes [V1.1] |
-| `display.sound` / `display.last_calls` | oui / 5 | Écran public |
+| `display.enabled` / `display.sound` / `display.last_calls` | non / oui / 5 | Écran public (0 ou 1) ; sans écran, appel verbal |
 | `session.lock_minutes.tablet` / `.register` | 5 / 15 | Verrouillage inactivité |
-| `stations` | — | Liste des postes (caisses, comptoirs, écrans) |
+| `stations` | — | Postes déclarés : tablettes, caisses, comptoirs, écran — nombre libre, modifiable à tout moment (RG-NFR, décision H11) |
 
 ## 14. Exigences non fonctionnelles (vue métier)
 
 - **Simplicité** : un commercial doit créer une commande de 5 lignes en moins d'une minute après une heure de formation. Boutons larges, lisibles au soleil, utilisables au doigt.
-- **Réactivité** : toute action courante répond en moins d'une seconde sur le réseau local ; un appel apparaît sur l'écran public en moins de deux secondes.
-- **Continuité** : le magasin fonctionne sans Internet (serveur local). Sans Wi-Fi local, rien ne fonctionne : le Wi-Fi du magasin est une infrastructure critique (onduleur, point d'accès de secours).
+- **Réactivité** : toute action courante répond en moins d'une seconde sur le réseau local ; un appel apparaît sur l'écran public ou le poste appelant en moins de deux secondes ; une demande de remise atteint le boss en moins de cinq secondes (Internet disponible).
+- **Continuité** : le magasin fonctionne sans Internet (serveur local) ; seule la notification du boss à distance dépend d'Internet (en son absence, le boss peut être joint par téléphone et émettre le code à son retour en ligne, ou un code déjà émis reste utilisable). Sans Wi-Fi local, rien ne fonctionne : le Wi-Fi du magasin est une infrastructure critique (onduleur, point d'accès de secours).
 - **Perte de données** : au plus 15 minutes en cas de sinistre (sauvegarde cloud), reprise en moins de 2 heures sur une machine de secours.
-- **Volumes cibles** : ≤ 30 utilisateurs simultanés, ≤ 2 000 commandes/jour, ≤ 50 000 articles, 10 ans d'historique consultables.
+- **Postes** : **autant de tablettes, de caisses et de comptoirs que nécessaire**, déclarés par l'admin dans `stations` au démarrage et modifiables ensuite sans arrêt du service ; 0 ou 1 écran public. *(Décision H11.)* Dimensionnement cible du matériel : ≤ 30 utilisateurs simultanés, ≤ 2 000 commandes/jour, ≤ 50 000 articles, 10 ans d'historique consultables.
 - **Langue** : français ; nombres et dates au format malgache/français (§6.7).
-- **Appareils** : tablettes Android 10" (Chrome), PC Windows (Chrome/Edge), téléphone (Android/iOS) pour le boss, TV avec navigateur pour l'écran public.
+- **Appareils** : tablettes Android 10" (Chrome), PC Windows (Chrome/Edge), téléphone (Android/iOS) pour le boss, TV avec navigateur pour l'écran public éventuel.
 
 ## 15. Priorisation
 
 | Lot | Contenu |
 |---|---|
-| **[MVP]** — première mise en service | Comptes et rôles, PIN, 2FA boss/admin · Import articles (ENTRÉE et INVENTAIRE) · Catalogue, disponibilité, réservation, expiration · Devis, commande, ticket, remises 3 niveaux avec validation · Files caisse et livraison, écran public, supervision et réordonnancement · Paiement multi-moyens, facture PDF A4, avoir total/partiel · Sessions et clôture de caisse simple · Livraison, sortie de stock, anomalies · Exports (mouvements, ventes, encaissements, stock, audit) · Tableau de bord boss (RG-DSH-01 à 04) · Journal d'audit · Déploiement magasin (serveur local, tunnel, DNS, sauvegardes, onduleur) |
-| **[V1.1]** | Retours après livraison · Bon de livraison · Ticket 80 mm et impression thermique directe · Mini-ticket d'appel imprimé · Paiement partiel / acompte · Validation des clôtures par le responsable · Notifications au boss · Fiche client enrichie (historique) |
+| **[MVP]** — première mise en service | Comptes et rôles, PIN, 2FA boss/admin · Postes paramétrables · Import articles en quatre temps (ENTRÉE et INVENTAIRE, une ligne par article × unité) · Catalogue, **unités de vente et grille de prix, historique des prix** (consultation sur la fiche article, export), disponibilité en unité de base, réservation jusqu'à fin de journée, expiration · Répertoire clients (nom + téléphone) · Devis, commande, ticket · Remises plafonnées + demande au boss + codes de remise, notification du boss · Files caisse et livraison, écran public optionnel ou appel verbal, supervision et réordonnancement · Paiement multi-moyens, facture PDF A4, avoir total/partiel · Sessions et clôture de caisse simple · Livraison multi-comptoirs, sortie de stock, anomalies · Exports (mouvements, ventes, encaissements, stock, remises, codes, audit) · Tableau de bord boss (RG-DSH-01 à 04, horaire → mensuel) · Journal d'audit · Déploiement magasin (serveur local, tunnel, DNS, sauvegardes, onduleur) |
+| **[V1.1]** | Prix à date d'effet future (RG-ART-07) · Retours après livraison · Bon de livraison · Ticket 80 mm et impression thermique directe · Mini-ticket d'appel imprimé · Paiement partiel / acompte · Validation des clôtures par le responsable · Autres notifications au boss (fin de journée, écarts, stock) · Fiche client enrichie (historique détaillé, notes) |
 | **[V2]** | Réplique cloud en lecture seule (tableau de bord même magasin hors ligne) · Multi-magasins · Articles à variantes · Fidélité · Application APK/TWA si un besoin réel apparaît |
 
-## 16. Hypothèses à valider ⚠️
+## 16. Hypothèses — décisions et points ouverts ⚠️
+
+### 16.1 Hypothèses tranchées le 21/09/2026
+
+| # | Hypothèse initiale | Décision de l'utilisateur | Règles impactées |
+|---|---|---|---|
+| H1 | Un seul magasin en V1 | Un seul magasin ; **plusieurs magasiniers** (et comptoirs) | §2.2, RG-USR-08, RG-LIV-02 |
+| H2 | Lettre du ticket = commercial qui valide | **OK** | RG-USR-07, RG-TKT-01 |
+| H3 | Réservation 30 min | **Pas de limite dans la journée** : expiration en fin de journée | RG-STK-02, RG-CMD-08, `day_end_time` |
+| H4 | Plafond d'approbation caissier 10 % | **Plus d'approbation par le caissier.** Remises paramétrées d'avance ; au-delà, seul le boss, par un **code unique** | §6.2 entier, §5.6, annexe B |
+| H5 | Politique par défaut = VALIDATION | Remplacée par des **plafonds** (défaut 0 %) | RG-REM-01 |
+| H6 | Sortie de stock à la livraison | **OK** ; le disponible déduit toutes les commandes validées non livrées (file caisse comprise) | RG-CMD-02, RG-STK-01 |
+| H7 | Quantités entières par défaut | **Décimales partout** ; article = code unique, catégorie, désignation, unité de comptage, quantité ; date d'importation | RG-ART-01/04/05, RG-IMP-01, annexe A |
+| H8 | Import tout ou rien | **OK**, en quatre temps : dépôt → visualisation → annulation possible → validation | RG-IMP-04/05/06 |
+| H9 | NIF, STAT, RCS | **OK** | RG-FAC-07 |
+| H10 | Impression navigateur en MVP | **OK** | RG-PDF-01 |
+| H11 | 3–5 tablettes, 1–2 caisses, 1 comptoir, 1 écran | **Nombre libre** de tablettes, caisses, comptoirs ; 1 écran ou appel verbal ; paramétrable au départ et modifiable | §14, §13 `stations`, RG-DSP-01/05 |
+| H12 | Client anonyme par défaut | **Non** : nom + contact obligatoires | RG-DEV-04, RG-FAC-02 |
+| H13 | Boss en lecture seule | Tableau de bord horaire/journalier/… ; **notification** des demandes de remise spéciale et **code** appliqué automatiquement à la facturation et au paiement | §11, RG-REM-03/04, RG-DSH-05/07 |
+| H18 | Un prix par article | **Grille de prix par unité de vente** ; stock tenu dans une **unité de base** avec facteur de conversion par unité ; import une ligne par couple article × unité ; plafond de remise par article, surcharge possible par unité ; **historique des prix** avec date d'effet et suivi de l'évolution | RG-ART-03/04/06/07, RG-REM-01, RG-CMD-02/04, RG-STK-01, RG-IMP-01/02/03, RG-EXP-01, RG-DSH-03, annexe A |
+
+Les ADR 0001 à 0004 ont été **acceptés** par l'utilisateur le 21/09/2026.
+
+### 16.2 Points nouveaux à confirmer
 
 | # | Hypothèse | Règle | Alternative |
 |---|---|---|---|
-| H1 | Un seul magasin en V1 | §2.2 | Multi-magasins dès le départ → change l'architecture (ADR-0001) |
-| H2 | Lettre du ticket = commercial qui valide | RG-TKT-01 | Lettre = type de vente, ou lettre unique + numéro global |
-| H3 | Durée de réservation 30 min | RG-STK-02 | 15 / 60 min ; ou pas d'expiration (risque de stock bloqué) |
-| H4 | Plafond d'approbation caissier 10 % | RG-REM-03 | Autre valeur ; ou caissier sans pouvoir d'approbation |
-| H5 | Politique de remise par défaut = VALIDATION | RG-REM-01 | LIBRE avec plafond, ou INTERDIT |
-| H6 | Sortie de stock à la livraison (pas au paiement) | RG-STK-04 | Sortie au paiement (plus simple, mais « payé non livré » invisible en stock) |
-| H7 | Quantités entières par défaut, décimales sur option | RG-ART-04 | Toujours entières |
-| H8 | Import `.xlsx` (+ `.csv`), tout ou rien | RG-IMP-01/05 | `.xls` ancien format à supporter ? |
-| H9 | Mentions légales : NIF, STAT, RCS | RG-FAC-07 | À confirmer avec le comptable |
-| H10 | Impression navigateur en MVP, thermique en V1.1 | RG-PDF-01 | Thermique dès le MVP si les tickets 80 mm sont indispensables |
-| H11 | Nombre de postes : 3–5 tablettes, 1–2 caisses, 1 comptoir livraison, 1 écran | §14 | À préciser (dimensionnement Wi-Fi et matériel) |
-| H12 | Client anonyme par défaut | §5.3 | Nom/téléphone obligatoires |
-| H13 | Le boss ne modifie rien (lecture seule) | §3.1 | Boss = responsable + boss (cumul de rôles possible, RG-USR-02) |
+| H14 | Le **prix de vente** n'est pas dans les colonnes minimales du fichier : colonne `prix_vente` facultative ; un article dont aucune unité de vente n'a de prix est importé mais non vendable jusqu'à saisie d'un prix par le responsable | RG-ART-03, annexe A | Prix obligatoire dans le fichier |
+| H15 | Les **plafonds de remise** sont paramétrés par le responsable (fiche article / catégorie / import) ; le boss les voit et peut les modifier | RG-REM-01, annexe B | Réservés au boss ; ou responsable propose, boss approuve |
+| H16 | **Fin de journée** = 23:59 par défaut (paramètre `day_end_time`) | RG-STK-02, RG-REM-04 | Heure de fermeture réelle (ex. 18:00) ; ou clôture manuelle par le responsable |
+| H17 | Un code émis **en réponse à une demande** est rattaché automatiquement à la commande dès l'accord du boss (le code reste affiché comme preuve) ; la saisie manuelle sert aux codes émis sans demande ou communiqués par téléphone | RG-REM-04 | Saisie manuelle toujours obligatoire |
 
 ## Annexe A — Modèle Excel d'import des articles
 
+**Une ligne par couple article × unité de vente** (RG-IMP-01). Les colonnes d'article (`categorie`, `designation`, `code_barres`, `seuil_alerte`, `actif`, `remise_max_pct` article) se lisent sur la première ligne du code ; elles peuvent rester vides sur les suivantes.
+
 | Colonne | Obligatoire | Type | Exemple | Remarque |
 |---|---|---|---|---|
-| `reference` | oui | texte | `SAV-001` | Clé unique (RG-ART-01) |
-| `designation` | oui (à la création) | texte | `Savon de Marseille 300 g` | |
-| `categorie` | non | texte | `Hygiène` | Créée si inconnue |
-| `unite` | non | texte | `pièce` | Défaut : pièce |
-| `prix_vente` | oui (à la création) | nombre | `4500` | En Ariary, 2 décimales max |
-| `quantite` | oui | nombre | `120` | ENTRÉE : ajoutée ; INVENTAIRE : remplace |
-| `politique_remise` | non | LIBRE / VALIDATION / INTERDIT | `LIBRE` | Défaut : paramètre |
-| `remise_max_pct` | non | nombre | `5` | Utilisée si LIBRE |
-| `code_barres` | non | texte | `6111234567890` | Unique si renseigné |
-| `seuil_alerte` | non | nombre | `10` | Défaut : 0 (pas d'alerte) |
-| `qte_decimale` | non | OUI / NON | `NON` | RG-ART-04 |
-| `actif` | non | OUI / NON | `OUI` | NON = désactive l'article |
+| `code` | **oui** | texte | `SAV-001` | Code unique de l'article (RG-ART-01) ; répété sur chaque ligne d'unité |
+| `categorie` | **oui** (1re ligne du code) | texte | `Hygiène` | Créée si inconnue |
+| `designation` | **oui** (1re ligne du code) | texte | `Savon de Marseille 300 g` | |
+| `unite` | **oui** | texte | `pièce`, `paquet`, `carton` | Unité de vente de la ligne ; unique par article (RG-ART-06) |
+| `facteur` | non | nombre (3 décimales) | vide, `1`, `6`, `72` | Nombre d'unités de base ; vide ou `1` = **unité de base** (une et une seule par article) |
+| `quantite` | **oui** | nombre (2 décimales) | `5` ou `12,5` | Dans l'unité de la ligne, convertie en unité de base ; ENTRÉE : ajoutée ; INVENTAIRE : la somme remplace ; `0` = ligne de prix seulement |
+| `prix_vente` | non ⚠️ H14 | nombre | `4500` | Prix de l'unité de la ligne, en Ariary ; différent du prix en vigueur → nouveau prix daté (RG-ART-07) |
+| `remise_max_pct` | non | nombre | `5` | Sur la ligne d'unité de base : plafond de l'article ; sur une autre ligne : surcharge pour cette unité (RG-REM-01) ; vide = héritage |
+| `code_barres` | non | texte | `6111234567890` | Unique si renseigné ; par unité de vente (le carton peut avoir son propre code-barres) |
+| `seuil_alerte` | non | nombre | `10` | En unité de base ; défaut : 0 (pas d'alerte) |
+| `actif` | non | OUI / NON | `OUI` | Sur la ligne d'unité de base : active/désactive l'article ; sur une autre ligne : l'unité de vente |
+
+Exemple :
+
+| code | categorie | designation | unite | facteur | quantite | prix_vente |
+|---|---|---|---|---|---|---|
+| SAV-001 | Hygiène | Savon de Marseille 300 g | pièce | | 20 | 4500 |
+| SAV-001 | | | paquet | 6 | 0 | 25000 |
+| SAV-001 | | | carton | 72 | 5 | 280000 |
+
+→ entrée de 20 + 5 × 72 = **380 pièces** ; trois unités de vente avec leur prix.
+
+La **date d'entrée** n'est pas une colonne : elle est choisie à l'import pour tout le fichier (défaut : jour de l'import) et la date d'import est horodatée automatiquement (RG-ART-05, RG-IMP-04). La **date d'effet** des prix importés est la date de validation de l'import.
 
 ## Annexe B — Matrice des droits
 
@@ -421,17 +473,23 @@ Accessible à distance sur téléphone et PC, en lecture seule, actualisé en te
 
 | Fonction | Commercial | Caissier | Magasinier | Responsable | Boss | Admin |
 |---|---|---|---|---|---|---|
-| Catalogue, disponibilité | L | L | L | L, M (prix) | L | L |
-| Import articles | — | — | — | C | — | C |
+| Catalogue, disponibilité, prix en vigueur | L | L | L | L, M | L | L |
+| Unités de vente et grille de prix (créer, désactiver, nouveau prix) | — | — | — | C, M | — | L |
+| Historique des prix (consulter, exporter) | — | — | — | L | L | L |
+| Plafonds de remise (article, unité, catégorie) | L | L | — | M | M ⚠️ H15 | L |
+| Import articles (dépôt, visualisation, annulation, validation) | — | — | — | C | — | C |
 | Ajustement de stock | — | — | — | C | — | C (assisté) |
+| Clients (répertoire) | C, M | L, M | — | L, M (fusion) | L | L |
 | Devis | C, M (siens) | L | — | L, M | L | L |
 | Commande : valider | V (siennes) | — | — | V | — | — |
-| Commande : modifier avant paiement | M (siennes, avant file) | M (lignes, remises) | — | M | — | — |
-| Remise : proposer | C (dans politique) | C | — | C | — | — |
-| Remise : approuver | — | V (≤ plafond) | — | V | — | — |
+| Commande : modifier avant paiement | M (siennes, avant file) | M (supprimer ligne, baisser qté) | — | M | — | — |
+| Remise dans le plafond : appliquer | C | — | — | C | — | — |
+| Remise exceptionnelle : demander au boss | C | C | — | C | — | — |
+| Remise exceptionnelle : accorder / refuser, émettre un code, révoquer | — | — | — | — | **V, C** | — |
+| Code de remise : saisir sur une commande | C | C | — | C | — | — |
 | File caisse : appeler / absent | — | C | — | C | — | — |
 | File livraison : appeler / absent | — | — | C | C | — | — |
-| Files : réordonner, prioriser | — | — | — | M | — | — |
+| Files : réordonner, prioriser, réaffecter | — | — | — | M | — | — |
 | Paiement, facture | — | C | — | C | — | — |
 | Annulation avant paiement | C (siennes) | C | — | C | — | — |
 | Annulation après paiement (avoir) | — | C | — | V | — | — |
@@ -441,7 +499,7 @@ Accessible à distance sur téléphone et PC, en lecture seule, actualisé en te
 | Tableau de bord | siens | siens | — | L | L | L |
 | Exports | — | ses clôtures | — | L | L | L (audit) |
 | Journal d'audit | — | — | — | L | L | L |
-| Comptes, rôles, PIN | — | — | — | — | — | C, M |
+| Comptes, rôles, PIN, postes | — | — | — | — | — | C, M |
 | Paramètres | — | — | — | L | L | M |
 | Corrections assistées | — | — | — | — | — | C |
 | Sauvegardes, restauration | — | — | — | — | — | C |

@@ -1,6 +1,6 @@
 # ADR-0001 — Serveur local maître au magasin, accès distant par tunnel, pas de synchronisation bidirectionnelle
 
-Date : 21/09/2026 · Statut : **Proposé** (à accepter par l'utilisateur)
+Date : 21/09/2026 · Statut : **Accepté** par l'utilisateur le 21/09/2026
 
 ## Contexte
 Le magasin doit vendre même sans Internet ; le boss doit voir ventes et encaissements en temps réel depuis l'extérieur. Un cloud seul bloque la vente en cas de coupure ; une synchronisation bidirectionnelle entre un serveur local et un cloud impose la résolution de conflits (files d'attente, réservations, numéros de facture) et multiplie les bugs. Or le « temps réel » du boss exige de toute façon que le magasin soit connecté à cet instant.

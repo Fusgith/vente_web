@@ -1,6 +1,6 @@
 # ADR-0003 — Monorepo TypeScript : React + Vite (PWA), Fastify + Prisma, PostgreSQL, Docker Compose
 
-Date : 21/09/2026 · Statut : **Proposé** (à accepter par l'utilisateur)
+Date : 21/09/2026 · Statut : **Accepté** par l'utilisateur le 21/09/2026
 
 ## Contexte
 Le projet sera développé principalement par des agents de codage IA. Chaque langage, framework ou outil supplémentaire est du contexte à charger et une source d'incohérence entre sessions. Le serveur cible est un mini-PC modeste. Il faut du temps réel (files, appels), des PDF, de l'Excel et une base transactionnelle solide.
