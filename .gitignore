@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+files/
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Livrables construits : reproductibles depuis Source/
+Dist/*
+!Dist/README.md
