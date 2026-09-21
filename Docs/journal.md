@@ -2,6 +2,32 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 21/09/2026 (suite 3) — **GO donné le 21/09/2026** — T-010 scaffolding — agent : Claude Code (Opus 5)
+
+**GO pour coder donné par l'utilisateur le 21/09/2026** (message : « Go pour le codage maintenant »). Fin de la phase spécification ; `CLAUDE.md` mis à jour. Points H14–H17 non tranchés : on code selon les hypothèses écrites (⚠️ maintenues dans le CDC métier), à confirmer.
+
+**Fait** : commit `3e5bb0b` (CDC v0.3) poussé par l'utilisateur. Branche `feat/T-010-scaffolding` créée ; T-010 en cours (voir point d'étape ci-dessous). `CLAUDE.md` : section statut, stack et interdits réécrits pour l'après-GO ; backlog T-008 → Fait.
+
+**Point d'étape T-010 (16 h, après un crash du PC — tous les fichiers ont survécu)** — scaffolding `Source/` conforme au CDC technique §4 :
+- Racine : `package.json` (privé, `packageManager` pnpm 12.5.1, `engines` Node ≥ 22.12, scripts `dev/build/lint/typecheck/test/format/check/db:*`), `pnpm-workspace.yaml` (+ `allowBuilds: esbuild`, pnpm 12 bloque les scripts post-install par défaut), `.npmrc`, `.env.example`, `vitest.config.ts` (projets `shared`, `api`, `web`), `eslint.config.js`, `prettier.config.js`.
+- `packages/config` : `tsconfig.base.json` (strict, `exactOptionalPropertyTypes`, `verbatimModuleSyntax`), ESLint flat (`eslint.js` — pas `eslint.config.js`, sinon ESLint 10 le prend pour une config locale vide), Prettier.
+- `packages/shared` : `formatMga`, `formatQty`, `roundHalfUp` (arrondi demi-supérieur exact en arithmétique entière, `1.005 → 1.01`) — 10 tests citant RG-FMT-01 / RG-ART-04.
+- `apps/api` : Fastify 5, `buildApp()` testable par `inject`, `env.ts` validé par zod, `GET /healthz` (CDC §10.5) — 3 tests ; démarrage réel vérifié (`{"status":"ok","version":"0.1.0"}`).
+- `apps/web` : React 19 + Vite 8 + `vite-plugin-pwa` (manifeste FR, `/api` et `/socket.io` jamais servis par le cache) + Tailwind v4 ; libellés FR dans `labels.ts` ; 2 tests (jsdom + Testing Library) dont un sur l'espace insécable de RG-FMT-01.
+- `infra/docker-compose.yml` : PostgreSQL 16 de dev uniquement (prod : T-080). `.github/workflows/ci.yml` : install → lint → format → typecheck → test → build. `.claude/` : commandes `debut-session`, `fin-session`, `adr` ; `settings.json` (allow `pnpm …`, `docker compose …`, `git status/diff/log` ; deny `.env`, `push --force`, `reset --hard`, `rm -rf`). `Source/CLAUDE.md` (27 lignes).
+- **Résultats** : `pnpm lint` ✅ · `pnpm typecheck` ✅ (3 paquets) · `pnpm test` ✅ 16/16 · `pnpm build` ✅ (web 221 kB, SW généré) · `pnpm format:check` ✅.
+
+**Décisions techniques** (pas d'ADR : elles ne contredisent aucun ADR, versions seulement) :
+- **React 19** au lieu de 18 (CDC technique §3 mis à jour) : version stable courante, exigée par `@vitejs/plugin-react` 6 / Vite 8 ; aucune raison de démarrer sur une majeure en fin de vie.
+- **TypeScript 5.9** (pas 7.x) : `typescript-eslint` n'accepte pas encore TS ≥ 6.1 ; à réévaluer quand l'écosystème suit.
+- `@types/node` 22 dans l'API pour coller à la cible de production (Node 22 LTS), même si la machine de dev a Node 24.
+- pnpm sans installation globale : shim corepack dans `%APPDATA%\npm` (pas de droits admin sur `Program Files`) ; la version reste pilotée par `packageManager`.
+- Husky **non installé** : la racine git (`Vente WEB/`) n'est pas `Source/` ; un hook s'installe mal depuis un sous-dossier. La CI joue le rôle de garde-fou ; à revoir si besoin (tâche T-010b).
+
+**Dépendances ajoutées (justification, 03 §3.2)** — prod : `fastify` 5.12 (figé ADR-0003), `zod` 4.6 (schémas partagés, validation env), `react`/`react-dom` 19.3 ; dev : `typescript` 5.9, `vitest` 5 (+ `jsdom`, `@testing-library/react`, `@testing-library/jest-dom` pour le front), `vite` 8 + `@vitejs/plugin-react` 6 + `vite-plugin-pwa` 1.3 (SW/manifeste, ADR-0002), `tailwindcss` 4 + `@tailwindcss/vite` (sans PostCSS), `eslint` 10 + `@eslint/js` + `typescript-eslint` 8 + `eslint-plugin-react-hooks` + `eslint-plugin-react-refresh` + `eslint-config-prettier` + `globals`, `prettier` 3.9, `tsx` (exécution TS en dev sans build), `pino-pretty` (logs lisibles en dev seulement ; pino est fourni par Fastify), `@types/node`, `@types/react`, `@types/react-dom`. Écartés : Husky (voir ci-dessus), shadcn/ui (à initialiser avec le premier écran, T-021/T-030), Prisma (T-011), Socket.IO (T-032/T-040), Playwright (T-083).
+
+**Reste** : commit + push + PR par l'utilisateur (commandes fournies) ; T-011 ensuite. Suivi : T-010b (Husky ou équivalent), icônes PNG 192/512 depuis le logo de `Autres/` (T-010c).
+
 ## 21/09/2026 (suite 2) — Grille de prix par unité, historique des prix, ADR acceptés — CDC v0.3 — agent : Claude Code (Opus 5)
 
 **Fait** : à la demande de l'utilisateur (« un tableau de prix pour les articles par unité de comptage », « gestion de l'historique et de son évolution »), CDC métier et technique passés en **v0.3** ; glossaire et backlog alignés.

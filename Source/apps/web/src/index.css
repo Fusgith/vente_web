@@ -1,0 +1,6 @@
+@import 'tailwindcss';
+
+/* Touch-first defaults for tablets (CDC technique §3: gros boutons tactiles). */
+@theme {
+  --font-sans: 'Segoe UI', system-ui, sans-serif;
+}

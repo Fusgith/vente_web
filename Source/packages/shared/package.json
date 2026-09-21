@@ -1,0 +1,25 @@
+{
+  "name": "@vente-web/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Pure business rules shared by the API and the PWA (formatting, pricing, discounts…)",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "development": "./src/index.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -b"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vitest": "^5.0.1"
+  }
+}

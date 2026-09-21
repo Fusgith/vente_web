@@ -1,0 +1,33 @@
+{
+  "name": "vente-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Sales management PWA for a general-merchandise shop (Madagascar) — pnpm monorepo",
+  "packageManager": "pnpm@12.5.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel --stream run dev",
+    "build": "pnpm -r run build",
+    "typecheck": "pnpm -r run typecheck",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:up": "docker compose -f infra/docker-compose.yml up -d",
+    "db:down": "docker compose -f infra/docker-compose.yml down",
+    "db:logs": "docker compose -f infra/docker-compose.yml logs -f postgres",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm format:check"
+  },
+  "devDependencies": {
+    "@vente-web/config": "workspace:*",
+    "eslint": "^10.11.0",
+    "prettier": "^3.9.8",
+    "typescript": "~5.9.3",
+    "vitest": "^5.0.1"
+  }
+}

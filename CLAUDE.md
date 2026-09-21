@@ -8,11 +8,10 @@ commercial sur tablette (devis → commande, remises dans les plafonds), caisse 
 livraison par plusieurs magasiniers, appel des clients par numéro ou verbal, boss à distance
 (tableau de bord ; remises exceptionnelles accordées par code à usage unique).
 
-## ⛔ Statut : PHASE SPÉCIFICATION — AUCUN CODE SANS « GO »
-- Tant que l'utilisateur n'a pas écrit explicitement **GO** (ou « GO pour coder ») dans la conversation,
-  on ne produit **aucun code applicatif** : pas de `package.json`, pas de scaffolding, pas de script.
-- Travail autorisé sans GO : rédaction et amendement des documents de `Docs/`, ADR, backlog, journal, ce fichier ; lecture de `Autres/`.
-- Le GO sera consigné dans `Docs/journal.md` avec sa date.
+## ✅ Statut : DÉVELOPPEMENT — GO donné le 21/09/2026 (`Docs/journal.md`)
+- Le code vit sous `Source/` ; on avance **une tâche du backlog à la fois** (`T-nnn`), sur une branche `feat/T-nnn-…`.
+- Les CDC restent la référence : une règle `RG-*` qui change se modifie d'abord dans `Docs/01-cdc-metier.md`.
+- Hypothèses encore ouvertes (H14–H17, CDC métier §16.2) : on code selon la formulation écrite, marquée ⚠️.
 
 ## Langues
 - Documentation, interface utilisateur, messages, journal : **français**.
@@ -20,7 +19,7 @@ livraison par plusieurs magasiniers, appel des clients par numéro ou verbal, bo
 
 ## Organisation du dépôt (`F:\Documents\Programmation\Vente WEB`)
 Distant `origin` : https://github.com/Fusgith/vente_web.git — branche principale `main`.
-- `Docs/` — spécifications, ADR, backlog, journal (les seuls fichiers modifiables avant le GO).
+- `Docs/` — spécifications, ADR, backlog, journal.
 - `Source/` — tout le code (monorepo) ; les commandes s'exécutent depuis ce dossier.
 - `Dist/` — livrables construits à déployer (serveur, clients) ; non versionné, jamais édité à la main.
 - `Autres/` — documents fournis par l'utilisateur (logos, manuels, exemples Excel) ; lecture seule pour l'agent.
@@ -57,12 +56,12 @@ Rôles fixes : l'admin attribue les rôles, il n'en crée pas. Détail : CDC mé
 - **Fin** : mettre à jour `Docs/journal.md` (fait / reste / décisions / questions) et `Docs/backlog.md`.
   Proposer un commit ; ne pas committer sans accord.
 
-## Stack (figée par ADR-0003, à instancier après le GO)
+## Stack (figée par ADR-0003)
 Monorepo TypeScript (pnpm) · React + Vite + PWA · Fastify + Prisma · PostgreSQL · Socket.IO ·
-Docker Compose · Vitest + Playwright. Commandes de build/test : à compléter après le GO.
+Docker Compose · Vitest + Playwright. Commandes (depuis `Source/`) : `pnpm install`, `pnpm dev`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` — détail dans `Source/CLAUDE.md`.
 
 ## Ce que l'agent ne fait jamais
-- Coder avant le GO. Committer ou pusher sans accord. Modifier un ADR existant (en créer un nouveau).
+- Committer ou pusher sans accord. Modifier un ADR existant (en créer un nouveau).
 - Toucher aux données de production, à la numérotation des factures ou au journal d'audit par script ad hoc.
 - Ajouter une dépendance sans la justifier dans le journal.
 - Inventer un besoin métier : en cas de doute, poser la question ou consigner l'hypothèse.

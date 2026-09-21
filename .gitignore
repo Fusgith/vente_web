@@ -12,3 +12,8 @@ desktop.ini
 # Livrables construits : reproductibles depuis Source/
 Dist/*
 !Dist/README.md
+
+# Outils de build et de test (Source/)
+Source/**/dev-dist/
+Source/**/coverage/
+*.tsbuildinfo

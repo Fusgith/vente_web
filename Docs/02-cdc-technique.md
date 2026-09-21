@@ -73,7 +73,7 @@ Réplication logique PostgreSQL (magasin → cloud) vers une instance qui ne re�
 |---|---|---|---|
 | Langage | TypeScript 5, Node.js LTS (22) | figé | Un seul langage, types partagés |
 | Monorepo | pnpm workspaces | recommandé | Simple, rapide, sans outillage lourd |
-| Front | React 18 + Vite + `vite-plugin-pwa` | figé (React) | Écosystème, PWA installable, tablette |
+| Front | React 19 + Vite + `vite-plugin-pwa` | figé (React) | Écosystème, PWA installable, tablette |
 | UI | Tailwind CSS + shadcn/ui | recommandé | Composants accessibles, gros boutons tactiles faciles |
 | État serveur | TanStack Query | recommandé | Cache, invalidation sur événements temps réel |
 | Formulaires / validation | react-hook-form + zod | recommandé | Schémas zod partagés avec l'API |

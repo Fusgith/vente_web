@@ -1,0 +1,13 @@
+{
+  "extends": "@vente-web/config/tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "types": ["vite/client", "vite-plugin-pwa/client", "@testing-library/jest-dom/vitest"]
+  },
+  "include": ["src", "vite.config.ts", "vitest.config.ts"],
+  "references": [{ "path": "../../packages/shared" }]
+}

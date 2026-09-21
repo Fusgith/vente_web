@@ -1,0 +1,25 @@
+# Development database only. Run from Source/: `pnpm db:up` (reads Source/.env).
+# Production stack (caddy, api, postgres, backup, cloudflared) comes with T-080.
+name: vente-web-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vente}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vente}
+      POSTGRES_DB: ${POSTGRES_DB:-vente_web}
+      TZ: ${TZ:-Indian/Antananarivo}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres-data:

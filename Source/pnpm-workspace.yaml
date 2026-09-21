@@ -1,0 +1,8 @@
+packages:
+  - apps/*
+  - packages/*
+
+# pnpm ≥ 10 refuses lifecycle scripts unless listed here (supply-chain guard).
+# esbuild's postinstall only copies its platform binary.
+allowBuilds:
+  esbuild: true

@@ -1,0 +1,68 @@
+import { describe, expect, it } from 'vitest';
+
+import { NBSP, formatMga, formatQty, roundHalfUp } from './format.js';
+
+describe('roundHalfUp — RG-FMT-01 (arrondi au plus proche, demi-supérieur)', () => {
+  it('rounds .5 up, exactly, from decimal strings', () => {
+    expect(roundHalfUp('1.005', 2)).toBe('1.01');
+    expect(roundHalfUp('1.004', 2)).toBe('1.00');
+    expect(roundHalfUp('2.675', 2)).toBe('2.68');
+    expect(roundHalfUp('0.5', 0)).toBe('1');
+  });
+
+  it('pads and truncates to the requested precision', () => {
+    expect(roundHalfUp('7', 2)).toBe('7.00');
+    expect(roundHalfUp('7.1', 2)).toBe('7.10');
+    expect(roundHalfUp('7.129', 2)).toBe('7.13');
+    expect(roundHalfUp(12.5, 3)).toBe('12.500');
+  });
+
+  it('handles negatives and never yields -0', () => {
+    expect(roundHalfUp('-1.005', 2)).toBe('-1.01');
+    expect(roundHalfUp('-0.001', 2)).toBe('0.00');
+  });
+
+  it('accepts a comma as decimal separator on input', () => {
+    expect(roundHalfUp('3,5', 1)).toBe('3.5');
+  });
+
+  it('rejects non-numeric input', () => {
+    expect(() => roundHalfUp('abc', 2)).toThrow(RangeError);
+    expect(() => roundHalfUp(Number.NaN, 2)).toThrow(RangeError);
+  });
+});
+
+describe('formatMga — RG-FMT-01', () => {
+  it('formats the reference example 1 250 000,00 Ar with NBSP thousands', () => {
+    expect(formatMga('1250000')).toBe(`1${NBSP}250${NBSP}000,00${NBSP}Ar`);
+  });
+
+  it('always shows two decimals and the Ar symbol after the number', () => {
+    expect(formatMga(4500)).toBe(`4${NBSP}500,00${NBSP}Ar`);
+    expect(formatMga('0')).toBe(`0,00${NBSP}Ar`);
+    expect(formatMga('999.999')).toBe(`1${NBSP}000,00${NBSP}Ar`);
+  });
+
+  it('formats credit-note style negative amounts', () => {
+    expect(formatMga('-25000')).toBe(`-25${NBSP}000,00${NBSP}Ar`);
+  });
+});
+
+describe('formatQty — RG-FMT-01, RG-ART-04 (décimales nulles masquées)', () => {
+  it('hides null decimals', () => {
+    expect(formatQty('12')).toBe('12');
+    expect(formatQty('12.00')).toBe('12');
+    expect(formatQty('12.50')).toBe('12,5');
+    expect(formatQty('12.25')).toBe('12,25');
+  });
+
+  it('uses the same thousands separator as amounts', () => {
+    expect(formatQty('1500')).toBe(`1${NBSP}500`);
+    expect(formatQty('1500.5')).toBe(`1${NBSP}500,5`);
+  });
+
+  it('rounds to two decimals half-up (base_qty = round(qty × factor, 2))', () => {
+    expect(formatQty('0.125')).toBe('0,13');
+    expect(formatQty('100.001')).toBe('100');
+  });
+});
