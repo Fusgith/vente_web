@@ -29,20 +29,38 @@ enum SessionOrigin {
   @@map("session_origin")
 }
 
+/// How the session was opened; a PIN session never reaches owner/admin (CDC technique §8).
+enum SessionAuthMethod {
+  PIN
+  PASSWORD
+  PASSWORD_TOTP
+
+  @@map("session_auth_method")
+}
+
 model User {
-  id           String   @id @default(uuid(7)) @db.Uuid
-  username     String   @unique @db.VarChar(64)
-  fullName     String   @map("full_name") @db.VarChar(120)
-  roles        Role[]
-  /// Credentials are filled by T-012 (argon2 hashes, TOTP for owner/admin).
-  pinHash      String?  @map("pin_hash")
-  passwordHash String?  @map("password_hash")
-  totpSecret   String?  @map("totp_secret")
+  id                String    @id @default(uuid(7)) @db.Uuid
+  username          String    @unique @db.VarChar(64)
+  fullName          String    @map("full_name") @db.VarChar(120)
+  roles             Role[]
+  /// argon2id hashes (RG-USR-03); PIN for shared stations, password for remote access.
+  pinHash           String?   @map("pin_hash")
+  passwordHash      String?   @map("password_hash")
+  /// TOTP (RG-USR-04): `totpSecret` is active once `totpEnabledAt` is set; enrolment writes the pending secret first.
+  totpSecret        String?   @map("totp_secret")
+  totpPendingSecret String?   @map("totp_pending_secret")
+  totpEnabledAt     DateTime? @map("totp_enabled_at") @db.Timestamptz(6)
+  /// Last accepted TOTP time step: a code is single-use (RG-USR-04, RFC 6238 §5.2).
+  totpLastStep      Int?      @map("totp_last_step")
+  /// Lockout after 5 failures within 15 min (RG-USR-05).
+  failedLoginCount  Int       @default(0) @map("failed_login_count")
+  lastFailedAt      DateTime? @map("last_failed_at") @db.Timestamptz(6)
+  lockedUntil       DateTime? @map("locked_until") @db.Timestamptz(6)
   /// Ticket letter of a sales user (RG-TKT-01); unique among active sales users (partial index).
-  ticketLetter String?  @map("ticket_letter") @db.Char(1)
-  isActive     Boolean  @default(true) @map("is_active")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  ticketLetter      String?   @map("ticket_letter") @db.Char(1)
+  isActive          Boolean   @default(true) @map("is_active")
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   sessions            Session[]
   pricesSet           ProductPrice[]    @relation("PriceSetBy")
@@ -84,14 +102,19 @@ model Station {
   @@map("stations")
 }
 
+/// Server-side session (T5): the cookie carries a random token, only its sha256 is stored.
+/// Revocation deletes the row; logins and logouts are traced in `audit_log`, not here.
 model Session {
-  id         String        @id @default(uuid(7)) @db.Uuid
-  userId     String        @map("user_id") @db.Uuid
-  activeRole Role          @map("active_role")
-  stationId  String?       @map("station_id") @db.Uuid
+  id         String            @id @default(uuid(7)) @db.Uuid
+  tokenHash  String            @unique @map("token_hash") @db.VarChar(64)
+  userId     String            @map("user_id") @db.Uuid
+  activeRole Role              @map("active_role")
+  stationId  String?           @map("station_id") @db.Uuid
   origin     SessionOrigin
-  expiresAt  DateTime      @map("expires_at") @db.Timestamptz(6)
-  createdAt  DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  authMethod SessionAuthMethod @map("auth_method")
+  expiresAt  DateTime          @map("expires_at") @db.Timestamptz(6)
+  lastSeenAt DateTime          @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  createdAt  DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
 
   user    User     @relation(fields: [userId], references: [id])
   station Station? @relation(fields: [stationId], references: [id])

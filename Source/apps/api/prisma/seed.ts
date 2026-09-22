@@ -5,6 +5,7 @@
 import { config as loadDotenv } from 'dotenv';
 
 import { createDb, type Db } from '../src/db.js';
+import { hashSecret } from '../src/services/password-hash.js';
 import {
   CATEGORIES,
   CUSTOMERS,
@@ -40,16 +41,30 @@ async function seedPaymentMethods(db: Db): Promise<void> {
 
 async function seedUsers(db: Db): Promise<void> {
   for (const user of USERS) {
-    await db.user.upsert({
+    const credentials = {
+      pinHash: user.pin ? await hashSecret(user.pin) : null,
+      passwordHash: user.password ? await hashSecret(user.password) : null,
+      totpSecret: user.totpSecret ?? null,
+      totpEnabledAt: user.totpSecret ? new Date() : null,
+    };
+    const existing = await db.user.findUnique({
       where: { username: user.username },
-      create: {
-        username: user.username,
-        fullName: user.fullName,
-        roles: user.roles,
-        ticketLetter: user.ticketLetter ?? null,
-      },
-      update: {},
+      select: { id: true, pinHash: true, passwordHash: true },
     });
+    if (!existing) {
+      await db.user.create({
+        data: {
+          username: user.username,
+          fullName: user.fullName,
+          roles: user.roles,
+          ticketLetter: user.ticketLetter ?? null,
+          ...credentials,
+        },
+      });
+    } else if (existing.pinHash === null && existing.passwordHash === null) {
+      // An account that never had a secret gets the demo ones; a changed secret is never touched.
+      await db.user.update({ where: { id: existing.id }, data: credentials });
+    }
   }
 }
 

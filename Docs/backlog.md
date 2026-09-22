@@ -36,7 +36,8 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-010b | MVP | Pré-commit local (Husky ou hook git manuel) — racine git ≠ `Source/` | À faire | E01 | CI = garde-fou en attendant |
 | T-010c | MVP | Icônes PWA PNG 192/512 depuis le logo du magasin | À faire | E01 | Logo à déposer dans `Autres/` par l'utilisateur ; SVG provisoire en place |
 | T-011 | MVP | Schéma Prisma initial + migrations + seed de démonstration | En cours | E01 | Code prêt (migration `init` + SQL manuel, seed idempotent, CI avec PostgreSQL ✅) ; même PR que T-010. Reste : `.env.example` → port 5433, écarts à reporter dans le CDC technique §5 |
-| T-012 | MVP | Auth : PIN local, mot de passe, TOTP boss/admin, sessions, verrouillage | À faire | E01 | RG-USR-03 à 06 |
+| T-012 | MVP | Auth : PIN local, mot de passe, TOTP boss/admin, sessions, verrouillage | En cours | E01 | RG-USR-03 à 06 ; code, tests (111) et docs sur `feat/T-012-auth` (empilée sur T-010, PR ouverte) ; reste : `.env.example` (utilisateur), fusion de la PR #1 puis rebase, revue post-correctifs |
+| T-016 | MVP | Comptes : création/modification par l'admin (jamais de suppression, RG-USR-06), désactivation et changement de rôles qui ferment les sessions, `password_change_required` après un mot de passe posé par l'admin, commande `admin:bootstrap` pour le premier admin | À faire | E01 | RG-USR-01/02/06, H20 ; prérequis de T-080 (aucun compte en production sans seed) |
 | T-015 | MVP | Postes : déclaration libre (tablettes, caisses, comptoirs, écran 0/1), modifiable à chaud | À faire | E01 | §13 `stations`, H11 |
 | T-013 | MVP | Module de permissions (annexe B) + tests | À faire | E01 | |
 | T-014 | MVP | Journal d'audit (ajout seul, droits SQL) + tests | À faire | E01 | RG-AUD-01 à 03 |

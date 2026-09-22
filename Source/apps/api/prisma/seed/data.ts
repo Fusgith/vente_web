@@ -47,18 +47,57 @@ export const PAYMENT_METHODS = [
   { code: 'CHEQUE', label: 'Chèque', requiresReference: true },
 ] as const;
 
-/** One account per role; credentials are set by T-012 (no PIN/password here). */
-export const USERS: { username: string; fullName: string; roles: Role[]; ticketLetter?: string }[] =
-  [
-    { username: 'admin', fullName: 'Administrateur', roles: ['admin'] },
-    { username: 'responsable', fullName: 'Rakoto Responsable', roles: ['manager'] },
-    { username: 'vola', fullName: 'Vola Commerciale', roles: ['sales'], ticketLetter: 'A' },
-    { username: 'hery', fullName: 'Hery Commercial', roles: ['sales'], ticketLetter: 'B' },
-    { username: 'caisse1', fullName: 'Soa Caissière', roles: ['cashier'] },
-    { username: 'magasin1', fullName: 'Feno Magasinier', roles: ['warehouse'] },
-    { username: 'magasin2', fullName: 'Tahina Magasinière', roles: ['warehouse'] },
-    { username: 'boss', fullName: 'Le Boss', roles: ['owner'] },
-  ];
+/** Demo credentials (development only; the seed refuses NODE_ENV=production). */
+export const DEMO_PIN = '1234';
+export const DEMO_PASSWORDS = { admin: 'Admin-1234!', boss: 'Boss-1234!' } as const;
+/** Fixed TOTP secret so the demo owner/admin can be added once to an authenticator app. */
+export const DEMO_TOTP_SECRET = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
+
+export interface DemoUser {
+  username: string;
+  fullName: string;
+  roles: Role[];
+  ticketLetter?: string;
+  pin?: string;
+  password?: string;
+  totpSecret?: string;
+}
+
+/** One account per role. Operational roles log in by PIN (RG-USR-03), owner/admin by password + TOTP. */
+export const USERS: DemoUser[] = [
+  {
+    username: 'admin',
+    fullName: 'Administrateur',
+    roles: ['admin'],
+    password: DEMO_PASSWORDS.admin,
+    totpSecret: DEMO_TOTP_SECRET,
+  },
+  { username: 'responsable', fullName: 'Rakoto Responsable', roles: ['manager'], pin: DEMO_PIN },
+  {
+    username: 'vola',
+    fullName: 'Vola Commerciale',
+    roles: ['sales'],
+    ticketLetter: 'A',
+    pin: DEMO_PIN,
+  },
+  {
+    username: 'hery',
+    fullName: 'Hery Commercial',
+    roles: ['sales'],
+    ticketLetter: 'B',
+    pin: DEMO_PIN,
+  },
+  { username: 'caisse1', fullName: 'Soa Caissière', roles: ['cashier'], pin: DEMO_PIN },
+  { username: 'magasin1', fullName: 'Feno Magasinier', roles: ['warehouse'], pin: DEMO_PIN },
+  { username: 'magasin2', fullName: 'Tahina Magasinière', roles: ['warehouse'], pin: DEMO_PIN },
+  {
+    username: 'boss',
+    fullName: 'Le Boss',
+    roles: ['owner'],
+    password: DEMO_PASSWORDS.boss,
+    totpSecret: DEMO_TOTP_SECRET,
+  },
+];
 
 export const STATIONS: {
   type: StationType;

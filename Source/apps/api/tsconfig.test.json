@@ -1,0 +1,8 @@
+{
+  "extends": "@vente-web/config/tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.test.ts", "test/**/*.ts", "vitest.config.ts"]
+}

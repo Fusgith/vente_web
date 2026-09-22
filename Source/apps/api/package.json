@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "tsx --conditions=development --env-file-if-exists=../../.env watch src/index.ts",
     "build": "prisma generate && tsc -b",
-    "typecheck": "prisma generate && tsc -b && tsc -p prisma",
+    "typecheck": "prisma generate && tsc -b && tsc -p prisma && tsc -p tsconfig.test.json",
     "start": "node --env-file-if-exists=../../.env dist/index.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
@@ -18,10 +18,15 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@fastify/cookie": "^11.1.2",
+    "@fastify/rate-limit": "^11.2.0",
+    "@node-rs/argon2": "^2.2.1",
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
     "@vente-web/shared": "workspace:*",
     "fastify": "^5.12.5",
+    "fastify-plugin": "^6.0.0",
+    "otpauth": "^9.5.2",
     "pg": "^8.23.0",
     "zod": "^4.6.5"
   },
