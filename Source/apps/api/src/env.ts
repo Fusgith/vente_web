@@ -16,15 +16,15 @@ const envSchema = z
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
     /** PostgreSQL connection string; the shop server is the single master database (ADR-0001). */
     DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
-    /** Absolute lifetime of a session (⚠️ H19). */
-    AUTH_SESSION_HOURS: z.coerce.number().int().min(1).max(720).default(12),
+    /** Absolute lifetime of a session: at most the 12 h of H19 (⚠️), shorter allowed. */
+    AUTH_SESSION_HOURS: z.coerce.number().int().min(1).max(12).default(12),
     /**
      * Origin assumed when the `x-access-origin` header is absent: LAN outside production (a dev
      * server or a test is the shop), never set in production, where a missing header means
      * REMOTE (fail-closed, CDC technique §2.2).
      */
     AUTH_DEFAULT_ORIGIN: z.preprocess(blankAsUnset, z.enum(ACCESS_ORIGINS).optional()),
-    /** `Secure` cookie flag; defaults to true in production (HTTPS on both listeners, §8). */
+    /** `Secure` cookie flag; true in production, where false is refused (HTTPS, §8). */
     COOKIE_SECURE: z.preprocess(blankAsUnset, z.stringbool().optional()),
     /** Peers allowed to set `x-access-origin` and `X-Forwarded-For`: the reverse proxy. */
     TRUST_PROXY: z.preprocess(
@@ -49,6 +49,14 @@ const envSchema = z
         path: ['AUTH_DEFAULT_ORIGIN'],
         message: 'must not be set in production: a missing origin header means REMOTE',
         input: ctx.value.AUTH_DEFAULT_ORIGIN,
+      });
+    }
+    if (ctx.value.NODE_ENV === 'production' && ctx.value.COOKIE_SECURE === false) {
+      ctx.issues.push({
+        code: 'custom',
+        path: ['COOKIE_SECURE'],
+        message: 'must not be false in production: HTTPS is mandatory (CDC technique §8)',
+        input: ctx.value.COOKIE_SECURE,
       });
     }
   })

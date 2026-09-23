@@ -3,7 +3,15 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { reserveLoginAttempt } from '../src/services/lockout.js';
 import { generateTotpCode } from '../src/services/totp.js';
 import { TEST_DATABASE_URL } from './db.js';
-import { auditActions, createTestApp, createUser, login, type TestApp } from './helpers.js';
+import {
+  auditActions,
+  createTestApp,
+  createUser,
+  login,
+  loginOk,
+  request,
+  type TestApp,
+} from './helpers.js';
 
 const TOTP_SECRET = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
 const MINUTE = 60_000;
@@ -16,8 +24,10 @@ describe.skipIf(!TEST_DATABASE_URL)('account lockout (RG-USR-05, H19)', () => {
   const rightPin = () => login(t.app, { username: 'vola', role: 'sales', pin: '1234' });
   const vola = () => t.db.user.findUniqueOrThrow({ where: { id: volaId } });
 
+  const warnings = (msg: string) => t.logs.filter((line) => line.msg === msg);
+
   beforeAll(async () => {
-    t = await createTestApp();
+    t = await createTestApp({}, { captureLogs: true });
   });
   afterAll(() => t.close());
   beforeEach(async () => {
@@ -45,6 +55,10 @@ describe.skipIf(!TEST_DATABASE_URL)('account lockout (RG-USR-05, H19)', () => {
     ]);
     const lock = await t.db.auditLog.findFirstOrThrow({ where: { action: 'auth.locked' } });
     expect(lock).toMatchObject({ userId: null, entityType: 'user', reason: 'invalid_secret' });
+    // The refused attempt goes to the application log only (H19).
+    expect(warnings('login refused: account locked')).toMatchObject([
+      { userId: volaId, origin: 'LAN' },
+    ]);
   });
 
   it('keeps one clock with the database, whatever timezone the server runs in', async () => {
@@ -105,7 +119,7 @@ describe.skipIf(!TEST_DATABASE_URL)('account lockout (RG-USR-05, H19)', () => {
     expect(user.lastFailedAt).toBeNull();
   });
 
-  it('forgets failures older than the window (sliding window)', async () => {
+  it('forgets the failures after 15 minutes without any (H19)', async () => {
     for (let i = 0; i < 4; i += 1) await wrongPin();
     await t.db.user.update({
       where: { id: volaId },
@@ -118,6 +132,22 @@ describe.skipIf(!TEST_DATABASE_URL)('account lockout (RG-USR-05, H19)', () => {
     expect(user.lockedUntil).toBeNull();
   });
 
+  it('keeps counting while each failure follows the previous one within 15 minutes (H19)', async () => {
+    for (let i = 0; i < 4; i += 1) {
+      await wrongPin();
+      // 14 minutes between failures: 56 minutes in all, never 15 without a failure.
+      await t.db.user.update({
+        where: { id: volaId },
+        data: { lastFailedAt: new Date(Date.now() - 14 * MINUTE) },
+      });
+    }
+
+    expect((await wrongPin()).response.statusCode).toBe(401);
+    const user = await vola();
+    expect(user.failedLoginCount).toBe(5);
+    expect(user.lockedUntil).not.toBeNull();
+  });
+
   it('never verifies more than five secrets per window, however many requests race', async () => {
     const results = await Promise.all(Array.from({ length: 8 }, () => wrongPin()));
     const statuses = results.map((r) => r.response.statusCode).sort();
@@ -127,6 +157,83 @@ describe.skipIf(!TEST_DATABASE_URL)('account lockout (RG-USR-05, H19)', () => {
       ...Array<string>(5).fill('auth.login_failed'),
       'auth.locked',
     ]);
+  });
+
+  describe('with a password session enrolling TOTP (H20)', () => {
+    const PASSWORD = 'Boss-1234!';
+    let bossId: string;
+    let cookie: string;
+
+    const boss = () => t.db.user.findUniqueOrThrow({ where: { id: bossId } });
+    const wrongPassword = () =>
+      request(t.app, 'PUT', '/api/v1/auth/password', {
+        cookie,
+        body: { current: 'nope', password: 'New-Boss-5678!' },
+      });
+    const enrol = (code?: string) =>
+      request(t.app, 'POST', '/api/v1/auth/totp', { cookie, body: code ? { code } : {} });
+    const confirm = (code: string) =>
+      request(t.app, 'POST', '/api/v1/auth/totp/confirm', { cookie, body: { code } });
+
+    beforeEach(async () => {
+      bossId = (await createUser(t.db, { username: 'boss', roles: ['owner'], password: PASSWORD }))
+        .id;
+      ({ cookie } = await loginOk(t.app, { username: 'boss', role: 'owner', password: PASSWORD }));
+    });
+
+    it('keeps the lock: starting an enrolment verifies no secret (RG-USR-05)', async () => {
+      for (let i = 0; i < 5; i += 1) expect((await wrongPassword()).statusCode).toBe(401);
+
+      const response = await enrol();
+      expect(response.statusCode).toBe(423);
+      expect(response.json().code).toBe('AUTH_LOCKED');
+      const user = await boss();
+      expect(user.failedLoginCount).toBe(5);
+      expect(user.lockedUntil).not.toBeNull();
+      expect(user.totpPendingSecret).toBeNull();
+      expect(await auditActions(t.db, bossId)).not.toContain('user.totp_enrolled');
+      expect(warnings('attempt refused: account locked')).toMatchObject([
+        { userId: bossId, origin: 'LAN' },
+      ]);
+      const relogin = await login(t.app, { username: 'boss', role: 'owner', password: PASSWORD });
+      expect(relogin.response.statusCode).toBe(423);
+    });
+
+    it('never restarts the window on a TOTP code alone: earlier failures stand', async () => {
+      for (let i = 0; i < 4; i += 1) await wrongPassword();
+
+      const start = await enrol();
+      expect(start.statusCode).toBe(200);
+      expect((await boss()).failedLoginCount).toBe(4);
+
+      // Fifth slot: the lock it sets is lifted by the right code, the four failures remain.
+      const now = Date.now();
+      const { secret } = start.json<{ secret: string }>();
+      expect((await confirm(generateTotpCode(secret, now))).statusCode).toBe(204);
+      expect(await boss()).toMatchObject({ failedLoginCount: 4, lockedUntil: null });
+
+      const restart = await enrol(generateTotpCode(secret, now + 30_000));
+      expect(restart.statusCode).toBe(200);
+      expect(await boss()).toMatchObject({ failedLoginCount: 4, lockedUntil: null });
+
+      expect((await wrongPassword()).statusCode).toBe(401);
+      expect((await boss()).lockedUntil).not.toBeNull();
+      expect(await auditActions(t.db, bossId)).not.toContain('user.unlocked');
+    });
+
+    it('hands a TOTP attempt back: the earlier failures keep their own window (H19)', async () => {
+      for (let i = 0; i < 4; i += 1) await wrongPassword();
+      const lastFailure = new Date(Date.now() - 14 * MINUTE);
+      await t.db.user.update({ where: { id: bossId }, data: { lastFailedAt: lastFailure } });
+
+      const { secret } = (await enrol()).json<{ secret: string }>();
+      expect((await confirm(generateTotpCode(secret))).statusCode).toBe(204);
+      expect(await boss()).toMatchObject({
+        failedLoginCount: 4,
+        lastFailedAt: lastFailure,
+        lockedUntil: null,
+      });
+    });
   });
 
   it('reserves attempt slots atomically, counted by the database clock', async () => {

@@ -223,6 +223,39 @@ describe.skipIf(!TEST_DATABASE_URL)('self-service credentials (H20)', () => {
     const enabled = await t.db.user.findUniqueOrThrow({ where: { username: 'adm' } });
     expect(enabled.totpSecret).toBe(withCode.json().secret);
     expect(enabled.totpPendingSecret).toBeNull();
+    // The session opened with the old secret ends; the shop session never used it (H20).
+    const stale = await request(t.app, 'GET', ME, { cookie: remote.cookie, origin: 'REMOTE' });
+    expect(stale.statusCode).toBe(401);
+    expect((await request(t.app, 'GET', ME, { cookie: local.cookie })).statusCode).toBe(200);
+    expect(await auditActions(t.db)).toContain('user.sessions_revoked');
+  });
+
+  it('confirms an enrolment from the shop only, like its start (H20)', async () => {
+    const pending = 'KRSXG5CTMVRXEZLUKRSXG5CTMVRXEZLU';
+    await createUser(t.db, {
+      username: 'adm',
+      roles: ['admin'],
+      password: 'Admin-1234!',
+      totpSecret: TOTP_SECRET,
+    });
+    await t.db.user.update({ where: { username: 'adm' }, data: { totpPendingSecret: pending } });
+    const remote = await loginOk(t.app, {
+      username: 'adm',
+      role: 'admin',
+      password: 'Admin-1234!',
+      totp: generateTotpCode(TOTP_SECRET),
+      origin: 'REMOTE',
+    });
+
+    const response = await request(t.app, 'POST', '/api/v1/auth/totp/confirm', {
+      cookie: remote.cookie,
+      origin: 'REMOTE',
+      body: { code: generateTotpCode(pending) },
+    });
+    expect(response.statusCode).toBe(403);
+    expect(response.json().code).toBe('AUTH_LAN_ONLY');
+    const user = await t.db.user.findUniqueOrThrow({ where: { username: 'adm' } });
+    expect(user).toMatchObject({ totpSecret: TOTP_SECRET, totpPendingSecret: pending });
   });
 
   it('spends a TOTP code exactly once, whatever the race (RG-USR-04)', async () => {
@@ -277,6 +310,7 @@ describe.skipIf(!TEST_DATABASE_URL)('self-service credentials (H20)', () => {
       ],
       ['/api/v1/auth/pin', 'PUT', { current: 'nope', pin: '5678' }, [400]],
       ['/api/v1/auth/totp', 'POST', {}, [403]],
+      ['/api/v1/auth/totp/confirm', 'POST', { code: '000000' }, [403]],
     ];
     for (const [url, method, body, accepted] of routes) {
       for (let i = 0; i < 10; i += 1) {

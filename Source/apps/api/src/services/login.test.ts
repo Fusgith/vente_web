@@ -1,6 +1,8 @@
+import { createHash } from 'node:crypto';
+
 import { describe, expect, it } from 'vitest';
 
-import { loginShapeError, stationAcceptsRole } from './login.js';
+import { loginShapeError, stationAcceptsRole, usernameDigest } from './login.js';
 
 describe('loginShapeError (RG-USR-03, RG-USR-04, T3: decided before any account lookup)', () => {
   it('allows a PIN in the shop for operational roles only', () => {
@@ -67,5 +69,17 @@ describe('stationAcceptsRole (H21: one kind of work per station, supervisors any
     for (const role of ['sales', 'cashier', 'warehouse', 'manager', 'admin', 'owner'] as const) {
       expect(stationAcceptsRole('DISPLAY', role)).toBe(false);
     }
+  });
+});
+
+describe('usernameDigest (H19: unknown names reach the application log hashed)', () => {
+  it('spots a repeated name without being a plain hash anyone can reverse', () => {
+    const digest = usernameDigest('4271');
+    expect(digest).toMatch(/^[0-9a-f]{16}$/);
+    expect(usernameDigest('4271')).toBe(digest);
+    expect(usernameDigest('4272')).not.toBe(digest);
+    // A PIN typed in the name field: an unkeyed digest is found by trying 10 000 values.
+    const plain = createHash('sha256').update('4271').digest('hex').slice(0, 16);
+    expect(digest).not.toBe(plain);
   });
 });

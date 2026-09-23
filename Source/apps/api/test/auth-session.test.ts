@@ -51,6 +51,15 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
     expect(await auditActions(t.db)).toEqual(['auth.login', 'auth.logout']);
   });
 
+  it('audits a double logout once (RG-AUD-01)', async () => {
+    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+    const logout = () => request(t.app, 'POST', '/api/v1/auth/logout', { cookie });
+
+    await Promise.all([logout(), logout()]);
+    expect(await t.db.session.count()).toBe(0);
+    expect(await auditActions(t.db)).toEqual(['auth.login', 'auth.logout']);
+  });
+
   it('logs out everywhere', async () => {
     const first = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
     const second = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
@@ -76,6 +85,29 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
       ['auth.login', null],
       ['auth.session_expired', 'absolute'],
     ]);
+  });
+
+  it('audits the expired sessions a new login sweeps away (H19, RG-AUD-01)', async () => {
+    await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+    const expired = await t.db.session.findFirstOrThrow();
+    await t.db.session.updateMany({ data: { expiresAt: new Date(Date.now() - 1000) } });
+
+    await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+    expect(await t.db.session.count()).toBe(1);
+    expect(await auditEntries(t.db)).toEqual([
+      ['auth.login', null],
+      ['auth.session_expired', 'absolute'],
+      ['auth.login', null],
+    ]);
+    const ended = await t.db.auditLog.findFirstOrThrow({
+      where: { action: 'auth.session_expired' },
+    });
+    expect(ended).toMatchObject({
+      entityType: 'session',
+      entityId: expired.id,
+      userId: expired.userId,
+      origin: 'LAN',
+    });
   });
 
   it('ends an idle session server-side, one touch interval past the limit (H19)', async () => {

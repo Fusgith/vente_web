@@ -15,6 +15,8 @@ export interface TestApp {
   db: Db;
   /** Name of the session cookie this app sets (`__Host-` prefixed when secure). */
   cookieName: string;
+  /** Warnings and errors the app logged since the last reset, with `captureLogs` only. */
+  logs: Record<string, unknown>[];
   reset(): Promise<void>;
   close(): Promise<void>;
 }
@@ -24,21 +26,31 @@ export interface TestApp {
  * default outside production). `AUTH_DEFAULT_ORIGIN: 'REMOTE'` reproduces the production
  * behaviour for a request without the origin header.
  */
-export async function createTestApp(envOverrides: Record<string, string> = {}): Promise<TestApp> {
+export async function createTestApp(
+  envOverrides: Record<string, string> = {},
+  { captureLogs = false }: { captureLogs?: boolean } = {},
+): Promise<TestApp> {
   const db = createTestDb();
+  const logs: Record<string, unknown>[] = [];
+  const sink = {
+    write: (line: string) => void logs.push(JSON.parse(line) as Record<string, unknown>),
+  };
   const env = loadEnv({
     NODE_ENV: 'test',
     DATABASE_URL: TEST_DATABASE_URL ?? '',
     COOKIE_SECURE: 'false',
     ...envOverrides,
   });
-  const app = await buildApp({ env, db, fastify: { logger: false } });
+  const logger = captureLogs ? { level: 'warn', stream: sink } : false;
+  const app = await buildApp({ env, db, fastify: { logger } });
   await app.ready();
   return {
     app,
     db,
     cookieName: sessionCookieName(env.COOKIE_SECURE),
+    logs,
     reset: async () => {
+      logs.length = 0;
       clearSettingsCache();
       await resetDb(db);
     },
@@ -57,7 +69,8 @@ export interface RequestOptions {
   /** Simulated listener: sets `x-access-origin` from the (trusted) loopback peer. */
   origin?: AccessOrigin;
   remoteAddress?: string;
-  headers?: Record<string, string>;
+  /** Extra headers; `undefined` removes a default one. */
+  headers?: Record<string, string | undefined>;
 }
 
 const DEFAULT_COOKIE = sessionCookieName(false);
@@ -69,9 +82,12 @@ export function request(
   url: string,
   options: RequestOptions = {},
 ): Promise<LightMyRequestResponse> {
-  const headers: Record<string, string> = { 'sec-fetch-site': 'same-origin' };
-  if (options.origin) headers['x-access-origin'] = options.origin.toLowerCase();
-  Object.assign(headers, options.headers);
+  const merged: Record<string, string | undefined> = { 'sec-fetch-site': 'same-origin' };
+  if (options.origin) merged['x-access-origin'] = options.origin.toLowerCase();
+  Object.assign(merged, options.headers);
+  const headers: Record<string, string> = {};
+  for (const [name, value] of Object.entries(merged))
+    if (value !== undefined) headers[name] = value;
   const inject: InjectOptions = { method, url, headers };
   if (options.body !== undefined)
     inject.payload = options.body as NonNullable<InjectOptions['payload']>;

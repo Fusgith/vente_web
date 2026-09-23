@@ -231,7 +231,7 @@ describe.skipIf(!TEST_DATABASE_URL)('POST /api/v1/auth/login', () => {
   it('rejects a request the browser does not vouch for (CSRF, fail-closed)', async () => {
     const noHeader = await request(t.app, 'POST', '/api/v1/auth/login', {
       body: { username: 'vola', role: 'sales', pin: '1234' },
-      headers: { 'sec-fetch-site': '' },
+      headers: { 'sec-fetch-site': undefined },
     });
     expect(noHeader.statusCode).toBe(403);
     expect(noHeader.json().code).toBe('CSRF_REJECTED');
@@ -242,11 +242,31 @@ describe.skipIf(!TEST_DATABASE_URL)('POST /api/v1/auth/login', () => {
     });
     expect(crossSite.statusCode).toBe(403);
 
+    // A browser that says nothing of the site: its Origin is then the proof.
     const sameHost = await request(t.app, 'POST', '/api/v1/auth/login', {
       body: { username: 'vola', role: 'sales', pin: '1234' },
-      headers: { 'sec-fetch-site': '', origin: 'http://localhost:80' },
+      headers: { 'sec-fetch-site': undefined, origin: 'http://localhost:80' },
     });
     expect(sameHost.statusCode).toBe(200);
+
+    // Behind the proxy the scheme is X-Forwarded-Proto, believed from a trusted peer only (§2.2).
+    const https = { 'sec-fetch-site': undefined, origin: 'https://localhost', host: 'localhost' };
+    const proxied = await request(t.app, 'POST', '/api/v1/auth/login', {
+      body: { username: 'vola', role: 'sales', pin: '1234' },
+      headers: { ...https, 'x-forwarded-proto': 'https' },
+    });
+    expect(proxied.statusCode).toBe(200);
+    const plain = await request(t.app, 'POST', '/api/v1/auth/login', {
+      body: { username: 'vola', role: 'sales', pin: '1234' },
+      headers: https,
+    });
+    expect(plain.json().code).toBe('CSRF_REJECTED');
+    const spoofed = await request(t.app, 'POST', '/api/v1/auth/login', {
+      body: { username: 'vola', role: 'sales', pin: '1234' },
+      headers: { ...https, 'x-forwarded-proto': 'https' },
+      remoteAddress: '203.0.113.5',
+    });
+    expect(spoofed.json().code).toBe('CSRF_REJECTED');
   });
 
   it('treats an origin header from an untrusted peer as REMOTE (fail-closed, CDC technique 2.2)', async () => {

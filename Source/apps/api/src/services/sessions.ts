@@ -106,11 +106,12 @@ export async function resolveSession(
     entityId: row.id,
   };
 
-  // Every end of session leaves an audit row (RG-AUD-01), whatever ended it.
+  // Every end of session leaves one audit row (RG-AUD-01), whatever ended it: two requests
+  // racing on the same dead session audit it once.
   const end = async (action: string, reason: string, failure: ErrorCode, origin = row.origin) => {
     await db.$transaction(async (tx) => {
-      await tx.session.deleteMany({ where: { id: row.id } });
-      await recordAudit(tx, { ...audit, origin, action, reason });
+      const { count } = await tx.session.deleteMany({ where: { id: row.id } });
+      if (count === 1) await recordAudit(tx, { ...audit, origin, action, reason });
     });
     return drop(failure);
   };
@@ -210,8 +211,26 @@ export async function revokeSessions(tx: AuditTx, filter: RevokeSessionsFilter):
   return result.count;
 }
 
+/** Sweeps the user's sessions past their lifetime, each end audited like any other (RG-AUD-01). */
 export async function purgeExpiredSessions(tx: AuditTx, userId: string, now: Date): Promise<void> {
-  await tx.session.deleteMany({ where: { userId, expiresAt: { lte: now } } });
+  const expired = await tx.session.findMany({
+    where: { userId, expiresAt: { lte: now } },
+    select: { id: true, activeRole: true, stationId: true, origin: true },
+  });
+  for (const session of expired) {
+    const { count } = await tx.session.deleteMany({ where: { id: session.id } });
+    if (count !== 1) continue;
+    await recordAudit(tx, {
+      userId,
+      activeRole: session.activeRole,
+      stationId: session.stationId,
+      origin: session.origin,
+      action: 'auth.session_expired',
+      entityType: 'session',
+      entityId: session.id,
+      reason: 'absolute',
+    });
+  }
 }
 
 export function toAuthMe(auth: AuthContext): AuthMe {
@@ -228,10 +247,14 @@ export function toAuthMe(auth: AuthContext): AuthMe {
   };
 }
 
-/** Logout of the current session (audit `auth.logout`). */
+/**
+ * Logout of the current session (audit `auth.logout`), audited only by the request that deleted
+ * it: a double tap, or a revocation that got there first, already accounts for its end.
+ */
 export async function endSession(db: Db, auth: AuthContext): Promise<void> {
   await db.$transaction(async (tx) => {
-    await tx.session.deleteMany({ where: { id: auth.session.id } });
+    const { count } = await tx.session.deleteMany({ where: { id: auth.session.id } });
+    if (count !== 1) return;
     await recordAudit(tx, {
       userId: auth.user.id,
       activeRole: auth.session.activeRole,
@@ -244,10 +267,11 @@ export async function endSession(db: Db, auth: AuthContext): Promise<void> {
   });
 }
 
-/** Logout everywhere: every session of the user, including the current one. */
+/** Logout everywhere: every session of the user, including the current one (none left: no audit). */
 export async function endAllSessions(db: Db, auth: AuthContext): Promise<number> {
   return db.$transaction(async (tx) => {
     const count = await revokeSessions(tx, { userId: auth.user.id });
+    if (count === 0) return 0;
     await recordAudit(tx, {
       userId: auth.user.id,
       activeRole: auth.session.activeRole,

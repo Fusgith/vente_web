@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHmac, randomBytes } from 'node:crypto';
 
 import {
   isRemoteRole,
@@ -70,12 +70,16 @@ function isSupervisor(role: Role): boolean {
   return role === 'manager' || role === 'admin' || role === 'owner';
 }
 
+/** Per-process key: digests match within one run of the server, never across logs. */
+const USERNAME_DIGEST_KEY = randomBytes(32);
+
 /**
  * What the application log gets instead of an unknown username: a name typed in the wrong
- * field is often a password. The digest still lets one spot a repeated guess.
+ * field is often a password. The keyed digest still lets one spot a repeated guess, but a
+ * leaked log cannot be matched against a dictionary of candidate passwords.
  */
 export function usernameDigest(username: string): string {
-  return createHash('sha256').update(username).digest('hex').slice(0, 16);
+  return createHmac('sha256', USERNAME_DIGEST_KEY).update(username).digest('hex').slice(0, 16);
 }
 
 export interface LoginDeps {

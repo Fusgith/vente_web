@@ -5,7 +5,7 @@ import fp from 'fastify-plugin';
 
 import type { Env } from '../env.js';
 import { AppError } from '../errors.js';
-import type { Actor } from '../services/credentials.js';
+import type { Actor } from '../services/actor.js';
 import { resolveSession, sessionCookieName, type AuthContext } from '../services/sessions.js';
 
 declare module 'fastify' {

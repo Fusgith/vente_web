@@ -35,8 +35,8 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-010 | MVP | Scaffolding monorepo, Docker Compose dev, CI lint/typecheck/test | En cours | E01 | PR `feat/T-010-scaffolding` → `main` ouverte le 22/09 (avec T-011) ; à fusionner |
 | T-010b | MVP | Pré-commit local (Husky ou hook git manuel) — racine git ≠ `Source/` | À faire | E01 | CI = garde-fou en attendant |
 | T-010c | MVP | Icônes PWA PNG 192/512 depuis le logo du magasin | À faire | E01 | Logo à déposer dans `Autres/` par l'utilisateur ; SVG provisoire en place |
-| T-011 | MVP | Schéma Prisma initial + migrations + seed de démonstration | En cours | E01 | Code prêt (migration `init` + SQL manuel, seed idempotent, CI avec PostgreSQL ✅) ; même PR que T-010. Reste : `.env.example` → port 5433, écarts à reporter dans le CDC technique §5 |
-| T-012 | MVP | Auth : PIN local, mot de passe, TOTP boss/admin, sessions, verrouillage | En cours | E01 | RG-USR-03 à 06 ; code, tests (111) et docs sur `feat/T-012-auth` (empilée sur T-010, PR ouverte) ; reste : `.env.example` (utilisateur), fusion de la PR #1 puis rebase, revue post-correctifs |
+| T-011 | MVP | Schéma Prisma initial + migrations + seed de démonstration | En cours | E01 | Code prêt (migration `init` + SQL manuel, seed idempotent, CI avec PostgreSQL ✅) ; même PR que T-010. Reste : écarts à reporter dans le CDC technique §5 |
+| T-012 | MVP | Auth : PIN local, mot de passe, TOTP boss/admin, sessions, verrouillage | En cours | E01 | RG-USR-03 à 06 ; code, tests (120, tous verts) et docs sur `feat/T-012-auth` (empilée sur T-010, PR #2) ; seconde revue adversariale et vérification finale faites, correctifs appliqués ; reste : fusion de la PR #1 puis rebase, question ouverte H20 (secret du `owner`) |
 | T-016 | MVP | Comptes : création/modification par l'admin (jamais de suppression, RG-USR-06), désactivation et changement de rôles qui ferment les sessions, `password_change_required` après un mot de passe posé par l'admin, commande `admin:bootstrap` pour le premier admin | À faire | E01 | RG-USR-01/02/06, H20 ; prérequis de T-080 (aucun compte en production sans seed) |
 | T-015 | MVP | Postes : déclaration libre (tablettes, caisses, comptoirs, écran 0/1), modifiable à chaud | À faire | E01 | §13 `stations`, H11 |
 | T-013 | MVP | Module de permissions (annexe B) + tests | À faire | E01 | |
@@ -65,7 +65,7 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-061 | MVP | Anomalies de livraison et décision du responsable | À faire | E06 | RG-LIV-04 |
 | T-070 | MVP | Tableau de bord boss (indicateurs, files, stock, comparaisons) | À faire | E07 | RG-DSH-01 à 04 |
 | T-071 | MVP | Exports Excel | À faire | E07 | RG-EXP |
-| T-080 | MVP | Docker Compose prod, Caddy TLS DNS-01, tunnel, DNS local | À faire | E08 | CDC technique §2, §10 |
+| T-080 | MVP | Docker Compose prod, Caddy TLS DNS-01, tunnel, DNS local | À faire | E08 | CDC technique §2, §10 ; Caddy écrase `x-access-origin` et transmet `X-Forwarded-Proto`, l'hôte d'origine et `X-Forwarded-For` sur ses deux écoutes, depuis un pair de `TRUST_PROXY` (§2.2 : sinon CSRF et limitation de débit cassés) |
 | T-081 | MVP | Sauvegardes chiffrées + procédure de reprise testée | À faire | E08 | §2.3 |
 | T-082 | MVP | Surveillance et alertes | À faire | E08 | §10.5 |
 | T-083 | MVP | Test bout-en-bout du parcours complet | À faire | E08 | §11 |

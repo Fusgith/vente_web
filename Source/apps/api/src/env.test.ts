@@ -24,11 +24,11 @@ describe('loadEnv', () => {
     expect(() => loadEnv({ DATABASE_URL: 'mysql://x' })).toThrow(/DATABASE_URL/);
   });
 
-  it('secures the cookie by default in production, and only there', () => {
+  it('secures the cookie by default in production, and refuses to drop it there (§8)', () => {
     expect(loadEnv({ NODE_ENV: 'production', DATABASE_URL }).COOKIE_SECURE).toBe(true);
-    expect(
-      loadEnv({ NODE_ENV: 'production', DATABASE_URL, COOKIE_SECURE: 'false' }).COOKIE_SECURE,
-    ).toBe(false);
+    expect(() => loadEnv({ NODE_ENV: 'production', DATABASE_URL, COOKIE_SECURE: 'false' })).toThrow(
+      /COOKIE_SECURE/,
+    );
     expect(loadEnv({ NODE_ENV: 'test', DATABASE_URL, COOKIE_SECURE: 'true' }).COOKIE_SECURE).toBe(
       true,
     );
@@ -71,8 +71,9 @@ describe('loadEnv', () => {
     expect(() => loadEnv({ DATABASE_URL, TRUST_PROXY: 'proxy.local' })).toThrow(/TRUST_PROXY/);
   });
 
-  it('bounds the session lifetime', () => {
-    expect(loadEnv({ DATABASE_URL, AUTH_SESSION_HOURS: '48' }).AUTH_SESSION_HOURS).toBe(48);
+  it('bounds the session lifetime to the 12 hours of H19', () => {
+    expect(loadEnv({ DATABASE_URL, AUTH_SESSION_HOURS: '8' }).AUTH_SESSION_HOURS).toBe(8);
     expect(() => loadEnv({ DATABASE_URL, AUTH_SESSION_HOURS: '0' })).toThrow(/AUTH_SESSION_HOURS/);
+    expect(() => loadEnv({ DATABASE_URL, AUTH_SESSION_HOURS: '13' })).toThrow(/AUTH_SESSION_HOURS/);
   });
 });
