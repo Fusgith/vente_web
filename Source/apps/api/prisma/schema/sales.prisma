@@ -190,7 +190,8 @@ model DiscountRequest {
 }
 
 /// One-time code issued by the owner (RG-REM-04/05/07); single use enforced by
-/// `UPDATE … WHERE status = 'ACTIVE'` in the attach transaction.
+/// `UPDATE … WHERE status = 'ACTIVE'` in the attach transaction. pct/amount is one value
+/// for now; per-line or per-product values get a line table in T-034 (H22).
 model DiscountCode {
   id            String             @id @default(uuid(7)) @db.Uuid
   code          String             @unique @db.VarChar(16)

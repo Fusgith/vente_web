@@ -34,7 +34,7 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 | Rang | `queue_rank` | Position dans la file, modifiable par le responsable. |
 | Appel | `call` | Action d'annoncer un ticket : sur l'écran public avec le poste, ou de vive voix (ticket + nom du client). |
 | Absent | `no_show` | Client appelé qui ne s'est pas présenté. |
-| Remise | `discount` | Réduction en % ou en montant, sur une ligne ou globale. |
+| Remise | `discount` | Réduction en % ou en montant, toujours sur une ligne (produit par produit), jamais sur le total ; le total des remises est la somme des lignes (RG-REM-06). |
 | Plafond de remise | `max_discount_pct` | Remise maximale applicable sans le boss ; définie par unité de vente, sinon par article, sinon par catégorie, sinon paramètre global (0 = interdite). |
 | Demande de remise exceptionnelle | `discount_request` | Demande adressée au boss pour dépasser le plafond ; accordée ou refusée par lui seul. |
 | Code de remise | `discount_code` | Code à usage unique émis par le boss, qui applique une remise au-delà du plafond ; expire en fin de journée. |
