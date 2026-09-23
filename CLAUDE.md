@@ -9,7 +9,7 @@ livraison par plusieurs magasiniers, appel des clients par numéro ou verbal, bo
 (tableau de bord ; remises exceptionnelles accordées par code à usage unique).
 
 ## ✅ Statut : DÉVELOPPEMENT — GO donné le 21/09/2026 (`Docs/journal.md`)
-- Le code vit sous `Source/` ; on avance **une tâche du backlog à la fois** (`T-nnn`), sur une branche `feat/T-nnn-…`.
+- Le code vit sous `Source/` ; on avance **une tâche du backlog à la fois** (`T-nnn`), directement sur `main` : pas de branche ni de PR (l'utilisateur travaille seul avec l'agent, 23/09/2026).
 - Les CDC restent la référence : une règle `RG-*` qui change se modifie d'abord dans `Docs/01-cdc-metier.md`.
 - Hypothèses encore ouvertes (H14–H17, CDC métier §16.2) : on code selon la formulation écrite, marquée ⚠️.
 
@@ -41,8 +41,9 @@ Distant `origin` : https://github.com/Fusgith/vente_web.git — branche principa
 - Stock : réservé à la validation commerciale, sorti à la livraison (RG-STK-02, RG-STK-04) ; un seul stock par
   article, en **unité de base** ; les unités de vente s'y convertissent par leur facteur (RG-ART-06).
 - Prix : porté par l'unité de vente, jamais écrasé — tout changement crée un nouveau prix daté (RG-ART-07).
-- Devise MGA (Ariary). Affichage `1 250 000,00 Ar` : espace insécable pour les milliers, virgule décimale,
-  2 décimales (RG-FMT-01).
+- Devise MGA (Ariary). Affichage `1 250 000,00 MGA` : espace insécable pour les milliers, virgule décimale,
+  2 décimales ; « Ariary » en toutes lettres, jamais « Ar » (RG-FMT-01).
+- Remise **ligne par ligne** uniquement, jamais sur le total (RG-REM-06) ; devis, commande et facture en tableau (RG-DEV-05).
 - TVA optionnelle (paramètre), désactivée par défaut (RG-FAC-03).
 
 ## Rôles
@@ -54,14 +55,15 @@ Rôles fixes : l'admin attribue les rôles, il n'en crée pas. Détail : CDC mé
 - **Pendant** : une tâche du backlog à la fois ; décision structurante → ADR ; hypothèse → section
   « Hypothèses à valider » du CDC concerné, marquée ⚠️ HYPOTHÈSE.
 - **Fin** : mettre à jour `Docs/journal.md` (fait / reste / décisions / questions) et `Docs/backlog.md`.
-  Proposer un commit ; ne pas committer sans accord.
+  Committer et pousser sur `origin/main` **sans solliciter l'utilisateur** (accord permanent du 23/09/2026 : git ne doit pas le déranger).
+  Dernière ligne de chaque message de commit : `Powered by Claude Opus` (jamais `Co-Authored-By` : l'agent est le moteur, pas l'auteur).
 
 ## Stack (figée par ADR-0003)
 Monorepo TypeScript (pnpm) · React + Vite + PWA · Fastify + Prisma · PostgreSQL · Socket.IO ·
 Docker Compose · Vitest + Playwright. Commandes (depuis `Source/`) : `pnpm install`, `pnpm dev`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` — détail dans `Source/CLAUDE.md`.
 
 ## Ce que l'agent ne fait jamais
-- Committer ou pusher sans accord. Modifier un ADR existant (en créer un nouveau).
+- Forcer un push ou réécrire l'historique publié ; committer un secret. Modifier un ADR existant (en créer un nouveau).
 - Toucher aux données de production, à la numérotation des factures ou au journal d'audit par script ad hoc.
 - Ajouter une dépendance sans la justifier dans le journal.
 - Inventer un besoin métier : en cas de doute, poser la question ou consigner l'hypothèse.

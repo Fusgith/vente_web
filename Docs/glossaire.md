@@ -57,7 +57,7 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 | Écran public | `public_display` | Affichage des numéros appelés, sans compte ; optionnel (0 ou 1). |
 | Tableau de bord | `dashboard` | Indicateurs du boss et du responsable. |
 | TVA | `vat` | Taxe optionnelle. |
-| Ariary | `MGA` | Devise (code ISO 4217). |
+| Ariary | `MGA` | Devise (code ISO 4217). Les montants s'affichent avec le sigle « MGA » (`1 250 000,00 MGA`) ; « Ariary » en toutes lettres ; jamais « Ar » (RG-FMT-01). |
 | Fin de journée | `day_end_time` | Heure paramétrable à laquelle expirent les réservations non payées et les codes de remise. |
 | Admin | rôle `admin` | Comptes, paramètres, corrections assistées, sauvegardes. |
 | Responsable | rôle `manager` | Import, plafonds de remise, files, ajustements, validations. |

@@ -2,6 +2,27 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 23/09/2026 — Corrections métier de l'utilisateur (remise par ligne, MGA, devis en tableau) ; git simplifié — agent : Claude Code (Opus 5.5)
+
+L'utilisateur a relu la première maquette de l'écran de vente et le fonctionnement git.
+
+**Fait** :
+- **Git** : T-010, T-011 et T-012 réunis sur `main` (commit `99e5f8a`), PR #1 et #2 fusionnées, branches supprimées. Désormais tout se fait sur `main`, sans branche ni PR ; l'agent committe et pousse sans solliciter l'utilisateur. Dernière ligne des messages de commit : `Powered by Claude Opus` (« tu n'es pas un auteur, tu es le moteur »). `CLAUDE.md`, CDC agent IA (§3.3, §4, §6.3, §7.4, §8, §9) et commandes `/debut-session`, `/fin-session` mis à jour.
+- **CDC métier v0.4** (§16.3, corrections C1–C3) :
+  - **C1 — remise par ligne** : la remise se fait produit par produit, jamais sur le total du devis ; RG-REM-06 réécrite (plus de remise globale répartie au prorata), §5.3, entités, RG-REM-03/04/07 alignées. Le modèle de données (`order_lines.discount_*`, `orders.discount_total` = somme) était déjà par ligne ; seul le commentaire de `discount_requests.line_id` (« null = globale ») est corrigé.
+  - **C2 — devise** : sigle **MGA** après le montant (`1 250 000,00 MGA`), « Ariary » en toutes lettres, « Ar » jamais (non officiel) ; RG-FMT-01/04, RG-ART-06/07, glossaire, `CLAUDE.md` ; code : `formatMga` et ses tests.
+  - **C3 — devis en tableau** : nouvelle **RG-DEV-05** (N°, Désignation, Quantité, Unité avec équivalence en unité de base, Prix unitaire, Remise % et montant, Montant net ; totaux dessous), valable pour devis, commande et facture, à l'écran comme sur le PDF. L'exemple « Rubrique / Nombre / Unité » de l'utilisateur est rendu par les termes usuels.
+- **Backlog** : T-010/011/012 terminées ; T-011b (écarts du schéma à reporter au CDC technique) ; T-030, T-031, T-033, T-034 précisées.
+- **Résultats** : voir le commit (`pnpm check` et `pnpm build` avant de pousser).
+
+**Décisions** : remise par ligne, MGA/Ariary, présentation en tableau — décisions de l'utilisateur, consignées au CDC (§16.3).
+
+**Questions ouvertes** :
+- **H22** : une demande de remise au boss (et son code) couvre une ou plusieurs lignes, chacune avec son propre % ; le boss tranche ligne par ligne ; un code sans demande nomme le client, les articles et le % de chacun. Alternative : un seul % pour toutes les lignes désignées. À trancher avant T-033/T-034 (le schéma actuel ne porte qu'un % par demande et par code).
+- H20 (qui peut poser le mot de passe du `owner`) reste ouverte, à trancher avant T-016.
+
+**Reste** : maquette de l'écran de vente à refaire avec le tableau (fait dans la conversation, pas encore dans l'appli) ; prochaine tâche proposée : écran de connexion, puis catalogue, puis écran de vente.
+
 ## 22/09/2026 — T-012 authentification : PIN, mot de passe, TOTP, sessions, verrouillage — agent : Claude Code (Opus 5)
 
 Branche `feat/T-012-auth`, **empilée** sur `feat/T-010-scaffolding` (PR #1 encore ouverte, CI verte). Conception d'abord (note de design v2 en deux passes de critique sécurité / conformité / simplicité), puis code, tests, revue adversariale multi-agents (27 constats, voir plus bas), correctifs, docs. Interrompu trois fois par la limite de session.

@@ -32,11 +32,12 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-006 | — | Choisir le nom de domaine et le fournisseur DNS/tunnel | À faire | E00 | Conditionne T1 |
 | T-007 | — | Premier commit du dépôt (docs seulement) et premier push vers `origin/main` | Fait | E00 | Commit e8d73a1 le 21/09/2026 |
 | T-008 | — | **GO pour coder** consigné dans le journal | Fait | E00 | GO donné le 21/09/2026 |
-| T-010 | MVP | Scaffolding monorepo, Docker Compose dev, CI lint/typecheck/test | En cours | E01 | PR `feat/T-010-scaffolding` → `main` ouverte le 22/09 (avec T-011) ; à fusionner |
+| T-010 | MVP | Scaffolding monorepo, Docker Compose dev, CI lint/typecheck/test | Terminé | E01 | Sur `main` le 23/09 |
 | T-010b | MVP | Pré-commit local (Husky ou hook git manuel) — racine git ≠ `Source/` | À faire | E01 | CI = garde-fou en attendant |
 | T-010c | MVP | Icônes PWA PNG 192/512 depuis le logo du magasin | À faire | E01 | Logo à déposer dans `Autres/` par l'utilisateur ; SVG provisoire en place |
-| T-011 | MVP | Schéma Prisma initial + migrations + seed de démonstration | En cours | E01 | Code prêt (migration `init` + SQL manuel, seed idempotent, CI avec PostgreSQL ✅) ; même PR que T-010. Reste : écarts à reporter dans le CDC technique §5 |
-| T-012 | MVP | Auth : PIN local, mot de passe, TOTP boss/admin, sessions, verrouillage | En cours | E01 | RG-USR-03 à 06 ; code, tests (120, tous verts) et docs sur `feat/T-012-auth` (empilée sur T-010, PR #2) ; seconde revue adversariale et vérification finale faites, correctifs appliqués ; reste : fusion de la PR #1 puis rebase, question ouverte H20 (secret du `owner`) |
+| T-011 | MVP | Schéma Prisma initial + migrations + seed de démonstration | Terminé | E01 | Sur `main` le 23/09 (migration `init` + SQL manuel, seed idempotent, CI avec PostgreSQL ✅) ; suite : T-011b |
+| T-011b | MVP | Reporter dans le CDC technique §5 les écarts entre le schéma réel et le modèle décrit | À faire | E01 | Documentation seulement |
+| T-012 | MVP | Auth : PIN local, mot de passe, TOTP boss/admin, sessions, verrouillage | Terminé | E01 | RG-USR-03 à 06 ; 120 tests verts ; sur `main` le 23/09 ; question ouverte H20 (qui peut poser le mot de passe du `owner`) à trancher avant T-016 |
 | T-016 | MVP | Comptes : création/modification par l'admin (jamais de suppression, RG-USR-06), désactivation et changement de rôles qui ferment les sessions, `password_change_required` après un mot de passe posé par l'admin, commande `admin:bootstrap` pour le premier admin | À faire | E01 | RG-USR-01/02/06, H20 ; prérequis de T-080 (aucun compte en production sans seed) |
 | T-015 | MVP | Postes : déclaration libre (tablettes, caisses, comptoirs, écran 0/1), modifiable à chaud | À faire | E01 | §13 `stations`, H11 |
 | T-013 | MVP | Module de permissions (annexe B) + tests | À faire | E01 | |
@@ -48,11 +49,11 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-022 | MVP | Réservation jusqu'à la fin de journée, expiration, balayage, libération | À faire | E02 | RG-STK-02/03, RG-CMD-08, `day_end_time` |
 | T-023 | MVP | Ajustements motivés, alertes de seuil | À faire | E02 | RG-STK-05 à 07 |
 | T-029 | MVP | Répertoire clients : nom + téléphone obligatoires, recherche, dédoublonnage, fusion | À faire | E03 | RG-DEV-04 |
-| T-030 | MVP | Devis : client, création, lignes, enregistrement, PDF | À faire | E03 | RG-DEV |
-| T-031 | MVP | Moteur de remises (plafond unité → article → catégorie → paramètre, répartition, contrôle) dans `Source/packages/shared` + tests | À faire | E03 | RG-REM-01/02/06 |
+| T-030 | MVP | Devis : client, création, lignes présentées en tableau (N°, désignation, quantité, unité, PU, remise, montant net), totaux, enregistrement, PDF | À faire | E03 | RG-DEV-01 à 05 |
+| T-031 | MVP | Moteur de remises **ligne par ligne** (plafond unité → article → catégorie → paramètre ; saisie en % ou montant, contrôle en % du brut de la ligne ; pas de remise globale) dans `Source/packages/shared` + tests | À faire | E03 | RG-REM-01/02/06 |
 | T-032 | MVP | Validation de commande : choix de l'unité de vente, conversion en unité de base, contrôle stock cumulé, prix figé (référence au prix historisé), ticket, réservation, file, notification | À faire | E03 | RG-CMD-02/03/04, RG-ART-06, RG-TKT |
-| T-033 | MVP | Demandes de remise exceptionnelle : création, notification du boss (app + push à distance), accord/refus | À faire | E03 | RG-REM-03, RG-DSH-05 |
-| T-034 | MVP | Codes de remise : émission (avec ou sans demande), rattachement, usage unique, expiration, révocation | À faire | E03 | RG-REM-04/05/07 |
+| T-033 | MVP | Demandes de remise exceptionnelle : création sur une ou plusieurs lignes (un % chacune), notification du boss (app + push à distance), accord/refus ligne par ligne | À faire | E03 | RG-REM-03, RG-DSH-05 ; ⚠️ H22 : table des lignes de demande à ajouter au schéma |
+| T-034 | MVP | Codes de remise : émission (avec ou sans demande, % par ligne ou article couvert), rattachement, usage unique, expiration, révocation | À faire | E03 | RG-REM-04/05/07 ; ⚠️ H22 : lignes du code à ajouter au schéma |
 | T-040 | MVP | Files caisse/livraison : rang, appel, absence, réordonnancement | À faire | E04 | RG-FIL |
 | T-041 | MVP | Écran public optionnel (clé de poste, temps réel, son) et mode appel verbal | À faire | E04 | RG-DSP-01 à 03, RG-DSP-05 |
 | T-042 | MVP | Vue de supervision responsable | À faire | E04 | RG-DSP-04 |

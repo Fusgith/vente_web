@@ -54,7 +54,7 @@ Ce document définit comment un agent de codage IA (Claude Code ou autre) travai
 2. Mettre à jour `Docs/backlog.md` (statuts, nouvelles tâches découvertes).
 3. Ajouter l'entrée du jour en **tête** de `Docs/journal.md` (gabarit §5).
 4. Mettre à jour le CDC concerné si une règle ou une hypothèse a changé.
-5. Proposer un commit avec un message conventionnel (§6.3). **Ne pas committer sans accord.**
+5. Committer (message conventionnel, §6.3) et pousser sur `origin/main`, sans solliciter l'utilisateur (accord permanent du 23/09/2026).
 6. Résumer à l'utilisateur en 5 lignes maximum : fait, reste, décisions prises, questions ouvertes, prochain pas.
 
 ### 3.4 Interruption ou perte de contexte
@@ -67,7 +67,7 @@ Si la conversation est résumée ou interrompue, l'agent repart du journal et du
 - **Fichiers courts** : aucun fichier de code > 400 lignes, aucun module sans responsabilité unique ; un agent qui doit lire 2 000 lignes pour comprendre une fonction est un signal de refactorisation.
 - **Identifiants stables** : `RG-XXX-nn`, `ADR-nnnn`, `T-nnn` (tâches). Ils servent de liens entre code, tests, docs et journal : un test s'appelle `describe("RG-REM-04 …")`, un commit cite `T-042`.
 - **Pas de duplication** : si un agent a besoin de répéter une règle dans un commentaire de code, il cite l'identifiant (`// RG-STK-06: stock never negative`) au lieu de la reformuler.
-- **Sous-agents / travail parallèle** : un agent par application ou module, sur une branche distincte, jamais deux agents sur le même fichier ; le journal indique quel agent travaille sur quoi. Fusion par l'utilisateur ou par l'agent principal après tests.
+- **Sous-agents / travail parallèle** : un agent par application ou module, jamais deux agents sur le même fichier (copie de travail isolée si nécessaire) ; le journal indique quel agent travaille sur quoi. Intégration par l'agent principal après tests.
 - **Ce qui ne va pas dans le contexte** : secrets, fichiers `.env`, exports de données réelles, dumps de base.
 
 ## 5. Gabarits
@@ -128,10 +128,10 @@ Date : JJ/MM/AAAA · Statut : Proposé | Accepté | Remplacé par ADR-MMMM
 
 ### 6.3 Git
 
-- Dépôt distant : `https://github.com/Fusgith/vente_web.git` (`origin`). Branche principale : `main`, toujours déployable ; on n'y pousse jamais directement après le GO (fusion par branche de tâche).
-- Branche par tâche : `feat/T-042-paiement-mixte`, `fix/T-051-…`, `docs/…`.
-- Commits atomiques, message en anglais au format `type(scope): sujet — T-042` (`feat`, `fix`, `docs`, `test`, `refactor`, `chore`), corps expliquant le pourquoi si nécessaire.
-- Jamais de `--force` sur une branche partagée, jamais de commit de secrets, jamais de commit sans accord de l'utilisateur.
+- Dépôt distant : `https://github.com/Fusgith/vente_web.git` (`origin`). Branche unique : `main`. L'utilisateur travaille seul avec l'agent : **ni branche de tâche ni pull request** ; git sert d'historique et de sauvegarde (décision de l'utilisateur, 23/09/2026).
+- L'agent committe et pousse lui-même, sans solliciter l'utilisateur : un commit par tâche terminée ou par étape stable (tests verts). La CI tourne à chaque push ; l'agent la surveille et ne signale qu'un échec.
+- Commits atomiques, message en anglais au format `type(scope): sujet — T-042` (`feat`, `fix`, `docs`, `test`, `refactor`, `chore`), corps expliquant le pourquoi si nécessaire ; dernière ligne : `Powered by Claude Opus` (pas de `Co-Authored-By` : l'agent est le moteur, pas l'auteur).
+- Jamais de `--force` ni de réécriture de l'historique publié, jamais de commit de secrets.
 - Les documents de `Docs/` sont commités avec le code qu'ils décrivent.
 
 ### 6.4 Definition of Done
@@ -143,7 +143,7 @@ Une tâche est « Terminée » quand : le code est écrit et relu ; les tests (u
 1. Coder avant le GO consigné dans le journal.
 2. Modifier ou supprimer un ADR accepté (en écrire un nouveau qui le remplace).
 3. Écrire directement dans une base de production, toucher aux séquences de numérotation ou au journal d'audit par script.
-4. Committer, pusher, fusionner, déployer sans accord explicite.
+4. Déployer en production sans accord explicite ; forcer un push ou réécrire l'historique publié.
 5. Ajouter une dépendance sans justification écrite.
 6. Inventer une règle métier ou une valeur par défaut sans la marquer ⚠️ HYPOTHÈSE.
 7. Déclarer une tâche terminée sans avoir exécuté les vérifications et cité leurs résultats.
@@ -152,7 +152,7 @@ Une tâche est « Terminée » quand : le code est écrit et relu ; les tests (u
 ## 8. Outillage Claude Code spécifique (à créer au GO)
 
 - `.claude/commands/debut-session.md` : exécute le protocole §3.1 et produit le résumé de 3 lignes.
-- `.claude/commands/fin-session.md` : exécute le protocole §3.3 (tests, backlog, journal, proposition de commit).
+- `.claude/commands/fin-session.md` : exécute le protocole §3.3 (tests, backlog, journal, commit et push).
 - `.claude/commands/adr.md <titre>` : crée un ADR numéroté depuis le gabarit §5.2.
 - `.claude/settings.json` : autorisations minimales (lecture/écriture dans le dépôt, `pnpm test`, `pnpm lint`, `docker compose` en dev) ; interdiction des commandes destructives.
 - Mémoire automatique de Claude Code (`~/.claude/projects/<projet>/memory/`) : réservée aux préférences de l'utilisateur (langue, style de réponse) ; tout fait projet qui s'y trouverait doit être déplacé dans `Docs/`.
@@ -166,4 +166,4 @@ Une tâche est « Terminée » quand : le code est écrit et relu ; les tests (u
 - [ ] Une hypothèse a-t-elle été prise ? Est-elle marquée et listée ?
 - [ ] Le journal et le backlog sont-ils à jour ?
 - [ ] Un ADR était-il nécessaire ? Est-il écrit et soumis ?
-- [ ] Ai-je proposé le commit sans le faire ?
+- [ ] Ai-je committé et poussé (message conventionnel, `Powered by Claude Opus`) et la CI est-elle verte ?
