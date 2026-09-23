@@ -33,18 +33,18 @@ describe('roundHalfUp — RG-FMT-01 (arrondi au plus proche, demi-supérieur)', 
 });
 
 describe('formatMga — RG-FMT-01', () => {
-  it('formats the reference example 1 250 000,00 Ar with NBSP thousands', () => {
-    expect(formatMga('1250000')).toBe(`1${NBSP}250${NBSP}000,00${NBSP}Ar`);
+  it('formats the reference example 1 250 000,00 MGA with NBSP thousands', () => {
+    expect(formatMga('1250000')).toBe(`1${NBSP}250${NBSP}000,00${NBSP}MGA`);
   });
 
-  it('always shows two decimals and the Ar symbol after the number', () => {
-    expect(formatMga(4500)).toBe(`4${NBSP}500,00${NBSP}Ar`);
-    expect(formatMga('0')).toBe(`0,00${NBSP}Ar`);
-    expect(formatMga('999.999')).toBe(`1${NBSP}000,00${NBSP}Ar`);
+  it('always shows two decimals and the MGA sign after the number', () => {
+    expect(formatMga(4500)).toBe(`4${NBSP}500,00${NBSP}MGA`);
+    expect(formatMga('0')).toBe(`0,00${NBSP}MGA`);
+    expect(formatMga('999.999')).toBe(`1${NBSP}000,00${NBSP}MGA`);
   });
 
   it('formats credit-note style negative amounts', () => {
-    expect(formatMga('-25000')).toBe(`-25${NBSP}000,00${NBSP}Ar`);
+    expect(formatMga('-25000')).toBe(`-25${NBSP}000,00${NBSP}MGA`);
   });
 });
 

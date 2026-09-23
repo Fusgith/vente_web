@@ -16,7 +16,7 @@ describe('App', () => {
 
     // Raw textContent: jest-dom's matchers would collapse the non-breaking spaces.
     expect(screen.getByTestId('sample-amount-value').textContent).toBe(
-      '1\u00A0250\u00A0000,00\u00A0Ar',
+      '1\u00A0250\u00A0000,00\u00A0MGA',
     );
   });
 });

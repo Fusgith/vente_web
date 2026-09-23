@@ -56,9 +56,9 @@ function formatDecimal(value: number | string, decimals: number): string {
   return negative ? `-${body}` : body;
 }
 
-/** Amount in Ariary: `1 250 000,00 Ar` (RG-FMT-01). */
+/** Amount in Ariary with the ISO 4217 sign: `1 250 000,00 MGA`, never "Ar" (RG-FMT-01). */
 export function formatMga(value: number | string): string {
-  return `${formatDecimal(value, 2)}${NBSP}Ar`;
+  return `${formatDecimal(value, 2)}${NBSP}MGA`;
 }
 
 /**
