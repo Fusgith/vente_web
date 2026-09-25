@@ -162,8 +162,9 @@ model OrderLine {
 model DiscountRequest {
   id              String                @id @default(uuid(7)) @db.Uuid
   orderId         String                @map("order_id") @db.Uuid
-  /// Line the request covers. There is no order-wide discount (RG-REM-06); requests over
-  /// several lines, each with its own pct, get a line table in T-033 (H22).
+  /// Legacy single-line target. Decided 25/09 (H22): a request covers several lines, each
+  /// with its own pct or amount, and/or the order total (RG-REM-06) — T-033 moves this to
+  /// a `discount_request_items` table.
   lineId          String?               @map("line_id") @db.Uuid
   customerId      String?               @map("customer_id") @db.Uuid
   requestedPct    Decimal?              @map("requested_pct") @db.Decimal(5, 2)
@@ -191,7 +192,8 @@ model DiscountRequest {
 
 /// One-time code issued by the owner (RG-REM-04/05/07); single use enforced by
 /// `UPDATE … WHERE status = 'ACTIVE'` in the attach transaction. pct/amount is one value
-/// for now; per-line or per-product values get a line table in T-034 (H22).
+/// for now; T-034 adds `discount_code_items` (per line or product, and/or the order total,
+/// pct or amount — H22 decided 25/09, RG-REM-06).
 model DiscountCode {
   id            String             @id @default(uuid(7)) @db.Uuid
   code          String             @unique @db.VarChar(16)

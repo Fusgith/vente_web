@@ -2,6 +2,27 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 25/09/2026 — Décisions de l'utilisateur (H22, remise sur le total et en montant, recherche rapide, borne libre-service) — CDC v0.5 — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- **CDC métier v0.5** (§16.4, décisions C3 bis à C6 et H22) :
+  - **C3 bis** : colonne « Désignation » confirmée (RG-DEV-05).
+  - **H22 — réponse A** : une demande au boss, et le code qui en découle, couvre une ou plusieurs lignes avec un % chacune ; le boss tranche ligne par ligne.
+  - **C4 — remise en montant et sur le total** : RG-REM-06 réécrite en deux niveaux cumulables — remise de ligne (% ou montant) et remise sur le total (% ou montant, une par devis). RG-REM-02/03/04/07, RG-DEV-05 (totaux, calcul), RG-FAC-02 alignées.
+  - **C5 — recherche rapide** : nouvelle **RG-DEV-06**. Recherche pendant la frappe côté serveur, ajout direct sur code exact ou code-barres, syntaxe `12*CODE`, favoris, scan caméra en rafale, lecteurs Bluetooth/USB ; jamais de défilement manuel.
+  - **C6 — le client commande lui-même** : nouvelle **§5.10 borne libre-service** (RG-BOR-01 à 06). Le panier devient un devis repris par un commercial, qui seul valide ; pas de remise ni de données client à la borne.
+- **CDC technique**, **glossaire**, `CLAUDE.md` et commentaires du schéma Prisma (`discount_requests`, `discount_codes`) alignés ; aucune migration à ce stade (colonnes créées par T-031, T-033, T-034, T-036).
+- **Backlog** : T-017 (écran de connexion) créée et en cours ; T-021, T-030, T-031, T-033, T-034 précisées ; T-036 (borne) créée.
+
+**Décisions** (déléguées par l'utilisateur, à confirmer) :
+- **Recherche** : `pg_trgm` + `unaccent` dans PostgreSQL (extensions livrées avec PostgreSQL, aucune dépendance npm) ; scan caméra par l'API `BarcodeDetector` du navigateur (Chrome Android), une bibliothèque JS n'étant ajoutée — et justifiée ici — que si les tablettes ne la proposent pas.
+- **Remise sur le total** ⚠️ H23 : sans code, bornée par la marge de remise restante des lignes, pour qu'aucun produit ne dépasse son plafond ; répartie sur les lignes au prorata de cette marge.
+- **Borne** ⚠️ H24 : dans le lot MVP, en dernière tâche de la vente.
+
+**Questions ouvertes** : H23 (règle de plafond de la remise sur le total), H24 (borne en MVP ou en V1.1), H20 (qui pose le mot de passe du `owner`, avant T-016) ; H14–H17, H19, H21 inchangées.
+
+**Reste** : T-017 écran de connexion (en cours), puis T-021 recherche, T-031 moteur de remises, T-030 devis, T-036 borne.
+
 ## 23/09/2026 — Corrections métier de l'utilisateur (remise par ligne, MGA, devis en tableau) ; git simplifié — agent : Claude Code (Opus 5.5)
 
 L'utilisateur a relu la première maquette de l'écran de vente et le fonctionnement git.

@@ -43,7 +43,8 @@ Distant `origin` : https://github.com/Fusgith/vente_web.git — branche principa
 - Prix : porté par l'unité de vente, jamais écrasé — tout changement crée un nouveau prix daté (RG-ART-07).
 - Devise MGA (Ariary). Affichage `1 250 000,00 MGA` : espace insécable pour les milliers, virgule décimale,
   2 décimales ; « Ariary » en toutes lettres, jamais « Ar » (RG-FMT-01).
-- Remise **ligne par ligne** uniquement, jamais sur le total (RG-REM-06) ; devis, commande et facture en tableau (RG-DEV-05).
+- Remise sur chaque ligne et/ou sur le total, en % ou en montant, dans les plafonds sauf code du boss (RG-REM-06) ;
+  devis, commande et facture en tableau (RG-DEV-05).
 - TVA optionnelle (paramètre), désactivée par défaut (RG-FAC-03).
 
 ## Rôles

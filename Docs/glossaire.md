@@ -34,11 +34,13 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 | Rang | `queue_rank` | Position dans la file, modifiable par le responsable. |
 | Appel | `call` | Action d'annoncer un ticket : sur l'écran public avec le poste, ou de vive voix (ticket + nom du client). |
 | Absent | `no_show` | Client appelé qui ne s'est pas présenté. |
-| Remise | `discount` | Réduction en % ou en montant, toujours sur une ligne (produit par produit), jamais sur le total ; le total des remises est la somme des lignes (RG-REM-06). |
+| Remise | `discount` | Réduction saisie en % ou directement en montant, sur une ligne (produit par produit) et/ou sur le total du devis ; total des remises = remises des lignes + remise sur le total (RG-REM-06). |
+| Remise sur le total | `order_discount` | Remise sur le sous-total du devis, bornée sans code par la marge de remise restante, répartie sur les lignes (RG-REM-06). |
+| Marge de remise restante | `discount_headroom` | Somme, sur les lignes, de (plafond × brut − remise de la ligne) : maximum de la remise sur le total sans code du boss. |
 | Plafond de remise | `max_discount_pct` | Remise maximale applicable sans le boss ; définie par unité de vente, sinon par article, sinon par catégorie, sinon paramètre global (0 = interdite). |
 | Demande de remise exceptionnelle | `discount_request` | Demande adressée au boss pour dépasser le plafond ; accordée ou refusée par lui seul. |
 | Code de remise | `discount_code` | Code à usage unique émis par le boss, qui applique une remise au-delà du plafond ; expire en fin de journée. |
-| Poste | `station` | Point physique déclaré par l'admin : tablette, caisse, comptoir de livraison, écran public ; nombre libre. |
+| Poste | `station` | Point physique déclaré par l'admin : tablette, caisse, comptoir de livraison, écran public, borne ; nombre libre. |
 | Caisse | `register` | Poste d'encaissement. |
 | Session de caisse | `register_session` | Période ouverte par un caissier sur une caisse, avec fond de caisse. |
 | Clôture de caisse | `register_closing` | Comptage de fin de session, écarts, rapport. |
@@ -55,6 +57,9 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 | Journal d'audit | `audit_log` | Trace immuable de toute opération sensible. |
 | Paramètres | `settings` | Configuration modifiable par l'admin. |
 | Écran public | `public_display` | Affichage des numéros appelés, sans compte ; optionnel (0 ou 1). |
+| Borne libre-service | `kiosk` | Poste sans compte où le client compose lui-même son panier, repris ensuite par un commercial (§5.10). |
+| Panier (de borne) | `basket` | Devis créé à la borne, numéroté « P12 » dans la journée, en attente de reprise par un commercial. |
+| Recherche rapide | `quick_search` | Champ unique code / code-barres / désignation, ajout direct sur code exact, scan en rafale (RG-DEV-06). |
 | Tableau de bord | `dashboard` | Indicateurs du boss et du responsable. |
 | TVA | `vat` | Taxe optionnelle. |
 | Ariary | `MGA` | Devise (code ISO 4217). Les montants s'affichent avec le sigle « MGA » (`1 250 000,00 MGA`) ; « Ariary » en toutes lettres ; jamais « Ar » (RG-FMT-01). |
