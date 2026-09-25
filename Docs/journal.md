@@ -2,6 +2,30 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 25/09/2026 — T-017 écran de connexion web et coquille par rôle — agent : Claude Code (Opus 5.5)
+
+**Fait** (`apps/web` sauf mention) :
+- **Client API** (`src/api/`) : `apiRequest` (JSON, cookie de session same-origin, codes d'erreur de l'API conservés, `NETWORK_ERROR` et `UNEXPECTED_RESPONSE` côté client), `parseResponse` (réponses validées par les schémas zod partagés), `authApi`, `errorMessage` (message français choisi par le code, jamais le texte du serveur ; durée du verrouillage arrondie à la minute supérieure, RG-USR-05).
+- **Connexion** (`src/auth/`) :
+  - En magasin : grille des noms (initiales, nom, rôles), puis clavier PIN à grosses touches ; clavier physique accepté (chiffres, Retour arrière, Entrée, Échap) pour la caisse. Choix du rôle seulement si l'utilisateur en a plusieurs (RG-USR-02). Lien « Connexion par mot de passe ».
+  - Hors magasin (annuaire refusé `AUTH_LAN_ONLY`) : mot de passe + code TOTP, rôle Boss (par défaut) ou Administrateur (RG-USR-04).
+  - Serveur injoignable : message et bouton « Réessayer ».
+- **Session** : `AuthProvider` (session restaurée au chargement, connexion, déconnexion, changement de rôle sans nouvelle connexion) ; une session perdue (expirée, inactive, origine changée) ramène à l'écran de connexion avec la raison.
+- **Verrouillage d'inactivité** (RG-USR-03) : `useIdleLock` mesure le temps écoulé (vérification toutes les 5 s et au retour de veille) ; au bout de `idleMinutes` (donné par le serveur : 5 min tablette, 15 min caisse), la session est **fermée côté serveur** et l'écran de connexion rouvre sur le même utilisateur et le même rôle : seul le PIN est redemandé.
+- **Coquille** (`src/shell/`) : bandeau (nom, badge « À distance », rôle actif changeable, déconnexion) ; un espace de travail par rôle, vide en attendant les tâches suivantes.
+- **Partagé** : `ROLE_LABELS` (libellés français des rôles, ADR-0004) dans `packages/shared`.
+- **Tests** : 28 tests web (`fakeApi` : `fetch` simulé par route) — PIN, rôle requis, clavier physique, échec et verrouillage d'accès, mot de passe en magasin, accès distant + TOTP, réessai, restauration et changement de rôle, session perdue, déconnexion, maintien de session puis verrouillage d'inactivité (horloge simulée), crochet `useIdleLock` (réveil après le délai), rôles accessibles. `pnpm format:check`, `lint`, `typecheck`, `build` verts ; tests `shared` + `web` verts en local (Docker arrêté sur le poste : tests de l'API laissés à la CI, l'API n'a pas changé).
+
+**Décisions** :
+- **Aucune dépendance ajoutée** : ni routeur, ni TanStack Query, ni `user-event` ; `fetch` + contexte React suffisent tant qu'il n'y a qu'un écran par rôle. À revoir avec l'écran de vente (T-030).
+- **Maintien de session** : toute activité à l'écran (toucher, touche, molette) envoie au plus un `GET /auth/me` par minute, pour que l'inactivité vue par le serveur (`last_seen_at`, écrit au plus une fois par minute) suive celle vue par l'écran. Un commercial qui lit un devis sans appeler l'API n'est donc pas déconnecté.
+- **Verrou = déconnexion** : le verrouillage d'inactivité ferme la session au serveur (`POST /auth/logout`) au lieu de masquer l'écran ; le retour ne coûte que le PIN grâce à la présélection.
+- Les rôles proposés dans le bandeau reprennent les règles de l'API (T-012) : pas de Boss/Administrateur depuis une session PIN, seulement eux à distance ; le serveur reste juge.
+
+**Questions ouvertes** : inchangées (H20, H23, H24 ; H14–H17, H19, H21).
+
+**Reste** : T-021 recherche rapide, puis T-031 moteur de remises, T-030 devis, T-036 borne.
+
 ## 25/09/2026 — Décisions de l'utilisateur (H22, remise sur le total et en montant, recherche rapide, borne libre-service) — CDC v0.5 — agent : Claude Code (Opus 5.5)
 
 **Fait** :

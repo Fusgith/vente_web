@@ -1,17 +1,29 @@
-import { formatMga } from '@vente-web/shared';
-
+import { AuthProvider } from './auth/AuthProvider.js';
+import { useAuth } from './auth/context.js';
+import { LoginScreen } from './auth/LoginScreen.js';
 import { labels } from './labels.js';
+import { AppShell } from './shell/AppShell.js';
 
 export function App() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-4 p-6">
-      <h1 className="text-3xl font-bold text-teal-700">{labels.appName}</h1>
-      <p className="text-lg text-gray-700">{labels.tagline}</p>
-      <p className="rounded-lg bg-gray-100 p-4 text-gray-800">{labels.scaffoldNotice}</p>
-      <p data-testid="sample-amount" className="text-xl">
-        {labels.sampleAmount}{' '}
-        <strong data-testid="sample-amount-value">{formatMga('1250000')}</strong>
-      </p>
-    </main>
+    <AuthProvider>
+      <Root />
+    </AuthProvider>
   );
+}
+
+function Root() {
+  const { state } = useAuth();
+  switch (state.status) {
+    case 'loading':
+      return (
+        <main className="flex min-h-dvh items-center justify-center bg-slate-50">
+          <p className="text-slate-600">{labels.loading}</p>
+        </main>
+      );
+    case 'anonymous':
+      return <LoginScreen notice={state.notice} resume={state.resume} />;
+    case 'authenticated':
+      return <AppShell me={state.me} />;
+  }
 }

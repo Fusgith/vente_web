@@ -38,7 +38,7 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-011 | MVP | Schéma Prisma initial + migrations + seed de démonstration | Terminé | E01 | Sur `main` le 23/09 (migration `init` + SQL manuel, seed idempotent, CI avec PostgreSQL ✅) ; suite : T-011b |
 | T-011b | MVP | Reporter dans le CDC technique §5 les écarts entre le schéma réel et le modèle décrit | À faire | E01 | Documentation seulement |
 | T-012 | MVP | Auth : PIN local, mot de passe, TOTP boss/admin, sessions, verrouillage | Terminé | E01 | RG-USR-03 à 06 ; 120 tests verts ; sur `main` le 23/09 ; question ouverte H20 (qui peut poser le mot de passe du `owner`) à trancher avant T-016 |
-| T-017 | MVP | Écran de connexion web (choix du nom, PIN, mot de passe + TOTP, choix du rôle), verrouillage d'inactivité, coquille de l'appli par rôle | En cours | E01 | RG-USR-02/03/05 ; sur l'API de T-012 |
+| T-017 | MVP | Écran de connexion web (choix du nom, PIN, mot de passe + TOTP, choix du rôle), verrouillage d'inactivité, coquille de l'appli par rôle | Terminé | E01 | RG-USR-02/03/05 ; sur l'API de T-012 ; 28 tests web ; sur `main` le 25/09 |
 | T-016 | MVP | Comptes : création/modification par l'admin (jamais de suppression, RG-USR-06), désactivation et changement de rôles qui ferment les sessions, `password_change_required` après un mot de passe posé par l'admin, commande `admin:bootstrap` pour le premier admin | À faire | E01 | RG-USR-01/02/06, H20 ; prérequis de T-080 (aucun compte en production sans seed) |
 | T-015 | MVP | Postes : déclaration libre (tablettes, caisses, comptoirs, écran 0/1), modifiable à chaud | À faire | E01 | §13 `stations`, H11 |
 | T-013 | MVP | Module de permissions (annexe B) + tests | À faire | E01 | |
