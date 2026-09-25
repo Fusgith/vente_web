@@ -2,6 +2,32 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 25/09/2026 — T-031 moteur de remises (ligne et total, % ou montant) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- **Moteur** `packages/shared/src/discount.ts`, pur et sans flottant (calcul exact en centimes) :
+  - `computeQuote` calcule le tableau du devis (RG-DEV-05) : brut, remise (montant et %), net par ligne ; total brut, remises des lignes, sous-total, remise sur le total, total des remises, net à payer.
+  - Il indique pour chaque ligne et pour le total le **maximum autorisé** (à afficher avant toute saisie, RG-REM-02) et si la saisie le respecte.
+  - Remise de ligne en **%** ou en **montant** : le plafond de la ligne (RG-REM-01) est converti en montant comme un % saisi ; une ligne à plafond 0 n'est remisable que par un code du boss (`granted`), qui remplace alors le plafond.
+  - Remise sur le total en % ou en montant, bornée sans code par la **marge restante** (plafond × brut − remise de la ligne, jamais négative) et répartie au prorata de cette marge. Avec un code couvrant le total, la répartition se fait au prorata des nets (⚠️ H23).
+  - `discountEntrySchema` (zod) valide une saisie : taux ≤ 100 % à 2 décimales, montant à 2 décimales ; `discountAmount` et `discountRate` servent à l'affichage.
+- **Base** (migration `add_order_discount`) : colonnes `orders.order_discount_pct`, `order_discount_amount`, `order_discount_source`, `order_discount_code_id` (clé vers `discount_codes`) et `order_lines.order_discount_share`.
+  - Le dossier généré (10 h 00) aurait été rangé avant `add_product_search` (12 h 00) : il est renommé `20260925130000_…` pour garder l'ordre.
+- **Tests** : 14 nouveaux, dont un test sur 200 devis tirés au hasard (graine fixe) : la somme des parts égale toujours la remise sur le total, et aucun produit ne dépasse son plafond. Au total, 235 tests verts. `format:check`, `lint`, `typecheck` et `build` sont verts.
+
+**Décisions** :
+- **Précision de RG-REM-06** (CDC métier modifié d'abord) : la répartition suit la méthode du **plus fort reste**.
+  - Chaque part est arrondie au centime inférieur, puis les centimes manquants vont aux plus grands restes.
+  - La règle écrite, « écart porté par la plus grande part », peut rendre une part négative : 4 lignes égales et 0,02 MGA de remise donnent 4 × 0,01 et un écart de −0,02 sur une ligne.
+  - Même résultat dans les cas courants ; le sens métier est inchangé.
+- Le montant maximal d'une ligne est son plafond en % converti comme une saisie en %, arrondi au demi-supérieur. Ainsi « 5 % » et le montant affiché sont toujours acceptés tous les deux.
+- La marge d'une ligne remisée par code au-delà de son plafond vaut 0 (jamais négative) : cette ligne ne prend aucune part de la remise sur le total, et les autres lignes gardent leur marge.
+- Aucune dépendance ajoutée.
+
+**Questions ouvertes** : inchangées (H20, H23, H24 ; H14–H17, H19, H21).
+
+**Reste** : T-030 devis (client, enregistrement, colonne Remise, remise sur le total à l'écran, PDF) en s'appuyant sur `computeQuote` ; puis T-036 borne.
+
 ## 25/09/2026 — T-021 recherche rapide des articles (API + écran commercial) — agent : Claude Code (Opus 5.5)
 
 **Fait** :

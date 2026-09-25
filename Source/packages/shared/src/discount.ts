@@ -1,7 +1,10 @@
 /**
- * Discount rules (RG-REM-*). T-021 needs the cap shown with every search hit; the discount
- * engine itself (line and order-total discounts, RG-REM-06) comes with T-031.
+ * Discount rules (RG-REM-*): cap resolution (RG-REM-01) and the quote engine (RG-REM-02/06,
+ * RG-DEV-05). Every amount is computed exactly in cents and travels as a 2-decimal string.
  */
+import { z } from 'zod';
+
+import { fromScaled, lineGross, toScaled } from './decimal.js';
 
 export interface DiscountCapSources {
   /** Cap of the sale unit, overriding the product's for that unit only (decision H18). */
@@ -15,4 +18,220 @@ export interface DiscountCapSources {
 /** Cap of a sale unit, in %: unit → product → category → setting (RG-REM-01). */
 export function resolveDiscountCap(sources: DiscountCapSources): string {
   return sources.unit ?? sources.product ?? sources.category ?? sources.fallback;
+}
+
+/** Rates carry 2 decimals, like `discount_pct` NUMERIC(5,2). */
+const RATE_PATTERN = /^\d{1,3}(?:\.\d{1,2})?$/;
+const AMOUNT_PATTERN = /^\d{1,12}(?:\.\d{1,2})?$/;
+/** 100 %, in hundredths of a percent. */
+const WHOLE = 10_000n;
+
+const isRate = (value: string) => RATE_PATTERN.test(value) && toScaled(value, 2) <= WHOLE;
+
+/** A discount as typed: a rate of its base, or directly an amount in MGA (RG-REM-06). */
+export const discountEntrySchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('pct'), value: z.string().refine(isRate) }),
+  z.object({ kind: z.literal('amount'), value: z.string().regex(AMOUNT_PATTERN) }),
+]);
+export type DiscountEntry = z.infer<typeof discountEntrySchema>;
+
+/** Stored on lines and orders as `discount_source`. */
+export type DiscountSource = 'NONE' | 'WITHIN_CAP' | 'CODE';
+
+const money = (value: bigint) => fromScaled(value, 2);
+const sum = (values: readonly bigint[]) => values.reduce((total, value) => total + value, 0n);
+const min = (a: bigint, b: bigint) => (a < b ? a : b);
+const floorZero = (value: bigint) => (value < 0n ? 0n : value);
+/** Descending order of bigints, for `Array.sort`. */
+const descending = (a: bigint, b: bigint) => (a < b ? 1 : a > b ? -1 : 0);
+
+/** Rate in hundredths of a percent, checked: at most 100 % and 2 decimals. */
+function rate(value: string): bigint {
+  if (!isRate(value)) throw new RangeError(`Not a discount rate: "${value}"`);
+  return toScaled(value, 2);
+}
+
+/** `rateHundredths` of `base` cents, rounded half-up to the cent (RG-DEV-05). */
+function rateOf(base: bigint, rateHundredths: bigint): bigint {
+  return (2n * base * rateHundredths + WHOLE) / (2n * WHOLE);
+}
+
+function entryCents(entry: DiscountEntry, base: bigint): bigint {
+  if (!discountEntrySchema.safeParse(entry).success) {
+    throw new RangeError(`Not a discount: ${JSON.stringify(entry)}`);
+  }
+  return entry.kind === 'pct' ? rateOf(base, toScaled(entry.value, 2)) : toScaled(entry.value, 2);
+}
+
+/** Amount an entry takes off `base`: a rate becomes an amount rounded half-up (RG-DEV-05). */
+export function discountAmount(entry: DiscountEntry, base: string): string {
+  return money(entryCents(entry, toScaled(base, 2)));
+}
+
+/** Rate an amount represents on `base`, rounded half-up to 2 decimals: the % of the Remise column. */
+export function discountRate(amount: string, base: string): string {
+  const baseCents = toScaled(base, 2);
+  if (baseCents === 0n) return '0.00';
+  return money((2n * toScaled(amount, 2) * WHOLE + baseCents) / (2n * baseCents));
+}
+
+/**
+ * Splits `total` over `weights` pro rata: each share is rounded down to the cent, then the cents
+ * left go one by one to the largest remainders (ties: largest weight, then first line). Shares
+ * add up exactly and none exceeds its pro-rata value rounded up, so none is negative or goes
+ * beyond the weight it was measured against (RG-REM-06).
+ */
+function splitProRata(total: bigint, weights: readonly bigint[]): bigint[] {
+  const whole = sum(weights);
+  if (total === 0n || whole === 0n) return weights.map(() => 0n);
+  const parts = weights.map((weight) => ({
+    weight,
+    share: (total * weight) / whole,
+    rest: (total * weight) % whole,
+  }));
+  let left = total - sum(parts.map((part) => part.share));
+  const byRest = [...parts].sort(
+    (a, b) => descending(a.rest, b.rest) || descending(a.weight, b.weight),
+  );
+  for (const part of byRest) {
+    if (left === 0n) break;
+    part.share += 1n;
+    left -= 1n;
+  }
+  return parts.map((part) => part.share);
+}
+
+export interface QuoteLineInput {
+  /** In the sale unit. */
+  quantity: string;
+  unitPrice: string;
+  /** Cap of the line in %, resolved then frozen on the line (RG-REM-01). */
+  capPct: string;
+  discount: DiscountEntry | null;
+  /** Discount granted on this line by the owner's code (RG-REM-04): it replaces the cap. */
+  granted?: DiscountEntry | null;
+}
+
+export interface QuoteInput {
+  lines: readonly QuoteLineInput[];
+  /** Discount on the subtotal, at most one per quote (RG-REM-06). */
+  orderDiscount: DiscountEntry | null;
+  /** Discount granted on the total by the owner's code; without one, the headroom bounds it. */
+  orderGranted?: DiscountEntry | null;
+}
+
+export interface QuoteLineTotals {
+  /** Quantity × unit price, rounded half-up once. */
+  gross: string;
+  discount: string;
+  /** Rate shown in the Remise column: as typed, or the equivalent of an amount. */
+  discountPct: string;
+  /** Largest discount allowed on this line: its cap, or the code's grant. */
+  maxDiscount: string;
+  net: string;
+  /** Room left under the cap once the line discount is taken (glossary: discount headroom). */
+  headroom: string;
+  /** Part of the order discount carried by this line; not printed (RG-REM-06). */
+  orderDiscountShare: string;
+  source: DiscountSource;
+  withinLimit: boolean;
+}
+
+export interface QuoteTotals {
+  lines: QuoteLineTotals[];
+  grossTotal: string;
+  lineDiscounts: string;
+  /** Sum of the line nets: the base of the order discount. */
+  subtotal: string;
+  /** Largest order discount: the headroom, or the code's grant — shown before any entry (RG-REM-02). */
+  maxOrderDiscount: string;
+  orderDiscount: string;
+  /** Rate of the order discount when typed as a rate, printed next to it (RG-DEV-05). */
+  orderDiscountPct: string | null;
+  orderDiscountSource: DiscountSource;
+  orderWithinLimit: boolean;
+  /** Line discounts + order discount. */
+  discountTotal: string;
+  /** Subtotal − order discount, before VAT and cash rounding. */
+  total: string;
+  /** Every discount within its cap or grant: the quote may be saved as it is. */
+  withinLimits: boolean;
+}
+
+function sourceOf(discount: bigint, granted: DiscountEntry | null | undefined): DiscountSource {
+  if (discount === 0n) return 'NONE';
+  return granted ? 'CODE' : 'WITHIN_CAP';
+}
+
+/**
+ * Totals of a quote with its line and order discounts (RG-REM-06, RG-DEV-05).
+ *
+ * A line discount is checked against the cap turned into an amount of the gross the same way
+ * as a typed rate, so the cap typed as a rate and the maximum shown in MGA always agree. The
+ * order discount is bounded by the headroom — the cap of each line, in MGA, minus its line
+ * discount, never below zero — and spread over the lines pro rata of that headroom, so that no
+ * product ends beyond its cap (⚠️ H23). A code covering the total replaces that bound, and its
+ * discount is spread pro rata of the line nets.
+ */
+export function computeQuote(input: QuoteInput): QuoteTotals {
+  const lines = input.lines.map((line) => {
+    const gross = toScaled(lineGross(line.quantity, line.unitPrice), 2);
+    const capped = rateOf(gross, rate(line.capPct));
+    const limit = line.granted ? min(entryCents(line.granted, gross), gross) : capped;
+    const discount = line.discount ? entryCents(line.discount, gross) : 0n;
+    return {
+      line,
+      gross,
+      limit,
+      discount,
+      net: gross - discount,
+      headroom: floorZero(capped - discount),
+    };
+  });
+
+  const subtotal = sum(lines.map((line) => line.net));
+  const granted = input.orderGranted;
+  const maxOrderDiscount = granted
+    ? min(entryCents(granted, floorZero(subtotal)), floorZero(subtotal))
+    : sum(lines.map((line) => line.headroom));
+  const orderDiscount = input.orderDiscount
+    ? entryCents(input.orderDiscount, floorZero(subtotal))
+    : 0n;
+
+  const nets = lines.map((line) => floorZero(line.net));
+  const weights = granted ? nets : lines.map((line) => line.headroom);
+  const shares = splitProRata(orderDiscount, sum(weights) > 0n ? weights : nets);
+
+  const totals = lines.map(({ line, gross, limit, discount, net, headroom }, index) => ({
+    gross: money(gross),
+    discount: money(discount),
+    discountPct:
+      line.discount?.kind === 'pct'
+        ? money(toScaled(line.discount.value, 2))
+        : discountRate(money(discount), money(gross)),
+    maxDiscount: money(limit),
+    net: money(net),
+    headroom: money(headroom),
+    orderDiscountShare: money(shares[index] ?? 0n),
+    source: sourceOf(discount, line.granted),
+    withinLimit: discount <= limit,
+  }));
+  const orderWithinLimit = orderDiscount <= maxOrderDiscount;
+  const lineDiscounts = sum(lines.map((line) => line.discount));
+
+  return {
+    lines: totals,
+    grossTotal: money(sum(lines.map((line) => line.gross))),
+    lineDiscounts: money(lineDiscounts),
+    subtotal: money(subtotal),
+    maxOrderDiscount: money(maxOrderDiscount),
+    orderDiscount: money(orderDiscount),
+    orderDiscountPct:
+      input.orderDiscount?.kind === 'pct' ? money(toScaled(input.orderDiscount.value, 2)) : null,
+    orderDiscountSource: sourceOf(orderDiscount, granted),
+    orderWithinLimit,
+    discountTotal: money(lineDiscounts + orderDiscount),
+    total: money(subtotal - orderDiscount),
+    withinLimits: orderWithinLimit && totals.every((line) => line.withinLimit),
+  };
 }

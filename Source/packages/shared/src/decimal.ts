@@ -1,6 +1,6 @@
 /**
  * Exact arithmetic on decimal strings (RG-FMT-01): quantities and amounts carry 2 decimals and
- * are never handled as floats. The discount engine (T-031) builds on these.
+ * are never handled as floats. The discount engine (discount.ts) builds on these.
  */
 import { roundHalfUp } from './format.js';
 
@@ -13,7 +13,8 @@ export function isQuantity(value: string): boolean {
   return QUANTITY_PATTERN.test(value) && /[1-9]/.test(value);
 }
 
-function toScaled(value: string, scale: number): bigint {
+/** `toScaled('12.5', 2)` → `1250n`: the value in hundredths (or 10^-scale units). Internal. */
+export function toScaled(value: string, scale: number): bigint {
   const match = DECIMAL_PATTERN.exec(value.trim());
   if (!match) throw new RangeError(`Not a decimal string: "${value}"`);
   const [, sign, whole = '0', fraction = ''] = match;
@@ -24,7 +25,8 @@ function toScaled(value: string, scale: number): bigint {
   return sign === '-' ? -scaled : scaled;
 }
 
-function fromScaled(value: bigint, scale: number): string {
+/** Inverse of `toScaled`, with exactly `scale` decimals. Internal. */
+export function fromScaled(value: bigint, scale: number): string {
   const sign = value < 0n ? '-' : '';
   const digits = (value < 0n ? -value : value).toString().padStart(scale + 1, '0');
   const whole = digits.slice(0, digits.length - scale);
