@@ -52,6 +52,63 @@ export const labels = {
     workspaceComing: 'Cet espace arrive avec les prochaines étapes du développement.',
   },
 
+  /** Quick search and entry of the quote screen (RG-DEV-06). */
+  sales: {
+    search: 'Rechercher un article',
+    searchHint: 'Code, code-barres ou désignation ; « 12*SAV-001 » ajoute 12 d’un coup.',
+    pendingQty: (qty: string) => `Quantité : ${qty}`,
+    scan: 'Scanner',
+    scanTitle: 'Scan des codes-barres',
+    scanHint: 'Présentez les codes-barres l’un après l’autre : chaque article reconnu est ajouté.',
+    scanUnsupported:
+      'Scan par caméra indisponible sur cet appareil : utilisez une douchette ou tapez le code.',
+    cameraDenied:
+      'Caméra inaccessible : autorisez-la dans le navigateur, ou utilisez une douchette.',
+    closeScan: 'Terminer le scan',
+    categories: 'Filtrer par catégorie',
+    allCategories: 'Toutes',
+    favorites: 'Les plus vendus',
+    noFavorites: 'Vos articles les plus vendus s’afficheront ici après les premières ventes.',
+    results: 'Résultats',
+    searching: 'Recherche…',
+    noResult: 'Aucun article ne correspond.',
+    refine: 'Précisez la recherche : seuls les 8 premiers articles sont affichés.',
+    unknownCode: (code: string) => `Aucun article vendable pour « ${code} ».`,
+    added: (qty: string, unit: string, name: string) => `Ajouté : ${qty} ${unit} — ${name}`,
+    baseUnit: (unit: string) => `Unité de base : ${unit}`,
+    available: (qty: string) => `Disponible : ${qty}`,
+    unitWithFactor: (unit: string, factor: string, base: string) =>
+      factor === '1' ? unit : `${unit} (× ${factor} ${base})`,
+    noPrice: 'Sans prix',
+    unitStock: (count: string) => `dispo ${count}`,
+    maxDiscount: (pct: string) => `remise max ${pct} %`,
+
+    draft: {
+      title: 'Lignes du devis',
+      unsaved: 'Brouillon : l’enregistrement du devis arrive à l’étape suivante du développement.',
+      empty: 'Aucune ligne : tapez un code, scannez ou touchez un article le plus vendu.',
+      number: 'N°',
+      designation: 'Désignation',
+      quantity: 'Quantité',
+      unit: 'Unité',
+      unitPrice: 'Prix unitaire',
+      amount: 'Montant',
+      grossTotal: 'Total brut',
+      editQty: (position: number, qty: string) => `Quantité de la ligne ${position} : ${qty}`,
+    },
+
+    pad: {
+      title: (position: number) => `Ligne ${position}`,
+      unit: 'Unité de vente',
+      quantity: 'Quantité saisie',
+      erase: 'Effacer un chiffre',
+      confirm: 'Valider',
+      remove: 'Supprimer la ligne',
+      close: 'Fermer',
+      invalid: 'Quantité invalide : de 0,01 à 999 999,99.',
+    },
+  },
+
   /** One workspace per active role (annexe B). */
   workspaces: {
     sales: { title: 'Ventes', summary: 'Devis et commandes sur tablette.' },

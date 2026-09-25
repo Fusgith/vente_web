@@ -2,6 +2,40 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 25/09/2026 — T-021 recherche rapide des articles (API + écran commercial) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- **Base** (migration `catalog_search`) : extensions `pg_trgm` et `unaccent` ; colonne `products.search_text` (code + désignation, minuscules, sans accents) tenue à jour par triggers, y compris quand une unité change ; index trigramme.
+- **API** :
+  - `GET /products/search?q=` : mots dans n'importe quel ordre, début de mot, casse et accents ignorés ; ordre = correspondance exacte, puis codes commençant par la saisie, puis ressemblance ; 8 résultats au plus avec l'indicateur `more`. Un code ou un code-barres exact donne `exact` (le produit et l'unité scannée, sinon l'unité de base vendable) pour l'ajout direct.
+  - Chaque résultat porte le disponible en unité de base (stock moins réservé), ses unités de vente avec prix en vigueur et plafond de remise (montré au commercial seulement).
+  - `GET /products/favorites` : les 12 articles les plus présents dans les commandes du commercial sur 30 jours (hors brouillons et annulées). `GET /categories` : catégories actives.
+- **Écran commercial** (`apps/web/src/sales/`) :
+  - Un seul champ : code, code-barres ou désignation. Résultats pendant la frappe (dès 2 caractères, pause de 150 ms). **Entrée** ou un **scan** ajoute tout de suite l'article exact, avec un bip et une vibration. `12*SAV-001` ajoute 12 d'un coup.
+  - **Douchette** Bluetooth/USB : une frappe hors champ est renvoyée dans la recherche. **Scan caméra en rafale** : un même code n'est recompté qu'après 1,2 s hors champ.
+  - Sans saisie : **favoris** en un toucher et filtre par **catégorie**. Chaque unité de vente est un bouton (prix, disponible dans cette unité, remise max) : aucune liste déroulante, aucun défilement.
+  - **Pavé de quantité** à grosses touches, ouvert après chaque ajout : la quantité s'affiche sélectionnée et la première touche la remplace ; il sert aussi à changer d'unité et à supprimer la ligne.
+  - **Lignes en tableau** (N°, Désignation, Quantité, Unité avec équivalence, Prix unitaire, Montant, Total brut). Un même article dans la même unité s'ajoute à sa ligne. Brouillon en mémoire seulement : l'enregistrement arrive avec T-030, les remises avec T-031.
+- **Partagé** : `decimal.ts` (quantités et montants en chaînes, calcul exact sans flottant : `lineGross`, `sumAmounts`, `addQuantities`, `isQuantity`), `parseQuickEntry`, `defaultSaleUnit`, `splitInUnit`, schémas zod de la recherche.
+- **Outillage** :
+  - `pnpm dev` de l'API corrigé : `tsx watch` doit précéder ses options, sinon Node cherchait un module `watch`.
+  - `.claude/launch.json` lance l'API et la PWA dans l'aperçu du Code tab. L'API y tourne sans `watch`, car `tsx watch` reste bloqué quand l'entrée standard est un tube ouvert ; dans un terminal, `pnpm dev` fonctionne.
+- **Tests** : 20 API (recherche, favoris), 18 partagés (décimaux, saisie rapide, unité par défaut) et 35 web (brouillon, pavé, filtre de scan, écran complet avec `fakeApi`). Au total, 221 tests verts. `format:check`, `lint`, `typecheck` et `build` sont verts. Parcours vérifié sur la base de démo : connexion, recherche par mots, code et code-barres, catégories.
+
+**Décisions** :
+- **Aucune dépendance ajoutée** : `pg_trgm` et `unaccent` sont livrées avec PostgreSQL ; le scan caméra utilise `BarcodeDetector`, natif dans Chrome Android.
+  - Limite : absent sur iPad/Safari et Firefox, où l'écran le dit et renvoie à la douchette ou à la saisie.
+  - Si les tablettes du magasin n'en disposent pas, une bibliothèque (ZXing) sera ajoutée et justifiée ici.
+- Unité d'un ajout direct : celle du code-barres scanné ; sinon l'unité de base si elle a un prix, sinon la plus petite unité vendable.
+- Favoris = articles du commercial lui-même, comptés en commandes et non en quantités, pour qu'un gros achat isolé ne les fausse pas.
+- Le plafond de remise affiché est celui du commercial connecté ; le magasinier ne le voit pas.
+
+**Questions ouvertes** : inchangées (H20, H23, H24 ; H14–H17, H19, H21).
+
+**Reste** :
+- Essayer le scan caméra sur une vraie tablette (Chrome Android) : impossible à tester ici.
+- Puis T-031 moteur de remises, T-030 devis (enregistrement du brouillon), T-036 borne.
+
 ## 25/09/2026 — T-017 écran de connexion web et coquille par rôle — agent : Claude Code (Opus 5.5)
 
 **Fait** (`apps/web` sauf mention) :

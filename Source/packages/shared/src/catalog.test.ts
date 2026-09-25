@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  defaultSaleUnit,
   parseQuickEntry,
   productSearchQuerySchema,
   productSearchResultSchema,
@@ -76,6 +77,23 @@ describe('splitInUnit (RG-STK-01)', () => {
 
   it('rejects a factor that is not positive', () => {
     expect(() => splitInUnit('10', '0')).toThrow(RangeError);
+  });
+});
+
+describe('defaultSaleUnit (RG-DEV-06 §2)', () => {
+  const unit = (label: string, isBase: boolean, price: string | null) => ({ label, isBase, price });
+
+  it('takes the base unit when it has a price, else the smallest priced one', () => {
+    const piece = unit('pièce', true, '4500');
+    const pack = unit('paquet', false, '25000');
+    const carton = unit('carton', false, '280000');
+    expect(defaultSaleUnit([piece, pack, carton])).toBe(piece);
+    expect(defaultSaleUnit([unit('pièce', true, null), pack, carton])).toBe(pack);
+  });
+
+  it('gives nothing when no unit has a price', () => {
+    expect(defaultSaleUnit([unit('pièce', true, null)])).toBeNull();
+    expect(defaultSaleUnit([])).toBeNull();
   });
 });
 

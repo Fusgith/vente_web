@@ -3,6 +3,7 @@ import {
   FAVORITES_DAYS,
   SEARCH_MAX_RESULTS,
   SEARCH_MIN_LENGTH,
+  defaultSaleUnit,
   searchTokens,
   type CategorySummary,
   type ProductHit,
@@ -39,9 +40,9 @@ async function findExact(db: Db, term: string): Promise<ExactMatch | null> {
  * sellable, else the smallest active unit with a price (RG-DEV-06 §2, RG-ART-03).
  */
 function exactUnit(hit: ProductHit, match: ExactMatch): string | null {
-  const sellable = hit.units.filter((unit) => unit.price !== null);
-  if (match.unitId) return sellable.some((unit) => unit.id === match.unitId) ? match.unitId : null;
-  return (sellable.find((unit) => unit.isBase) ?? sellable[0])?.id ?? null;
+  if (!match.unitId) return defaultSaleUnit(hit.units)?.id ?? null;
+  const scanned = hit.units.find((unit) => unit.id === match.unitId);
+  return scanned?.price ? scanned.id : null;
 }
 
 /**

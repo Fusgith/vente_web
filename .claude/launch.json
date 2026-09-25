@@ -1,0 +1,31 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "-C",
+        "Source/apps/api",
+        "exec",
+        "tsx",
+        "--conditions=development",
+        "src/index.ts"
+      ],
+      "port": 3000,
+      "env": {
+        "DATABASE_URL": "postgresql://vente:vente@localhost:5433/vente_web"
+      }
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "-C",
+        "Source/apps/web",
+        "dev"
+      ],
+      "port": 5173
+    }
+  ]
+}

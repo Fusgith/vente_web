@@ -6,6 +6,7 @@ import { useAuth } from '../auth/context.js';
 import { switchableRoles } from '../auth/roles.js';
 import { useIdleLock } from '../auth/useIdleLock.js';
 import { labels } from '../labels.js';
+import { SalesWorkspace } from '../sales/SalesWorkspace.js';
 
 /** Signed-in frame: who, which role, sign out; one workspace per active role. */
 export function AppShell({ me }: { me: AuthMe }) {
@@ -79,6 +80,7 @@ export function AppShell({ me }: { me: AuthMe }) {
 }
 
 function Workspace({ role }: { role: Role }) {
+  if (role === 'sales') return <SalesWorkspace />;
   const workspace = labels.workspaces[role];
   return (
     <section className="mx-auto flex max-w-3xl flex-col gap-3">

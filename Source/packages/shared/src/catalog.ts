@@ -94,6 +94,18 @@ export function parseQuickEntry(text: string): QuickEntry {
   return { quantity, term: term.trim() };
 }
 
+/**
+ * The unit a direct add goes to when none was scanned (RG-DEV-06 §2, RG-ART-03): the base unit
+ * when it has a price, else the smallest priced unit; null when nothing is sellable.
+ * `units` come ordered by factor, as in a search hit.
+ */
+export function defaultSaleUnit<U extends Pick<ProductUnitHit, 'isBase' | 'price'>>(
+  units: readonly U[],
+): U | null {
+  const sellable = units.filter((unit) => unit.price !== null);
+  return sellable.find((unit) => unit.isBase) ?? sellable[0] ?? null;
+}
+
 /** Words of a search term: letters and digits only, so they never carry LIKE wildcards. */
 export function searchTokens(term: string): string[] {
   return term.split(/[^\p{L}\p{N}]+/u).filter((token) => token.length > 0);

@@ -6,7 +6,7 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "tsx --conditions=development --env-file-if-exists=../../.env watch src/index.ts",
+    "dev": "tsx watch --conditions=development --env-file-if-exists=../../.env src/index.ts",
     "build": "prisma generate && tsc -b",
     "typecheck": "prisma generate && tsc -b && tsc -p prisma && tsc -p tsconfig.test.json",
     "start": "node --env-file-if-exists=../../.env dist/index.js",
