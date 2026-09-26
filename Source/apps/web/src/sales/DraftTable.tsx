@@ -21,7 +21,9 @@ interface DraftTableProps {
   onSelect: (key: string) => void;
   onOrderDiscount: (discount: DiscountEntry | null) => void;
   onSave: () => void;
-  saving: boolean;
+  onSubmit: () => void;
+  /** A save or a validation under way: both buttons wait. */
+  busy: 'save' | 'submit' | null;
   /** The customer's picker, at the end of the header. */
   customer?: ReactNode;
 }
@@ -80,11 +82,14 @@ export function DraftTable({
   onSelect,
   onOrderDiscount,
   onSave,
-  saving,
+  onSubmit,
+  busy,
   customer,
 }: DraftTableProps) {
   const { lines, selected } = draft;
   const quote = computeQuote(quoteInput(draft));
+  // Lines of the products the last validation found short of stock (RG-CMD-02).
+  const short = new Set(draft.shortages?.map((shortage) => shortage.productId));
 
   const selectedRow = useRef<HTMLTableRowElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
@@ -134,6 +139,7 @@ export function DraftTable({
               <tbody>
                 {lines.map((line, index) => {
                   const current = line.key === selected;
+                  const lacking = short.has(line.product.id);
                   const factor = formatQty(line.unit.factor);
                   const totals = quote.lines[index]!;
                   const row = `${CELL} h-14 border-b border-rule py-1 ${current ? 'bg-saffron-soft' : ''}`;
@@ -166,7 +172,9 @@ export function DraftTable({
                           className={`min-h-12 min-w-14 rounded-control border px-2.5 text-right text-18 font-semibold figures transition-colors duration-100 ${
                             current
                               ? 'border-indigo bg-indigo-soft'
-                              : 'border-rule-strong bg-white active:bg-indigo-soft'
+                              : lacking
+                                ? 'border-madder bg-madder-soft text-madder'
+                                : 'border-rule-strong bg-white active:bg-indigo-soft'
                           }`}
                         >
                           {formatQty(line.qty)}
@@ -211,7 +219,8 @@ export function DraftTable({
             draft={draft}
             onOrderDiscount={onOrderDiscount}
             onSave={onSave}
-            saving={saving}
+            onSubmit={onSubmit}
+            busy={busy}
           />
         </>
       )}
@@ -224,22 +233,23 @@ interface TotalsProps {
   draft: DraftState;
   onOrderDiscount: (discount: DiscountEntry | null) => void;
   onSave: () => void;
-  saving: boolean;
+  onSubmit: () => void;
+  busy: 'save' | 'submit' | null;
 }
 
-function saveLabel(draft: DraftState, saving: boolean): string {
-  if (saving) return text.saving;
+function saveLabel(draft: DraftState, busy: TotalsProps['busy']): string {
+  if (busy === 'save') return text.saving;
   return draft.saved ? text.saveChanges : text.save;
 }
 
 /**
  * Under the table, in the order of RG-DEV-05: gross total, line discounts, subtotal, order
  * discount (with its rate when typed as one), amount due, then the reminder of all discounts.
- * Without any discount, the amount due alone. The order discount is typed from here, and the
- * quote saved next to its amount due; once saved and unchanged, its PDF opened instead: the
- * PDF is always the quote as saved.
+ * Without any discount, the amount due alone. The order discount is typed from here; under the
+ * amount due, the quote is saved — once saved and unchanged, its PDF opened instead, the PDF
+ * being always the quote as saved — and validated into an order, the last step (T-032).
  */
-function Totals({ quote, draft, onOrderDiscount, onSave, saving }: TotalsProps) {
+function Totals({ quote, draft, onOrderDiscount, onSave, onSubmit, busy }: TotalsProps) {
   const [open, setOpen] = useState(false);
   const upToDate = !!draft.saved && !unsavedChanges(draft);
   const rows: { label: string; amount: string; wrong?: boolean }[] = [];
@@ -291,27 +301,38 @@ function Totals({ quote, draft, onOrderDiscount, onSave, saving }: TotalsProps) 
             </div>
           )}
         </dl>
-        {draft.saved && upToDate ? (
-          <a
-            href={quotesApi.pdfUrl(draft.saved.id)}
-            target="_blank"
-            rel="noopener"
-            className={buttonClass('primary', 'md')}
-          >
-            <Icon name="document" className="size-5" />
-            {text.openPdf}
-          </a>
-        ) : (
+        <div className="flex flex-wrap justify-end gap-2">
+          {draft.saved && upToDate ? (
+            <a
+              href={quotesApi.pdfUrl(draft.saved.id)}
+              target="_blank"
+              rel="noopener"
+              className={buttonClass('secondary', 'md')}
+            >
+              <Icon name="document" className="size-5" />
+              {text.openPdf}
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={busy !== null}
+              className={buttonClass('secondary', 'md')}
+            >
+              <Icon name="document" className="size-5" />
+              {saveLabel(draft, busy)}
+            </button>
+          )}
           <button
             type="button"
-            onClick={onSave}
-            disabled={saving}
+            onClick={onSubmit}
+            disabled={busy !== null}
             className={buttonClass('primary', 'md')}
           >
             <Icon name="check" className="size-5" />
-            {saveLabel(draft, saving)}
+            {busy === 'submit' ? text.submitting : text.submit}
           </button>
-        )}
+        </div>
       </div>
       {!quote.orderWithinLimit && (
         <p role="alert" className="flex basis-full items-start gap-2 font-semibold text-madder">

@@ -4,9 +4,11 @@ import { labels } from '../labels.js';
 import { CustomerPicker } from './CustomerPicker.js';
 import { DraftTable } from './DraftTable.js';
 import { draftReducer, emptyDraft, type DraftState } from './draft.js';
+import { OrderTicketSheet } from './OrderTicketSheet.js';
 import { ProductSearch } from './ProductSearch.js';
 import { QuantityPad } from './QuantityPad.js';
-import { useSaveQuote } from './useSaveQuote.js';
+import { StockShortageSheet } from './StockShortageSheet.js';
+import { useQuoteActions } from './useQuoteActions.js';
 
 interface SalesWorkspaceProps {
   /** Lines to start from: a quote taken up again (T-030), or the design gallery's demo. */
@@ -22,7 +24,7 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
   const [draft, dispatch] = useReducer(draftReducer, initialDraft);
   const position = draft.lines.findIndex((line) => line.key === draft.selected);
   const selected = draft.lines[position];
-  const { save, saving } = useSaveQuote(draft, dispatch);
+  const { save, submit, busy } = useQuoteActions(draft, dispatch);
 
   return (
     <div className="flex flex-1 flex-col gap-4 md:min-h-0 lg:grid lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)] 2xl:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
@@ -53,7 +55,8 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
         onSelect={(key) => dispatch({ type: 'select', key })}
         onOrderDiscount={(discount) => dispatch({ type: 'setOrderDiscount', discount })}
         onSave={() => void save()}
-        saving={saving}
+        onSubmit={() => void submit()}
+        busy={busy}
         customer={
           <CustomerPicker
             value={draft.customer}
@@ -61,6 +64,18 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
           />
         }
       />
+      {draft.shortagesOpen && draft.shortages && (
+        <StockShortageSheet
+          lines={draft.lines}
+          shortages={draft.shortages}
+          onFit={(key, qty) => dispatch({ type: 'setQty', key, qty })}
+          onRemove={(key) => dispatch({ type: 'remove', key })}
+          onClose={() => dispatch({ type: 'closeShortages' })}
+        />
+      )}
+      {draft.order && (
+        <OrderTicketSheet order={draft.order} onNew={() => dispatch({ type: 'reset' })} />
+      )}
     </div>
   );
 }

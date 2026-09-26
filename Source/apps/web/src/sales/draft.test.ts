@@ -9,7 +9,7 @@ import {
   type DraftAction,
   type DraftState,
 } from './draft.js';
-import { CUSTOMER, SAVON, savedQuote } from './test-hits.js';
+import { CUSTOMER, RIZ, SAVON, savedQuote } from './test-hits.js';
 
 const [PIECE, PAQUET, CARTON] = SAVON.units;
 
@@ -158,5 +158,47 @@ describe('saving the draft (T-030)', () => {
       body: saveSignature(sent),
     });
     expect(unsavedChanges(state)).toBe(true);
+  });
+});
+
+describe('draftReducer: validation refused for want of stock (RG-CMD-02)', () => {
+  const [KG] = RIZ.units;
+  const shortage = (productId: string, available: string) => ({
+    productId,
+    sku: 'X',
+    name: 'X',
+    baseUnit: 'pièce',
+    available,
+    requested: '99.00',
+    lines: [1],
+  });
+  const withRice = run(add(PAQUET!.id, '2'), {
+    type: 'add',
+    hit: RIZ,
+    unitId: KG!.id,
+    qty: '3',
+  });
+  const short = draftReducer(withRice, {
+    type: 'short',
+    shortages: [shortage(SAVON.id, '9.00'), shortage(RIZ.id, '1.00')],
+  });
+
+  it('keeps the shortages, opens their sheet and shows the stock left on the lines', () => {
+    expect(short.shortagesOpen).toBe(true);
+    expect(short.lines.map((line) => line.product.available)).toEqual(['9.00', '1.00']);
+  });
+
+  it('drops the shortage of a product whose line changes, the sheet closing with the last', () => {
+    const soapKey = short.lines[0]!.key;
+    const fewer = draftReducer(short, { type: 'setQty', key: soapKey, qty: '1' });
+    expect(fewer.shortages?.map((s) => s.productId)).toEqual([RIZ.id]);
+    expect(fewer.shortagesOpen).toBe(true);
+    const none = draftReducer(fewer, { type: 'remove', key: short.lines[1]!.key });
+    expect(none.shortages).toEqual([]);
+    expect(none.shortagesOpen).toBe(false);
+  });
+
+  it('starts a new quote once the ticket is given', () => {
+    expect(draftReducer(short, { type: 'reset' })).toEqual(emptyDraft);
   });
 });

@@ -93,7 +93,8 @@ export function Sheet({
         </button>
       </header>
       <div className={`min-h-0 flex-1 overflow-y-auto p-5 ${bodyClassName}`}>{children}</div>
-      {footer && <footer className="shrink-0 border-t border-rule p-4">{footer}</footer>}
+      {/* Not a <footer>: inside the dialog it would be a second contentinfo, next to the frame's band. */}
+      {footer && <div className="shrink-0 border-t border-rule p-4">{footer}</div>}
     </dialog>
   );
 }

@@ -136,6 +136,14 @@ export const labels = {
       openPdf: 'Ouvrir le PDF',
       saved: (number: string) => `Devis ${number} enregistré.`,
       customerFirst: 'Choisissez le client avant d’enregistrer le devis.',
+      /** The order (T-032, RG-CMD-03): the last step, next to the amount due. */
+      submit: 'Valider la commande',
+      submitting: 'Validation…',
+      customerFirstOrder: 'Choisissez le client avant de valider la commande.',
+      /** Saved just before validating, at prices changed since the lines were added (⚠️ H28). */
+      pricesUpdated: (total: string) =>
+        `Prix mis à jour à l’enregistrement, net à payer ${total} : vérifiez-le avec le client, puis validez.`,
+      submitted: (ticket: string, name: string) => `Commande validée : ticket ${ticket} — ${name}.`,
       linesConcerned: (lines: string) => `Lignes concernées : ${lines}.`,
       empty: 'Aucune ligne : tapez un code, scannez ou touchez un article.',
       number: 'N°',
@@ -159,6 +167,31 @@ export const labels = {
       minus: (amount: string) => `−${amount}`,
       pct: (pct: string) => `${pct} %`,
       editQty: (position: number, qty: string) => `Quantité de la ligne ${position} : ${qty}`,
+    },
+
+    /** The order just validated: its ticket, big, with the customer's name (RG-CMD-05, RG-TKT-03). */
+    order: {
+      title: 'Commande validée',
+      ticket: 'Ticket',
+      tellCustomer: 'Donnez ce ticket au client : il sera appelé à la caisse.',
+      number: (number: string) => `Commande ${number}`,
+      newQuote: 'Nouveau devis',
+      close: 'Fermer',
+    },
+
+    /** Validation refused for want of stock (RG-CMD-02): what is short, and what would fit. */
+    stock: {
+      title: 'Stock insuffisant',
+      /** RG-CMD-02: « 3 disponibles, 5 demandés », in base unit. */
+      counts: (available: string, requested: string, unit: string) =>
+        `${available} disponibles, ${requested} demandés (${unit})`,
+      lines: (positions: string) => `Lignes ${positions}`,
+      line: (position: number) => `Ligne ${position}`,
+      fit: (position: number, qty: string, unit: string) =>
+        `Ramener la ligne ${position} à ${qty} ${unit}`,
+      drop: (position: number) => `Retirer la ligne ${position}`,
+      hint: 'Réduisez les quantités, puis validez à nouveau.',
+      close: 'Fermer',
     },
 
     pad: {

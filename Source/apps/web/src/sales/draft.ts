@@ -2,10 +2,12 @@ import {
   addQuantities,
   type Customer,
   type DiscountEntry,
+  type Order,
   type ProductHit,
   type ProductUnitHit,
   type Quote,
   type QuoteSave,
+  type StockShortage,
 } from '@vente-web/shared';
 
 /**
@@ -46,6 +48,12 @@ export interface DraftState {
   orderDiscount: DiscountEntry | null;
   orderGranted?: DiscountEntry | null;
   saved?: SavedQuote | null;
+  /** Products short of stock when validation was refused (RG-CMD-02), until their lines change. */
+  shortages?: StockShortage[];
+  /** The sheet of those shortages, open when they arrive. */
+  shortagesOpen?: boolean;
+  /** The order once validated (T-032): its ticket shows until a new quote starts. */
+  order?: Order | null;
 }
 
 export type DraftAction =
@@ -58,7 +66,12 @@ export type DraftAction =
   | { type: 'setOrderDiscount'; discount: DiscountEntry | null }
   | { type: 'setCustomer'; customer: DraftCustomer | null }
   /** `body`: the `saveSignature` of what was sent, lines typed meanwhile staying unsaved. */
-  | { type: 'saved'; quote: Quote; body: string };
+  | { type: 'saved'; quote: Quote; body: string }
+  | { type: 'short'; shortages: StockShortage[] }
+  | { type: 'closeShortages' }
+  | { type: 'submitted'; order: Order }
+  /** A new quote, empty, once the ticket was given. */
+  | { type: 'reset' };
 
 export const emptyDraft: DraftState = {
   lines: [],
@@ -166,7 +179,42 @@ function applySaved(state: DraftState, quote: Quote, body: string): DraftState {
   return { ...state, lines, saved: { id, number, version, body } };
 }
 
+/**
+ * The shortages with the stock available now on the lines of their products: the pad then shows
+ * what is really left in each unit (RG-STK-01).
+ */
+function short(state: DraftState, shortages: StockShortage[]): DraftState {
+  const available = new Map(shortages.map((shortage) => [shortage.productId, shortage.available]));
+  const lines = state.lines.map((line) => {
+    const stock = available.get(line.product.id);
+    return stock === undefined ? line : { ...line, product: { ...line.product, available: stock } };
+  });
+  return { ...state, lines, shortages, shortagesOpen: shortages.length > 0 };
+}
+
+/** The product of the line an action changes, whose shortage then no longer holds. */
+function productTouched(state: DraftState, action: DraftAction): string | null {
+  switch (action.type) {
+    case 'add':
+      return action.hit.id;
+    case 'setQty':
+    case 'setUnit':
+    case 'remove':
+      return state.lines.find((line) => line.key === action.key)?.product.id ?? null;
+    default:
+      return null;
+  }
+}
+
 export function draftReducer(state: DraftState, action: DraftAction): DraftState {
+  const next = reduce(state, action);
+  const touched = productTouched(state, action);
+  if (!touched || !next.shortages?.some((shortage) => shortage.productId === touched)) return next;
+  const shortages = next.shortages.filter((shortage) => shortage.productId !== touched);
+  return { ...next, shortages, shortagesOpen: !!next.shortagesOpen && shortages.length > 0 };
+}
+
+function reduce(state: DraftState, action: DraftAction): DraftState {
   switch (action.type) {
     case 'add':
       return add(state, action.hit, action.unitId, action.qty);
@@ -200,5 +248,13 @@ export function draftReducer(state: DraftState, action: DraftAction): DraftState
       return { ...state, customer: action.customer };
     case 'saved':
       return applySaved(state, action.quote, action.body);
+    case 'short':
+      return short(state, action.shortages);
+    case 'closeShortages':
+      return { ...state, shortagesOpen: false };
+    case 'submitted':
+      return { ...state, selected: null, shortages: [], shortagesOpen: false, order: action.order };
+    case 'reset':
+      return emptyDraft;
   }
 }

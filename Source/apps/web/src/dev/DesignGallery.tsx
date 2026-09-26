@@ -1,9 +1,10 @@
-import type { ProductHit } from '@vente-web/shared';
+import { computeQuote, type Order, type ProductHit } from '@vente-web/shared';
 import { useEffect, useMemo, type ReactNode } from 'react';
 
 import { AuthContext, type AuthContextValue, type AuthState } from '../auth/context.js';
 import { LoginScreen } from '../auth/LoginScreen.js';
 import { labels } from '../labels.js';
+import { quoteInput } from '../sales/discount-entry.js';
 import { draftReducer, emptyDraft, saveSignature, type DraftState } from '../sales/draft.js';
 import { SalesWorkspace } from '../sales/SalesWorkspace.js';
 import { AppShell } from '../shell/AppShell.js';
@@ -30,6 +31,8 @@ const SCREENS = {
   'devis-erreur': 'Devis : code scanné inconnu, l’erreur dans la bande du bas',
   'devis-categories': 'Devis : choix de la catégorie ouvert',
   'devis-enregistre': 'Devis enregistré : son numéro, rien à enregistrer',
+  'commande-validee': 'Commande validée : le ticket en grand avec le nom du client',
+  'commande-stock': 'Validation refusée : stock insuffisant, quantités proposées',
   caisse: 'Caisse (espace à venir)',
   responsable: 'Responsable : deux rôles, le choix du rôle actif',
 } as const;
@@ -95,6 +98,48 @@ function savedDraft(): DraftState {
     body: saveSignature(draft),
   };
   return { ...draft, saved };
+}
+
+/** Validated: the ticket over the quote, as the tablet shows it across the counter (T-032). */
+function orderedDraft(): DraftState {
+  const draft = savedDraft();
+  const totals = computeQuote(quoteInput(draft));
+  const order: Order = {
+    id: draft.saved!.id,
+    number: draft.saved!.number,
+    version: 2,
+    customer: draft.customer!,
+    salesUser: { id: '0192a4f0-0000-7000-8000-000000000501', fullName: 'Rakoto Vola' },
+    lines: [],
+    grossTotal: totals.grossTotal,
+    lineDiscounts: totals.lineDiscounts,
+    subtotal: totals.subtotal,
+    orderDiscountPct: totals.orderDiscountPct,
+    orderDiscount: totals.orderDiscount,
+    discountTotal: totals.discountTotal,
+    total: totals.total,
+    createdAt: '2026-09-26T07:00:00.000Z',
+    updatedAt: '2026-09-26T07:05:00.000Z',
+    status: 'SUBMITTED',
+    ticket: { letter: 'A', seq: 15, date: '2026-09-26' },
+    submittedAt: '2026-09-26T07:05:00.000Z',
+    expiresAt: '2026-09-26T20:59:00.000Z',
+  };
+  return { ...draft, order };
+}
+
+/** Refused for want of stock (RG-CMD-02): the rice sack and the oil, each on one line. */
+function shortDraft(): DraftState {
+  const draft = savedDraft();
+  const shortage = (position: number, available: string, requested: string) => {
+    const { product } = draft.lines[position - 1]!;
+    const { id: productId, sku, name, baseUnit } = product;
+    return { productId, sku, name, baseUnit, available, requested, lines: [position] };
+  };
+  return draftReducer(draft, {
+    type: 'short',
+    shortages: [shortage(2, '40.00', '50.00'), shortage(3, '4.00', '6.00')],
+  });
 }
 
 const SCAN_ERROR: News = { tone: 'error', text: labels.sales.unknownCode('8712345678906') };
@@ -255,6 +300,10 @@ function ScreenView({ screen }: { screen: Screen }) {
       return <SalesCategories />;
     case 'devis-enregistre':
       return <Sales draft={savedDraft()} search={null} />;
+    case 'commande-validee':
+      return <Sales draft={orderedDraft()} search={null} />;
+    case 'commande-stock':
+      return <Sales draft={shortDraft()} search={null} />;
     case 'caisse':
     case 'responsable': {
       const me = demoMe(screen === 'caisse' ? 'cashier' : 'manager');

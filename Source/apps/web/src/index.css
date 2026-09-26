@@ -38,7 +38,7 @@
   --font-sans: 'Asap', system-ui, sans-serif;
   --font-display: 'Archivo Variable', 'Asap', sans-serif;
 
-  /* Classical scale (px): 14 · 16 · 18 · 21 · 24 · 36, each with its line height. */
+  /* Classical scale (px): 14 · 16 · 18 · 21 · 24 · 36 · 96, each with its line height. */
   --text-*: initial;
   --text-14: 14px;
   --text-14--line-height: 20px;
@@ -52,6 +52,9 @@
   --text-24--line-height: 30px;
   --text-36: 36px;
   --text-36--line-height: 40px;
+  /* The call ticket, read from across the counter (RG-TKT-03). */
+  --text-96: 96px;
+  --text-96--line-height: 104px;
 
   --radius-sheet: 14px;
   --radius-key: 12px;

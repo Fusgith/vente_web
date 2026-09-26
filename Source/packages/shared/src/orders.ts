@@ -82,23 +82,25 @@ export function demandByProduct(lines: readonly StockDemandLine[]): ProductDeman
   }));
 }
 
+const baseQuantityString = z.string().regex(/^\d+\.\d{2}$/);
+
 /** A product the order asks more of than is available, for « SAV-001 : 30 disponibles, 36 demandés ». */
-export interface StockShortage {
-  productId: string;
-  sku: string;
-  name: string;
-  baseUnit: string;
+export const stockShortageSchema = z.object({
+  productId: z.uuid(),
+  sku: z.string(),
+  name: z.string(),
+  baseUnit: z.string(),
   /** In base unit: on hand − reserved by the orders validated and not delivered (RG-STK-01). */
-  available: string;
-  requested: string;
+  available: baseQuantityString,
+  requested: baseQuantityString,
   /** Positions of its lines. */
-  lines: number[];
-}
+  lines: z.array(z.int().positive()),
+});
+export type StockShortage = z.infer<typeof stockShortageSchema>;
 
 /** Details of `STOCK_UNAVAILABLE`. */
-export interface StockUnavailable {
-  shortages: StockShortage[];
-}
+export const stockUnavailableSchema = z.object({ shortages: z.array(stockShortageSchema) });
+export type StockUnavailable = z.infer<typeof stockUnavailableSchema>;
 
 /**
  * The products short of stock (RG-CMD-02): validation needs `available ≥ Σ quantity × factor`
