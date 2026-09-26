@@ -60,16 +60,38 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
     expect(await auditActions(t.db)).toEqual(['auth.login', 'auth.logout']);
   });
 
-  it('logs out everywhere', async () => {
+  it('keeps one session per person: a new login closes the previous one (RG-USR-09)', async () => {
     const first = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
     const second = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
 
-    const response = await request(t.app, 'POST', '/api/v1/auth/logout-all', {
-      cookie: second.cookie,
-    });
-    expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({ count: 2 });
     expect((await request(t.app, 'GET', ME, { cookie: first.cookie })).statusCode).toBe(401);
+    expect((await request(t.app, 'GET', ME, { cookie: second.cookie })).statusCode).toBe(200);
+    expect(await t.db.session.count()).toBe(1);
+    expect(await auditEntries(t.db)).toEqual([
+      ['auth.login', null],
+      ['auth.session_replaced', 'new_login'],
+      ['auth.login', null],
+    ]);
+  });
+
+  it('leaves a single session when two logins of one person race (RG-USR-09)', async () => {
+    const logins = await Promise.all(
+      [1, 2, 3].map(() => loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' })),
+    );
+    expect(await t.db.session.count()).toBe(1);
+    const alive = await Promise.all(
+      logins.map(async ({ cookie }) => (await request(t.app, 'GET', ME, { cookie })).statusCode),
+    );
+    expect(alive.filter((status) => status === 200)).toHaveLength(1);
+  });
+
+  it('logs out everywhere', async () => {
+    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+
+    const response = await request(t.app, 'POST', '/api/v1/auth/logout-all', { cookie });
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({ count: 1 });
+    expect((await request(t.app, 'GET', ME, { cookie })).statusCode).toBe(401);
     expect(await auditActions(t.db)).toContain('auth.logout_all');
   });
 

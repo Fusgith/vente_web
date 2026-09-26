@@ -107,13 +107,15 @@ describe.skipIf(!TEST_DATABASE_URL)('admin credential management (/users/:id/*, 
     expect(await auditActions(t.db, vola.id)).toContain('user.unlocked');
   });
 
-  it('resets TOTP and kills the remote sessions that relied on it', async () => {
+  it('resets TOTP and kills the remote session that relied on it', async () => {
     const boss = await createUser(t.db, {
       username: 'boss',
       roles: ['owner'],
       password: 'Boss-1234!',
       totpSecret: TOTP_SECRET,
     });
+    const resetTotp = () =>
+      request(t.app, 'DELETE', `/api/v1/users/${boss.id}/totp`, { cookie: adminCookie });
     const remote = await loginOk(t.app, {
       username: 'boss',
       role: 'owner',
@@ -121,34 +123,36 @@ describe.skipIf(!TEST_DATABASE_URL)('admin credential management (/users/:id/*, 
       totp: generateTotpCode(TOTP_SECRET),
       origin: 'REMOTE',
     });
-    const local = await loginOk(t.app, { username: 'boss', role: 'owner', password: 'Boss-1234!' });
 
-    const response = await request(t.app, 'DELETE', `/api/v1/users/${boss.id}/totp`, {
-      cookie: adminCookie,
-    });
-    expect(response.statusCode).toBe(204);
+    expect((await resetTotp()).statusCode).toBe(204);
     expect(
       (await request(t.app, 'GET', ME, { cookie: remote.cookie, origin: 'REMOTE' })).statusCode,
     ).toBe(401);
+    expect(await auditActions(t.db, boss.id)).toEqual(['user.totp_reset', 'user.sessions_revoked']);
+
+    // A session opened in the shop never used the code: it goes on.
+    await t.db.user.update({
+      where: { id: boss.id },
+      data: { totpSecret: TOTP_SECRET, totpEnabledAt: new Date() },
+    });
+    const local = await loginOk(t.app, { username: 'boss', role: 'owner', password: 'Boss-1234!' });
+    expect((await resetTotp()).statusCode).toBe(204);
     const me = await request(t.app, 'GET', ME, { cookie: local.cookie });
     expect(me.statusCode).toBe(200);
     expect(me.json().user.totpEnabled).toBe(false);
-    expect(await auditActions(t.db, boss.id)).toEqual(['user.totp_reset', 'user.sessions_revoked']);
   });
 
-  it('revokes every session of an account', async () => {
-    const a = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
-    const b = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+  it('revokes the session of an account', async () => {
+    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
     const response = await request(t.app, 'DELETE', `/api/v1/users/${vola.id}/sessions`, {
       cookie: adminCookie,
     });
     expect(response.statusCode).toBe(204);
-    expect((await request(t.app, 'GET', ME, { cookie: a.cookie })).statusCode).toBe(401);
-    expect((await request(t.app, 'GET', ME, { cookie: b.cookie })).statusCode).toBe(401);
+    expect((await request(t.app, 'GET', ME, { cookie })).statusCode).toBe(401);
     const row = await t.db.auditLog.findFirstOrThrow({
       where: { action: 'user.sessions_revoked' },
     });
-    expect(row.after).toEqual({ count: 2 });
+    expect(row.after).toEqual({ count: 1 });
   });
 
   it('sets a password, refusing a PIN on a non-operational account', async () => {

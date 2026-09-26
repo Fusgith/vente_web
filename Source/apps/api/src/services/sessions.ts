@@ -231,6 +231,33 @@ export async function revokeSessions(tx: AuditTx, filter: RevokeSessionsFilter):
   return result.count;
 }
 
+/**
+ * One session per person (RG-USR-09, decision H21): a login closes the account's other sessions,
+ * each end audited. The user's row is locked first, so two logins at the same moment still
+ * leave a single session.
+ */
+export async function replaceSessions(tx: AuditTx, userId: string, reason: string): Promise<void> {
+  await tx.$queryRaw`SELECT 1 FROM "users" WHERE "id" = ${userId}::uuid FOR UPDATE`;
+  const open = await tx.session.findMany({
+    where: { userId },
+    select: { id: true, activeRole: true, stationId: true, origin: true },
+  });
+  for (const session of open) {
+    const { count } = await tx.session.deleteMany({ where: { id: session.id } });
+    if (count !== 1) continue;
+    await recordAudit(tx, {
+      userId,
+      activeRole: session.activeRole,
+      stationId: session.stationId,
+      origin: session.origin,
+      action: 'auth.session_replaced',
+      entityType: 'session',
+      entityId: session.id,
+      reason,
+    });
+  }
+}
+
 /** Sweeps the user's sessions past their lifetime, each end audited like any other (RG-AUD-01). */
 export async function purgeExpiredSessions(tx: AuditTx, userId: string, now: Date): Promise<void> {
   const expired = await tx.session.findMany({

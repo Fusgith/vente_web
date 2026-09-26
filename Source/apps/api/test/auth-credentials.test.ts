@@ -29,8 +29,7 @@ describe.skipIf(!TEST_DATABASE_URL)('self-service credentials (H20)', () => {
     await createUser(t.db, { username: 'boss', roles: ['owner'], password: 'Boss-1234!' });
   });
 
-  it('changes the PIN with the current one, revokes the other sessions, audits no secret', async () => {
-    const other = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+  it('changes the PIN with the current one, keeps the session, audits no secret', async () => {
     const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
 
     const response = await request(t.app, 'PUT', '/api/v1/auth/pin', {
@@ -40,7 +39,6 @@ describe.skipIf(!TEST_DATABASE_URL)('self-service credentials (H20)', () => {
     expect(response.statusCode).toBe(204);
 
     expect((await request(t.app, 'GET', ME, { cookie })).statusCode).toBe(200);
-    expect((await request(t.app, 'GET', ME, { cookie: other.cookie })).statusCode).toBe(401);
     expect(
       (await login(t.app, { username: 'vola', role: 'sales', pin: '1234' })).response.statusCode,
     ).toBe(401);
@@ -52,7 +50,6 @@ describe.skipIf(!TEST_DATABASE_URL)('self-service credentials (H20)', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ before: { hasPin: true }, after: { hasPin: true } });
     expect(JSON.stringify(rows)).not.toMatch(/1234|5678/);
-    expect(await auditActions(t.db)).toContain('user.sessions_revoked');
   });
 
   it('counts a wrong current secret as a login failure (RG-USR-05)', async () => {
@@ -95,14 +92,12 @@ describe.skipIf(!TEST_DATABASE_URL)('self-service credentials (H20)', () => {
     expect(short.statusCode).toBe(400);
     expect(short.json().code).toBe('VALIDATION_ERROR');
 
-    const other = await loginOk(t.app, { username: 'boss', role: 'owner', password: 'Boss-1234!' });
     const response = await request(t.app, 'PUT', '/api/v1/auth/password', {
       cookie,
       body: { current: 'Boss-1234!', password: 'New-Boss-5678!' },
     });
     expect(response.statusCode).toBe(204);
     expect((await request(t.app, 'GET', ME, { cookie })).statusCode).toBe(200);
-    expect((await request(t.app, 'GET', ME, { cookie: other.cookie })).statusCode).toBe(401);
     const relogin = await login(t.app, {
       username: 'boss',
       role: 'owner',
@@ -113,7 +108,6 @@ describe.skipIf(!TEST_DATABASE_URL)('self-service credentials (H20)', () => {
     const rows = await t.db.auditLog.findMany({ where: { action: 'user.password_set' } });
     expect(rows[0]).toMatchObject({ before: { hasPassword: true }, after: { hasPassword: true } });
     expect(JSON.stringify(rows)).not.toMatch(/1234|5678/);
-    expect(await auditActions(t.db)).toContain('user.sessions_revoked');
   });
 
   it('enrols TOTP from the shop with a password session, then unlocks remote access', async () => {
@@ -166,6 +160,8 @@ describe.skipIf(!TEST_DATABASE_URL)('self-service credentials (H20)', () => {
       'user.totp_enrolled',
       'auth.login_failed',
       'user.totp_enabled',
+      // One session per person (RG-USR-09): the remote login closes the shop one.
+      'auth.session_replaced',
       'auth.login',
     ]);
   });
@@ -223,11 +219,11 @@ describe.skipIf(!TEST_DATABASE_URL)('self-service credentials (H20)', () => {
     const enabled = await t.db.user.findUniqueOrThrow({ where: { username: 'adm' } });
     expect(enabled.totpSecret).toBe(withCode.json().secret);
     expect(enabled.totpPendingSecret).toBeNull();
-    // The session opened with the old secret ends; the shop session never used it (H20).
+    // The shop session goes on; the remote one ended when it opened (RG-USR-09).
     const stale = await request(t.app, 'GET', ME, { cookie: remote.cookie, origin: 'REMOTE' });
     expect(stale.statusCode).toBe(401);
     expect((await request(t.app, 'GET', ME, { cookie: local.cookie })).statusCode).toBe(200);
-    expect(await auditActions(t.db)).toContain('user.sessions_revoked');
+    expect(await auditActions(t.db)).toContain('auth.session_replaced');
   });
 
   it('confirms an enrolment from the shop only, like its start (H20)', async () => {

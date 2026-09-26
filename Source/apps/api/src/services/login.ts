@@ -25,6 +25,7 @@ import {
   createSession,
   idleMinutesFor,
   purgeExpiredSessions,
+  replaceSessions,
   toAuthMe,
   type AuthContext,
 } from './sessions.js';
@@ -189,6 +190,7 @@ export async function login(
 
   const created = await db.$transaction(async (tx) => {
     await purgeExpiredSessions(tx, user.id, now);
+    await replaceSessions(tx, user.id, 'new_login');
     const session = await createSession(tx, {
       userId: user.id,
       activeRole: body.role,
