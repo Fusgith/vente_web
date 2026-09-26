@@ -1,13 +1,23 @@
-import { computeQuote, formatMga, formatQty, type QuoteTotals } from '@vente-web/shared';
-import { useEffect, useRef, type ReactNode } from 'react';
+import {
+  computeQuote,
+  formatMga,
+  formatQty,
+  type DiscountEntry,
+  type QuoteTotals,
+} from '@vente-web/shared';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { labels } from '../labels.js';
-import { sheetClass, tagClass } from '../ui/button.js';
+import { buttonClass, sheetClass, tagClass } from '../ui/button.js';
+import { Icon } from '../ui/Icon.js';
+import { quoteInput } from './discount-entry.js';
 import type { DraftState } from './draft.js';
+import { OrderDiscountSheet } from './OrderDiscountSheet.js';
 
 interface DraftTableProps {
   draft: DraftState;
   onSelect: (key: string) => void;
+  onOrderDiscount: (discount: DiscountEntry | null) => void;
   /** The customer's picker, at the end of the header. */
   customer?: ReactNode;
 }
@@ -25,19 +35,9 @@ const isZero = (amount: string) => amount === '0.00';
  * The quote as a table (RG-DEV-05): the 7 columns of the PDF, sized to fit the tablet held
  * either way; the totals sit under the table, outside its scroll, so they never hide a line.
  */
-export function DraftTable({ draft, onSelect, customer }: DraftTableProps) {
-  const { lines, selected, orderDiscount, orderGranted } = draft;
-  const quote = computeQuote({
-    lines: lines.map((line) => ({
-      quantity: line.qty,
-      unitPrice: line.unit.price,
-      capPct: line.capPct,
-      discount: line.discount,
-      granted: line.granted ?? null,
-    })),
-    orderDiscount,
-    orderGranted: orderGranted ?? null,
-  });
+export function DraftTable({ draft, onSelect, onOrderDiscount, customer }: DraftTableProps) {
+  const { lines, selected } = draft;
+  const quote = computeQuote(quoteInput(draft));
 
   const selectedRow = useRef<HTMLTableRowElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
@@ -136,7 +136,9 @@ export function DraftTable({ draft, onSelect, customer }: DraftTableProps) {
                         )}
                       </td>
                       <td className={row + ' text-right figures'}>{formatMga(line.unit.price)}</td>
-                      <td className={row + ' text-right leading-5 figures'}>
+                      <td
+                        className={`${row} text-right leading-5 figures ${totals.withinLimit ? '' : 'text-madder'}`}
+                      >
                         {!isZero(totals.discount) && (
                           <>
                             <span className="block font-semibold">
@@ -157,20 +159,27 @@ export function DraftTable({ draft, onSelect, customer }: DraftTableProps) {
               </tbody>
             </table>
           </div>
-          <Totals quote={quote} />
+          <Totals quote={quote} draft={draft} onOrderDiscount={onOrderDiscount} />
         </>
       )}
     </section>
   );
 }
 
+interface TotalsProps {
+  quote: QuoteTotals;
+  draft: DraftState;
+  onOrderDiscount: (discount: DiscountEntry | null) => void;
+}
+
 /**
  * Under the table, in the order of RG-DEV-05: gross total, line discounts, subtotal, order
  * discount (with its rate when typed as one), amount due, then the reminder of all discounts.
- * Without any discount, the amount due alone.
+ * Without any discount, the amount due alone. The order discount is typed from here.
  */
-function Totals({ quote }: { quote: QuoteTotals }) {
-  const rows: { label: string; amount: string }[] = [];
+function Totals({ quote, draft, onOrderDiscount }: TotalsProps) {
+  const [open, setOpen] = useState(false);
+  const rows: { label: string; amount: string; wrong?: boolean }[] = [];
   if (!isZero(quote.discountTotal)) {
     rows.push({ label: text.grossTotal, amount: formatMga(quote.grossTotal) });
     if (!isZero(quote.lineDiscounts)) {
@@ -183,28 +192,53 @@ function Totals({ quote }: { quote: QuoteTotals }) {
           ? text.orderDiscountPct(formatQty(quote.orderDiscountPct))
           : text.orderDiscount,
         amount: text.minus(formatMga(quote.orderDiscount)),
+        wrong: !quote.orderWithinLimit,
       });
     }
   }
 
   return (
-    <dl className="grid shrink-0 grid-cols-[1fr_auto] items-baseline gap-x-6 border-t-2 border-ink px-4 py-2 text-right">
-      {rows.map((row) => (
-        <div key={row.label} className="contents text-ink-2">
-          <dt>{row.label}</dt>
-          <dd className="figures">{row.amount}</dd>
+    <div className="flex shrink-0 flex-wrap items-end gap-x-6 gap-y-2 border-t-2 border-ink px-4 py-2">
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        onClick={() => setOpen(true)}
+        className={buttonClass('secondary', 'md', 'shrink-0')}
+      >
+        <Icon name="percent" className="size-5" />
+        {labels.sales.discount.order}
+      </button>
+      <dl className="ml-auto grid grid-cols-[1fr_auto] items-baseline gap-x-6 text-right">
+        {rows.map((row) => (
+          <div key={row.label} className={`contents ${row.wrong ? 'text-madder' : 'text-ink-2'}`}>
+            <dt>{row.label}</dt>
+            <dd className="figures">{row.amount}</dd>
+          </div>
+        ))}
+        <div className="contents">
+          <dt className="text-18 font-semibold">{text.total}</dt>
+          <dd className="text-24 font-bold figures">{formatMga(quote.total)}</dd>
         </div>
-      ))}
-      <div className="contents">
-        <dt className="text-18 font-semibold">{text.total}</dt>
-        <dd className="text-24 font-bold figures">{formatMga(quote.total)}</dd>
-      </div>
-      {!isZero(quote.discountTotal) && (
-        <div className="contents text-14 text-ink-2">
-          <dt>{text.discountTotal}</dt>
-          <dd className="figures">{text.minus(formatMga(quote.discountTotal))}</dd>
-        </div>
+        {!isZero(quote.discountTotal) && (
+          <div className="contents text-14 text-ink-2">
+            <dt>{text.discountTotal}</dt>
+            <dd className="figures">{text.minus(formatMga(quote.discountTotal))}</dd>
+          </div>
+        )}
+      </dl>
+      {!quote.orderWithinLimit && (
+        <p role="alert" className="flex basis-full items-start gap-2 font-semibold text-madder">
+          <Icon name="alert" className="size-5 shrink-0 translate-y-px" />
+          {labels.sales.discount.orderTooHigh(formatMga(quote.maxOrderDiscount))}
+        </p>
       )}
-    </dl>
+      {open && (
+        <OrderDiscountSheet
+          draft={draft}
+          onApply={onOrderDiscount}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </div>
   );
 }

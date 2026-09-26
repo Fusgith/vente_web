@@ -63,6 +63,19 @@ describe('draftReducer', () => {
     expect(next.selected).toBe(next.lines[0]!.key);
   });
 
+  it('drops the discount of a line whose unit changes: it was agreed under another cap', () => {
+    const state = run(add(PIECE!.id, '4'));
+    const key = state.lines[0]!.key;
+    const discounted = draftReducer(state, {
+      type: 'setDiscount',
+      key,
+      discount: { kind: 'pct', value: '5' },
+    });
+    expect(discounted.lines[0]!.discount).toEqual({ kind: 'pct', value: '5' });
+    const next = draftReducer(discounted, { type: 'setUnit', key, unitId: PAQUET!.id });
+    expect(next.lines[0]).toMatchObject({ unit: { label: 'paquet' }, discount: null });
+  });
+
   it('merges into the line that already holds the new unit', () => {
     const state = run(add(PAQUET!.id, '2'), add(PIECE!.id, '4'));
     const next = draftReducer(state, {

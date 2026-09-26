@@ -62,6 +62,16 @@ export function formatMga(value: number | string): string {
 }
 
 /**
+ * Digits being typed on a pad, grouped the same way as they will print: `12350,5` →
+ * `12 350,5`; a trailing comma stays, the entry is not rounded (RG-FMT-01).
+ */
+export function formatTyped(text: string): string {
+  const [head = '', tail] = text.split(',');
+  const grouped = groupThousands(head || '0');
+  return tail === undefined ? grouped : `${grouped},${tail}`;
+}
+
+/**
  * Quantity: same thousands separator, up to 2 decimals, null decimals hidden
  * (`12` not `12,00`, `12,5` not `12,50`) — RG-FMT-01, RG-ART-04.
  */

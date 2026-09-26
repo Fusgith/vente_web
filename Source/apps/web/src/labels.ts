@@ -158,6 +158,34 @@ export const labels = {
       close: 'Fermer',
       invalid: 'Quantité invalide : de 0,01 à 999 999,99.',
     },
+
+    /** Discount typed on a line or on the total, in % or in MGA (RG-REM-02/06). */
+    discount: {
+      label: 'Remise',
+      kinds: 'Remise saisie',
+      inPct: 'En pourcentage (%)',
+      inAmount: 'En montant (MGA)',
+      pctSign: '%',
+      amountSign: 'MGA',
+      /** Shown before anything is typed (RG-REM-02). */
+      maxLine: (pct: string, amount: string) => `Au plus ${pct} %, soit ${amount}`,
+      noLineDiscount: 'Aucune remise sur cette ligne sans code du boss.',
+      /** In place of the maximum, when a key is refused. */
+      beyondLine: (pct: string, amount: string) =>
+        `Au plus ${pct} %, soit ${amount} : au-delà, il faut un code du boss.`,
+      order: 'Remise sur le total',
+      subtotal: 'Sous-total',
+      maxOrder: (amount: string) => `Au plus ${amount}`,
+      noOrderRoom:
+        'Plus aucune marge de remise sur ces lignes : une remise sur le total demande un code du boss.',
+      beyondOrder: (amount: string) => `Au plus ${amount} : au-delà, il faut un code du boss.`,
+      /** Under the table, when lines changed after the order discount was typed. */
+      orderTooHigh: (max: string) =>
+        `La remise sur le total dépasse maintenant le maximum (${max}) : corrigez-la.`,
+      apply: 'Appliquer',
+      remove: 'Retirer la remise',
+      close: 'Fermer',
+    },
   },
 
   /** One workspace per active role (annexe B). */

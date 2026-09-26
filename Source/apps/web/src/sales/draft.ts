@@ -104,8 +104,11 @@ function changeUnit(state: DraftState, key: string, unitId: string): DraftState 
       );
     return { ...state, lines, selected: target };
   }
+  // A discount is agreed for one unit, under its cap: another unit starts without one.
   const lines = state.lines.map((candidate) =>
-    candidate.key === key ? { ...candidate, key: target, unit, capPct: capOf(unit) } : candidate,
+    candidate.key === key
+      ? { ...candidate, key: target, unit, capPct: capOf(unit), discount: null }
+      : candidate,
   );
   return { ...state, lines, selected: target };
 }

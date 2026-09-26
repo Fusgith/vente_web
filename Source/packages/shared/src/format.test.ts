@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { NBSP, formatMga, formatQty, roundHalfUp } from './format.js';
+import { NBSP, formatMga, formatQty, formatTyped, roundHalfUp } from './format.js';
 
 describe('roundHalfUp — RG-FMT-01 (arrondi au plus proche, demi-supérieur)', () => {
   it('rounds .5 up, exactly, from decimal strings', () => {
@@ -64,5 +64,18 @@ describe('formatQty — RG-FMT-01, RG-ART-04 (décimales nulles masquées)', () 
   it('rounds to two decimals half-up (base_qty = round(qty × factor, 2))', () => {
     expect(formatQty('0.125')).toBe('0,13');
     expect(formatQty('100.001')).toBe('100');
+  });
+});
+
+describe('formatTyped — RG-FMT-01 (saisie en cours au pavé)', () => {
+  it('groups the thousands as they will print, without rounding', () => {
+    expect(formatTyped('12350')).toBe(`12${NBSP}350`);
+    expect(formatTyped('1250000,5')).toBe(`1${NBSP}250${NBSP}000,5`);
+  });
+
+  it('keeps a trailing comma and shows 0 for nothing typed', () => {
+    expect(formatTyped('12,')).toBe('12,');
+    expect(formatTyped('')).toBe('0');
+    expect(formatTyped(',5')).toBe('0,5');
   });
 });

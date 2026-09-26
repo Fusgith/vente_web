@@ -1,4 +1,4 @@
-export { formatMga, formatQty, roundHalfUp, NBSP } from './format.js';
+export { formatMga, formatQty, formatTyped, roundHalfUp, NBSP } from './format.js';
 export * from './auth.js';
 export * from './brand.js';
 export * from './catalog.js';

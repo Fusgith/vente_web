@@ -233,10 +233,11 @@ describe('quote screen: quantity pad', () => {
     expect(
       within(switched).getByRole('button', { name: new RegExp(`^${PAQUET!.label}`) }),
     ).toHaveAttribute('aria-pressed', 'true');
-    // Its stock in that unit (420 pieces are 70 packets) and its cap are told on the pad.
+    // Its stock in that unit (420 pieces are 70 packets) is told on its button.
     const chosen = within(switched).getByRole('button', { name: /^paquet/ });
     expect(chosen).toHaveTextContent(labels.sales.unitStock('70'));
-    expect(chosen).toHaveTextContent(shown(labels.sales.maxDiscount('5')));
+    // The cap is told with the discount: 5 % of one packet.
+    expect(pad()).toHaveTextContent(shown(labels.sales.discount.maxLine('5', formatMga('425'))));
     expect(within(switched).queryByRole('button', { name: /^carton/ })).toBeNull();
     expect(screen.getAllByRole('row')[1]).toHaveTextContent('paquet (× 6 pièce)');
   });
@@ -279,5 +280,122 @@ describe('quote screen: quantity pad', () => {
     fireEvent.change(searchBox(), { target: { value: 'sav' } });
     expect(screen.queryByRole('region', { name: labels.sales.pad.title(1) })).toBeNull();
     expect(screen.getAllByRole('row')[1]).not.toHaveAttribute('aria-current');
+  });
+});
+
+describe('quote screen: discounts (RG-REM-02, RG-REM-06)', () => {
+  const discount = labels.sales.discount;
+  const press = (area: HTMLElement, ...keys: string[]) => {
+    for (const key of keys) fireEvent.click(within(area).getByRole('button', { name: key }));
+  };
+  const confirm = (area: HTMLElement) =>
+    fireEvent.click(within(area).getByRole('button', { name: labels.sales.pad.confirm }));
+  const discountField = (area: HTMLElement) =>
+    within(area).getByRole('button', { name: new RegExp(`^${discount.label}`) });
+
+  async function addSavon() {
+    mount();
+    fireEvent.click(await screen.findByRole('button', { name: /^Savon de Marseille/ }));
+    return pad();
+  }
+
+  it('takes a line discount in %, its maximum told before typing', async () => {
+    const keys = await addSavon();
+    press(keys, '3');
+    fireEvent.click(discountField(keys));
+    // 3 × 1 500 under a 5 % cap: at most 225 MGA.
+    expect(keys).toHaveTextContent(shown(discount.maxLine('5', formatMga('225'))));
+    press(keys, '5');
+    expect(discountField(keys)).toHaveTextContent(`5 ${discount.pctSign}`);
+    confirm(keys);
+
+    const row = screen.getAllByRole('row')[1]!;
+    expect(row).toHaveTextContent(shown(labels.sales.draft.minus(formatMga('225'))));
+    expect(row).toHaveTextContent(shown(labels.sales.draft.pct('5')));
+    expect(amountDue()).toHaveTextContent(mga('4275'));
+  });
+
+  it('refuses a key that would go beyond the cap of the line', async () => {
+    const keys = await addSavon();
+    fireEvent.click(discountField(keys));
+    press(keys, '6');
+
+    expect(within(keys).getByRole('alert')).toHaveTextContent(
+      shown(discount.beyondLine('5', formatMga('75'))),
+    );
+    expect(discountField(keys)).toHaveTextContent(`0 ${discount.pctSign}`);
+    press(keys, '4');
+    expect(within(keys).queryByRole('alert')).toBeNull();
+    expect(discountField(keys)).toHaveTextContent(`4 ${discount.pctSign}`);
+  });
+
+  it('takes an amount, and checks it again against a smaller quantity', async () => {
+    const keys = await addSavon();
+    press(keys, '3');
+    fireEvent.click(discountField(keys));
+    fireEvent.click(within(keys).getByRole('button', { name: discount.inAmount }));
+    press(keys, '2', '2', '5');
+    confirm(keys);
+    expect(amountDue()).toHaveTextContent(mga('4275'));
+
+    // Down to 2 items, the cap is 150 MGA: the 225 MGA agreed no longer fit.
+    fireEvent.click(await lineQty(1, '3'));
+    const again = pad();
+    press(again, '2');
+    confirm(again);
+    expect(within(again).getByRole('alert')).toHaveTextContent(
+      shown(discount.beyondLine('5', formatMga('150'))),
+    );
+    expect(await lineQty(1, '3')).toBeVisible();
+  });
+
+  it('offers no discount on a line without a cap', async () => {
+    mount();
+    fireEvent.click(await screen.findByRole('button', { name: /^Riz blanc/ }));
+    const keys = pad();
+
+    expect(discountField(keys)).toBeDisabled();
+    expect(within(keys).getByRole('button', { name: discount.inAmount })).toBeDisabled();
+    expect(keys).toHaveTextContent(discount.noLineDiscount);
+  });
+
+  it('drops the discount of a line whose unit changes', async () => {
+    const keys = await addSavon();
+    fireEvent.click(discountField(keys));
+    press(keys, '5');
+    confirm(keys);
+    expect(amountDue()).toHaveTextContent(mga('1425'));
+
+    fireEvent.click(await lineQty(1, '1'));
+    const units = within(pad()).getByRole('group', { name: labels.sales.pad.unit });
+    fireEvent.click(within(units).getByRole('button', { name: /^paquet/ }));
+    expect(amountDue()).toHaveTextContent(mga('8500'));
+    expect(screen.queryByText(labels.sales.draft.discountTotal)).toBeNull();
+  });
+
+  it('takes a discount on the total within what the line caps leave', async () => {
+    const keys = await addSavon();
+    fireEvent.click(within(keys).getByRole('button', { name: labels.sales.pad.close }));
+    fireEvent.click(screen.getByRole('button', { name: discount.order }));
+    const sheet = screen.getByRole('dialog', { name: discount.order });
+    // One piece at 1 500 under a 5 % cap: 75 MGA of room.
+    expect(sheet).toHaveTextContent(shown(discount.maxOrder(formatMga('75'))));
+
+    fireEvent.click(within(sheet).getByRole('button', { name: discount.inAmount }));
+    press(sheet, '8', '0');
+    expect(within(sheet).getByRole('alert')).toHaveTextContent(
+      shown(discount.beyondOrder(formatMga('75'))),
+    );
+    press(sheet, labels.sales.pad.erase, '7', '5');
+    expect(within(sheet).queryByRole('alert')).toBeNull();
+    expect(sheet).toHaveTextContent(mga('1425'));
+    fireEvent.click(within(sheet).getByRole('button', { name: discount.apply }));
+
+    expect(screen.queryByRole('dialog')).toBeNull();
+    const row = screen.getByText(labels.sales.draft.orderDiscount, { selector: 'dt' });
+    expect(row.nextElementSibling).toHaveTextContent(
+      shown(labels.sales.draft.minus(formatMga('75'))),
+    );
+    expect(amountDue()).toHaveTextContent(mga('1425'));
   });
 });

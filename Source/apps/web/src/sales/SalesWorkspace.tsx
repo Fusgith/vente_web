@@ -35,7 +35,10 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
               key={selected.key}
               line={selected}
               position={position + 1}
-              onQty={(qty) => dispatch({ type: 'setQty', key: selected.key, qty })}
+              onConfirm={(qty, discount) => {
+                dispatch({ type: 'setQty', key: selected.key, qty });
+                dispatch({ type: 'setDiscount', key: selected.key, discount });
+              }}
               onUnit={(unitId) => dispatch({ type: 'setUnit', key: selected.key, unitId })}
               onRemove={() => dispatch({ type: 'remove', key: selected.key })}
               onClose={() => dispatch({ type: 'select', key: null })}
@@ -46,6 +49,7 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
       <DraftTable
         draft={draft}
         onSelect={(key) => dispatch({ type: 'select', key })}
+        onOrderDiscount={(discount) => dispatch({ type: 'setOrderDiscount', discount })}
         customer={
           <CustomerPicker
             value={draft.customer}
