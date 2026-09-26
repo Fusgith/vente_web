@@ -14,6 +14,7 @@ export * from './customers.js';
 export { addQuantities, baseQuantity, isQuantity, lineGross, sumAmounts } from './decimal.js';
 export * from './discount.js';
 export * from './orders.js';
+export * from './queues.js';
 export * from './quotes.js';
 export * from './realtime.js';
 export { ROLE_LABELS } from './role-labels.js';

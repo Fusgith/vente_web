@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
 import { baseQuantity } from './decimal.js';
-import { demandByProduct, fittingQuantity, shortProducts, ticketLabel } from './orders.js';
+import {
+  canTransition,
+  demandByProduct,
+  fittingQuantity,
+  ORDER_STATUSES,
+  ORDER_TRANSITIONS,
+  shortProducts,
+  ticketLabel,
+} from './orders.js';
 
 describe('RG-TKT-01 ticket', () => {
   it('is the letter then the number of the day, without padding', () => {
@@ -70,6 +78,30 @@ describe('fittingQuantity: the quantity to offer instead (RG-CMD-02)', () => {
     ] as const) {
       const qty = fittingQuantity(available, factor);
       expect(Number(baseQuantity(qty, factor))).toBeLessThanOrEqual(Number(available));
+    }
+  });
+});
+
+describe('RG-CMD-06 order transitions', () => {
+  it('follows the register: validated, called, paid — or back in the queue when absent', () => {
+    expect(canTransition('DRAFT', 'SUBMITTED')).toBe(true);
+    expect(canTransition('SUBMITTED', 'AT_REGISTER')).toBe(true);
+    expect(canTransition('AT_REGISTER', 'SUBMITTED')).toBe(true);
+    expect(canTransition('AT_REGISTER', 'PAID')).toBe(true);
+    expect(canTransition('EXPIRED', 'SUBMITTED')).toBe(true);
+  });
+
+  it('refuses any other move, and nothing leaves a final state', () => {
+    expect(canTransition('DRAFT', 'AT_REGISTER')).toBe(false);
+    expect(canTransition('SUBMITTED', 'PAID')).toBe(false);
+    expect(canTransition('PAID', 'CANCELLED')).toBe(false);
+    for (const final of ['DELIVERED', 'CANCELLED', 'REFUNDED'] as const) {
+      expect(ORDER_TRANSITIONS[final]).toEqual([]);
+    }
+    // Every state appears, and only states lead somewhere.
+    expect(Object.keys(ORDER_TRANSITIONS).sort()).toEqual([...ORDER_STATUSES].sort());
+    for (const targets of Object.values(ORDER_TRANSITIONS)) {
+      for (const target of targets) expect(ORDER_STATUSES).toContain(target);
     }
   });
 });

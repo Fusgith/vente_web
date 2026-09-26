@@ -1,4 +1,10 @@
-import type { QueueName, RealtimeEvent, RealtimeEvents, Role } from '@vente-web/shared';
+import type {
+  OrderStatus,
+  QueueName,
+  RealtimeEvent,
+  RealtimeEvents,
+  Role,
+} from '@vente-web/shared';
 
 /**
  * Rooms of CDC technique §6.1, plus one per user: the salesperson's tablets hear about their
@@ -68,3 +74,51 @@ export function orderSubmitted(order: { id: string; salesUserId: string }): Emis
     ),
   ];
 }
+
+/** Whatever changed in a queue, its followers read it again (RG-FIL-01/02). */
+export function queueChanged(queue: QueueName, orderId: string): Emission[] {
+  return [emission([room.queue(queue)], 'queue.changed', { queue, orderId })];
+}
+
+function statusChanged(order: CalledOrder, status: OrderStatus): Emission {
+  return emission(
+    [room.role('manager'), room.role('owner'), room.user(order.salesUserId)],
+    'order.status_changed',
+    { orderId: order.id, status },
+  );
+}
+
+interface CalledOrder {
+  id: string;
+  salesUserId: string;
+}
+
+/**
+ * A ticket called to a register (RG-FIL-03). Without a public display the call is verbal: the
+ * salesperson's tablet hears of it too, to tell the customer (RG-DSP-05).
+ */
+export function orderCalled(order: CalledOrder, verbal: boolean): Emission[] {
+  return [
+    ...queueChanged('register', order.id),
+    emission(
+      [room.queue('register'), ...(verbal ? [room.user(order.salesUserId)] : [])],
+      'ticket.called',
+      { queue: 'register', orderId: order.id },
+    ),
+    statusChanged(order, 'AT_REGISTER'),
+  ];
+}
+
+/** Absent when called, back in the queue; the manager hears of it from the 2nd time (RG-FIL-04). */
+export function orderNoShow(order: CalledOrder, noShowCount: number): Emission[] {
+  return [
+    ...queueChanged('register', order.id),
+    statusChanged(order, 'SUBMITTED'),
+    ...(noShowCount >= NO_SHOWS_BEFORE_NOTICE
+      ? [emission([room.role('manager')], 'order.no_show', { orderId: order.id, noShowCount })]
+      : []),
+  ];
+}
+
+/** RG-FIL-04: « Après 2 absences, le responsable est notifié. » */
+export const NO_SHOWS_BEFORE_NOTICE = 2;

@@ -43,6 +43,11 @@ export const ERROR_LABELS = {
     'Un prix a changé depuis l’enregistrement du devis : vérifiez-le avec le client, puis validez.',
   STOCK_UNAVAILABLE:
     'Stock insuffisant pour valider la commande : réduisez les quantités signalées.',
+  QUEUE_EMPTY: 'Aucun client en attente dans cette file.',
+  REGISTER_BUSY:
+    'Un client est déjà à votre caisse : encaissez-le ou déclarez-le absent avant d’en appeler un autre.',
+  ORDER_NOT_IN_QUEUE: 'Ce ticket n’attend plus dans la file : la liste a été mise à jour.',
+  ORDER_NOT_AT_REGISTER: 'Ce ticket n’est plus à votre caisse : la liste a été mise à jour.',
   TICKET_LETTER_MISSING:
     'Aucune lettre de ticket n’est attribuée à ce commercial : l’admin doit lui en donner une.',
 } as const;

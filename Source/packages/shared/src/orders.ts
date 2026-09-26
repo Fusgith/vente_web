@@ -25,6 +25,29 @@ export const ORDER_STATUSES = [
 export const orderStatusSchema = z.enum(ORDER_STATUSES);
 export type OrderStatus = z.infer<typeof orderStatusSchema>;
 
+/**
+ * The transitions of CDC métier §5.2; any other is refused (RG-CMD-06). An absent customer sends
+ * the order from the register back to its queue (RG-FIL-04); a customer absent at the delivery
+ * counter leaves it READY, called again later (T-060).
+ */
+export const ORDER_TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatus[]>> = {
+  DRAFT: ['SUBMITTED'],
+  SUBMITTED: ['AT_REGISTER', 'EXPIRED', 'CANCELLED'],
+  AT_REGISTER: ['PAID', 'SUBMITTED', 'CANCELLED'],
+  PAID: ['PREPARING', 'REFUNDED'],
+  PREPARING: ['READY', 'ISSUE'],
+  READY: ['DELIVERED', 'ISSUE'],
+  ISSUE: ['READY', 'DELIVERED'],
+  DELIVERED: [],
+  EXPIRED: ['SUBMITTED'],
+  CANCELLED: [],
+  REFUNDED: [],
+};
+
+export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
+  return ORDER_TRANSITIONS[from].includes(to);
+}
+
 /** The version read: a quote saved or validated meanwhile elsewhere is never validated blind. */
 export const orderSubmitSchema = z.object({ version: z.int().positive() });
 export type OrderSubmit = z.infer<typeof orderSubmitSchema>;

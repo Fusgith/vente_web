@@ -18,6 +18,10 @@ export const realtimePayloadSchemas = {
   'queue.changed': z.object({ queue: queueNameSchema, orderId: z.uuid() }),
   /** Any transition of an order (RG-CMD-06). */
   'order.status_changed': z.object({ orderId: z.uuid(), status: orderStatusSchema }),
+  /** A ticket called to a register or a counter (RG-FIL-03, RG-DSP-01/05). */
+  'ticket.called': z.object({ queue: queueNameSchema, orderId: z.uuid() }),
+  /** A customer absent when called, back in the queue; the manager hears from the 2nd time (RG-FIL-04). */
+  'order.no_show': z.object({ orderId: z.uuid(), noShowCount: z.int().positive() }),
 };
 
 export type RealtimeEvent = keyof typeof realtimePayloadSchemas;
