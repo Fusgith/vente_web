@@ -1,5 +1,5 @@
 import { computeQuote, formatMga, formatQty } from '@vente-web/shared';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 
 import { labels } from '../labels.js';
 import { sheetClass, tagClass } from '../ui/button.js';
@@ -8,6 +8,8 @@ import type { DraftState } from './draft.js';
 interface DraftTableProps {
   draft: DraftState;
   onSelect: (key: string) => void;
+  /** The customer's picker, at the end of the header. */
+  customer?: ReactNode;
 }
 
 const CELL = 'px-2 first:pl-4 last:pr-4';
@@ -24,6 +26,7 @@ const FOOT_AMOUNT_PHONE = 'max-md:right-0 max-md:bg-transparent';
 export function DraftTable({
   draft: { lines, selected, orderDiscount, orderGranted },
   onSelect,
+  customer,
 }: DraftTableProps) {
   const draftL = labels.sales.draft;
 
@@ -66,6 +69,7 @@ export function DraftTable({
         <span className="rounded-full border border-dashed border-rule-strong px-2.5 text-14 leading-6 text-ink-2">
           {draftL.unsaved}
         </span>
+        {customer && <div className="ml-auto max-w-full min-w-0">{customer}</div>}
       </header>
       {lines.length === 0 ? (
         <p className="m-auto max-w-sm p-6 text-center text-ink-2">{draftL.empty}</p>

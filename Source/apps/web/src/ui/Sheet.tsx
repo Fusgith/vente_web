@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react';
 
 import { buttonClass } from './button.js';
 import { Icon } from './Icon.js';
@@ -23,6 +23,8 @@ interface SheetProps {
   width?: SheetWidth;
   /** Extra classes of the body (e.g. a grid). */
   bodyClassName?: string;
+  /** Focused on opening instead of the first control (e.g. a search field). */
+  initialFocus?: RefObject<HTMLElement | null>;
 }
 
 /**
@@ -37,6 +39,7 @@ export function Sheet({
   footer,
   width = 'lg',
   bodyClassName = '',
+  initialFocus,
 }: SheetProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -55,6 +58,8 @@ export function Sheet({
     } else {
       dialog.setAttribute('open', '');
     }
+    // After showModal, which focuses the first control of the dialog.
+    initialFocus?.current?.focus();
     const onCancel = (event: Event) => {
       event.preventDefault();
       onCloseRef.current();
@@ -65,7 +70,8 @@ export function Sheet({
       if (typeof dialog.close === 'function' && dialog.open) dialog.close();
       if (opener?.isConnected) opener.focus();
     };
-  }, []);
+    // A ref object never changes: the sheet opens once per mount.
+  }, [initialFocus]);
 
   return (
     <dialog

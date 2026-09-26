@@ -1,6 +1,7 @@
 import { useReducer } from 'react';
 
 import { labels } from '../labels.js';
+import { CustomerPicker } from './CustomerPicker.js';
 import { DraftTable } from './DraftTable.js';
 import { draftReducer, emptyDraft, type DraftState } from './draft.js';
 import { ProductSearch } from './ProductSearch.js';
@@ -42,7 +43,16 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
           )
         }
       />
-      <DraftTable draft={draft} onSelect={(key) => dispatch({ type: 'select', key })} />
+      <DraftTable
+        draft={draft}
+        onSelect={(key) => dispatch({ type: 'select', key })}
+        customer={
+          <CustomerPicker
+            value={draft.customer}
+            onChange={(customer) => dispatch({ type: 'setCustomer', customer })}
+          />
+        }
+      />
     </div>
   );
 }

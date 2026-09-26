@@ -1,5 +1,6 @@
 import {
   addQuantities,
+  type Customer,
   type DiscountEntry,
   type ProductHit,
   type ProductUnitHit,
@@ -21,11 +22,14 @@ export interface DraftLine {
   granted?: DiscountEntry | null;
 }
 
+export type DraftCustomer = Pick<Customer, 'id' | 'name' | 'phone'>;
+
 export interface DraftState {
   lines: DraftLine[];
   /** The line whose quantity pad is open: the last one added, or the one tapped. */
   selected: string | null;
-  clientId: string | null;
+  /** Mandatory before the quote is saved (RG-DEV-04); chosen from the directory (T-029). */
+  customer: DraftCustomer | null;
   orderDiscount: DiscountEntry | null;
   orderGranted?: DiscountEntry | null;
 }
@@ -38,12 +42,12 @@ export type DraftAction =
   | { type: 'select'; key: string | null }
   | { type: 'setDiscount'; key: string; discount: DiscountEntry | null }
   | { type: 'setOrderDiscount'; discount: DiscountEntry | null }
-  | { type: 'setClient'; clientId: string | null };
+  | { type: 'setCustomer'; customer: DraftCustomer | null };
 
 export const emptyDraft: DraftState = {
   lines: [],
   selected: null,
-  clientId: null,
+  customer: null,
   orderDiscount: null,
 };
 
@@ -134,7 +138,7 @@ export function draftReducer(state: DraftState, action: DraftAction): DraftState
       };
     case 'setOrderDiscount':
       return { ...state, orderDiscount: action.discount };
-    case 'setClient':
-      return { ...state, clientId: action.clientId };
+    case 'setCustomer':
+      return { ...state, customer: action.customer };
   }
 }

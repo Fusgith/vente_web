@@ -100,6 +100,29 @@ export const labels = {
     maxDiscount: (pct: string) => `remise max ${pct} %`,
     maxDiscountRange: (min: string, max: string) => `remise max ${min} à ${max} %`,
 
+    customer: {
+      choose: 'Choisir le client',
+      /** Name of the trigger once a customer is chosen. */
+      change: (name: string) => `Client : ${name}. Changer de client`,
+      title: 'Client du devis',
+      close: 'Fermer',
+      search: 'Téléphone ou nom du client',
+      searchHint: 'Tapez au moins 3 chiffres du téléphone, ou le début du nom.',
+      noResult: 'Aucun client ne correspond : créez sa fiche ci-dessous.',
+      refine: 'Précisez la recherche : seuls les 8 premiers clients sont affichés.',
+      newCustomer: 'Nouveau client',
+      name: 'Nom',
+      phone: 'Téléphone',
+      save: 'Enregistrer le client',
+      saving: 'Enregistrement…',
+      nameRequired: 'Saisissez le nom du client.',
+      phoneInvalid:
+        'Téléphone invalide : 10 chiffres commençant par 0 (034 12 345 67), ou +indicatif.',
+      taken: (name: string) => `Ce numéro est déjà celui de ${name}.`,
+      pick: (name: string) => `Choisir ${name}`,
+      chosen: (name: string) => `Client : ${name}`,
+    },
+
     draft: {
       title: 'Lignes du devis',
       unsaved: 'Brouillon non enregistré',
