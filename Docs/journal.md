@@ -2,6 +2,29 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 26/09/2026 — T-029 répertoire clients — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Test de verrouillage des comptes rendu stable (`517c8da`) : les tentatives concurrentes s'écrivent au journal d'audit dans l'ordre où elles finissent, pas dans l'ordre de leurs créneaux. Le test vérifie désormais l'ensemble des actions et les compteurs 1 à 5, sans ordre.
+- API du répertoire (`df5e77c`, RG-DEV-04), avec 15 tests :
+  - `GET /customers?q=` : recherche par chiffres du téléphone (n'importe où dans le numéro, le numéro exact en tête) ou par débuts de mots du nom (sans casse ni accents) ; 8 résultats au plus, puis « précisez » ;
+  - `POST /customers` (commercial) : nom et téléphone obligatoires, téléphone ramené à une forme unique (`0341234567`, ou `+indicatif` hors Madagascar) ; un numéro déjà connu est refusé (409) avec la fiche existante, y compris quand deux tablettes le créent en même temps (index unique partiel) ;
+  - `PATCH /customers/:id` (commercial, caissier, responsable) : le journal ne garde que les champs changés ;
+  - `POST /customers/:id/deactivate` et `/merge` (responsable) : jamais de suppression ; la fiche fusionnée est désactivée et pointe vers celle qui reste ; deux fusions croisées ne passent jamais toutes les deux (verrou des deux lignes dans un ordre fixe) ;
+  - toutes les écritures sont journalisées (RG-AUD-01) ; le boss lit le répertoire à distance sans le modifier ; le magasinier n'y a pas accès.
+- Écran du devis (`478284e`) : bouton « Choisir le client » dans l'en-tête du tableau, feuille de recherche pendant la frappe, création sur place pré-remplie avec ce qui a été tapé ; si le numéro est déjà connu, la feuille propose la fiche existante. Le brouillon garde le client choisi (6 tests).
+- `Sheet` accepte un champ à focaliser à l'ouverture (`showModal` focalisait le bouton Fermer).
+- Vérifications : `format:check`, `lint`, `typecheck` et tests verts ; CI verte pour `517c8da` et `df5e77c`.
+
+**Décisions** :
+- ⚠️ HYPOTHÈSE H26 (CDC métier §16.2) : format du téléphone et sens de la fusion. Les devis, commandes et factures restent sur la fiche fusionnée (une facture est figée, RG-FAC-02) ; l'historique du client réunit les fiches fusionnées.
+- Création de fiche réservée au commercial, lecture de l'annexe B à la lettre ; correction ouverte au caissier et au responsable.
+- Pas d'index trigramme pour la recherche : inutile au volume d'un magasin, à revoir si le répertoire dépasse quelques dizaines de milliers de fiches.
+
+**Questions ouvertes** : H26 à valider ; les autres sont inchangées (H20, H23, H24 ; H14–H17, H19, H21, H25).
+
+**Reste** : T-030 (tableau qui tient à 1280 px et en portrait, saisie des remises dans les plafonds, plafond venu du serveur, enregistrement recalculé et journalisé avec numéro `D-AAAA-nnnnnn`, PDF). L'écran de gestion du répertoire (correction, fusion) viendra avec l'espace du responsable.
+
 ## 26/09/2026 — Revue du travail de Google Gravity et réparations — agent : Claude Code (Opus 5.5)
 
 Pendant la pause de Claude Code (limite des 5 heures), l'utilisateur a confié la suite à Google Gravity (Gemini 3.1 Pro), qui a fait 6 commits. Revue demandée par l'utilisateur.
