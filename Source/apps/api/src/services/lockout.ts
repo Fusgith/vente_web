@@ -8,7 +8,7 @@ import { recordAudit } from './audit.js';
 /** Five failures lock the account for fifteen minutes (RG-USR-05). */
 export const LOCKOUT_MAX_FAILURES = 5;
 export const LOCKOUT_MINUTES = 15;
-/** The count restarts once this long has passed without any failure (⚠️ H19). */
+/** The count restarts once this long has passed without any failure (H19). */
 export const FAILURE_WINDOW_MINUTES = 15;
 
 export interface FailureContext {
@@ -38,7 +38,7 @@ export type AttemptReservation =
 
 /**
  * Failures in the window after this one: the count restarts after 15 minutes without a failure
- * (each one extends the window, ⚠️ H19) or when a lock has just expired (the row only reaches
+ * (each one extends the window, H19) or when a lock has just expired (the row only reaches
  * this expression once it is unlocked). Evaluated under the row lock: attempts serialise.
  */
 const NEXT_COUNT = Prisma.sql`CASE
@@ -100,7 +100,7 @@ async function lockSecondsLeft(
 
 /**
  * For a write that verifies no secret: refused (423) while the account is locked, and the lock
- * left as it is — only a right secret or the admin lifts it (RG-USR-05, ⚠️ H20). Inside a
+ * left as it is — only a right secret or the admin lifts it (RG-USR-05, H20). Inside a
  * transaction the row stays held until commit: no lock lands between this check and the write.
  */
 export async function assertNotLocked(tx: Pick<Db, '$queryRaw'>, userId: string): Promise<void> {
@@ -182,7 +182,7 @@ export async function clearLoginFailures(
 
 /**
  * The reserved attempt succeeded on a TOTP code alone, which proves neither the PIN nor the
- * password (⚠️ H19): the attempt is handed back as if it had never been taken. The earlier
+ * password (H19): the attempt is handed back as if it had never been taken. The earlier
  * failures stand with their own window (`last_failed_at` put back, unless a later attempt has
  * moved it since), and the lock this attempt set as the fifth slot is lifted; a lock set by
  * another attempt stays.

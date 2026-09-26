@@ -63,11 +63,11 @@ async function storePassword(db: Db, actor: Actor, target: User, password: strin
   });
 }
 
-// ---- Admin operations (annexe B: comptes, PIN — admin only; ⚠️ H20) ----
+// ---- Admin operations (annexe B: comptes, PIN — admin only; H20) ----
 
 /**
  * Sets or resets the PIN of any account — the way back from a forgotten secret. The admin never
- * sees the old one; the audit row records whether one existed (⚠️ H20).
+ * sees the old one; the audit row records whether one existed (H20).
  */
 export async function adminSetPin(
   db: Db,
@@ -132,7 +132,7 @@ export async function adminRevokeSessions(db: Db, actor: Actor, targetId: string
   await db.$transaction((tx) => revokeAndAudit(tx, actor, target, {}));
 }
 
-// ---- Self-service (⚠️ H20) ----
+// ---- Self-service (H20) ----
 
 /**
  * A wrong current secret is a guess like any other: same slot, same counter, same lock

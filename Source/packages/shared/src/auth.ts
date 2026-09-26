@@ -34,7 +34,7 @@ export type AuthMethod = (typeof AUTH_METHODS)[number];
 
 /** PIN of 4 to 6 digits (RG-USR-03). */
 export const PIN_PATTERN = /^\d{4,6}$/;
-/** Password length; the minimum is not fixed by the CDC (⚠️ H19). */
+/** Password length (decision H19). */
 export const PASSWORD_MIN_LENGTH = 10;
 export const PASSWORD_MAX_LENGTH = 128;
 /** TOTP: 6 digits, 30 s (RG-USR-04, RFC 6238). */
@@ -55,7 +55,7 @@ const typedSecretSchema = z.string().min(1).max(PASSWORD_MAX_LENGTH);
 const loginBaseSchema = z.object({
   username: usernameSchema,
   role: roleSchema,
-  /** Optional until station pairing exists (T-015, ⚠️ H21). */
+  /** Optional until station pairing exists, then mandatory in the shop (T-015, H21). */
   stationId: z.uuid().optional(),
 });
 
@@ -73,7 +73,7 @@ export type LoginBody = z.infer<typeof loginBodySchema>;
 export const switchRoleBodySchema = z.object({ role: roleSchema }).strict();
 export type SwitchRoleBody = z.infer<typeof switchRoleBodySchema>;
 
-/** Self-service credential changes: the current secret is always re-verified (⚠️ H20). */
+/** Self-service credential changes: the current secret is always re-verified (H20). */
 export const changePinBodySchema = z
   .object({ current: typedSecretSchema, pin: pinSchema })
   .strict();
@@ -103,7 +103,7 @@ export const authMeSchema = z.object({
     authMethod: authMethodSchema,
     stationId: z.uuid().nullable(),
     expiresAt: z.iso.datetime(),
-    /** Minutes of inactivity after which the session is dropped server-side (⚠️ H19). */
+    /** Minutes of inactivity after which the session is dropped server-side (H19). */
     idleMinutes: z.number().int().positive(),
   }),
 });

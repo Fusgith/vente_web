@@ -1,4 +1,4 @@
-// Builds a distributable version under a chosen application name (RG-APP-01, ADR-0006, ⚠️ H25).
+// Builds a distributable version under a chosen application name (RG-APP-01, ADR-0006, H25).
 // From Source/: pnpm dist --nom "Épicerie Rasoa" --nom-court "Rasoa"
 // Messages are in French: this command is run by the shop's integrator, not only by developers.
 import { spawnSync } from 'node:child_process';

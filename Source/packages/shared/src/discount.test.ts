@@ -121,7 +121,7 @@ describe('computeQuote: line discounts (RG-REM-01/02/06)', () => {
   });
 });
 
-describe('computeQuote: order discount (RG-REM-06, ⚠️ H23)', () => {
+describe('computeQuote: order discount (RG-REM-06, H23)', () => {
   const lines = [
     line({ unitPrice: '60000', capPct: '5' }), // headroom 3 000
     line({ unitPrice: '20000', capPct: '5' }), // headroom 1 000

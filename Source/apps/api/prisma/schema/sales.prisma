@@ -86,7 +86,7 @@ model Order {
   orderDiscountPct    Decimal?       @map("order_discount_pct") @db.Decimal(5, 2)
   orderDiscountAmount Decimal        @default(0) @map("order_discount_amount") @db.Decimal(14, 2)
   orderDiscountSource DiscountSource @default(NONE) @map("order_discount_source")
-  /// Owner's code covering the total, beyond the headroom (RG-REM-04, ⚠️ H23).
+  /// Owner's code covering the total, beyond the headroom (RG-REM-04, H23).
   orderDiscountCodeId String?        @map("order_discount_code_id") @db.Uuid
   /// Line discounts + order discount.
   discountTotal       Decimal        @default(0) @map("discount_total") @db.Decimal(14, 2)

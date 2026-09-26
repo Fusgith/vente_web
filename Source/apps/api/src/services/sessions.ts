@@ -12,7 +12,7 @@ export function sessionCookieName(secure: boolean): string {
   return secure ? '__Host-vw_session' : 'vw_session';
 }
 
-/** Server-side idle limits by context, in minutes (⚠️ H19). */
+/** Server-side idle limits by context, in minutes (H19). */
 const IDLE_MINUTES_REMOTE = 60;
 const IDLE_MINUTES_LAN_DEFAULT = 15;
 /**

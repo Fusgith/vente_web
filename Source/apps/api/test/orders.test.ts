@@ -229,7 +229,7 @@ describe.skipIf(!TEST_DATABASE_URL)('order validation (RG-CMD-02/03/04, RG-TKT-0
     expect(await stock(ids.soap)).toEqual({ onHand: '432.00', reserved: '288.00' });
   });
 
-  it('refuses a price changed since the quote was saved (RG-CMD-04, ⚠️ H28)', async () => {
+  it('refuses a price changed since the quote was saved (RG-CMD-04, H28)', async () => {
     const quote = await savedQuote();
     const now = new Date();
     await t.db.$transaction(async (tx) => {
@@ -291,7 +291,7 @@ describe.skipIf(!TEST_DATABASE_URL)('order validation (RG-CMD-02/03/04, RG-TKT-0
     // Hery takes over Vola's quote: the order and its ticket letter are his.
     const taken = await submitted((await savedQuote()).id, 1, cookies.otherSales);
     expect(taken).toMatchObject({ salesUser: { id: ids.hery }, ticket: { letter: 'B', seq: 1 } });
-    // The manager validates for the quote's salesperson, under her letter (⚠️ H28).
+    // The manager validates for the quote's salesperson, under her letter (H28).
     const byManager = await submitted((await savedQuote()).id, 1, cookies.manager);
     expect(byManager).toMatchObject({ salesUser: { id: ids.vola }, ticket: { letter: 'A' } });
   });

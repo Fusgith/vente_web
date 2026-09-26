@@ -52,7 +52,7 @@ export function loginShapeError(shape: LoginShape, origin: AccessOrigin): AppErr
   return null;
 }
 
-/** A station serves one kind of work; managers and above may use any of them (⚠️ H21). */
+/** A station serves one kind of work; managers and above may use any of them (H21). */
 export function stationAcceptsRole(stationType: StationType, role: Role): boolean {
   switch (stationType) {
     case 'SALES':

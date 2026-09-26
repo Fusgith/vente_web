@@ -11,7 +11,7 @@ livraison par plusieurs magasiniers, appel des clients par numéro ou verbal, bo
 ## ✅ Statut : DÉVELOPPEMENT — GO donné le 21/09/2026 (`Docs/journal.md`)
 - Le code vit sous `Source/` ; on avance **une tâche du backlog à la fois** (`T-nnn`), directement sur `main` : pas de branche ni de PR (l'utilisateur travaille seul avec l'agent, 23/09/2026).
 - Les CDC restent la référence : une règle `RG-*` qui change se modifie d'abord dans `Docs/01-cdc-metier.md`.
-- Hypothèses encore ouvertes (H14–H17, CDC métier §16.2) : on code selon la formulation écrite, marquée ⚠️.
+- Aucune hypothèse ouverte : H14–H28 tranchées le 26/09/2026 (CDC métier §16.5). Un nouveau doute s'inscrit ⚠️ HYPOTHÈSE au CDC concerné et se code selon sa formulation écrite.
 
 ## Langues
 - Documentation, interface utilisateur, messages, journal : **français**.

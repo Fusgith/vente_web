@@ -170,7 +170,7 @@ function sourceOf(discount: bigint, granted: DiscountEntry | null | undefined): 
  * as a typed rate, so the cap typed as a rate and the maximum shown in MGA always agree. The
  * order discount is bounded by the headroom — the cap of each line, in MGA, minus its line
  * discount, never below zero — and spread over the lines pro rata of that headroom, so that no
- * product ends beyond its cap (⚠️ H23). A code covering the total replaces that bound, and its
+ * product ends beyond its cap (H23). A code covering the total replaces that bound, and its
  * discount is spread pro rata of the line nets.
  */
 export function computeQuote(input: QuoteInput): QuoteTotals {

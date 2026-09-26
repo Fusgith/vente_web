@@ -21,7 +21,7 @@ const envSchema = z
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
     /** PostgreSQL connection string; the shop server is the single master database (ADR-0001). */
     DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
-    /** Absolute lifetime of a session: at most the 12 h of H19 (⚠️), shorter allowed. */
+    /** Absolute lifetime of a session: at most the 12 h of H19, shorter allowed. */
     AUTH_SESSION_HOURS: z.coerce.number().int().min(1).max(12).default(12),
     /**
      * Origin assumed when the `x-access-origin` header is absent: LAN outside production (a dev

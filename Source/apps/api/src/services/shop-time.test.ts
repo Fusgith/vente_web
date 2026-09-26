@@ -41,7 +41,7 @@ describe('shop time (Indian/Antananarivo, UTC+3)', () => {
     );
   });
 
-  it('moves to the next day once the day end has passed (⚠️ H28)', () => {
+  it('moves to the next day once the day end has passed (H28)', () => {
     // 19:00 local with a day end at 18:00: tomorrow 18:00, never an instant already gone.
     expect(nextShopTime(new Date('2026-09-26T16:00:00Z'), '18:00').toISOString()).toBe(
       '2026-09-27T15:00:00.000Z',

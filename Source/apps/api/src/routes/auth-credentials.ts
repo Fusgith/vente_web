@@ -13,13 +13,13 @@ import { changeOwnPassword, changeOwnPin } from '../services/credentials.js';
 import { confirmTotpEnrolment, startTotpEnrolment } from '../services/totp-enrolment.js';
 import { authRateLimit } from './rate-limit.js';
 
-/** Self-service credentials: own PIN / password, TOTP enrolment (⚠️ H20). */
+/** Self-service credentials: own PIN / password, TOTP enrolment (H20). */
 export const authCredentialRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) => {
   // Every route here takes a secret or a code: same rate limit as the login (RG-USR-05).
   const guarded = { preHandler: requireAuth, ...authRateLimit };
 
   // An attempt refused by a lock adds no failure, so no audit row: the application log keeps
-  // it, as for the login (⚠️ H19).
+  // it, as for the login (H19).
   app.addHook('onError', async (request, _reply, error) => {
     if (!(error instanceof AppError) || error.code !== 'AUTH_LOCKED') return;
     request.log.warn(

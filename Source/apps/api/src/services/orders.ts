@@ -19,7 +19,7 @@ import { readSetting } from './settings.js';
 import { CLOCK_TIME, nextShopTime, shopDateValue } from './shop-time.js';
 import { reserveStock, type ProductReservation } from './stock-reservation.js';
 
-/** Default of `day_end_time` (CDC métier §13, ⚠️ H16). */
+/** Default of `day_end_time` (CDC métier §13, H16). */
 const DEFAULT_DAY_END = '23:59';
 
 /** A quote or an order, whatever its state. */
@@ -37,7 +37,7 @@ async function dayEndTime(db: Db): Promise<string> {
 /**
  * Who the order belongs to and whose letter makes its ticket (RG-TKT-01, RG-CMD-01): the
  * salesperson who validates — taking over a colleague's quote as it was saved (RG-DEV-03) —
- * or, when the manager validates, the quote's own salesperson (⚠️ H28).
+ * or, when the manager validates, the quote's own salesperson (H28).
  */
 async function salesOwner(
   db: Db,
@@ -63,7 +63,7 @@ function asAmount(amount: { toFixed(decimals: number): string }): DiscountEntry 
 /**
  * The saved lines at the prices in force now and the caps resolved now. A price changed since
  * the quote was saved is refused: the customer agreed on the saved one, the tablet saves the
- * quote again at the new price for the salesperson to check with them (⚠️ H28). A cap lowered
+ * quote again at the new price for the salesperson to check with them (H28). A cap lowered
  * since is checked like on saving (RG-REM-01/02); no owner's code can widen it yet (T-034).
  */
 async function priceAgain(db: Db, order: StoredOrder) {

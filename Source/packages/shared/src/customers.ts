@@ -1,6 +1,6 @@
 /**
  * Customer directory (RG-DEV-04): name and phone are mandatory, one active record per phone.
- * Contracts shared by the API and the PWA; the phone rules are ⚠️ H26.
+ * Contracts shared by the API and the PWA; the phone rules are decision H26.
  */
 import { z } from 'zod';
 
@@ -26,7 +26,7 @@ function localDigits(digits: string): string {
 /**
  * One stored form per phone, so that the directory can spot a known number (RG-DEV-04):
  * a Malagasy number as its 10 digits from `0` (`+261 34 12 345 67` → `0341234567`), a foreign
- * one as `+` and 8 to 15 digits. Null when the text is not a phone number (⚠️ H26).
+ * one as `+` and 8 to 15 digits. Null when the text is not a phone number (H26).
  */
 export function normalizePhone(raw: string): string | null {
   const compact = raw.trim().replace(PHONE_SEPARATORS, '');

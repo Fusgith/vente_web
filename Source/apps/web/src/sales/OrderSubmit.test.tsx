@@ -110,7 +110,7 @@ describe('quote screen: validating the order (T-032, RG-CMD-03/05)', () => {
     expect(api.callsTo(SUBMIT)[0]!.body).toEqual({ version: 1 });
   });
 
-  it('stops when the save priced it differently: the customer checks first (⚠️ H28)', async () => {
+  it('stops when the save priced it differently: the customer checks first (H28)', async () => {
     const dearer = quoteOf(ready, 1, { [KG!.id]: '3400' });
     const api = mount({ 'POST /quotes': ok(dearer) }, ready);
     fireEvent.click(submitButton());
@@ -123,7 +123,7 @@ describe('quote screen: validating the order (T-032, RG-CMD-03/05)', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('saves again at the new price when a price changed after the save (⚠️ H28)', async () => {
+  it('saves again at the new price when a price changed after the save (H28)', async () => {
     const api = mount(
       {
         [SUBMIT]: apiError(409, 'ORDER_PRICE_CHANGED', { lines: [2] }),

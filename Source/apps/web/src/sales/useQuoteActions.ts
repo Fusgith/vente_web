@@ -55,7 +55,7 @@ type Busy = 'save' | 'submit' | null;
  *
  * « Valider la commande » saves what is on screen first. If that save priced a line differently
  * from the screen, the validation stops there: the customer agrees to the new amount due before
- * anything is reserved (⚠️ H28). A price changed after the save is refused by the API; the quote
+ * anything is reserved (H28). A price changed after the save is refused by the API; the quote
  * is then saved again at the new price, for the same check.
  */
 export function useQuoteActions(draft: DraftState, dispatch: Dispatch<DraftAction>) {

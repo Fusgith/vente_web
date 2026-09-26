@@ -45,7 +45,7 @@ async function refuseReplay(db: Db, actor: Actor, user: User, slot: AttemptSlot)
   throw new AppError(401, 'AUTH_TOTP_INVALID');
 }
 
-/** Enrolment, start and confirmation alike: from the shop, with a password session (⚠️ H20). */
+/** Enrolment, start and confirmation alike: from the shop, with a password session (H20). */
 function assertCanEnrol(actor: Actor, requestOrigin: AccessOrigin): void {
   if (actor.authMethod === 'PIN') throw new AppError(403, 'AUTH_REAUTH_REQUIRED');
   if (requestOrigin !== 'LAN') throw new AppError(403, 'AUTH_LAN_ONLY');
@@ -57,7 +57,7 @@ interface TotpWrite {
   data: Prisma.UserUpdateManyMutationInput;
   /**
    * The active secret changes: the sessions opened with the old one end. Those are the remote
-   * ones — the shop never asks for a TOTP code (⚠️ H20, like the admin reset).
+   * ones — the shop never asks for a TOTP code (H20, like the admin reset).
    */
   replacesSecret?: boolean;
 }

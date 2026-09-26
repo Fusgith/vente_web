@@ -13,7 +13,7 @@ import {
 
 const paramsSchema = z.object({ id: z.uuid() });
 
-/** Account credentials managed by the admin (annexe B; ⚠️ H20). Account CRUD itself is T-016. */
+/** Account credentials managed by the admin (annexe B; H20). Account CRUD itself is T-016. */
 export const userRoutes: FastifyPluginAsync = async (app) => {
   const adminOnly = { preHandler: requireRole('admin') };
 

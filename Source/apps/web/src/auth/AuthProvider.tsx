@@ -15,7 +15,7 @@ import {
 
 /**
  * The server drops a session after `idleMinutes` without requests, writing `last_seen_at` at
- * most once a minute (⚠️ H19). A user who works without calling the API (reading, typing) is
+ * most once a minute (H19). A user who works without calling the API (reading, typing) is
  * still active: activity pings `/auth/me` at this pace so both clocks agree.
  */
 export const KEEPALIVE_INTERVAL_MS = 60_000;

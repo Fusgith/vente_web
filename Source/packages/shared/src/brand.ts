@@ -1,7 +1,7 @@
 import brand from './brand.json' with { type: 'json' };
 
 /**
- * Application name, fixed when a build is made for distribution (RG-APP-01, ADR-0006, ⚠️ H25):
+ * Application name, fixed when a build is made for distribution (RG-APP-01, ADR-0006, H25):
  * browser tab, label under the installed icon, frame of every screen, issuer in the
  * authenticator app. Never the legal name printed on invoices (RG-FAC-07).
  */
@@ -41,7 +41,7 @@ export function appNameProblem(name: string, maxLength = APP_NAME_MAX_LENGTH): s
 
 /**
  * Names of a build. Without a name, the defaults. Without a short name, the name itself goes
- * under the icon when it fits; otherwise a short name is required (⚠️ H25).
+ * under the icon when it fits; otherwise a short name is required (H25).
  */
 export function checkAppNames(input: { name?: string; shortName?: string }): AppNamesCheck {
   if (input.name === undefined && input.shortName === undefined) {

@@ -20,7 +20,7 @@ interface OrderDiscountSheetProps {
 
 /**
  * The discount on the total (RG-REM-06), on the subtotal, in % or in MGA. Without a code it is
- * bounded by the headroom the lines leave under their caps (⚠️ H23), shown in MGA before anything
+ * bounded by the headroom the lines leave under their caps (H23), shown in MGA before anything
  * is typed (RG-REM-02); the amount due follows each key.
  */
 export function OrderDiscountSheet({ draft, onApply, onClose }: OrderDiscountSheetProps) {

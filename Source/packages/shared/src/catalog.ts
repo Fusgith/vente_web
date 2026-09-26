@@ -31,7 +31,7 @@ export const productUnitHitSchema = z.object({
   factor: decimalString,
   isBase: z.boolean(),
   barcode: z.string().nullable(),
-  /** Current price; null = not sellable in this unit until a price is set (RG-ART-03, ⚠️ H14). */
+  /** Current price; null = not sellable in this unit until a price is set (RG-ART-03, H14). */
   price: decimalString.nullable(),
   /** Resolved cap (RG-REM-01); null when the active role may not see caps (annexe B). */
   maxDiscountPct: decimalString.nullable(),

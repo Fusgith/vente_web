@@ -8,7 +8,7 @@ import {
   phoneSearchDigits,
 } from './customers.js';
 
-describe('normalizePhone (RG-DEV-04, ⚠️ H26)', () => {
+describe('normalizePhone (RG-DEV-04, H26)', () => {
   it('stores a Malagasy number as its 10 digits from 0, however it is written', () => {
     for (const written of [
       '034 12 345 67',

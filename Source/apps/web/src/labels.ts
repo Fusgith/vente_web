@@ -140,7 +140,7 @@ export const labels = {
       submit: 'Valider la commande',
       submitting: 'Validation…',
       customerFirstOrder: 'Choisissez le client avant de valider la commande.',
-      /** Saved just before validating, at prices changed since the lines were added (⚠️ H28). */
+      /** Saved just before validating, at prices changed since the lines were added (H28). */
       pricesUpdated: (total: string) =>
         `Prix mis à jour à l’enregistrement, net à payer ${total} : vérifiez-le avec le client, puis validez.`,
       submitted: (ticket: string, name: string) => `Commande validée : ticket ${ticket} — ${name}.`,

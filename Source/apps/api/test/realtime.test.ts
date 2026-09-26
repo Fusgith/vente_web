@@ -147,7 +147,7 @@ describe.skipIf(!TEST_DATABASE_URL)('realtime channel (CDC technique §6.1, T-01
     );
   });
 
-  it('never counts an open connection as activity (⚠️ H19)', async () => {
+  it('never counts an open connection as activity (H19)', async () => {
     const before = new Date(Date.now() - 3 * 60_000);
     await t.db.session.updateMany({ data: { lastSeenAt: before } });
     await connect(cookies.cashier);
