@@ -34,6 +34,8 @@ function mount(handlers: Parameters<typeof fakeApi>[0] = {}) {
   return api;
 }
 
+/** The amount due, under the table (RG-DEV-05). */
+const amountDue = () => screen.getByText(labels.sales.draft.total).nextElementSibling;
 const searchBox = () => screen.getByRole('searchbox', { name: labels.sales.search });
 /** The frame's bottom band: the one sentence of what just happened. */
 const band = () => within(screen.getByRole('contentinfo')).getByRole('status');
@@ -62,7 +64,8 @@ describe('quote screen: quick search (RG-DEV-06)', () => {
     expect(await lineQty(1, '1')).toBeVisible();
     const table = screen.getByRole('table');
     expect(within(table).getByText('SAV-001')).toBeVisible();
-    expect(within(table).getAllByText(mga('1500'))).toHaveLength(3);
+    expect(within(table).getAllByText(mga('1500'))).toHaveLength(2);
+    expect(amountDue()).toHaveTextContent(mga('1500'));
     expect(band()).toHaveTextContent(shown(labels.sales.added('1', 'pièce', SAVON.name)));
     expect(pad()).toBeVisible();
   });
@@ -153,14 +156,14 @@ describe('quote screen: quick search (RG-DEV-06)', () => {
 
     enter('SAV-001');
     expect(await lineQty(1, '2')).toBeVisible();
-    expect(screen.getAllByRole('row')).toHaveLength(3);
+    expect(screen.getAllByRole('row')).toHaveLength(2);
   });
 
   it('adds « 12*CODE » at once', async () => {
     const api = mount({ 'GET /products/search?q=SAV-001': ok(SAV_EXACT) });
     enter('12*SAV-001');
     expect(await lineQty(1, '12')).toBeVisible();
-    expect(screen.getByText(mga('18000'), { selector: 'tfoot td' })).toBeVisible();
+    expect(amountDue()).toHaveTextContent(mga('18000'));
     expect(api.callsTo('GET /products/search?q=12*SAV-001')).toHaveLength(0);
   });
 
@@ -207,7 +210,7 @@ describe('quote screen: quantity pad', () => {
     fireEvent.click(within(keys).getByRole('button', { name: labels.sales.pad.confirm }));
 
     expect(await lineQty(1, '12,5')).toBeVisible();
-    expect(screen.getByText(mga('18750'), { selector: 'tfoot td' })).toBeVisible();
+    expect(amountDue()).toHaveTextContent(mga('18750'));
     expect(screen.queryByRole('region', { name: labels.sales.pad.title(1) })).toBeNull();
   });
 

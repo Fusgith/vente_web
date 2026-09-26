@@ -23,7 +23,7 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
   const selected = draft.lines[position];
 
   return (
-    <div className="flex flex-1 flex-col gap-4 md:min-h-0 lg:grid lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
+    <div className="flex flex-1 flex-col gap-4 md:min-h-0 lg:grid lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)] 2xl:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
       <h1 className="sr-only">{labels.workspaces.sales.title}</h1>
       <ProductSearch
         onAdd={(hit, unitId, qty) => dispatch({ type: 'add', hit, unitId, qty })}

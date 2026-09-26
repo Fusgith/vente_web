@@ -132,15 +132,19 @@ export const labels = {
       quantity: 'Quantité',
       unit: 'Unité',
       unitPrice: 'Prix unitaire',
-      amount: 'Montant',
       netAmount: 'Montant net',
       discount: 'Remise',
+      /** Summary under the table, in the order of RG-DEV-05. */
+      grossTotal: 'Total brut',
+      lineDiscounts: 'Remises sur les lignes',
       subtotal: 'Sous-total',
       orderDiscount: 'Remise sur le total',
+      orderDiscountPct: (pct: string) => `Remise sur le total (${pct} %)`,
       total: 'Net à payer',
       discountTotal: 'Total des remises',
-      discountVal: (v: string) => '-' + v,
-      grossTotal: 'Total brut',
+      /** A discount taken off: « −750,00 MGA ». */
+      minus: (amount: string) => `−${amount}`,
+      pct: (pct: string) => `${pct} %`,
       editQty: (position: number, qty: string) => `Quantité de la ligne ${position} : ${qty}`,
     },
 

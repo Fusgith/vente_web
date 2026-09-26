@@ -17,8 +17,10 @@ export interface DraftLine {
   product: Pick<ProductHit, 'id' | 'sku' | 'name' | 'baseUnit' | 'available' | 'units'>;
   unit: ProductUnitHit & { price: string };
   qty: string;
+  /** Cap of the unit in %, resolved by the API (RG-REM-01); the API checks it again on saving. */
   capPct: string;
   discount: DiscountEntry | null;
+  /** Discount granted by the owner’s code (RG-REM-04), in place of the cap. */
   granted?: DiscountEntry | null;
 }
 
@@ -58,6 +60,9 @@ function sellableUnit(product: DraftLine['product'], unitId: string): DraftLine[
   return unit?.price ? { ...unit, price: unit.price } : null;
 }
 
+/** A role that may not see caps gets none on screen (annexe B); the API resolves its own. */
+const capOf = (unit: DraftLine['unit']) => unit.maxDiscountPct ?? '0';
+
 /** Adds `qty` (1 when null) of a product in a unit with a price (RG-ART-03). */
 function add(state: DraftState, hit: ProductHit, unitId: string, qty: string | null): DraftState {
   const unit = sellableUnit(hit, unitId);
@@ -71,15 +76,12 @@ function add(state: DraftState, hit: ProductHit, unitId: string, qty: string | n
     return { ...state, lines, selected: key };
   }
   const { id, sku, name, baseUnit, available, units } = hit;
-  // TODO: Resolve proper capPct from unit -> product -> category -> fallback (RG-REM-01)
-  // For now, defaulting to '0' to satisfy the type. T-031 implementation needs it.
-  const capPct = '0';
   const line: DraftLine = {
     key,
     product: { id, sku, name, baseUnit, available, units },
     unit,
     qty: added,
-    capPct,
+    capPct: capOf(unit),
     discount: null,
   };
   return { ...state, lines: [...state.lines, line], selected: key };
@@ -103,7 +105,7 @@ function changeUnit(state: DraftState, key: string, unitId: string): DraftState 
     return { ...state, lines, selected: target };
   }
   const lines = state.lines.map((candidate) =>
-    candidate.key === key ? { ...candidate, key: target, unit } : candidate,
+    candidate.key === key ? { ...candidate, key: target, unit, capPct: capOf(unit) } : candidate,
   );
   return { ...state, lines, selected: target };
 }
