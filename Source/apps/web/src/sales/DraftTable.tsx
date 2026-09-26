@@ -2,6 +2,7 @@ import { computeQuote, formatMga, formatQty } from '@vente-web/shared';
 import { useEffect, useRef } from 'react';
 
 import { labels } from '../labels.js';
+import { apiRequest } from '../api/client.js';
 import { sheetClass, tagClass } from '../ui/button.js';
 import type { DraftState } from './draft.js';
 
@@ -149,3 +150,5 @@ export function DraftTable({ draft: { lines, selected, orderDiscount, orderGrant
     </section>
   );
 }
+
+

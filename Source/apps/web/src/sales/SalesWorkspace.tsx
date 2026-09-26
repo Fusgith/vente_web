@@ -24,6 +24,14 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
   return (
     <div className="flex flex-1 flex-col gap-4 md:min-h-0 lg:grid lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)] xl:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
       <h1 className="sr-only">{labels.workspaces.sales.title}</h1>
+      <div className="flex items-center justify-between p-4 bg-white border-b border-rule">
+        <div>
+          {draft.clientId ? 
+            <span className="text-indigo font-bold">Client Sélectionné</span> 
+            : <button onClick={() => dispatch({ type: 'setClient', clientId: '0192a4f0-0000-7000-8000-000000000010' })} className="px-3 py-1 bg-indigo-soft text-indigo rounded">Sélectionner un Client (Démo)</button>
+          }
+        </div>
+      </div>
       <ProductSearch
         onAdd={(hit, unitId, qty) => dispatch({ type: 'add', hit, unitId, qty })}
         // Typing is searching: the pad gives its place back to the results.
@@ -46,3 +54,5 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
     </div>
   );
 }
+
+
