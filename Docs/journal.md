@@ -2,6 +2,27 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 26/09/2026 — T-030 devis : tableau et remises (étapes a et b) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Tableau du devis refait (`7ec5d53`) : 7 colonnes, sans défilement horizontal à 1280 × 800 ni en portrait 800 × 1280. Les totaux sont sous le tableau, dans l'ordre de RG-DEV-05. Le plafond de chaque ligne vient de l'unité remontée par l'API (plus de `0` figé).
+- Saisie des remises (`9ecba9a`, RG-REM-02, RG-REM-06) :
+  - sur une ligne, depuis le pavé de quantité, avec les mêmes touches, en % ou en MGA. Le maximum est affiché avant la saisie ; une touche qui le dépasserait est refusée, avec une alerte. « Valider » revérifie la remise contre la quantité tapée ;
+  - une ligne sans plafond a son champ Remise désactivé ;
+  - changer d'unité retire la remise de la ligne (elle était consentie sous un autre plafond) ;
+  - sur le total, bouton « Remise sur le total » sous le tableau : une feuille montre le net à payer en direct ; le maximum est la marge laissée par les lignes (⚠️ H23). Si la remise dépasse ce maximum après une modification des lignes, une alerte rouge s'affiche sous les totaux.
+- Pavé recomposé pour tenir en paysage (1280 × 800), clavier compris :
+  - unités sur deux colonnes, chacune avec son prix et son stock ;
+  - Quantité et Remise côte à côte ;
+  - « Supprimer la ligne » dans l'en-tête, loin de « Valider ».
+- Partagé : `formatTyped` groupe les milliers d'une valeur en cours de frappe (RG-FMT-01). Nouvelles icônes `percent` et `trash`. Aucune dépendance ajoutée.
+- Vérifications : `format:check`, `lint`, `typecheck` et 158 tests web et partagés verts (7 nouveaux tests d'écran, 5 de calcul, 1 de brouillon) ; captures contrôlées en paysage et en portrait.
+
+**Décisions** :
+- Le plafond propre à chaque unité n'est plus répété sur les boutons d'unité du pavé : il figure dans l'indication « Au plus 5 %, soit … » sous la remise.
+
+**Reste** : T-030 (c) enregistrement du devis côté serveur (recalcul, plafonds relus en base, journal, numéro `D-AAAA-nnnnnn`, client obligatoire, bouton bloqué hors plafonds) ; (d) PDF.
+
 ## 26/09/2026 — T-029 répertoire clients — agent : Claude Code (Opus 5.5)
 
 **Fait** :
