@@ -12,8 +12,9 @@ import { useStatusLine } from '../shell/status-line.js';
  */
 export function RegisterQueueNotices() {
   const { say } = useStatusLine();
-  useRealtimeEvent('queue.changed', ({ queue, orderId }) => {
-    if (queue !== 'register') return;
+  useRealtimeEvent('queue.changed', ({ queue, orderId, change }) => {
+    // Only an order entering: one back after an absence is no news (RG-FIL-04).
+    if (queue !== 'register' || change !== 'entered') return;
     ordersApi.get(orderId).then(
       (order) => {
         if (order.status !== 'SUBMITTED' || !order.ticket) return;

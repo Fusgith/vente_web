@@ -66,6 +66,7 @@ export function orderSubmitted(order: { id: string; salesUserId: string }): Emis
     emission([room.queue('register')], 'queue.changed', {
       queue: 'register',
       orderId: order.id,
+      change: 'entered',
     }),
     emission(
       [room.role('manager'), room.role('owner'), room.user(order.salesUserId)],
@@ -75,9 +76,11 @@ export function orderSubmitted(order: { id: string; salesUserId: string }): Emis
   ];
 }
 
+type QueueChange = RealtimeEvents['queue.changed']['change'];
+
 /** Whatever changed in a queue, its followers read it again (RG-FIL-01/02). */
-export function queueChanged(queue: QueueName, orderId: string): Emission[] {
-  return [emission([room.queue(queue)], 'queue.changed', { queue, orderId })];
+export function queueChanged(queue: QueueName, orderId: string, change: QueueChange): Emission[] {
+  return [emission([room.queue(queue)], 'queue.changed', { queue, orderId, change })];
 }
 
 function statusChanged(order: CalledOrder, status: OrderStatus): Emission {
@@ -99,7 +102,7 @@ interface CalledOrder {
  */
 export function orderCalled(order: CalledOrder, verbal: boolean): Emission[] {
   return [
-    ...queueChanged('register', order.id),
+    ...queueChanged('register', order.id, 'called'),
     emission(
       [room.queue('register'), ...(verbal ? [room.user(order.salesUserId)] : [])],
       'ticket.called',
@@ -112,7 +115,7 @@ export function orderCalled(order: CalledOrder, verbal: boolean): Emission[] {
 /** Absent when called, back in the queue; the manager hears of it from the 2nd time (RG-FIL-04). */
 export function orderNoShow(order: CalledOrder, noShowCount: number): Emission[] {
   return [
-    ...queueChanged('register', order.id),
+    ...queueChanged('register', order.id, 'no_show'),
     statusChanged(order, 'SUBMITTED'),
     ...(noShowCount >= NO_SHOWS_BEFORE_NOTICE
       ? [emission([room.role('manager')], 'order.no_show', { orderId: order.id, noShowCount })]

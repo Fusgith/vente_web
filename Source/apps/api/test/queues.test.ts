@@ -199,7 +199,7 @@ describe.skipIf(!TEST_DATABASE_URL)('register queue (RG-FIL-01 à 05)', () => {
     expect(published).toContainEqual({
       rooms: ['queue:register'],
       event: 'queue.changed',
-      payload: { queue: 'register', orderId: a1 },
+      payload: { queue: 'register', orderId: a1, change: 'called' },
     });
   });
 
@@ -224,7 +224,7 @@ describe.skipIf(!TEST_DATABASE_URL)('register queue (RG-FIL-01 à 05)', () => {
   });
 
   it('puts a priority order behind the other priorities, ahead of the rest (RG-FIL-02)', async () => {
-    const [a1, a2, a3] = await validated(3);
+    const [a1, a2, a3] = (await validated(3)) as [string, string, string];
     const priority = (orderId: string, value: boolean) =>
       post('/queues/register/priority', cookies.manager, { orderId, priority: value });
 

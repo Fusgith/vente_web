@@ -123,8 +123,8 @@ describe.skipIf(!TEST_DATABASE_URL)('realtime channel (CDC technique §6.1, T-01
     const orderId = await validatedOrder();
 
     // Identifiers only: each screen reads the order again with its own rights.
-    expect(await cashierQueue).toEqual({ queue: 'register', orderId });
-    expect(await managerQueue).toEqual({ queue: 'register', orderId });
+    expect(await cashierQueue).toEqual({ queue: 'register', orderId, change: 'entered' });
+    expect(await managerQueue).toEqual({ queue: 'register', orderId, change: 'entered' });
     expect(await managerStatus).toEqual({ orderId, status: 'SUBMITTED' });
     expect(await salesStatus).toEqual({ orderId, status: 'SUBMITTED' });
     await new Promise((resolve) => setTimeout(resolve, 100));

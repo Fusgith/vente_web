@@ -33,7 +33,8 @@ const SCREENS = {
   'devis-enregistre': 'Devis enregistré : son numéro, rien à enregistrer',
   'commande-validee': 'Commande validée : le ticket en grand avec le nom du client',
   'commande-stock': 'Validation refusée : stock insuffisant, quantités proposées',
-  caisse: 'Caisse (espace à venir)',
+  caisse: 'Caisse : la file, le suivant à appeler',
+  'caisse-appel': 'Caisse : client appelé, ticket et nom à annoncer',
   responsable: 'Responsable : deux rôles, le choix du rôle actif',
 } as const;
 type Screen = keyof typeof SCREENS;
@@ -305,8 +306,9 @@ function ScreenView({ screen }: { screen: Screen }) {
     case 'commande-stock':
       return <Sales draft={shortDraft()} search={null} />;
     case 'caisse':
+    case 'caisse-appel':
     case 'responsable': {
-      const me = demoMe(screen === 'caisse' ? 'cashier' : 'manager');
+      const me = demoMe(screen === 'responsable' ? 'manager' : 'cashier');
       return (
         <DemoAuth state={{ status: 'authenticated', me }}>
           <AppShell me={me} realtime={false} />

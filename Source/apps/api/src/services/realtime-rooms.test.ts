@@ -34,7 +34,7 @@ describe('realtime rooms (CDC technique §6.1)', () => {
       {
         rooms: ['queue:register'],
         event: 'queue.changed',
-        payload: { queue: 'register', orderId },
+        payload: { queue: 'register', orderId, change: 'entered' },
       },
       {
         rooms: ['role:manager', 'role:owner', `user:${USER}`],

@@ -36,3 +36,23 @@ export function useRealtimeEvent<E extends RealtimeEvent>(
     };
   }, [source, event]);
 }
+
+/**
+ * Calls `handler` each time the connection is (re)established: events sent while it was down are
+ * lost, so a screen that follows a resource reads it again (CDC technique §6.1).
+ */
+export function useRealtimeConnect(handler: () => void): void {
+  const source = use(RealtimeContext);
+  const latest = useRef(handler);
+  useEffect(() => {
+    latest.current = handler;
+  });
+  useEffect(() => {
+    if (!source) return;
+    const listener = () => latest.current();
+    source.on('connect', listener);
+    return () => {
+      source.off('connect', listener);
+    };
+  }, [source]);
+}

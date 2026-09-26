@@ -14,8 +14,12 @@ export type QueueName = z.infer<typeof queueNameSchema>;
 
 /** Each event's payload, which a screen checks before using it: an event is a hint, not data. */
 export const realtimePayloadSchemas = {
-  /** An order entered, left or moved in a queue (RG-FIL-01). */
-  'queue.changed': z.object({ queue: queueNameSchema, orderId: z.uuid() }),
+  /** An order entered, was called from, came back to or moved in a queue (RG-FIL-01 à 04). */
+  'queue.changed': z.object({
+    queue: queueNameSchema,
+    orderId: z.uuid(),
+    change: z.enum(['entered', 'called', 'no_show', 'reordered']),
+  }),
   /** Any transition of an order (RG-CMD-06). */
   'order.status_changed': z.object({ orderId: z.uuid(), status: orderStatusSchema }),
   /** A ticket called to a register or a counter (RG-FIL-03, RG-DSP-01/05). */

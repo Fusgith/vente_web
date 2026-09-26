@@ -7,7 +7,8 @@ import { switchableRoles } from '../auth/roles.js';
 import { useIdleLock } from '../auth/useIdleLock.js';
 import { labels } from '../labels.js';
 import { RealtimeProvider } from '../realtime/RealtimeProvider.js';
-import { RegisterQueueNotices } from '../register/RegisterQueueNotices.js';
+import { NoShowNotices } from '../manager/NoShowNotices.js';
+import { RegisterWorkspace } from '../register/RegisterWorkspace.js';
 import { SalesWorkspace } from '../sales/SalesWorkspace.js';
 import { buttonClass, sheetClass } from '../ui/button.js';
 import { Icon } from '../ui/Icon.js';
@@ -109,17 +110,18 @@ function Shell({ me, children }: Omit<AppShellProps, 'realtime'>) {
 
   return (
     <Frame workspace={activeRole} name={labels.workspaces[activeRole].title} controls={controls}>
-      {children ?? <Workspace role={activeRole} />}
+      {children ?? <Workspace role={activeRole} userId={me.user.id} />}
     </Frame>
   );
 }
 
-function Workspace({ role }: { role: Role }) {
+function Workspace({ role, userId }: { role: Role; userId: string }) {
   if (role === 'sales') return <SalesWorkspace />;
+  if (role === 'cashier') return <RegisterWorkspace userId={userId} />;
   const workspace = labels.workspaces[role];
   return (
     <section className={`${sheetClass} mx-auto mt-8 flex w-full max-w-2xl flex-col gap-3 p-8`}>
-      {role === 'cashier' && <RegisterQueueNotices />}
+      {role === 'manager' && <NoShowNotices />}
       <h1 className="type-title">{workspace.title}</h1>
       <p className="text-18 text-ink">{workspace.summary}</p>
       <p className="mt-3 flex items-center gap-3 border-t border-rule pt-5 text-ink-2">

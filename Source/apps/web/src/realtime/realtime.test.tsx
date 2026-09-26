@@ -90,11 +90,23 @@ describe('realtime connection (T-018)', () => {
       </RealtimeProvider>,
     );
     act(() => {
-      fakeRealtime.emit('queue.changed', { queue: 'register', orderId: '../auth/logout' });
-      fakeRealtime.emit('queue.changed', { queue: 'kitchen', orderId: ORDER_ID });
-      fakeRealtime.emit('queue.changed', { queue: 'register', orderId: ORDER_ID });
+      fakeRealtime.emit('queue.changed', {
+        queue: 'register',
+        orderId: '../auth/logout',
+        change: 'entered',
+      });
+      fakeRealtime.emit('queue.changed', {
+        queue: 'kitchen',
+        orderId: ORDER_ID,
+        change: 'entered',
+      });
+      fakeRealtime.emit('queue.changed', {
+        queue: 'register',
+        orderId: ORDER_ID,
+        change: 'entered',
+      });
     });
-    expect(seen).toEqual([{ queue: 'register', orderId: ORDER_ID }]);
+    expect(seen).toEqual([{ queue: 'register', orderId: ORDER_ID, change: 'entered' }]);
   });
 });
 
@@ -103,16 +115,37 @@ describe('register: an order enters the queue (RG-CMD-03)', () => {
     const api = fakeApi({
       'GET /auth/me': ok(meFor({ user: HERY, activeRole: 'cashier' })),
       [`GET /orders/${ORDER_ID}`]: ok(order('SUBMITTED')),
+      'GET /queues/register': ok({ queue: 'register', serving: [], waiting: [] }),
     });
     render(<App />);
     await screen.findByRole('heading', { name: labels.workspaces.cashier.title });
     // The workspace listens once the connection is handed down.
-    await waitFor(() => expect(open()[0]?.listeners.get('queue.changed')?.size).toBe(1));
+    await waitFor(() => expect(open()[0]?.listeners.get('queue.changed')?.size).toBeGreaterThan(0));
 
-    act(() => fakeRealtime.emit('queue.changed', { queue: 'delivery', orderId: ORDER_ID }));
+    act(() =>
+      fakeRealtime.emit('queue.changed', {
+        queue: 'delivery',
+        orderId: ORDER_ID,
+        change: 'entered',
+      }),
+    );
+    // An order back after an absence is no news.
+    act(() =>
+      fakeRealtime.emit('queue.changed', {
+        queue: 'register',
+        orderId: ORDER_ID,
+        change: 'no_show',
+      }),
+    );
     expect(api.callsTo(`GET /orders/${ORDER_ID}`)).toHaveLength(0);
 
-    act(() => fakeRealtime.emit('queue.changed', { queue: 'register', orderId: ORDER_ID }));
+    act(() =>
+      fakeRealtime.emit('queue.changed', {
+        queue: 'register',
+        orderId: ORDER_ID,
+        change: 'entered',
+      }),
+    );
     const band = within(screen.getByRole('contentinfo')).getByRole('status');
     await waitFor(() =>
       expect(band).toHaveTextContent(labels.register.newOrder('A15', 'Rasoa Hanta')),

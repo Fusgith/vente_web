@@ -1,6 +1,7 @@
 import { useReducer } from 'react';
 
 import { labels } from '../labels.js';
+import { CallNotices } from './CallNotices.js';
 import { CustomerPicker } from './CustomerPicker.js';
 import { DraftTable } from './DraftTable.js';
 import { draftReducer, emptyDraft, type DraftState } from './draft.js';
@@ -29,6 +30,7 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
   return (
     <div className="flex flex-1 flex-col gap-4 md:min-h-0 lg:grid lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)] 2xl:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
       <h1 className="sr-only">{labels.workspaces.sales.title}</h1>
+      <CallNotices />
       <ProductSearch
         onAdd={(hit, unitId, qty) => dispatch({ type: 'add', hit, unitId, qty })}
         // Typing is searching: the pad gives its place back to the results.

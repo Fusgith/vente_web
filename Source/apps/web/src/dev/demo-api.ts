@@ -6,7 +6,7 @@ import {
 } from '@vente-web/shared';
 
 import { API_BASE } from '../api/client.js';
-import { CATEGORIES, DIRECTORY, FAVORITES, PRODUCTS } from './fixtures.js';
+import { CATEGORIES, DIRECTORY, demoRegisterQueue, FAVORITES, PRODUCTS } from './fixtures.js';
 
 const fold = (text: string) =>
   text
@@ -40,6 +40,11 @@ function answer(url: URL): unknown {
       return { items: FAVORITES.filter((hit) => !categoryId || hit.category?.id === categoryId) };
     case '/products/search':
       return search(url.searchParams.get('q') ?? '', categoryId);
+    case '/queues/register':
+      // The screen asked for says whether Soa has a customer at her register.
+      return demoRegisterQueue(
+        new URLSearchParams(window.location.search).get('screen') === 'caisse-appel',
+      );
     default:
       return undefined;
   }

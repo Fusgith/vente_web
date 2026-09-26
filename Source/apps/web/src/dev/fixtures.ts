@@ -1,4 +1,11 @@
-import type { AuthMe, AuthUserDirectory, CategorySummary, ProductHit } from '@vente-web/shared';
+import type {
+  Queue,
+  QueueItem,
+  AuthMe,
+  AuthUserDirectory,
+  CategorySummary,
+  ProductHit,
+} from '@vente-web/shared';
 
 /**
  * Demo data of the design gallery (dev only): the articles and people of the design brief, so
@@ -200,11 +207,12 @@ export const DIRECTORY: AuthUserDirectory = {
 
 export function demoMe(role: AuthMe['session']['activeRole']): AuthMe {
   const rakoto = role === 'manager';
+  const soa = role === 'cashier';
   return {
     user: {
-      id: id(rakoto ? 3 : 1),
-      username: rakoto ? 'rakoto' : 'vola',
-      fullName: rakoto ? 'Rakoto Responsable' : 'Vola Commerciale',
+      id: id(rakoto ? 3 : soa ? 4 : 1),
+      username: rakoto ? 'rakoto' : soa ? 'soa' : 'vola',
+      fullName: rakoto ? 'Rakoto Responsable' : soa ? 'Soa Caissière' : 'Vola Commerciale',
       roles: rakoto ? ['manager', 'sales'] : [role],
       totpEnabled: false,
     },
@@ -216,5 +224,63 @@ export function demoMe(role: AuthMe['session']['activeRole']): AuthMe {
       expiresAt: '2026-09-25T20:00:00.000Z',
       idleMinutes: 5,
     },
+  };
+}
+
+const SOA = { id: id(4), fullName: 'Soa Caissière' };
+const HERY_CASHIER = { id: id(7), fullName: 'Hery Caissier' };
+
+function queueItem(
+  seq: number,
+  name: string,
+  total: string,
+  waitedMinutes: number,
+  extra: Partial<QueueItem> = {},
+): QueueItem {
+  return {
+    orderId: id(900 + seq),
+    number: `D-2026-0000${40 + seq}`,
+    status: 'SUBMITTED',
+    ticket: { letter: seq % 3 === 0 ? 'B' : 'A', seq, date: '2026-09-26' },
+    customer: { name, phone: `03411${String(20000 + seq * 7).padStart(5, '0')}` },
+    salesUser:
+      seq % 3 === 0
+        ? { id: id(2), fullName: 'Hery Commercial' }
+        : { id: id(1), fullName: 'Vola Commerciale' },
+    total,
+    priority: false,
+    noShowCount: 0,
+    submittedAt: new Date(Date.now() - waitedMinutes * 60_000).toISOString(),
+    calledAt: null,
+    servedBy: null,
+    station: null,
+    ...extra,
+  };
+}
+
+const serving = (item: QueueItem, by: QueueItem['servedBy'], station: string): QueueItem => ({
+  ...item,
+  status: 'AT_REGISTER',
+  calledAt: new Date().toISOString(),
+  servedBy: by,
+  station: by ? { id: id(800 + item.ticket.seq), name: station } : null,
+});
+
+/** The register queue of the gallery; `called`: Soa has a customer at her register. */
+export function demoRegisterQueue(called: boolean): Queue {
+  const rasoa = queueItem(14, 'Rasoa Hanta', '273000.00', 18);
+  return {
+    queue: 'register',
+    serving: [
+      serving(queueItem(12, 'Rabe Paul', '48500.00', 25), HERY_CASHIER, 'Caisse 1'),
+      ...(called ? [serving(rasoa, SOA, 'Caisse 2')] : []),
+    ],
+    waiting: [
+      ...(called ? [] : [rasoa]),
+      queueItem(15, 'Randrianarisoa Tahiry', '1250000.00', 12, { priority: true }),
+      queueItem(3, 'Ravelo Mialy', '9800.00', 9, { noShowCount: 1 }),
+      queueItem(16, 'Rakotomalala Jean-Baptiste', '156400.00', 4),
+      queueItem(17, 'Razafy Lova', '32000.00', 1),
+    ],
   };
 }

@@ -174,6 +174,10 @@ export const labels = {
       editQty: (position: number, qty: string) => `Quantité de la ligne ${position} : ${qty}`,
     },
 
+    /** Without a public display, the salesperson hears of their ticket being called (RG-DSP-05). */
+    called: (ticket: string, name: string) =>
+      `Ticket ${ticket} appelé à la caisse : prévenez ${name}.`,
+
     /** The order just validated: its ticket, big, with the customer's name (RG-CMD-05, RG-TKT-03). */
     order: {
       title: 'Commande validée',
@@ -239,10 +243,57 @@ export const labels = {
     },
   },
 
-  /** The register (T-040 onwards); for now, orders entering its queue (RG-CMD-03). */
+  /** The register: its queue (T-040, RG-FIL-01 à 05); payment comes with T-051. */
   register: {
     newOrder: (ticket: string, name: string) =>
       `Nouvelle commande en file caisse : ${ticket} — ${name}`,
+    queueTitle: 'File caisse',
+    waitingCount: (count: number) =>
+      count === 0
+        ? 'Aucun client en attente'
+        : count === 1
+          ? '1 en attente'
+          : `${count} en attente`,
+    empty: 'Aucun client en attente : les commandes validées apparaissent ici.',
+    rank: 'Rang',
+    ticket: 'Ticket',
+    customer: 'Client',
+    salesUser: 'Commercial',
+    amount: 'Montant',
+    wait: 'Attente',
+    priority: 'Prioritaire',
+    absences: (count: number) => (count === 1 ? '1 absence' : `${count} absences`),
+    /** Out of turn: the customer stands at the register (RG-FIL-03). */
+    call: (ticket: string) => `Appeler ${ticket}`,
+    callShort: 'Appeler',
+    servingTitle: 'À votre caisse',
+    callNext: 'Appeler le suivant',
+    next: (ticket: string, name: string) => `Suivant : ${ticket} — ${name}`,
+    calling: 'Appel…',
+    /** The verbal call (RG-DSP-05): what to say aloud, big. */
+    announce: 'Annoncez',
+    orderOf: (number: string, salesUser: string) => `Commande ${number} · ${salesUser}`,
+    lines: (count: number) => (count === 1 ? '1 ligne' : `${count} lignes`),
+    noShow: 'Client absent',
+    paymentComing: 'L’encaissement arrive avec les prochaines étapes du développement.',
+    elsewhere: 'Aux autres caisses',
+    servedBy: (name: string, station: string | null) =>
+      station ? `${station} — ${name}` : `Caisse de ${name}`,
+    called: (ticket: string, name: string) => `Ticket ${ticket} appelé : ${name}.`,
+    absent: (ticket: string) => `${ticket} absent : remis en fin de file.`,
+    /** Wait since the order entered the queue (RG-FIL-05). */
+    minutes: (minutes: number) =>
+      minutes < 1
+        ? '< 1 min'
+        : minutes < 60
+          ? `${minutes} min`
+          : `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}`,
+  },
+
+  /** The manager's notices, until the supervision view (T-042). */
+  manager: {
+    noShows: (ticket: string, name: string, count: number) =>
+      `Client absent ${count} fois : ${ticket} — ${name}.`,
   },
 
   /** One workspace per active role (annexe B). */
@@ -250,8 +301,11 @@ export const labels = {
     sales: { title: 'Ventes', summary: 'Devis et commandes sur tablette.' },
     cashier: { title: 'Caisse', summary: 'Contrôle, paiement et facture.' },
     warehouse: { title: 'Livraison', summary: 'Préparation et remise de la marchandise.' },
-    manager: { title: 'Supervision', summary: 'Import, plafonds de remise, files et ajustements.' },
-    owner: { title: 'Tableau de bord', summary: 'Ventes, remises exceptionnelles et rapports.' },
+    manager: { title: 'Supervision', summary: 'Import, files, ajustements et annulations.' },
+    owner: {
+      title: 'Tableau de bord',
+      summary: 'Ventes, plafonds et remises exceptionnelles, rapports.',
+    },
     admin: { title: 'Administration', summary: 'Comptes, postes et paramètres.' },
   } satisfies Record<Role, { title: string; summary: string }>,
 } as const;

@@ -88,7 +88,7 @@ export const queueRoutes: FastifyPluginAsync = async (app) => {
       const { queue } = queueParams.parse(request.params);
       const body = queueMoveSchema.parse(request.body);
       await moveInQueue(app.db, actorOf(authOf(request)), queue, body);
-      app.realtime.publish(queueChanged(queue, body.orderId));
+      app.realtime.publish(queueChanged(queue, body.orderId, 'reordered'));
       return reply.code(204).send();
     },
   );
@@ -100,7 +100,7 @@ export const queueRoutes: FastifyPluginAsync = async (app) => {
       const { queue } = queueParams.parse(request.params);
       const body = queuePrioritySchema.parse(request.body);
       await setPriority(app.db, actorOf(authOf(request)), queue, body);
-      app.realtime.publish(queueChanged(queue, body.orderId));
+      app.realtime.publish(queueChanged(queue, body.orderId, 'reordered'));
       return reply.code(204).send();
     },
   );
