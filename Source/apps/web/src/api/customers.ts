@@ -1,8 +1,10 @@
 import {
+  customerPhoneTakenSchema,
   customerSchema,
   customerSearchResultSchema,
   type Customer,
   type CustomerCreateInput,
+  type CustomerPhoneTaken,
   type CustomerSearchResult,
 } from '@vente-web/shared';
 
@@ -24,11 +26,9 @@ export const customersApi = {
   },
 };
 
-/** The known record the API offers instead of a duplicate phone (`CUSTOMER_PHONE_TAKEN`). */
-export function takenBy(error: unknown): Customer | null {
+/** The known record the API offers instead of a duplicate phone, and the number it holds. */
+export function takenBy(error: unknown): CustomerPhoneTaken | null {
   if (!(error instanceof ApiError) || error.code !== 'CUSTOMER_PHONE_TAKEN') return null;
-  const details = error.details;
-  if (typeof details !== 'object' || details === null || !('customer' in details)) return null;
-  const parsed = customerSchema.safeParse(details.customer);
+  const parsed = customerPhoneTakenSchema.safeParse(error.details);
   return parsed.success ? parsed.data : null;
 }

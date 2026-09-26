@@ -42,11 +42,15 @@ enum DiscountCodeStatus {
   @@map("discount_code_status")
 }
 
-/// Name and phone are mandatory; phone unique among active customers (RG-DEV-04, partial index).
+/// Name and phone are mandatory, a second phone optional; a number belongs to one active
+/// customer only, first or second (RG-DEV-04, H26: `customer_phones`).
 model Customer {
   id           String   @id @default(uuid(7)) @db.Uuid
   name         String   @db.VarChar(120)
+  /// Printed on quotes and invoices.
   phone        String   @db.VarChar(32)
+  /// Optional; never equal to `phone` (CHECK in the migration).
+  secondPhone  String?  @map("second_phone") @db.VarChar(32)
   notes        String?
   isActive     Boolean  @default(true) @map("is_active")
   /// Set when this record was merged into another one (deduplication).
@@ -56,12 +60,25 @@ model Customer {
 
   mergedInto       Customer?         @relation("CustomerMerge", fields: [mergedIntoId], references: [id])
   mergedFrom       Customer[]        @relation("CustomerMerge")
+  phones           CustomerPhone[]
   orders           Order[]
   discountRequests DiscountRequest[]
   discountCodes    DiscountCode[]
 
   @@index([name])
   @@map("customers")
+}
+
+/// Every number of an active customer, once: its primary key refuses a number already held
+/// (RG-DEV-04, H26). Kept by a trigger on `customers`, never written by the application.
+model CustomerPhone {
+  phone      String @id @db.VarChar(32)
+  customerId String @map("customer_id") @db.Uuid
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@map("customer_phones")
 }
 
 /// A quote (DRAFT) that becomes an order once validated by the sales user (RG-CMD-*).

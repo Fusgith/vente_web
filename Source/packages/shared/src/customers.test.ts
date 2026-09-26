@@ -76,10 +76,27 @@ describe('customer bodies', () => {
     expect(customerCreateSchema.safeParse({ name: 'Rakoto', phone: '12' }).success).toBe(false);
   });
 
-  it('updates one field or both, never nothing', () => {
+  it('takes a second phone, never the first one again (decision H26)', () => {
+    expect(
+      customerCreateSchema.parse({
+        name: 'Rakoto',
+        phone: '034 12 345 67',
+        secondPhone: '+261 32 44 555 66',
+      }),
+    ).toEqual({ name: 'Rakoto', phone: '0341234567', secondPhone: '0324455566' });
+    const same = customerCreateSchema.safeParse({
+      name: 'Rakoto',
+      phone: '0341234567',
+      secondPhone: '+261 34 12 345 67',
+    });
+    expect(same.error?.issues[0]).toMatchObject({ path: ['secondPhone'], message: 'same_phone' });
+  });
+
+  it('updates any field, the second phone removable, never nothing', () => {
     expect(customerUpdateSchema.parse({ phone: '+261 33 00 000 01' })).toEqual({
       phone: '0330000001',
     });
+    expect(customerUpdateSchema.parse({ secondPhone: null })).toEqual({ secondPhone: null });
     expect(customerUpdateSchema.safeParse({}).success).toBe(false);
   });
 });

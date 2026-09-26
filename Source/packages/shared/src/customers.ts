@@ -1,5 +1,6 @@
 /**
- * Customer directory (RG-DEV-04): name and phone are mandatory, one active record per phone.
+ * Customer directory (RG-DEV-04): name and phone are mandatory, a second phone optional; a number
+ * belongs to one active record only, as its first or second phone.
  * Contracts shared by the API and the PWA; the phone rules are decision H26.
  */
 import { z } from 'zod';
@@ -72,13 +73,24 @@ const nameSchema = z
   .transform((raw) => raw.trim().replace(/\s+/g, ' '))
   .pipe(z.string().min(1).max(CUSTOMER_NAME_MAX_LENGTH));
 
-export const customerCreateSchema = z.object({ name: nameSchema, phone: phoneSchema });
+/** At most two numbers per customer (decision H26): the first, printed, and a second one. */
+export const customerCreateSchema = z
+  .object({ name: nameSchema, phone: phoneSchema, secondPhone: phoneSchema.optional() })
+  .refine((body) => body.secondPhone !== body.phone, {
+    path: ['secondPhone'],
+    message: 'same_phone',
+  });
 export type CustomerCreate = z.infer<typeof customerCreateSchema>;
 export type CustomerCreateInput = z.input<typeof customerCreateSchema>;
 
+/** `secondPhone: null` removes the second number. */
 export const customerUpdateSchema = z
-  .object({ name: nameSchema.optional(), phone: phoneSchema.optional() })
-  .refine((body) => body.name !== undefined || body.phone !== undefined, 'nothing_to_update');
+  .object({
+    name: nameSchema.optional(),
+    phone: phoneSchema.optional(),
+    secondPhone: phoneSchema.nullable().optional(),
+  })
+  .refine((body) => Object.values(body).some((value) => value !== undefined), 'nothing_to_update');
 export type CustomerUpdate = z.infer<typeof customerUpdateSchema>;
 
 /** The record `:id` is merged into `intoId`, which keeps living (RG-DEV-04). */
@@ -89,8 +101,9 @@ export const customerSearchQuerySchema = z.object({ q: z.string().trim().min(1).
 export const customerSchema = z.object({
   id: z.uuid(),
   name: z.string(),
-  /** Stored form (`normalizePhone`); shown with `formatPhone`. */
+  /** Stored form (`normalizePhone`); shown with `formatPhone`; printed on quotes and invoices. */
   phone: z.string(),
+  secondPhone: z.string().nullable(),
   /** False once deactivated or merged: never offered for a new quote. */
   isActive: z.boolean(),
   /** The record that replaced this one after a merge. */
@@ -104,3 +117,7 @@ export const customerSearchResultSchema = z.object({
   more: z.boolean(),
 });
 export type CustomerSearchResult = z.infer<typeof customerSearchResultSchema>;
+
+/** Details of `CUSTOMER_PHONE_TAKEN`: the active record holding the number, to offer it. */
+export const customerPhoneTakenSchema = z.object({ customer: customerSchema, phone: z.string() });
+export type CustomerPhoneTaken = z.infer<typeof customerPhoneTakenSchema>;

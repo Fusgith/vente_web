@@ -31,6 +31,7 @@ export const ERROR_LABELS = {
     'Seul le boss choisit son mot de passe : l’admin ne peut ni le poser ni le réinitialiser.',
   CUSTOMER_PHONE_TAKEN: 'Ce numéro de téléphone est déjà celui d’un client du répertoire.',
   CUSTOMER_INACTIVE: 'Cette fiche client est désactivée ou fusionnée avec une autre.',
+  CUSTOMER_PHONES_SAME: 'Les deux téléphones du client sont identiques.',
   CUSTOMER_MERGE_INVALID: 'Fusion impossible : choisissez deux fiches actives différentes.',
   QUOTE_LINE_UNAVAILABLE:
     'Un article du devis n’est plus en vente dans cette unité, ou n’a pas de prix : retirez la ligne.',

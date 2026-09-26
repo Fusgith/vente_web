@@ -185,7 +185,12 @@ function CustomerSheet({ chosenId, onPick, onClose }: CustomerSheetProps) {
                 className="flex min-h-14 w-full items-center gap-3 rounded-control border border-rule-strong bg-white px-3 text-left transition-colors duration-100 active:bg-indigo-soft"
               >
                 <span className="min-w-0 flex-1 truncate font-semibold">{customer.name}</span>
-                <span className="text-ink-2 figures">{formatPhone(customer.phone)}</span>
+                <span className="flex flex-col items-end text-ink-2 figures">
+                  <span>{formatPhone(customer.phone)}</span>
+                  {customer.secondPhone && (
+                    <span className="text-14">{formatPhone(customer.secondPhone)}</span>
+                  )}
+                </span>
                 {customer.id === chosenId && <Icon name="check" className="size-5 text-indigo" />}
               </button>
             </li>
@@ -220,10 +225,21 @@ interface NewCustomerFormProps {
 
 type Problem = { message: string; known?: Customer };
 
+/** The first field the form refuses, said in words (RG-DEV-04, decision H26). */
+function problemOf(issue: { path: PropertyKey[]; message: string } | undefined): string {
+  const field = issue?.path[0];
+  if (field === 'name') return text.nameRequired;
+  if (field === 'secondPhone') {
+    return issue?.message === 'same_phone' ? text.phonesSame : text.secondPhoneInvalid;
+  }
+  return text.phoneInvalid;
+}
+
 function NewCustomerForm({ term, onPick }: NewCustomerFormProps) {
   const id = useId();
   const [name, setName] = useState<string | null>(null);
   const [phone, setPhone] = useState<string | null>(null);
+  const [secondPhone, setSecondPhone] = useState('');
   const [saving, setSaving] = useState(false);
   const [problem, setProblem] = useState<Problem | null>(null);
   const fromSearch = term.trim();
@@ -232,10 +248,14 @@ function NewCustomerForm({ term, onPick }: NewCustomerFormProps) {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    const parsed = customerCreateSchema.safeParse({ name: nameValue, phone: phoneValue });
+    const second = secondPhone.trim();
+    const parsed = customerCreateSchema.safeParse({
+      name: nameValue,
+      phone: phoneValue,
+      ...(second ? { secondPhone: second } : {}),
+    });
     if (!parsed.success) {
-      const wrong = parsed.error.issues[0]?.path[0];
-      setProblem({ message: wrong === 'name' ? text.nameRequired : text.phoneInvalid });
+      setProblem({ message: problemOf(parsed.error.issues[0]) });
       return;
     }
     setProblem(null);
@@ -243,9 +263,14 @@ function NewCustomerForm({ term, onPick }: NewCustomerFormProps) {
     try {
       onPick(await customersApi.create(parsed.data));
     } catch (error) {
-      const known = takenBy(error);
+      const taken = takenBy(error);
       setProblem(
-        known ? { message: text.taken(known.name), known } : { message: errorMessage(error) },
+        taken
+          ? {
+              message: text.taken(formatPhone(taken.phone), taken.customer.name),
+              known: taken.customer,
+            }
+          : { message: errorMessage(error) },
       );
       setSaving(false);
     }
@@ -279,6 +304,17 @@ function NewCustomerForm({ term, onPick }: NewCustomerFormProps) {
           inputMode="tel"
           value={phoneValue}
           onChange={(event) => setPhone(event.target.value)}
+          autoComplete="off"
+          className={`${INPUT} figures`}
+        />
+      </label>
+      <label className="flex flex-col gap-1.5">
+        <span className="font-semibold">{text.secondPhone}</span>
+        <input
+          type="tel"
+          inputMode="tel"
+          value={secondPhone}
+          onChange={(event) => setSecondPhone(event.target.value)}
           autoComplete="off"
           className={`${INPUT} figures`}
         />

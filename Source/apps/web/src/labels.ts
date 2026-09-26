@@ -113,12 +113,17 @@ export const labels = {
       newCustomer: 'Nouveau client',
       name: 'Nom',
       phone: 'Téléphone',
+      /** Decision H26: two numbers at most, the second optional. */
+      secondPhone: 'Second téléphone (facultatif)',
       save: 'Enregistrer le client',
       saving: 'Enregistrement…',
       nameRequired: 'Saisissez le nom du client.',
       phoneInvalid:
         'Téléphone invalide : 10 chiffres commençant par 0 (034 12 345 67), ou +indicatif.',
-      taken: (name: string) => `Ce numéro est déjà celui de ${name}.`,
+      taken: (phone: string, name: string) => `Le ${phone} est déjà celui de ${name}.`,
+      secondPhoneInvalid:
+        'Second téléphone invalide : 10 chiffres commençant par 0, ou +indicatif ; sinon laissez-le vide.',
+      phonesSame: 'Les deux téléphones sont identiques : laissez le second vide.',
       pick: (name: string) => `Choisir ${name}`,
       chosen: (name: string) => `Client : ${name}`,
     },

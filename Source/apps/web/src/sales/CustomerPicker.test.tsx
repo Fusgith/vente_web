@@ -14,6 +14,7 @@ const RAKOTO: Customer = {
   id: '8d0f4a52-6c1e-4f7e-9d7a-2b1c3d4e5f60',
   name: 'Rakoto Jean',
   phone: '0341234567',
+  secondPhone: null,
   isActive: true,
   mergedIntoId: null,
 };
@@ -101,7 +102,10 @@ describe('CustomerPicker (RG-DEV-04)', () => {
 
   it('offers the known customer instead of a duplicate phone', async () => {
     fakeApi({
-      'POST /customers': apiError(409, 'CUSTOMER_PHONE_TAKEN', { customer: RAKOTO }),
+      'POST /customers': apiError(409, 'CUSTOMER_PHONE_TAKEN', {
+        customer: RAKOTO,
+        phone: '0341234567',
+      }),
     });
     render(<Harness />);
     openSheet();
@@ -110,7 +114,9 @@ describe('CustomerPicker (RG-DEV-04)', () => {
     fireEvent.change(screen.getByLabelText(text.phone), { target: { value: '+261 34 12 345 67' } });
     fireEvent.click(screen.getByRole('button', { name: text.save }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(text.taken('Rakoto Jean'));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      text.taken('034 12 345 67', 'Rakoto Jean'),
+    );
     fireEvent.click(screen.getByRole('button', { name: text.pick('Rakoto Jean') }));
     expect(screen.getByRole('button', { name: text.change('Rakoto Jean') })).toBeInTheDocument();
   });
@@ -123,5 +129,39 @@ describe('CustomerPicker (RG-DEV-04)', () => {
     const sheet = screen.getByRole('dialog');
     const row = await within(sheet).findByRole('button', { name: /Rakoto Jean/ });
     expect(row.querySelector('svg')).not.toBeNull();
+  });
+
+  it('takes an optional second phone, and shows both numbers (decision H26)', async () => {
+    const withTwo = { ...RABE, secondPhone: '0324455566' };
+    const api = fakeApi({
+      'GET /customers?q=rabe': ok({ items: [withTwo], more: false }),
+      'POST /customers': { status: 201, body: withTwo },
+    });
+    render(<Harness />);
+    openSheet();
+    type('rabe');
+    const row = await screen.findByRole('button', { name: /Rabe/ });
+    expect(row).toHaveTextContent('033 11 122 33');
+    expect(row).toHaveTextContent('032 44 555 66');
+
+    fireEvent.click(screen.getByRole('button', { name: text.newCustomer }));
+    fireEvent.change(screen.getByLabelText(text.phone), { target: { value: '033 11 122 33' } });
+    fireEvent.change(screen.getByLabelText(text.secondPhone), {
+      target: { value: '033 11 122 33' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: text.save }));
+    expect(screen.getByRole('alert')).toHaveTextContent(text.phonesSame);
+
+    fireEvent.change(screen.getByLabelText(text.secondPhone), {
+      target: { value: '+261 32 44 555 66' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: text.save }));
+    await waitFor(() => expect(api.callsTo('POST /customers')).toHaveLength(1));
+    // The name comes from the search typed, as for any new customer.
+    expect(api.callsTo('POST /customers')[0]!.body).toEqual({
+      name: 'rabe',
+      phone: '0331112233',
+      secondPhone: '0324455566',
+    });
   });
 });

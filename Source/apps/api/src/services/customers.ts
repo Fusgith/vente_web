@@ -5,6 +5,7 @@ import {
   searchTokens,
   type Customer,
   type CustomerCreate,
+  type CustomerPhoneTaken,
   type CustomerSearchResult,
   type CustomerUpdate,
 } from '@vente-web/shared';
@@ -19,6 +20,7 @@ const CUSTOMER_FIELDS = {
   id: true,
   name: true,
   phone: true,
+  secondPhone: true,
   isActive: true,
   mergedIntoId: true,
 } as const;
@@ -27,17 +29,33 @@ function isUniqueViolation(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
 }
 
-/** The active record holding `phone`, offered instead of a duplicate (RG-DEV-04). */
-async function phoneOwner(db: Db, phone: string, exceptId?: string): Promise<Customer | null> {
-  return db.customer.findFirst({
-    where: { phone, isActive: true, ...(exceptId ? { id: { not: exceptId } } : {}) },
+/**
+ * The active record already holding one of `phones`, as its first or second number, with that
+ * number: offered instead of a duplicate (RG-DEV-04, decision H26).
+ */
+async function phoneOwner(
+  db: Db,
+  phones: readonly string[],
+  exceptId?: string,
+): Promise<CustomerPhoneTaken | null> {
+  if (phones.length === 0) return null;
+  const customer = await db.customer.findFirst({
+    where: {
+      isActive: true,
+      OR: [{ phone: { in: [...phones] } }, { secondPhone: { in: [...phones] } }],
+      ...(exceptId ? { id: { not: exceptId } } : {}),
+    },
     select: CUSTOMER_FIELDS,
   });
+  const phone = phones.find((candidate) =>
+    [customer?.phone, customer?.secondPhone].includes(candidate),
+  );
+  return customer && phone ? { customer, phone } : null;
 }
 
-async function phoneTaken(db: Db, phone: string, exceptId?: string): Promise<AppError> {
-  const customer = await phoneOwner(db, phone, exceptId);
-  return new AppError(409, 'CUSTOMER_PHONE_TAKEN', customer ? { customer } : undefined);
+async function phoneTaken(db: Db, phones: readonly string[], exceptId?: string) {
+  const taken = await phoneOwner(db, phones, exceptId);
+  return new AppError(409, 'CUSTOMER_PHONE_TAKEN', taken ?? undefined);
 }
 
 export async function findCustomer(db: Db, id: string): Promise<Customer> {
@@ -65,12 +83,16 @@ export async function searchCustomers(db: Db, term: string): Promise<CustomerSea
           ),
           ' AND ',
         )
-      : Prisma.sql`replace(c."phone", '+', '') LIKE '%' || ${digits} || '%'`;
+      : Prisma.sql`(replace(c."phone", '+', '') LIKE '%' || ${digits} || '%'
+           OR replace(coalesce(c."second_phone", ''), '+', '') LIKE '%' || ${digits} || '%')`;
+  const exact = digits ?? '';
   const rows = await db.$queryRaw<{ id: string }[]>`
     SELECT c."id"
       FROM "customers" c
      WHERE c."is_active" AND ${match}
-     ORDER BY (replace(c."phone", '+', '') = ${digits ?? ''}) DESC, lower(c."name"), c."id"
+     ORDER BY (replace(c."phone", '+', '') = ${exact}
+               OR replace(coalesce(c."second_phone", ''), '+', '') = ${exact}) DESC,
+              lower(c."name"), c."id"
      LIMIT ${CUSTOMER_SEARCH_MAX_RESULTS + 1}`;
   const ids = rows.slice(0, CUSTOMER_SEARCH_MAX_RESULTS).map((row) => row.id);
   const found = await db.customer.findMany({ where: { id: { in: ids } }, select: CUSTOMER_FIELDS });
@@ -81,33 +103,41 @@ export async function searchCustomers(db: Db, term: string): Promise<CustomerSea
   };
 }
 
+const phonesOf = (customer: { phone: string; secondPhone?: string | null | undefined }) =>
+  customer.secondPhone ? [customer.phone, customer.secondPhone] : [customer.phone];
+
 /** A known phone is refused with the existing record, for the screen to offer it (RG-DEV-04). */
 export async function createCustomer(
   db: Db,
   actor: Actor,
   input: CustomerCreate,
 ): Promise<Customer> {
-  if (await phoneOwner(db, input.phone)) throw await phoneTaken(db, input.phone);
+  const phones = phonesOf(input);
+  if (await phoneOwner(db, phones)) throw await phoneTaken(db, phones);
+  const data = { name: input.name, phone: input.phone, secondPhone: input.secondPhone ?? null };
   try {
     return await db.$transaction(async (tx) => {
-      const customer = await tx.customer.create({ data: input, select: CUSTOMER_FIELDS });
+      const customer = await tx.customer.create({ data, select: CUSTOMER_FIELDS });
       await recordAudit(tx, {
         ...by(actor),
         action: 'customer.created',
         entityType: 'customer',
         entityId: customer.id,
-        after: { name: customer.name, phone: customer.phone },
+        after: { name: customer.name, phone: customer.phone, secondPhone: customer.secondPhone },
       });
       return customer;
     });
   } catch (error) {
-    // Two tablets creating the same number at once: the partial unique index decides.
-    if (isUniqueViolation(error)) throw await phoneTaken(db, input.phone);
+    // Two tablets creating the same number at once: the `customer_phones` key decides.
+    if (isUniqueViolation(error)) throw await phoneTaken(db, phones);
     throw error;
   }
 }
 
-/** Name and/or phone of an active record; the audit keeps only the fields that changed. */
+/**
+ * Name and/or phones of an active record (`secondPhone: null` removes the second number); the
+ * audit keeps only the fields that changed.
+ */
 export async function updateCustomer(
   db: Db,
   actor: Actor,
@@ -116,9 +146,9 @@ export async function updateCustomer(
 ): Promise<Customer> {
   const current = await findCustomer(db, id);
   if (!current.isActive) throw new AppError(409, 'CUSTOMER_INACTIVE');
-  const before: Record<string, string> = {};
-  const after: Record<string, string> = {};
-  for (const field of ['name', 'phone'] as const) {
+  const before: Record<string, string | null> = {};
+  const after: Record<string, string | null> = {};
+  for (const field of ['name', 'phone', 'secondPhone'] as const) {
     const value = input[field];
     if (value !== undefined && value !== current[field]) {
       before[field] = current[field];
@@ -126,8 +156,10 @@ export async function updateCustomer(
     }
   }
   if (Object.keys(after).length === 0) return current;
-  if (after.phone && (await phoneOwner(db, after.phone, id)))
-    throw await phoneTaken(db, after.phone, id);
+  const next = { ...current, ...after } as Customer;
+  if (next.secondPhone === next.phone) throw new AppError(400, 'CUSTOMER_PHONES_SAME');
+  const added = phonesOf(next).filter((phone) => !phonesOf(current).includes(phone));
+  if (await phoneOwner(db, added, id)) throw await phoneTaken(db, added, id);
   try {
     return await db.$transaction(async (tx) => {
       // Guarded on is_active: a merge committed meanwhile wins, this edit is refused.
@@ -144,10 +176,10 @@ export async function updateCustomer(
         before,
         after,
       });
-      return { ...current, ...after };
+      return next;
     });
   } catch (error) {
-    if (isUniqueViolation(error) && after.phone) throw await phoneTaken(db, after.phone, id);
+    if (isUniqueViolation(error)) throw await phoneTaken(db, added, id);
     throw error;
   }
 }
