@@ -7,6 +7,7 @@ import {
 } from '@vente-web/shared';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
+import { quotesApi } from '../api/quotes.js';
 import { labels } from '../labels.js';
 import { buttonClass, sheetClass, tagClass } from '../ui/button.js';
 import { Icon } from '../ui/Icon.js';
@@ -213,9 +214,8 @@ interface TotalsProps {
   saving: boolean;
 }
 
-function saveLabel(draft: DraftState, saving: boolean, upToDate: boolean): string {
+function saveLabel(draft: DraftState, saving: boolean): string {
   if (saving) return text.saving;
-  if (upToDate) return text.upToDate;
   return draft.saved ? text.saveChanges : text.save;
 }
 
@@ -223,7 +223,8 @@ function saveLabel(draft: DraftState, saving: boolean, upToDate: boolean): strin
  * Under the table, in the order of RG-DEV-05: gross total, line discounts, subtotal, order
  * discount (with its rate when typed as one), amount due, then the reminder of all discounts.
  * Without any discount, the amount due alone. The order discount is typed from here, and the
- * quote saved next to its amount due.
+ * quote saved next to its amount due; once saved and unchanged, its PDF opened instead: the
+ * PDF is always the quote as saved.
  */
 function Totals({ quote, draft, onOrderDiscount, onSave, saving }: TotalsProps) {
   const [open, setOpen] = useState(false);
@@ -277,15 +278,27 @@ function Totals({ quote, draft, onOrderDiscount, onSave, saving }: TotalsProps) 
             </div>
           )}
         </dl>
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={saving || upToDate}
-          className={buttonClass('primary', 'md')}
-        >
-          <Icon name="check" className="size-5" />
-          {saveLabel(draft, saving, upToDate)}
-        </button>
+        {draft.saved && upToDate ? (
+          <a
+            href={quotesApi.pdfUrl(draft.saved.id)}
+            target="_blank"
+            rel="noopener"
+            className={buttonClass('primary', 'md')}
+          >
+            <Icon name="document" className="size-5" />
+            {text.openPdf}
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={saving}
+            className={buttonClass('primary', 'md')}
+          >
+            <Icon name="check" className="size-5" />
+            {saveLabel(draft, saving)}
+          </button>
+        )}
       </div>
       {!quote.orderWithinLimit && (
         <p role="alert" className="flex basis-full items-start gap-2 font-semibold text-madder">

@@ -138,6 +138,19 @@ describe.skipIf(!TEST_DATABASE_URL)('quotes (RG-DEV-01/02/05, RG-REM-01/02)', ()
     expect((await save(draft(), cookies.cashier)).statusCode).toBe(403);
   });
 
+  it('opens the quote in A4 for its readers, never the warehouse (RG-PDF-01)', async () => {
+    const quote = await saved();
+    const open = (id: string, cookie: string) =>
+      request(t.app, 'GET', `${QUOTES}/${id}/pdf`, { cookie });
+    const pdf = await open(quote.id, cookies.cashier);
+    expect(pdf.statusCode, pdf.body).toBe(200);
+    expect(pdf.headers['content-type']).toBe('application/pdf');
+    expect(pdf.headers['content-disposition']).toBe(`inline; filename="${quote.number}.pdf"`);
+    expect(pdf.rawPayload.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+    expect((await open(quote.id, cookies.warehouse)).statusCode).toBe(403);
+    expect((await open(UNKNOWN_ID, cookies.cashier)).statusCode).toBe(404);
+  });
+
   it('refuses a discount beyond its cap, naming what passed it', async () => {
     const onLine = await save({
       ...draft(),

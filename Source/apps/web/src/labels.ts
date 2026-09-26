@@ -131,8 +131,9 @@ export const labels = {
       changed: 'modifié, non enregistré',
       save: 'Enregistrer le devis',
       saveChanges: 'Enregistrer les modifications',
-      upToDate: 'Devis enregistré',
       saving: 'Enregistrement…',
+      /** Once saved and unchanged: the quote as printed (T-030, RG-DEV-05). */
+      openPdf: 'Ouvrir le PDF',
       saved: (number: string) => `Devis ${number} enregistré.`,
       customerFirst: 'Choisissez le client avant d’enregistrer le devis.',
       linesConcerned: (lines: string) => `Lignes concernées : ${lines}.`,

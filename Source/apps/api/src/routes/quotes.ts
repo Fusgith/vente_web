@@ -3,6 +3,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
 import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { quotePdf } from '../services/quote-pdf.js';
 import { createQuote, loadQuote, updateQuote } from '../services/quotes.js';
 
 const paramsSchema = z.object({ id: z.uuid() });
@@ -23,6 +24,17 @@ export const quoteRoutes: FastifyPluginAsync = async (app) => {
       return loadQuote(app.db, id);
     },
   );
+
+  // Opened in a tab of the tablet, printed from the browser (RG-PDF-01).
+  app.get('/quotes/:id/pdf', { preHandler: requireRole(...READERS) }, async (request, reply) => {
+    const { id } = paramsSchema.parse(request.params);
+    const { number, pdf } = await quotePdf(app.db, id);
+    return reply
+      .type('application/pdf')
+      .header('content-disposition', `inline; filename="${number}.pdf"`)
+      .header('cache-control', 'no-store')
+      .send(pdf);
+  });
 
   app.post('/quotes', { preHandler: requireRole('sales') }, async (request, reply) => {
     const body = quoteSaveSchema.parse(request.body);

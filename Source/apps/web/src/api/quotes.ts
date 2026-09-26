@@ -1,6 +1,6 @@
 import { quoteSchema, type Quote, type QuoteSave } from '@vente-web/shared';
 
-import { ApiError, apiRequest, parseResponse } from './client.js';
+import { API_BASE, ApiError, apiRequest, parseResponse } from './client.js';
 
 /** Quotes (T-030, RG-DEV-01/02): the API prices the lines, checks the caps and numbers. */
 export const quotesApi = {
@@ -13,6 +13,11 @@ export const quotesApi = {
   async update(id: string, body: QuoteSave, version: number): Promise<Quote> {
     const data = await apiRequest(`/quotes/${id}`, { method: 'PUT', body: { ...body, version } });
     return parseResponse(quoteSchema, data);
+  },
+
+  /** Opened in a tab, where the browser prints or shares it (RG-PDF-01). */
+  pdfUrl(id: string): string {
+    return `${API_BASE}/quotes/${id}/pdf`;
   },
 };
 

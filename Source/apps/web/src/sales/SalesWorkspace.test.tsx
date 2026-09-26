@@ -413,6 +413,8 @@ describe('quote screen: saving (T-030)', () => {
   );
   const ready = draftReducer(twoPacks, { type: 'setCustomer', customer: CUSTOMER });
   const saveButton = (name: string) => screen.getByRole('button', { name });
+  /** Once saved and unchanged, the save gives way to the PDF of the quote as saved. */
+  const pdfLink = () => screen.getByRole('link', { name: text.openPdf });
 
   it('asks for the customer before saving', () => {
     const api = mount({}, twoPacks);
@@ -433,16 +435,18 @@ describe('quote screen: saving (T-030)', () => {
       orderDiscount: null,
     });
     expect(screen.getByText(text.savedAs(number))).toBeVisible();
-    expect(saveButton(text.upToDate)).toBeDisabled();
+    expect(pdfLink()).toHaveAttribute('href', `/api/v1/quotes/${QUOTE_ID}/pdf`);
+    expect(pdfLink()).toHaveAttribute('target', '_blank');
 
     fireEvent.click(await lineQty(1, '2'));
     fireEvent.click(within(pad()).getByRole('button', { name: '3' }));
     fireEvent.click(within(pad()).getByRole('button', { name: labels.sales.pad.confirm }));
     expect(screen.getByText(`${text.savedAs(number)}, ${text.changed}`)).toBeVisible();
+    expect(screen.queryByRole('link', { name: text.openPdf })).toBeNull();
 
     api.on(`PUT /quotes/${QUOTE_ID}`, ok(savedQuote(ready, number, 2)));
     fireEvent.click(saveButton(text.saveChanges));
-    await waitFor(() => expect(saveButton(text.upToDate)).toBeDisabled());
+    await waitFor(() => expect(pdfLink()).toBeVisible());
     expect(api.callsTo(`PUT /quotes/${QUOTE_ID}`)[0]!.body).toMatchObject({
       lines: [{ qty: '3' }],
       version: 1,
