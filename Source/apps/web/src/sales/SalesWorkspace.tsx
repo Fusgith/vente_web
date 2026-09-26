@@ -42,11 +42,7 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
           )
         }
       />
-      <DraftTable
-        lines={draft.lines}
-        selected={draft.selected}
-        onSelect={(key) => dispatch({ type: 'select', key })}
-      />
+      <DraftTable draft={draft} onSelect={(key) => dispatch({ type: 'select', key })} />
     </div>
   );
 }

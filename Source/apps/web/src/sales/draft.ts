@@ -1,4 +1,9 @@
-import { addQuantities, type ProductHit, type ProductUnitHit } from '@vente-web/shared';
+import {
+  addQuantities,
+  type DiscountEntry,
+  type ProductHit,
+  type ProductUnitHit,
+} from '@vente-web/shared';
 
 /**
  * Lines picked on the quote screen, kept in memory until quotes are saved (T-030).
@@ -7,16 +12,22 @@ import { addQuantities, type ProductHit, type ProductUnitHit } from '@vente-web/
  */
 export interface DraftLine {
   key: string;
-  /** `available`: the stock when the line was added, shown per unit on the quantity pad. */
+  /** \vailable\: the stock when the line was added, shown per unit on the quantity pad. */
   product: Pick<ProductHit, 'id' | 'sku' | 'name' | 'baseUnit' | 'available' | 'units'>;
   unit: ProductUnitHit & { price: string };
   qty: string;
+  capPct: string;
+  discount: DiscountEntry | null;
+  granted?: DiscountEntry | null;
 }
 
 export interface DraftState {
   lines: DraftLine[];
   /** The line whose quantity pad is open: the last one added, or the one tapped. */
   selected: string | null;
+  clientId: string | null;
+  orderDiscount: DiscountEntry | null;
+  orderGranted?: DiscountEntry | null;
 }
 
 export type DraftAction =
@@ -24,9 +35,17 @@ export type DraftAction =
   | { type: 'setQty'; key: string; qty: string }
   | { type: 'setUnit'; key: string; unitId: string }
   | { type: 'remove'; key: string }
-  | { type: 'select'; key: string | null };
+  | { type: 'select'; key: string | null }
+  | { type: 'setDiscount'; key: string; discount: DiscountEntry | null }
+  | { type: 'setOrderDiscount'; discount: DiscountEntry | null }
+  | { type: 'setClient'; clientId: string | null };
 
-export const emptyDraft: DraftState = { lines: [], selected: null };
+export const emptyDraft: DraftState = {
+  lines: [],
+  selected: null,
+  clientId: null,
+  orderDiscount: null,
+};
 
 const keyOf = (productId: string, unitId: string) => `${productId}:${unitId}`;
 
@@ -45,11 +64,21 @@ function add(state: DraftState, hit: ProductHit, unitId: string, qty: string | n
     const lines = state.lines.map((line) =>
       line.key === key ? { ...line, qty: addQuantities(line.qty, added) } : line,
     );
-    return { lines, selected: key };
+    return { ...state, lines, selected: key };
   }
   const { id, sku, name, baseUnit, available, units } = hit;
-  const line = { key, product: { id, sku, name, baseUnit, available, units }, unit, qty: added };
-  return { lines: [...state.lines, line], selected: key };
+  // TODO: Resolve proper capPct from unit -> product -> category -> fallback (RG-REM-01)
+  // For now, defaulting to '0' to satisfy the type. T-031 implementation needs it.
+  const capPct = '0';
+  const line: DraftLine = {
+    key,
+    product: { id, sku, name, baseUnit, available, units },
+    unit,
+    qty: added,
+    capPct,
+    discount: null,
+  };
+  return { ...state, lines: [...state.lines, line], selected: key };
 }
 
 /** Another sale unit for a line; merges into the line already holding that unit, if any. */
@@ -67,12 +96,12 @@ function changeUnit(state: DraftState, key: string, unitId: string): DraftState 
           ? { ...candidate, qty: addQuantities(candidate.qty, line.qty) }
           : candidate,
       );
-    return { lines, selected: target };
+    return { ...state, lines, selected: target };
   }
   const lines = state.lines.map((candidate) =>
     candidate.key === key ? { ...candidate, key: target, unit } : candidate,
   );
-  return { lines, selected: target };
+  return { ...state, lines, selected: target };
 }
 
 export function draftReducer(state: DraftState, action: DraftAction): DraftState {
@@ -90,10 +119,22 @@ export function draftReducer(state: DraftState, action: DraftAction): DraftState
       return changeUnit(state, action.key, action.unitId);
     case 'remove':
       return {
+        ...state,
         lines: state.lines.filter((line) => line.key !== action.key),
         selected: state.selected === action.key ? null : state.selected,
       };
     case 'select':
       return { ...state, selected: action.key };
+    case 'setDiscount':
+      return {
+        ...state,
+        lines: state.lines.map((line) =>
+          line.key === action.key ? { ...line, discount: action.discount } : line,
+        ),
+      };
+    case 'setOrderDiscount':
+      return { ...state, orderDiscount: action.discount };
+    case 'setClient':
+      return { ...state, clientId: action.clientId };
   }
 }
