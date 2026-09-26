@@ -2,6 +2,37 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 26/09/2026 — T-030 devis : enregistrement (étape c) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- API (`f90d53b`, RG-DEV-01/02/04, RG-REM-01/02, RG-AUD-01), avec 5 tests :
+  - `POST /quotes` (commercial) : la tablette n'envoie que le client, les unités, les quantités et les remises. Le serveur prend le prix en vigueur et relit les plafonds en base ; un prix envoyé par la tablette est ignoré (RG-ART-07) ;
+  - numéro `D-AAAA-nnnnnn` tiré d'un compteur par année du magasin (fuseau `Indian/Antananarivo`) ; le préfixe `D` est un paramètre ;
+  - `PUT /quotes/:id` (commercial auteur ou responsable) : enregistre par-dessus la version lue ; un devis enregistré entre-temps ailleurs est refusé (409), jamais écrasé. Un devis validé en commande n'est plus modifiable ;
+  - `GET /quotes/:id` : commercial, caissier, responsable, boss, admin ; jamais le magasinier (annexe B) ;
+  - refus nommés : client absent, inconnu ou désactivé ; unité retirée de la vente (lignes citées) ; remise au-delà du plafond (lignes et/ou total cités) ;
+  - chaque création et modification est journalisée, avant → après.
+- Tablette (`22328b7`), avec 6 tests :
+  - bouton « Enregistrer le devis » sous le net à payer, puis « Enregistrer les modifications » ;
+  - avant l'envoi, l'écran vérifie le client et les plafonds ; sinon la bande du bas dit pourquoi ;
+  - statut à côté du titre : « Brouillon non enregistré », « Devis D-2026-… », ou « …, modifié, non enregistré » ;
+  - les prix et plafonds affichés sont réalignés sur ceux renvoyés par le serveur ; un refus cite les lignes concernées.
+- Galerie : écran `devis-enregistre`. Aucune dépendance ajoutée.
+- Vérifications : `format:check`, `lint`, `typecheck` et 316 tests verts ; CI verte pour `f90d53b` ; captures contrôlées en paysage et en portrait.
+
+**Décisions** :
+- « Modifié, non enregistré » compare le contenu envoyé au contenu affiché : reconfirmer la même quantité ne marque rien ; ce qui est tapé pendant l'enregistrement reste marqué non enregistré.
+- Une modification remplace toutes les lignes du devis (positions renumérotées).
+- Numéro de devis : un trou est toléré (transaction annulée), contrairement aux factures (RG-FAC-01).
+
+**Points de vigilance** :
+- TVA non appliquée aux devis pour l'instant (désactivée par défaut, RG-FAC-03).
+- T-033 : les demandes de remise pointent vers des lignes de commande. Or une modification du devis recrée ses lignes : il faudra des lignes stables ou un rattachement par position.
+- Refus « devis modifié ailleurs » (409) : la bande l'affiche, mais aucun écran ne permet encore de recharger le devis. Cela viendra avec la liste des devis.
+- Les tests de l'API affichent un avertissement de dépréciation de `pg`, venu de l'adaptateur Prisma et non de notre code.
+
+**Reste** : T-030 (d) PDF du devis.
+
 ## 26/09/2026 — T-030 devis : tableau et remises (étapes a et b) — agent : Claude Code (Opus 5.5)
 
 **Fait** :
