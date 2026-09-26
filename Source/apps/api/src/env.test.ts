@@ -10,6 +10,7 @@ describe('loadEnv', () => {
     expect(env.API_PORT).toBe(4000);
     expect(env.NODE_ENV).toBe('development');
     expect(env.AUTH_SESSION_HOURS).toBe(12);
+    expect(env.APP_NAME).toBe('Vente Web');
     expect(env.AUTH_DEFAULT_ORIGIN).toBe('LAN');
     expect(env.COOKIE_SECURE).toBe(false);
     expect(env.TRUST_PROXY.entries).toEqual(['127.0.0.1', '::1']);
@@ -75,5 +76,14 @@ describe('loadEnv', () => {
     expect(loadEnv({ DATABASE_URL, AUTH_SESSION_HOURS: '8' }).AUTH_SESSION_HOURS).toBe(8);
     expect(() => loadEnv({ DATABASE_URL, AUTH_SESSION_HOURS: '0' })).toThrow(/AUTH_SESSION_HOURS/);
     expect(() => loadEnv({ DATABASE_URL, AUTH_SESSION_HOURS: '13' })).toThrow(/AUTH_SESSION_HOURS/);
+  });
+
+  it('reads the application name of the build (RG-APP-01)', () => {
+    expect(loadEnv({ DATABASE_URL, APP_NAME: '  Épicerie   Rasoa ' }).APP_NAME).toBe(
+      'Épicerie Rasoa',
+    );
+    expect(loadEnv({ DATABASE_URL, APP_NAME: '' }).APP_NAME).toBe('Vente Web');
+    expect(() => loadEnv({ DATABASE_URL, APP_NAME: '<b>Rasoa</b>' })).toThrow(/APP_NAME/);
+    expect(() => loadEnv({ DATABASE_URL, APP_NAME: 'x'.repeat(41) })).toThrow(/APP_NAME/);
   });
 });

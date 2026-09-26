@@ -6,6 +6,7 @@ import {
 } from '@vente-web/shared';
 import type { FastifyPluginAsync } from 'fastify';
 
+import type { Env } from '../env.js';
 import { AppError } from '../errors.js';
 import { actorOf, authOf, requireAuth } from '../plugins/session.js';
 import { changeOwnPassword, changeOwnPin } from '../services/credentials.js';
@@ -13,7 +14,7 @@ import { confirmTotpEnrolment, startTotpEnrolment } from '../services/totp-enrol
 import { authRateLimit } from './rate-limit.js';
 
 /** Self-service credentials: own PIN / password, TOTP enrolment (⚠️ H20). */
-export const authCredentialRoutes: FastifyPluginAsync = async (app) => {
+export const authCredentialRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) => {
   // Every route here takes a secret or a code: same rate limit as the login (RG-USR-05).
   const guarded = { preHandler: requireAuth, ...authRateLimit };
 
@@ -41,7 +42,13 @@ export const authCredentialRoutes: FastifyPluginAsync = async (app) => {
 
   app.post('/auth/totp', guarded, async (request) => {
     const { code } = totpEnrolBodySchema.parse(request.body ?? {});
-    return startTotpEnrolment(app.db, actorOf(authOf(request)), request.accessOrigin, code);
+    return startTotpEnrolment(
+      app.db,
+      actorOf(authOf(request)),
+      request.accessOrigin,
+      code,
+      env.APP_NAME,
+    );
   });
 
   app.post('/auth/totp/confirm', guarded, async (request, reply) => {

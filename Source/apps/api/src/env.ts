@@ -1,4 +1,4 @@
-import { ACCESS_ORIGINS } from '@vente-web/shared';
+import { ACCESS_ORIGINS, DEFAULT_APP_NAME, appNameProblem, tidyAppName } from '@vente-web/shared';
 import { z } from 'zod';
 
 import { parseTrustedProxies } from './services/trusted-proxy.js';
@@ -11,6 +11,11 @@ const blankAsUnset = (value: unknown): unknown =>
 const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+    /** Name of this build, shown as the issuer in the authenticator app (RG-APP-01, ADR-0006). */
+    APP_NAME: z.preprocess(
+      blankAsUnset,
+      z.string().default(DEFAULT_APP_NAME).transform(tidyAppName),
+    ),
     API_HOST: z.string().default('0.0.0.0'),
     API_PORT: z.coerce.number().int().min(1).max(65535).default(3000),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
@@ -43,6 +48,15 @@ const envSchema = z
     ),
   })
   .check((ctx) => {
+    const appNameIssue = appNameProblem(ctx.value.APP_NAME);
+    if (appNameIssue) {
+      ctx.issues.push({
+        code: 'custom',
+        path: ['APP_NAME'],
+        message: appNameIssue,
+        input: ctx.value.APP_NAME,
+      });
+    }
     if (ctx.value.NODE_ENV === 'production' && ctx.value.AUTH_DEFAULT_ORIGIN !== undefined) {
       ctx.issues.push({
         code: 'custom',

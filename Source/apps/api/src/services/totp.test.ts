@@ -65,11 +65,17 @@ describe('TOTP (RG-USR-04: 6 digits, 30 s, one step of tolerance, single use)', 
   });
 
   it('builds the enrolment URI with issuer, label and parameters', () => {
-    const uri = totpUri(SECRET, 'boss');
+    const uri = totpUri(SECRET, 'boss', 'Vente Web');
     expect(uri).toMatch(/^otpauth:\/\/totp\/Vente%20Web:boss\?/);
     expect(uri).toContain(`secret=${SECRET}`);
     expect(uri).toContain('issuer=Vente%20Web');
     expect(uri).toContain('digits=6');
     expect(uri).toContain('period=30');
+  });
+
+  it('names the account after the application (RG-APP-01)', () => {
+    const uri = totpUri(SECRET, 'boss', 'Épicerie Rasoa');
+    expect(uri).toMatch(/^otpauth:\/\/totp\/%C3%89picerie%20Rasoa:boss\?/);
+    expect(uri).toContain('issuer=%C3%89picerie%20Rasoa');
   });
 });

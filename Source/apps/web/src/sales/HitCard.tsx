@@ -2,80 +2,111 @@ import {
   defaultSaleUnit,
   formatMga,
   formatQty,
-  splitInUnit,
   type ProductHit,
   type ProductUnitHit,
 } from '@vente-web/shared';
 
-import { labels } from '../labels.js';
+import { useId } from 'react';
 
-interface HitCardProps {
+import { labels } from '../labels.js';
+import { tagClass } from '../ui/button.js';
+import { capSummary } from './cap-summary.js';
+
+interface HitProps {
   hit: ProductHit;
   /** Adds the article in the unit tapped; the unit buttons replace any drop-down (RG-DEV-06 §4). */
   onPick: (unitId: string) => void;
 }
 
-/** A search result: its sale units with price, available stock and discount cap (§5.3). */
-export function HitCard({ hit, onPick }: HitCardProps) {
+/**
+ * A search result as one compact row (§5.3): code and name, the stock and the cap once, then one
+ * button per sale unit with only its price. Per-unit stock and caps live on the quantity pad.
+ * The list is a size container: narrow (a phone), the unit buttons go under the name. The unit
+ * buttons share one width and hug the right edge, two per line, so the prices of every row line
+ * up in columns; a third unit goes on a second line, under the second one.
+ */
+export function HitRow({ hit, onPick }: HitProps) {
+  const cap = capSummary(hit.units);
+  const nameId = useId();
   return (
-    <li className="flex flex-col gap-2 rounded-xl bg-white p-3 ring-1 ring-slate-200">
-      <p className="flex flex-wrap items-baseline gap-x-2">
-        <span className="font-mono text-sm text-slate-500">{hit.sku}</span>
-        <span className="font-semibold text-slate-900">{hit.name}</span>
-      </p>
-      <p className="text-sm text-slate-600">
-        {labels.sales.available(formatQty(hit.available))} · {labels.sales.baseUnit(hit.baseUnit)}
-      </p>
-      <div className="flex flex-wrap gap-2">
+    <li className="flex flex-col gap-2 border-b border-rule py-2 last:border-b-0 @md:flex-row @md:items-center @md:gap-3 @md:py-1">
+      <div className="min-w-0 flex-1">
+        <p className="flex items-baseline gap-1.5 text-16 leading-5 font-semibold">
+          <span className={`${tagClass} shrink-0`}>{hit.sku}</span>
+          <span id={nameId} className="line-clamp-2 min-w-0" title={hit.name}>
+            {hit.name}
+          </span>
+        </p>
+        <p className="flex flex-wrap gap-x-2.5 text-14 leading-5 text-ink-2">
+          <span className="figures">
+            {labels.sales.availableIn(formatQty(hit.available), hit.baseUnit)}
+          </span>
+          {cap && <span className="figures">{cap}</span>}
+        </p>
+      </div>
+      <div className="flex shrink-0 flex-wrap gap-1.5 @md:max-w-67.5 @md:justify-end">
         {hit.units.map((unit) => (
-          <UnitButton key={unit.id} hit={hit} unit={unit} onPick={onPick} />
+          <UnitButton key={unit.id} hit={hit} unit={unit} nameId={nameId} onPick={onPick} />
         ))}
       </div>
     </li>
   );
 }
 
-function UnitButton({
-  hit,
-  unit,
-  onPick,
-}: { hit: ProductHit; unit: ProductUnitHit } & Pick<HitCardProps, 'onPick'>) {
-  const { count } = splitInUnit(hit.available, unit.factor);
-  const details = [labels.sales.unitStock(formatQty(count))];
-  if (unit.maxDiscountPct !== null)
-    details.push(labels.sales.maxDiscount(formatQty(unit.maxDiscountPct)));
+interface UnitButtonProps extends Pick<HitProps, 'onPick'> {
+  hit: ProductHit;
+  unit: ProductUnitHit;
+  /** The article's name describes the button, which is named by its unit and its price. */
+  nameId: string;
+}
+
+function UnitButton({ hit, unit, nameId, onPick }: UnitButtonProps) {
+  const factor = formatQty(unit.factor);
+  const price = unit.price === null ? labels.sales.noPrice : formatMga(unit.price);
   return (
     <button
       type="button"
       disabled={unit.price === null}
       onClick={() => onPick(unit.id)}
-      className="min-h-11 rounded-lg border border-teal-700 px-3 py-1 text-left hover:bg-teal-50 disabled:border-slate-300 disabled:text-slate-400"
+      // The visible factor is short (« × 6 »); the name keeps the base unit for everyone.
+      aria-label={`${labels.sales.unitWithFactor(unit.label, factor, hit.baseUnit)} ${price}`}
+      aria-describedby={nameId}
+      className="flex min-h-12 min-w-33 flex-col items-stretch justify-center rounded-control border border-rule-strong bg-white px-2 py-1 text-left transition-colors duration-100 active:bg-indigo-soft disabled:border-dashed disabled:bg-cotton disabled:text-ink-2"
     >
-      <span className="block font-semibold">
-        {labels.sales.unitWithFactor(unit.label, formatQty(unit.factor), hit.baseUnit)}
+      <span className="text-14 leading-5 whitespace-nowrap">
+        <span className="font-semibold">{unit.label}</span>
+        {factor !== '1' && <span className="text-ink-2"> {labels.sales.factor(factor)}</span>}
       </span>
-      <span className="block">
-        {unit.price === null ? labels.sales.noPrice : formatMga(unit.price)}
+      <span
+        className={`text-right leading-5 ${unit.price === null ? 'text-14 font-medium' : 'text-16 font-bold figures'}`}
+      >
+        {price}
       </span>
-      <span className="block text-xs text-slate-500">{details.join(' · ')}</span>
     </button>
   );
 }
 
 /** A best seller, added in one tap in its default unit (RG-DEV-06 §5). */
-export function FavoriteTile({ hit, onPick }: HitCardProps) {
+export function FavoriteTile({ hit, onPick }: HitProps) {
   const unit = defaultSaleUnit(hit.units);
   return (
-    <li>
+    <li className="flex">
       <button
         type="button"
         disabled={unit === null}
         onClick={() => unit && onPick(unit.id)}
-        className="flex min-h-20 w-full flex-col justify-between rounded-xl bg-white p-3 text-left ring-1 ring-slate-200 hover:bg-teal-50 disabled:text-slate-400"
+        className="flex min-h-22 w-full flex-col justify-between gap-1.5 rounded-control border border-rule-strong bg-white px-3 py-2 text-left transition-colors duration-100 active:bg-indigo-soft disabled:border-dashed disabled:bg-cotton disabled:text-ink-2"
       >
-        <span className="line-clamp-2 font-semibold">{hit.name}</span>
-        <span className="text-sm text-slate-600">
-          {unit?.price ? `${unit.label} · ${formatMga(unit.price)}` : labels.sales.noPrice}
+        <span className="line-clamp-2 text-16 leading-5 font-semibold">{hit.name}</span>
+        <span className="flex flex-wrap items-baseline justify-between gap-x-2 text-14 leading-5">
+          {unit?.price ? (
+            <>
+              <span className="text-ink-2">{unit.label}</span>
+              <span className="ml-auto font-semibold figures">{formatMga(unit.price)}</span>
+            </>
+          ) : (
+            <span className="text-ink-2">{labels.sales.noPrice}</span>
+          )}
         </span>
       </button>
     </li>

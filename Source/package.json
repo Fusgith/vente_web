@@ -11,6 +11,7 @@
   "scripts": {
     "dev": "pnpm -r --parallel --stream run dev",
     "build": "pnpm -r run build",
+    "dist": "node scripts/dist.mjs",
     "typecheck": "pnpm -r run typecheck",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

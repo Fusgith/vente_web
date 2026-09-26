@@ -60,6 +60,11 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 | Borne libre-service | `kiosk` | Poste sans compte où le client compose lui-même son panier, repris ensuite par un commercial (§5.10). |
 | Panier (de borne) | `basket` | Devis créé à la borne, numéroté « P12 » dans la journée, en attente de reprise par un commercial. |
 | Recherche rapide | `quick_search` | Champ unique code / code-barres / désignation, ajout direct sur code exact, scan en rafale (RG-DEV-06). |
+| Espace de travail | `workspace` | Écrans d'un rôle actif (Ventes, Caisse, Livraison, Supervision, Tableau de bord, Administration) ; sa couleur est celle du cadre (ADR-0005). |
+| Cadre (lamba) | `frame` | Bordure de chaque écran : bandeau haut, liseré imprimé, bandeau bas ; sa couleur désigne l'espace de travail (ADR-0005). |
+| Ligne d'état | `status_line` | Bandeau bas du cadre : la seule phrase d'état de l'écran (« Ajouté : … », erreurs). |
+| Nom de l'application | `app_name` | Nom affiché de l'application, fixé à la construction (RG-APP-01, ADR-0006) ; distinct de la raison sociale. |
+| Version distribuable | `dist` | Application construite au nom voulu, rangée dans `Dist/` pour le déploiement (ADR-0006). |
 | Tableau de bord | `dashboard` | Indicateurs du boss et du responsable. |
 | TVA | `vat` | Taxe optionnelle. |
 | Ariary | `MGA` | Devise (code ISO 4217). Les montants s'affichent avec le sigle « MGA » (`1 250 000,00 MGA`) ; « Ariary » en toutes lettres ; jamais « Ar » (RG-FMT-01). |

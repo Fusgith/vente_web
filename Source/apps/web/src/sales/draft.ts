@@ -7,7 +7,8 @@ import { addQuantities, type ProductHit, type ProductUnitHit } from '@vente-web/
  */
 export interface DraftLine {
   key: string;
-  product: Pick<ProductHit, 'id' | 'sku' | 'name' | 'baseUnit' | 'units'>;
+  /** `available`: the stock when the line was added, shown per unit on the quantity pad. */
+  product: Pick<ProductHit, 'id' | 'sku' | 'name' | 'baseUnit' | 'available' | 'units'>;
   unit: ProductUnitHit & { price: string };
   qty: string;
 }
@@ -46,8 +47,8 @@ function add(state: DraftState, hit: ProductHit, unitId: string, qty: string | n
     );
     return { lines, selected: key };
   }
-  const { id, sku, name, baseUnit, units } = hit;
-  const line = { key, product: { id, sku, name, baseUnit, units }, unit, qty: added };
+  const { id, sku, name, baseUnit, available, units } = hit;
+  const line = { key, product: { id, sku, name, baseUnit, available, units }, unit, qty: added };
   return { lines: [...state.lines, line], selected: key };
 }
 

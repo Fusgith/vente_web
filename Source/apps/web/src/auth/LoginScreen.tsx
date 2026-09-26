@@ -1,10 +1,13 @@
 import type { AuthUserDirectory } from '@vente-web/shared';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 
 import { authApi } from '../api/auth.js';
 import { ApiError } from '../api/client.js';
 import { errorMessage } from '../api/error-message.js';
 import { labels } from '../labels.js';
+import { Frame } from '../shell/Frame.js';
+import { buttonClass, sheetClass } from '../ui/button.js';
+import { Icon } from '../ui/Icon.js';
 import type { ResumeHint } from './context.js';
 import { PasswordLogin } from './PasswordLogin.js';
 import { PinLogin } from './PinLogin.js';
@@ -51,60 +54,80 @@ export function LoginScreen({ notice, resume }: LoginScreenProps) {
     setAttempt((count) => count + 1);
   };
 
+  // The bottom band says what to do here; a notice (idle lock, expired session) takes its place.
   let content;
+  let instruction: string | null = labels.login.instruction;
   switch (directory.status) {
     case 'loading':
-      content = <p className="text-slate-600">{labels.loading}</p>;
+      content = <p className="m-auto text-18 text-ink-2">{labels.loading}</p>;
       break;
     case 'error':
+      instruction = null;
       content = (
-        <div className="flex flex-col items-start gap-3">
-          <p role="alert" className="rounded-lg bg-red-50 p-3 text-red-800">
+        <div
+          className={`${sheetClass} m-auto flex w-full max-w-md flex-col items-center gap-4 p-6`}
+        >
+          <p
+            role="alert"
+            className="flex w-full items-start gap-2 rounded-control bg-madder-soft px-3 py-2.5 font-semibold text-madder"
+          >
+            <Icon name="alert" className="size-5 translate-y-px" />
             {directory.message}
           </p>
-          <button
-            type="button"
-            onClick={retry}
-            className="min-h-12 rounded-xl bg-teal-700 px-6 text-lg font-semibold text-white"
-          >
+          <button type="button" onClick={retry} className={buttonClass('primary', 'lg', 'px-8')}>
             {labels.retry}
           </button>
         </div>
       );
       break;
     case 'remote':
-      content = <PasswordLogin remote />;
+      instruction = labels.login.passwordInstruction;
+      content = (
+        <PasswordSheet>
+          <PasswordLogin remote />
+        </PasswordSheet>
+      );
       break;
     case 'lan':
-      content =
-        directory.users.length === 0 ? (
-          <PasswordLogin remote={false} intro={labels.login.noPinUsers} />
-        ) : passwordMode ? (
-          <PasswordLogin remote={false} onPinMode={() => setPasswordMode(false)} />
-        ) : (
+      if (directory.users.length === 0 || passwordMode) {
+        instruction = labels.login.passwordInstruction;
+        content = (
+          <PasswordSheet>
+            {directory.users.length === 0 ? (
+              <PasswordLogin remote={false} intro={labels.login.noPinUsers} />
+            ) : (
+              <PasswordLogin remote={false} onPinMode={() => setPasswordMode(false)} />
+            )}
+          </PasswordSheet>
+        );
+      } else {
+        content = (
           <PinLogin
             users={directory.users}
             resume={resume}
             onPasswordMode={() => setPasswordMode(true)}
           />
         );
+      }
       break;
   }
 
   return (
-    <main className="flex min-h-dvh flex-col items-center gap-6 bg-slate-50 px-4 py-8">
-      <header className="text-center">
-        <h1 className="text-3xl font-bold text-teal-700">{labels.appName}</h1>
-        <p className="text-slate-600">{labels.tagline}</p>
-      </header>
-      <section className="flex w-full max-w-4xl flex-col gap-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-6">
-        {notice && (
-          <p role="status" className="rounded-lg bg-amber-50 p-3 text-amber-900">
-            {notice}
-          </p>
-        )}
-        {content}
-      </section>
-    </main>
+    <Frame
+      workspace="login"
+      name={labels.login.title}
+      wordmarkHeading
+      note={notice ?? instruction}
+      {...(notice ? { noteIcon: 'lock' as const } : {})}
+    >
+      {content}
+    </Frame>
+  );
+}
+
+/** The password form sits in one white sheet, centred in the field. */
+function PasswordSheet({ children }: { children: ReactNode }) {
+  return (
+    <div className={`${sheetClass} mx-auto my-auto w-full max-w-xl p-5 sm:p-6`}>{children}</div>
   );
 }

@@ -1,6 +1,7 @@
 import { addQuantities, isQuantity } from '@vente-web/shared';
 
-export const PAD_DIGITS = ['7', '8', '9', '4', '5', '6', '1', '2', '3'] as const;
+/** Phone order (1 2 3 on top), as the shared `Keypad` shows them. */
+export const PAD_DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as const;
 export type PadKey = (typeof PAD_DIGITS)[number] | '0' | ',' | 'erase';
 
 /** Up to 6 digits, a comma, up to 2 decimals (RG-ART-04), as typed on the pad. */

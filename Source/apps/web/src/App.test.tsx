@@ -40,6 +40,18 @@ describe('login in the shop (RG-USR-03)', () => {
     });
   });
 
+  it('moves the focus to the chosen name, and back to the tile on « Changer d’utilisateur »', async () => {
+    fakeApi({ 'GET /auth/me': NOT_SIGNED_IN, 'GET /auth/users': ok(DIRECTORY) });
+    render(<App />);
+
+    const tile = await screen.findByRole('button', { name: /Rija Rakoto/ });
+    fireEvent.click(tile);
+    expect(screen.getByRole('heading', { name: RIJA.fullName })).toHaveFocus();
+
+    fireEvent.click(screen.getByRole('button', { name: labels.login.otherUser }));
+    expect(screen.getByRole('button', { name: /Rija Rakoto/ })).toHaveFocus();
+  });
+
   it('asks a multi-role user for the role; the keyboard works too', async () => {
     const api = fakeApi({
       'GET /auth/me': NOT_SIGNED_IN,

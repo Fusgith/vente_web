@@ -1,5 +1,5 @@
 import { ERROR_LABELS } from '@vente-web/shared';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { App } from '../App.js';
@@ -32,6 +32,24 @@ describe('signed-in shell', () => {
       await screen.findByRole('heading', { name: labels.workspaces.cashier.title }),
     ).toBeVisible();
     expect(api.callsTo('POST /auth/switch-role')[0]?.body).toEqual({ role: 'cashier' });
+  });
+
+  it('says a refused role switch as an alert in the bottom band', async () => {
+    fakeApi({
+      'GET /auth/me': ok(meFor({ user: HERY, activeRole: 'manager' })),
+      'POST /auth/switch-role': apiError(403, 'AUTH_ROLE_REMOTE_FORBIDDEN'),
+    });
+    render(<App />);
+
+    fireEvent.change(await screen.findByRole('combobox', { name: labels.shell.activeRole }), {
+      target: { value: 'cashier' },
+    });
+
+    // The band's alert region is always there, empty until something goes wrong.
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent(ERROR_LABELS.AUTH_ROLE_REMOTE_FORBIDDEN),
+    );
+    expect(screen.getByRole('heading', { name: labels.workspaces.manager.title })).toBeVisible();
   });
 
   it('returns to the login screen with the reason when the session is gone', async () => {

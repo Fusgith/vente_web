@@ -4,11 +4,11 @@ import { Secret, TOTP } from 'otpauth';
 export const TOTP_PERIOD_SECONDS = 30;
 export const TOTP_DIGITS = 6;
 export const TOTP_WINDOW = 1;
-const TOTP_ISSUER = 'Vente Web';
 
-function totpFor(secretBase32: string, label: string): TOTP {
+/** The issuer only names the account in the authenticator app: codes do not depend on it. */
+function totpFor(secretBase32: string, label: string, issuer = ''): TOTP {
   return new TOTP({
-    issuer: TOTP_ISSUER,
+    issuer,
     label,
     secret: Secret.fromBase32(secretBase32),
     digits: TOTP_DIGITS,
@@ -21,9 +21,9 @@ export function generateTotpSecret(): string {
   return new Secret({ size: 20 }).base32;
 }
 
-/** `otpauth://` URI encoded in the enrolment QR code. */
-export function totpUri(secretBase32: string, label: string): string {
-  return totpFor(secretBase32, label).toString();
+/** `otpauth://` URI encoded in the enrolment QR code; the issuer is the application name. */
+export function totpUri(secretBase32: string, label: string, issuer: string): string {
+  return totpFor(secretBase32, label, issuer).toString();
 }
 
 export function totpStep(timestampMs: number): number {

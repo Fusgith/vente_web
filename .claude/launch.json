@@ -26,6 +26,14 @@
         "dev"
       ],
       "port": 5173
+    },
+    {
+      "name": "mockups",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:/Users/FUSZ/AppData/Local/Temp/claude/F--Documents-Programmation-Vente-WEB/4274e992-0cb9-4bf5-a4ed-5d31009746ca/scratchpad/serve-mockups.mjs"
+      ],
+      "port": 5190
     }
   ]
 }

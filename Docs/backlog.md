@@ -23,7 +23,7 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | ID | Lot | Tâche | Statut | Épopée | Note |
 |---|---|---|---|---|---|
 | T-001 | — | Valider les hypothèses H1–H13 du CDC métier §16 | Fait | E00 | Tranchées le 21/09/2026, CDC métier v0.2 |
-| T-001b | — | Confirmer les points nouveaux H14–H17 (CDC métier §16.2) | À faire | E00 | Prix dans l'import, qui fixe les plafonds, heure de fin de journée, rattachement automatique du code |
+| T-001b | — | Confirmer les points nouveaux H14–H17 (CDC métier §16.2) | À faire | E00 | Prix dans l'import, qui fixe les plafonds, heure de fin de journée, rattachement automatique du code ; puis H25 (nom de l’application, 26/09) |
 | T-001c | — | Grille de prix par unité de vente + historique des prix (H18) | Fait | E00 | Tranché le 21/09/2026, CDC métier v0.3 (RG-ART-06/07) |
 | T-002 | — | Valider les hypothèses T1–T8 du CDC technique §13 | Fait | E00 | Validées le 21/09/2026 |
 | T-003 | — | Accepter ou amender les ADR 0001 à 0004 | Fait | E00 | Acceptés le 21/09/2026 |
@@ -39,6 +39,7 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-011b | MVP | Reporter dans le CDC technique §5 les écarts entre le schéma réel et le modèle décrit | À faire | E01 | Documentation seulement |
 | T-012 | MVP | Auth : PIN local, mot de passe, TOTP boss/admin, sessions, verrouillage | Terminé | E01 | RG-USR-03 à 06 ; 120 tests verts ; sur `main` le 23/09 ; question ouverte H20 (qui peut poser le mot de passe du `owner`) à trancher avant T-016 |
 | T-017 | MVP | Écran de connexion web (choix du nom, PIN, mot de passe + TOTP, choix du rôle), verrouillage d'inactivité, coquille de l'appli par rôle | Terminé | E01 | RG-USR-02/03/05 ; sur l'API de T-012 ; 28 tests web ; sur `main` le 25/09 |
+| T-017b | MVP | Identité visuelle « Lamba » (ADR-0005) : jetons, polices Asap et Archivo, cadre coloré par espace avec ligne d’état, pavé et feuille partagés, écrans de connexion et du devis allégés (catégories en feuille, pavé dans le volet de gauche), galerie de démonstration `/__design` en développement | En cours | E01 | Direction C choisie par l’utilisateur le 26/09/2026 ; RG-DEV-06 précisée (CDC v0.6) |
 | T-016 | MVP | Comptes : création/modification par l'admin (jamais de suppression, RG-USR-06), désactivation et changement de rôles qui ferment les sessions, `password_change_required` après un mot de passe posé par l'admin, commande `admin:bootstrap` pour le premier admin | À faire | E01 | RG-USR-01/02/06, H20 ; prérequis de T-080 (aucun compte en production sans seed) |
 | T-015 | MVP | Postes : déclaration libre (tablettes, caisses, comptoirs, écran 0/1), modifiable à chaud | À faire | E01 | §13 `stations`, H11 |
 | T-013 | MVP | Module de permissions (annexe B) + tests | À faire | E01 | |
@@ -73,3 +74,4 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-082 | MVP | Surveillance et alertes | À faire | E08 | §10.5 |
 | T-083 | MVP | Test bout-en-bout du parcours complet | À faire | E08 | §11 |
 | T-084 | MVP | Formation et mise en service (jeu d'essai, journée pilote) | À faire | E08 | Hors agent |
+| T-085 | MVP | Nom de l’application fixé à la construction : défaut dans `packages/shared/src/brand.json`, règles du nom partagées, commande `pnpm dist --nom "…" [--nom-court "…"]` vers `Dist/<nom-simplifié>/`, manifeste, titre, `labels.appName`, `APP_NAME` de l’API pour l’émetteur TOTP | À faire | E08 | RG-APP-01, ADR-0006, ⚠️ H25 ; passage d’`APP_NAME` par Docker Compose avec T-080 |

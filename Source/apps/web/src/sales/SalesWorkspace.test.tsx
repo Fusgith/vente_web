@@ -1,8 +1,10 @@
 import { formatMga } from '@vente-web/shared';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { labels } from '../labels.js';
+import { Frame } from '../shell/Frame.js';
+import { StatusLineProvider } from '../shell/StatusLineProvider.js';
 import { fakeApi, ok } from '../test/fake-api.js';
 import { SalesWorkspace } from './SalesWorkspace.js';
 import { RIZ, SAVON, searchResult } from './test-hits.js';
@@ -21,11 +23,23 @@ function mount(handlers: Parameters<typeof fakeApi>[0] = {}) {
     'GET /products/favorites': ok({ items: [SAVON, RIZ] }),
     ...handlers,
   });
-  render(<SalesWorkspace />);
+  // The workspace speaks through the frame's bottom band, as in the app.
+  render(
+    <StatusLineProvider>
+      <Frame workspace="sales" name={labels.workspaces.sales.title}>
+        <SalesWorkspace />
+      </Frame>
+    </StatusLineProvider>,
+  );
   return api;
 }
 
 const searchBox = () => screen.getByRole('searchbox', { name: labels.sales.search });
+/** The frame's bottom band: the one sentence of what just happened. */
+const band = () => within(screen.getByRole('contentinfo')).getByRole('status');
+/** The band's assertive region: errors interrupt. */
+const bandAlert = () => within(screen.getByRole('contentinfo')).getByRole('alert');
+const categoryTrigger = () => screen.findByRole('button', { name: /^Catégorie/ });
 
 function enter(text: string) {
   fireEvent.change(searchBox(), { target: { value: text } });
@@ -49,7 +63,7 @@ describe('quote screen: quick search (RG-DEV-06)', () => {
     const table = screen.getByRole('table');
     expect(within(table).getByText('SAV-001')).toBeVisible();
     expect(within(table).getAllByText(mga('1500'))).toHaveLength(3);
-    expect(screen.getByText(labels.sales.added('1', 'pièce', SAVON.name))).toBeVisible();
+    expect(band()).toHaveTextContent(shown(labels.sales.added('1', 'pièce', SAVON.name)));
     expect(pad()).toBeVisible();
   });
 
@@ -57,26 +71,38 @@ describe('quote screen: quick search (RG-DEV-06)', () => {
     const api = mount({
       [`GET /products/favorites?categoryId=${ALIMENTATION.id}`]: ok({ items: [RIZ] }),
     });
-    fireEvent.click(await screen.findByRole('button', { name: ALIMENTATION.name }));
+    fireEvent.click(await categoryTrigger());
+    const sheet = screen.getByRole('dialog', { name: labels.sales.categories });
+    const all = within(sheet).getByRole('button', { name: labels.sales.allCategoriesTile });
+    expect(all).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(within(sheet).getByRole('button', { name: ALIMENTATION.name }));
 
+    // Choosing closes the sheet; the trigger names the category.
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(await categoryTrigger()).toHaveTextContent(ALIMENTATION.name);
     expect(await screen.findByRole('button', { name: /^Riz blanc/ })).toBeVisible();
     expect(screen.queryByRole('button', { name: /^Savon de Marseille/ })).toBeNull();
-    expect(screen.getByRole('button', { name: ALIMENTATION.name })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
     expect(api.callsTo(`GET /products/favorites?categoryId=${ALIMENTATION.id}`)).toHaveLength(1);
+
+    fireEvent.click(await categoryTrigger());
+    const again = screen.getByRole('dialog', { name: labels.sales.categories });
+    const chosen = within(again).getByRole('button', { name: ALIMENTATION.name });
+    expect(chosen).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(within(again).getByRole('button', { name: labels.sales.closeCategories }));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
-  it('lists matches while typing, each sale unit with its price', async () => {
+  it('lists matches while typing: stock and cap once, each sale unit with its price', async () => {
     mount({ 'GET /products/search?q=sav': ok(searchResult([SAVON])) });
     await screen.findByRole('button', { name: /^Savon de Marseille/ });
     fireEvent.change(searchBox(), { target: { value: 'sav' } });
 
     const paquet = await screen.findByRole('button', { name: /^paquet \(× 6 pièce\)/ });
     expect(paquet).toHaveTextContent(mga('8500'));
-    expect(paquet).toHaveTextContent(labels.sales.unitStock('70'));
-    expect(paquet).toHaveTextContent(shown(labels.sales.maxDiscount('5')));
+    expect(paquet).not.toHaveTextContent(labels.sales.unitStock('70'));
+    const row = paquet.closest('li')!;
+    expect(row).toHaveTextContent(shown(labels.sales.availableIn('420', 'pièce')));
+    expect(row).toHaveTextContent(shown(labels.sales.maxDiscount('5')));
     expect(screen.getByRole('button', { name: /^carton/ })).toBeDisabled();
     expect(screen.queryByText(labels.sales.favorites)).toBeNull();
   });
@@ -89,8 +115,28 @@ describe('quote screen: quick search (RG-DEV-06)', () => {
     fireEvent.click(await screen.findByRole('button', { name: /^paquet/ }));
 
     expect(await lineQty(1, '3')).toBeVisible();
-    expect(screen.getByText('paquet (× 6 pièce)')).toBeVisible();
+    expect(screen.getAllByRole('row')[1]).toHaveTextContent('paquet (× 6 pièce)');
     expect(searchBox()).toHaveValue('');
+  });
+
+  it('empties the field with its clear button, and hides the hint while typing', async () => {
+    mount({ 'GET /products/search?q=sav': ok(searchResult([SAVON])) });
+    expect(screen.getByText(labels.sales.searchHint)).toBeVisible();
+    fireEvent.change(searchBox(), { target: { value: 'sav' } });
+    expect(screen.queryByText(labels.sales.searchHint)).toBeNull();
+    await screen.findByRole('button', { name: /^paquet/ });
+
+    fireEvent.click(screen.getByRole('button', { name: labels.sales.clearSearch }));
+    expect(searchBox()).toHaveValue('');
+    expect(searchBox()).toHaveFocus();
+    expect(await screen.findByText(labels.sales.favorites)).toBeVisible();
+    expect(screen.queryByRole('button', { name: labels.sales.clearSearch })).toBeNull();
+  });
+
+  it('says in the band when nothing matches the words typed', async () => {
+    mount({ 'GET /products/search?q=zzz': ok(searchResult([])) });
+    fireEvent.change(searchBox(), { target: { value: 'zzz' } });
+    await waitFor(() => expect(band()).toHaveTextContent(labels.sales.noResult));
   });
 
   it('asks to refine when more articles match', async () => {
@@ -121,7 +167,9 @@ describe('quote screen: quick search (RG-DEV-06)', () => {
   it('says so when a code matches nothing', async () => {
     mount({ 'GET /products/search?q=XYZ-999': ok(searchResult([])) });
     enter('XYZ-999');
-    expect(await screen.findByText(labels.sales.unknownCode('XYZ-999'))).toBeVisible();
+    await waitFor(() =>
+      expect(bandAlert()).toHaveTextContent(shown(labels.sales.unknownCode('XYZ-999'))),
+    );
     expect(screen.getByText(labels.sales.draft.empty)).toBeVisible();
   });
 
@@ -182,8 +230,12 @@ describe('quote screen: quantity pad', () => {
     expect(
       within(switched).getByRole('button', { name: new RegExp(`^${PAQUET!.label}`) }),
     ).toHaveAttribute('aria-pressed', 'true');
+    // Its stock in that unit (420 pieces are 70 packets) and its cap are told on the pad.
+    const chosen = within(switched).getByRole('button', { name: /^paquet/ });
+    expect(chosen).toHaveTextContent(labels.sales.unitStock('70'));
+    expect(chosen).toHaveTextContent(shown(labels.sales.maxDiscount('5')));
     expect(within(switched).queryByRole('button', { name: /^carton/ })).toBeNull();
-    expect(screen.getByText('paquet (× 6 pièce)')).toBeVisible();
+    expect(screen.getAllByRole('row')[1]).toHaveTextContent('paquet (× 6 pièce)');
   });
 
   it('removes the line', async () => {
@@ -199,5 +251,30 @@ describe('quote screen: quantity pad', () => {
 
     fireEvent.click(await lineQty(1, '1'));
     expect(pad()).toBeVisible();
+    expect(screen.getAllByRole('row')[1]).toHaveAttribute('aria-current', 'true');
+  });
+
+  it('leaves Space to the focused key, and a scanned character to the search field', async () => {
+    const keys = await addSavon();
+    const five = within(keys).getByRole('button', { name: '5' });
+    five.focus();
+
+    // Space presses the key (the browser clicks it): it is not typed into the search.
+    fireEvent.keyDown(five, { key: ' ' });
+    expect(five).toHaveFocus();
+    expect(searchBox()).toHaveValue('');
+    expect(pad()).toBeVisible();
+
+    // A scanner's first character still goes to the search field.
+    fireEvent.keyDown(five, { key: 'S' });
+    expect(searchBox()).toHaveFocus();
+  });
+
+  it('gives its place back to the results when typing', async () => {
+    const keys = await addSavon();
+    expect(keys).toBeVisible();
+    fireEvent.change(searchBox(), { target: { value: 'sav' } });
+    expect(screen.queryByRole('region', { name: labels.sales.pad.title(1) })).toBeNull();
+    expect(screen.getAllByRole('row')[1]).not.toHaveAttribute('aria-current');
   });
 });

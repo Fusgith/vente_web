@@ -3,6 +3,7 @@ import { useAuth } from './auth/context.js';
 import { LoginScreen } from './auth/LoginScreen.js';
 import { labels } from './labels.js';
 import { AppShell } from './shell/AppShell.js';
+import { Frame } from './shell/Frame.js';
 
 export function App() {
   return (
@@ -17,9 +18,9 @@ function Root() {
   switch (state.status) {
     case 'loading':
       return (
-        <main className="flex min-h-dvh items-center justify-center bg-slate-50">
-          <p className="text-slate-600">{labels.loading}</p>
-        </main>
+        <Frame workspace="login" name={labels.login.title} note={null}>
+          <p className="m-auto text-18 text-ink-2">{labels.loading}</p>
+        </Frame>
       );
     case 'anonymous':
       return <LoginScreen notice={state.notice} resume={state.resume} />;

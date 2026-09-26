@@ -3,7 +3,6 @@ import type { Role } from '@vente-web/shared';
 /** French UI labels (ADR-0004): no French string hard-coded in logic or components. */
 export const labels = {
   appName: 'Vente Web',
-  tagline: 'Gestion des ventes du magasin',
   loading: 'Chargement…',
   retry: 'Réessayer',
 
@@ -18,6 +17,13 @@ export const labels = {
   login: {
     title: 'Connexion',
     chooseUser: 'Qui êtes-vous ?',
+    /** The login frame's bottom band: a static instruction, never a status line. */
+    instruction: 'Touchez votre nom, puis tapez votre code.',
+    /** The same band in the password form. */
+    passwordInstruction: 'Saisissez votre identifiant et votre mot de passe, puis votre rôle.',
+    /** The empty PIN sheet, before a name is touched. */
+    pinInvitation: 'Votre code PIN se tape ici, une fois votre nom choisi.',
+    passwordTitle: 'Connexion par mot de passe',
     noPinUsers: 'Aucun compte à code PIN pour l’instant : connectez-vous par mot de passe.',
     otherUser: 'Changer d’utilisateur',
     chooseRole: 'Rôle',
@@ -55,7 +61,8 @@ export const labels = {
   /** Quick search and entry of the quote screen (RG-DEV-06). */
   sales: {
     search: 'Rechercher un article',
-    searchHint: 'Code, code-barres ou désignation ; « 12*SAV-001 » ajoute 12 d’un coup.',
+    searchHint: 'Code, code-barres ou nom ; « 12*CODE » ajoute 12 d’un coup.',
+    clearSearch: 'Effacer la recherche',
     pendingQty: (qty: string) => `Quantité : ${qty}`,
     scan: 'Scanner',
     scanTitle: 'Scan des codes-barres',
@@ -65,28 +72,37 @@ export const labels = {
     cameraDenied:
       'Caméra inaccessible : autorisez-la dans le navigateur, ou utilisez une douchette.',
     closeScan: 'Terminer le scan',
-    categories: 'Filtrer par catégorie',
+    /** Title of the category sheet. */
+    categories: 'Choisir une catégorie',
+    /** The one trigger of the category sheet: « Catégorie : Toutes ». */
+    categoryTrigger: 'Catégorie :',
     allCategories: 'Toutes',
+    allCategoriesTile: 'Toutes les catégories',
+    closeCategories: 'Fermer',
     favorites: 'Les plus vendus',
     noFavorites: 'Vos articles les plus vendus s’afficheront ici après les premières ventes.',
-    results: 'Résultats',
     searching: 'Recherche…',
     noResult: 'Aucun article ne correspond.',
     refine: 'Précisez la recherche : seuls les 8 premiers articles sont affichés.',
     unknownCode: (code: string) => `Aucun article vendable pour « ${code} ».`,
     added: (qty: string, unit: string, name: string) => `Ajouté : ${qty} ${unit} — ${name}`,
-    baseUnit: (unit: string) => `Unité de base : ${unit}`,
-    available: (qty: string) => `Disponible : ${qty}`,
+    /** Stock of an article in its base unit: « dispo 420 pièce ». */
+    availableIn: (qty: string, unit: string) => `dispo ${qty} ${unit}`,
     unitWithFactor: (unit: string, factor: string, base: string) =>
       factor === '1' ? unit : `${unit} (× ${factor} ${base})`,
+    /** The factor alone, after the unit label: « × 6 ». */
+    factor: (factor: string) => `× ${factor}`,
+    /** The factor with its base unit, under the unit label: « (× 6 pièce) ». */
+    factorOf: (factor: string, base: string) => `(× ${factor} ${base})`,
     noPrice: 'Sans prix',
     unitStock: (count: string) => `dispo ${count}`,
     maxDiscount: (pct: string) => `remise max ${pct} %`,
+    maxDiscountRange: (min: string, max: string) => `remise max ${min} à ${max} %`,
 
     draft: {
       title: 'Lignes du devis',
-      unsaved: 'Brouillon : l’enregistrement du devis arrive à l’étape suivante du développement.',
-      empty: 'Aucune ligne : tapez un code, scannez ou touchez un article le plus vendu.',
+      unsaved: 'Brouillon non enregistré',
+      empty: 'Aucune ligne : tapez un code, scannez ou touchez un article.',
       number: 'N°',
       designation: 'Désignation',
       quantity: 'Quantité',

@@ -1,0 +1,18 @@
+/*
+ * Latin subsets only: the PWA precaches every woff2 it ships (RG-FMT-01 needs NBSP, ×, —, ’…,
+ * all in the latin range). Asap for everything read and tapped; Archivo (width axis) for the cloth.
+ */
+@import '@fontsource/asap/latin-400.css';
+@import '@fontsource/asap/latin-500.css';
+@import '@fontsource/asap/latin-600.css';
+@import '@fontsource/asap/latin-700.css';
+
+@font-face {
+  font-family: 'Archivo Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  src: url('@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2')
+    format('woff2-variations');
+}

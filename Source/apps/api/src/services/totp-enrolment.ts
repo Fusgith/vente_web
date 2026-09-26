@@ -99,6 +99,7 @@ export async function startTotpEnrolment(
   actor: Actor,
   requestOrigin: AccessOrigin,
   code: string | undefined,
+  issuer: string,
   now = new Date(),
 ): Promise<TotpEnrolment> {
   assertCanEnrol(actor, requestOrigin);
@@ -123,7 +124,7 @@ export async function startTotpEnrolment(
     );
     // TOTP was activated meanwhile: from now on its current code is required.
     if (!stored) throw new AppError(401, 'AUTH_TOTP_REQUIRED');
-    return { uri: totpUri(secret, user.username), secret };
+    return { uri: totpUri(secret, user.username, issuer), secret };
   }
 
   if (code === undefined) throw new AppError(401, 'AUTH_TOTP_REQUIRED');
@@ -149,7 +150,7 @@ export async function startTotpEnrolment(
     enrolled,
   );
   if (!stored) return refuseReplay(db, actor, user, current.slot);
-  return { uri: totpUri(secret, user.username), secret };
+  return { uri: totpUri(secret, user.username, issuer), secret };
 }
 
 export async function confirmTotpEnrolment(

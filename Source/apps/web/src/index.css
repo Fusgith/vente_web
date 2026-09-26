@@ -1,6 +1,226 @@
 @import 'tailwindcss';
 
-/* Touch-first defaults for tablets (CDC technique §3: gros boutons tactiles). */
+/*
+ * Visual identity « Lamba » (direction C): a printed cotton frame around a calm field.
+ * Boldness lives in the frame only; inside, white sheets on cotton, ink figures, and three
+ * meanings for colour: indigo = chosen / primary, saffron-soft = in progress, madder = destructive.
+ */
 @theme {
-  --font-sans: 'Segoe UI', system-ui, sans-serif;
+  --color-*: initial;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+  --color-black: #000000;
+
+  --color-ink: #1b1e3f;
+  --color-ink-2: #474c6b;
+  --color-cotton: #f1f3f6;
+  --color-white: #ffffff;
+  --color-rule-strong: #737a95;
+  --color-rule: #d3d8e3;
+  --color-indigo: #2b3a92;
+  --color-indigo-deep: #1f2b70;
+  --color-indigo-soft: #e7eaf7;
+  --color-saffron: #f5b301;
+  --color-saffron-soft: #fff2cc;
+  --color-madder: #b42318;
+  --color-madder-soft: #fdecea;
+
+  /* Workspace colourways: the frame only (and the small role swatches of the login directory). */
+  --color-frame-sales: #2b3a92;
+  --color-frame-cashier: #17693f;
+  --color-frame-warehouse: #3e4c59;
+  --color-frame-manager: #6a2c77;
+  --color-frame-owner: #7a4a12;
+  --color-frame-admin: #1b1e3f;
+  --color-frame-login: #1b1e3f;
+
+  --font-*: initial;
+  --font-sans: 'Asap', system-ui, sans-serif;
+  --font-display: 'Archivo Variable', 'Asap', sans-serif;
+
+  /* Classical scale (px): 14 · 16 · 18 · 21 · 24 · 36, each with its line height. */
+  --text-*: initial;
+  --text-14: 14px;
+  --text-14--line-height: 20px;
+  --text-16: 16px;
+  --text-16--line-height: 22px;
+  --text-18: 18px;
+  --text-18--line-height: 24px;
+  --text-21: 21px;
+  --text-21--line-height: 28px;
+  --text-24: 24px;
+  --text-24--line-height: 30px;
+  --text-36: 36px;
+  --text-36--line-height: 40px;
+
+  --radius-sheet: 14px;
+  --radius-key: 12px;
+  --radius-control: 10px;
+  --radius-tag: 6px;
+
+  /* The only shadow: a sheet that floats over the field (the category sheet dialog). */
+  --shadow-*: initial;
+  --shadow-sheet: 0 16px 40px -12px rgb(27 30 63 / 0.45);
+}
+
+/* Colours that follow the workspace: `bg-frame`, `bg-frame-deep`, `text-frame`… */
+@theme inline {
+  --color-frame: var(--frame);
+  --color-frame-deep: var(--frame-deep);
+  --color-frame-press: var(--frame-press);
+}
+
+:root {
+  /* Focus, always visible, never hover-based. */
+  --focus-ring: 0 0 0 2px var(--color-white), 0 0 0 5px var(--color-indigo);
+  --focus-ring-inset: inset 0 0 0 3px var(--color-indigo);
+  --focus-ring-frame: inset 0 0 0 3px var(--color-saffron);
+
+  --frame: var(--color-frame-sales);
+  --frame-deep: #1f2b70;
+  --frame-press: #16205a;
+}
+
+/* Frame colour by workspace; `-deep` fills the controls on the band, `-press` is their pressed state. */
+[data-workspace='sales'] {
+  --frame: var(--color-frame-sales);
+  --frame-deep: #1f2b70;
+  --frame-press: #16205a;
+}
+[data-workspace='cashier'] {
+  --frame: var(--color-frame-cashier);
+  --frame-deep: #0f4d2d;
+  --frame-press: #0a3a21;
+}
+[data-workspace='warehouse'] {
+  --frame: var(--color-frame-warehouse);
+  --frame-deep: #2b3640;
+  --frame-press: #1f272f;
+}
+[data-workspace='manager'] {
+  --frame: var(--color-frame-manager);
+  --frame-deep: #4e1f58;
+  --frame-press: #3b1643;
+}
+[data-workspace='owner'] {
+  --frame: var(--color-frame-owner);
+  --frame-deep: #5a360b;
+  --frame-press: #432806;
+}
+[data-workspace='admin'],
+[data-workspace='login'] {
+  --frame: var(--color-frame-admin);
+  --frame-deep: #33375c;
+  --frame-press: #474c6b;
+}
+
+@layer base {
+  html {
+    font-kerning: normal;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background-color: var(--color-cotton);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-16);
+    line-height: var(--text-16--line-height);
+  }
+  button,
+  [role='button'],
+  select {
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+  /* Every control shows the ring; the transparent outline survives Windows high-contrast mode. */
+  :focus-visible {
+    outline: 2px solid transparent;
+    box-shadow: var(--focus-ring);
+  }
+  select option {
+    color: var(--color-ink);
+    background-color: var(--color-white);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* Focus variants: inside a clipped box, and on the coloured band (an indigo ring would vanish). */
+@utility focus-inset {
+  &:focus-visible {
+    box-shadow: var(--focus-ring-inset);
+  }
+}
+@utility focus-frame {
+  &:focus-visible {
+    box-shadow: var(--focus-ring-frame);
+  }
+}
+/*
+ * A box around a flush input (the search field) rings when the input has the focus. Only the
+ * input hands its ring to the box: a button inside (clear) keeps a ring of its own.
+ */
+@utility focus-within-ring {
+  &:has(input:focus-visible) {
+    box-shadow: var(--focus-ring);
+  }
+  & input:focus-visible {
+    box-shadow: none;
+  }
+}
+
+/* Archivo, the voice of the cloth: wordmark, workspace and pane titles, the status band only. */
+@utility type-wordmark {
+  font-family: var(--font-display);
+  font-stretch: 125%;
+  font-weight: 800;
+}
+@utility type-title {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 700;
+  font-size: var(--text-21);
+  line-height: var(--text-21--line-height);
+}
+@utility type-band {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 600;
+  font-size: var(--text-18);
+  line-height: var(--text-18--line-height);
+}
+/* Every amount and quantity: tabular lining figures, never wrapped. */
+@utility figures {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings:
+    'tnum' 1,
+    'lnum' 1;
+  white-space: nowrap;
+}
+
+/*
+ * The printed ring: saffron rice grains laid in herringbone on the frame colour. Each strip has
+ * its own tile and `space` repeat, so only whole grains are printed, whatever the screen size.
+ */
+@utility lamba-print-x {
+  background-image: url('/lamba/grain-x.svg');
+  background-size: 12px 6px;
+  background-repeat: space no-repeat;
+}
+@utility lamba-print-y {
+  background-image: url('/lamba/grain-y.svg');
+  background-size: 6px 12px;
+  background-repeat: no-repeat space;
 }

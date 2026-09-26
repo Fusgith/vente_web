@@ -1,5 +1,6 @@
 export { formatMga, formatQty, roundHalfUp, NBSP } from './format.js';
 export * from './auth.js';
+export * from './brand.js';
 export * from './catalog.js';
 export { addQuantities, isQuantity, lineGross, sumAmounts } from './decimal.js';
 export * from './discount.js';

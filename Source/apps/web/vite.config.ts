@@ -18,8 +18,9 @@ export default defineConfig({
         start_url: '/',
         display: 'standalone',
         orientation: 'any',
-        background_color: '#ffffff',
-        theme_color: '#0f766e',
+        // Lamba identity (ADR-0005): cotton splash, ink bar.
+        background_color: '#F1F3F6',
+        theme_color: '#1B1E3F',
         // TODO(T-010 follow-up): PNG 192/512 icons from the shop logo in Autres/.
         icons: [{ src: 'icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
       },

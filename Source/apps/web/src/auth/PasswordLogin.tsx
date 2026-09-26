@@ -3,8 +3,11 @@ import { useId, useState, type FormEvent } from 'react';
 
 import { errorMessage } from '../api/error-message.js';
 import { labels } from '../labels.js';
+import { buttonClass } from '../ui/button.js';
+import { Icon } from '../ui/Icon.js';
 import { useAuth } from './context.js';
 import { RoleChoice } from './RoleChoice.js';
+import { textLinkClass } from './user-look.js';
 
 interface PasswordLoginProps {
   /** Outside the shop: owner/admin only, TOTP always required (RG-USR-04). */
@@ -14,8 +17,18 @@ interface PasswordLoginProps {
   intro?: string | null;
 }
 
-const inputClass =
-  'min-h-12 w-full rounded-lg border-2 border-slate-300 bg-white px-3 text-lg focus:border-teal-700 focus:outline-none';
+const fieldClass = 'flex flex-col gap-1.5';
+const inputClass = 'h-14 w-full rounded-control border border-rule-strong bg-white px-4 text-ink';
+
+/** A calm note in the sheet (remote access, no PIN account yet). */
+function Note({ children }: { children: string }) {
+  return (
+    <p className="flex items-start gap-2.5 rounded-control bg-indigo-soft px-3 py-2.5 text-ink">
+      <Icon name="info" className="size-5 translate-y-px text-indigo" />
+      {children}
+    </p>
+  );
+}
 
 export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) {
   const { signIn } = useAuth();
@@ -51,13 +64,21 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
   };
 
   return (
-    <form onSubmit={submit} className="mx-auto flex w-full max-w-md flex-col gap-4">
-      <h2 className="text-xl font-semibold text-slate-800">{labels.login.title}</h2>
-      {remote && <p className="text-slate-600">{labels.login.remoteNotice}</p>}
-      {intro && <p className="text-slate-600">{intro}</p>}
+    <form onSubmit={submit} className="flex flex-col gap-4">
+      <h2 className="type-title flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-frame text-white"
+        >
+          <Icon name="lock" className="size-5" />
+        </span>
+        {labels.login.passwordTitle}
+      </h2>
+      {remote && <Note>{labels.login.remoteNotice}</Note>}
+      {intro && <Note>{intro}</Note>}
 
-      <label htmlFor={`${id}-username`} className="flex flex-col gap-1">
-        <span className="font-medium text-slate-700">{labels.login.username}</span>
+      <label htmlFor={`${id}-username`} className={fieldClass}>
+        <span className="font-semibold">{labels.login.username}</span>
         <input
           id={`${id}-username`}
           name="username"
@@ -66,12 +87,12 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
           spellCheck={false}
           value={username}
           onChange={(event) => setUsername(event.target.value)}
-          className={inputClass}
+          className={`${inputClass} text-18`}
         />
       </label>
 
-      <label htmlFor={`${id}-password`} className="flex flex-col gap-1">
-        <span className="font-medium text-slate-700">{labels.login.password}</span>
+      <label htmlFor={`${id}-password`} className={fieldClass}>
+        <span className="font-semibold">{labels.login.password}</span>
         <input
           id={`${id}-password`}
           name="password"
@@ -79,15 +100,15 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
           autoComplete="current-password"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className={inputClass}
+          className={`${inputClass} text-18`}
         />
       </label>
 
       <RoleChoice roles={remote ? REMOTE_ROLES : ROLES} value={role} onChange={setRole} />
 
       {remote && (
-        <label htmlFor={`${id}-totp`} className="flex flex-col gap-1">
-          <span className="font-medium text-slate-700">{labels.login.totp}</span>
+        <label htmlFor={`${id}-totp`} className={fieldClass}>
+          <span className="font-semibold">{labels.login.totp}</span>
           <input
             id={`${id}-totp`}
             name="totp"
@@ -96,13 +117,17 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
             maxLength={6}
             value={totp}
             onChange={(event) => setTotp(event.target.value.replace(/\D/g, ''))}
-            className={`${inputClass} tracking-[0.4em]`}
+            className={`${inputClass} figures max-w-60 text-24 font-semibold tracking-[0.3em]`}
           />
         </label>
       )}
 
       {error && (
-        <p role="alert" className="rounded-lg bg-red-50 p-3 text-red-800">
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-control bg-madder-soft px-3 py-2.5 font-semibold text-madder"
+        >
+          <Icon name="alert" className="size-5 translate-y-px" />
           {error}
         </p>
       )}
@@ -110,17 +135,13 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
       <button
         type="submit"
         disabled={!complete || busy}
-        className="min-h-14 rounded-xl bg-teal-700 text-lg font-semibold text-white disabled:opacity-40"
+        className={buttonClass('primary', 'lg', 'w-full')}
       >
         {busy ? labels.login.signingIn : labels.login.signIn}
       </button>
 
       {onPinMode && (
-        <button
-          type="button"
-          onClick={onPinMode}
-          className="self-start text-teal-700 underline underline-offset-4"
-        >
+        <button type="button" onClick={onPinMode} className={textLinkClass}>
           {labels.login.pinLink}
         </button>
       )}

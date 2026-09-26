@@ -1,28 +1,15 @@
-import {
-  PIN_PATTERN,
-  ROLE_LABELS,
-  type AuthUserDirectory,
-  type OperationalRole,
-} from '@vente-web/shared';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import type { AuthUserDirectory } from '@vente-web/shared';
+import { useEffect, useId, useRef, useState } from 'react';
 
-import { errorMessage } from '../api/error-message.js';
 import { labels } from '../labels.js';
-import { useAuth, type ResumeHint } from './context.js';
-import { RoleChoice } from './RoleChoice.js';
+import { sheetClass } from '../ui/button.js';
+import { Icon } from '../ui/Icon.js';
+import type { ResumeHint } from './context.js';
+import { PinEntry } from './PinEntry.js';
+import { UserTile } from './UserTile.js';
+import { directoryLayout, textLinkClass } from './user-look.js';
 
 type DirectoryUser = AuthUserDirectory['users'][number];
-
-const PIN_MAX_LENGTH = 6;
-const KEYPAD = ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as const;
-
-function initials(fullName: string): string {
-  const parts = fullName.trim().split(/\s+/);
-  return parts
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join('');
-}
 
 interface PinLoginProps {
   users: DirectoryUser[];
@@ -30,196 +17,106 @@ interface PinLoginProps {
   onPasswordMode(): void;
 }
 
-/** Shared station login (RG-USR-03): pick your name, then type your PIN. */
+/**
+ * Shared station login (RG-USR-03): the directory on the left, the PIN sheet on the right, both
+ * in view on a landscape tablet so « Changer d'utilisateur » is one visible tap. Stacked in
+ * portrait; on a phone the chosen user's sheet replaces the directory.
+ */
 export function PinLogin({ users, resume, onPasswordMode }: PinLoginProps) {
+  const titleId = useId();
+  const layout = directoryLayout(users.length);
   const [selected, setSelected] = useState<DirectoryUser | null>(
     () => users.find((user) => user.username === resume?.username) ?? null,
   );
+  /** Whether the PIN sheet was opened by a tap here (then it takes the focus), not by a resume. */
+  const [tapped, setTapped] = useState(false);
+  const directoryRef = useRef<HTMLUListElement>(null);
+  /** The user whose sheet was just closed: their tile takes the focus back. */
+  const leftRef = useRef<string | null>(null);
 
+  useEffect(() => {
+    if (selected !== null || leftRef.current === null) return;
+    const tile = directoryRef.current?.querySelector<HTMLButtonElement>(
+      `[data-user-id="${CSS.escape(leftRef.current)}"] button`,
+    );
+    leftRef.current = null;
+    tile?.focus();
+  }, [selected]);
+
+  const choose = (user: DirectoryUser) => {
+    setTapped(true);
+    setSelected(user);
+  };
+  const leave = () => {
+    leftRef.current = selected?.id ?? null;
+    setSelected(null);
+  };
+
+  let sheet;
   if (selected) {
     const resumeRole = resume?.username === selected.username ? resume.role : null;
     const initialRole =
       selected.roles.find((role) => role === resumeRole) ??
       (selected.roles.length === 1 ? selected.roles[0] : undefined) ??
       null;
-    return (
+    sheet = (
       <PinEntry
         key={selected.id}
         user={selected}
         initialRole={initialRole}
-        onCancel={() => setSelected(null)}
+        takeFocus={tapped}
+        onCancel={leave}
       />
+    );
+  } else {
+    sheet = (
+      <div className="m-auto flex max-w-xs flex-col items-center gap-4 py-8 text-center text-ink-2">
+        <span className="flex size-16 items-center justify-center rounded-full bg-cotton">
+          <Icon name="lock" className="size-8" />
+        </span>
+        <p className="text-18">{labels.login.pinInvitation}</p>
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <h2 className="text-xl font-semibold text-slate-800">{labels.login.chooseUser}</h2>
-      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {users.map((user) => (
-          <li key={user.id}>
-            <button
-              type="button"
-              onClick={() => setSelected(user)}
-              className="flex min-h-28 w-full flex-col items-center justify-center gap-1 rounded-xl border-2 border-slate-200 bg-white p-3 text-center hover:border-teal-600 focus-visible:border-teal-700"
-            >
-              <span
-                aria-hidden="true"
-                className="flex size-12 items-center justify-center rounded-full bg-teal-100 text-lg font-bold text-teal-800"
-              >
-                {initials(user.fullName)}
-              </span>
-              <span className="text-lg font-medium text-slate-900">{user.fullName}</span>
-              <span className="text-sm text-slate-500">
-                {user.roles.map((role) => ROLE_LABELS[role]).join(' · ')}
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
-      <button
-        type="button"
-        onClick={onPasswordMode}
-        className="self-start text-teal-700 underline underline-offset-4"
+    <div className="flex flex-1 flex-col gap-4 lg:min-h-0 lg:flex-row lg:gap-6">
+      <section
+        aria-labelledby={titleId}
+        className={`flex flex-col gap-3 lg:min-h-0 lg:flex-1 ${selected ? 'max-md:hidden' : ''}`}
       >
-        {labels.login.passwordLink}
-      </button>
-    </div>
-  );
-}
-
-interface PinEntryProps {
-  user: DirectoryUser;
-  initialRole: OperationalRole | null;
-  onCancel(): void;
-}
-
-function PinEntry({ user, initialRole, onCancel }: PinEntryProps) {
-  const { signIn } = useAuth();
-  const [role, setRole] = useState<OperationalRole | null>(initialRole);
-  const [pin, setPin] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
-  // The role is checked on submit, so a missing choice gets a message, not a dead button.
-  const canSubmit = PIN_PATTERN.test(pin) && !busy;
-
-  const press = (digit: string) => {
-    setError(null);
-    setPin((current) => (current.length >= PIN_MAX_LENGTH ? current : current + digit));
-  };
-  const erase = () => setPin((current) => current.slice(0, -1));
-
-  // A register or a counter PC has a keyboard: digits, Backspace, Enter and Escape work too.
-  const onCancelRef = useRef(onCancel);
-  useEffect(() => {
-    onCancelRef.current = onCancel;
-  });
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey || event.altKey || event.metaKey) return;
-      if (/^\d$/.test(event.key)) {
-        setError(null);
-        setPin((current) => (current.length >= PIN_MAX_LENGTH ? current : current + event.key));
-      } else if (event.key === 'Backspace') {
-        setPin((current) => current.slice(0, -1));
-      } else if (event.key === 'Enter') {
-        event.preventDefault();
-        formRef.current?.requestSubmit();
-      } else if (event.key === 'Escape') {
-        onCancelRef.current();
-      } else {
-        return;
-      }
-      event.preventDefault();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
-
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (role === null) {
-      setError(labels.login.roleRequired);
-      return;
-    }
-    if (!canSubmit) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await signIn({ username: user.username, role, pin });
-    } catch (failure) {
-      setError(errorMessage(failure));
-      setPin('');
-      setBusy(false);
-    }
-  };
-
-  const keyClass =
-    'min-h-16 rounded-xl bg-white text-2xl font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 active:bg-teal-50 disabled:opacity-40';
-
-  return (
-    <form ref={formRef} onSubmit={submit} className="mx-auto flex w-full max-w-sm flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-2xl font-semibold text-slate-900">{user.fullName}</h2>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="text-teal-700 underline underline-offset-4"
+        <h2 id={titleId} className="type-title pt-1">
+          {labels.login.chooseUser}
+        </h2>
+        <ul
+          ref={directoryRef}
+          className={`-m-1 grid content-start gap-2 p-1 lg:min-h-0 lg:overflow-auto ${layout.grid}`}
         >
-          {labels.login.otherUser}
-        </button>
-      </div>
-
-      {user.roles.length > 1 && (
-        <RoleChoice<OperationalRole> roles={user.roles} value={role} onChange={setRole} />
-      )}
-
-      <div className="flex flex-col items-center gap-2">
-        <span className="text-slate-600">{labels.login.typePin}</span>
-        <div role="status" aria-label={labels.login.pinEntered(pin.length)} className="flex gap-3">
-          {Array.from({ length: PIN_MAX_LENGTH }, (_, index) => (
-            <span
-              key={index}
-              aria-hidden="true"
-              className={`size-4 rounded-full ${index < pin.length ? 'bg-teal-700' : 'bg-slate-200'}`}
-            />
+          {users.map((user) => (
+            <li key={user.id} data-user-id={user.id}>
+              <UserTile
+                fullName={user.fullName}
+                roles={user.roles}
+                size={layout.tile}
+                chosen={selected?.id === user.id}
+                onChoose={() => choose(user)}
+              />
+            </li>
           ))}
-        </div>
-      </div>
+        </ul>
+        <button type="button" onClick={onPasswordMode} className={`${textLinkClass} lg:mt-auto`}>
+          {labels.login.passwordLink}
+        </button>
+      </section>
 
-      {error && (
-        <p role="alert" className="rounded-lg bg-red-50 p-3 text-center text-red-800">
-          {error}
-        </p>
-      )}
-
-      <div className="grid grid-cols-3 gap-3">
-        {KEYPAD.map((digit) => (
-          <button
-            key={digit}
-            type="button"
-            onClick={() => press(digit)}
-            className={keyClass}
-            disabled={busy}
-          >
-            {digit}
-          </button>
-        ))}
-        <button type="button" onClick={erase} className={`${keyClass} text-base`} disabled={busy}>
-          {labels.login.erase}
-        </button>
-        <button type="button" onClick={() => press('0')} className={keyClass} disabled={busy}>
-          0
-        </button>
-        <button
-          type="submit"
-          disabled={!canSubmit}
-          className="min-h-16 rounded-xl bg-teal-700 text-lg font-semibold text-white disabled:opacity-40"
-        >
-          {busy ? labels.login.signingIn : labels.login.submit}
-        </button>
+      <div
+        className={`${sheetClass} flex flex-col p-5 lg:w-[30rem] lg:flex-none lg:overflow-auto ${
+          // Stacked (portrait), the invitation is a short sheet; the PIN pad fills the rest.
+          selected ? 'flex-1' : 'max-md:hidden'
+        }`}
+      >
+        {sheet}
       </div>
-    </form>
+    </div>
   );
 }

@@ -1,14 +1,18 @@
-import { StrictMode } from 'react';
+import { StrictMode, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './App.js';
+import './fonts.css';
 import './index.css';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root element');
 
-createRoot(root).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+const mount = (node: ReactNode) => createRoot(root).render(<StrictMode>{node}</StrictMode>);
+
+// The design gallery exists only in development: the build drops this branch and its chunk.
+if (import.meta.env.DEV && window.location.pathname === '/__design') {
+  void import('./dev/DesignGallery.js').then(({ DesignGallery }) => mount(<DesignGallery />));
+} else {
+  mount(<App />);
+}

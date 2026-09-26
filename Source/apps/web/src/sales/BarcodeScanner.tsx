@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { labels } from '../labels.js';
+import { useStatusLine } from '../shell/status-line.js';
+import { Icon } from '../ui/Icon.js';
+import { Sheet } from '../ui/Sheet.js';
 import { createScanFilter } from './scan-filter.js';
 
 interface DetectedBarcode {
@@ -28,16 +31,21 @@ function barcodeDetector(): BarcodeDetectorClass | null {
 interface BarcodeScannerProps {
   onCode: (code: string) => void;
   onClose: () => void;
-  /** What the last scan did, shown over the camera. */
-  notice: { ok: boolean; text: string } | null;
 }
 
-/** Full-screen camera for burst scanning; each new code goes to `onCode`. */
-export function BarcodeScanner({ onCode, onClose, notice }: BarcodeScannerProps) {
+/**
+ * The camera in a sheet, for burst scanning; each new code goes to `onCode`. The frame's band sits
+ * behind the modal scrim, so what the last scan did is repeated here, over the camera.
+ */
+export function BarcodeScanner({ onCode, onClose }: BarcodeScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const onCodeRef = useRef(onCode);
   const [Detector] = useState(barcodeDetector);
   const [denied, setDenied] = useState(false);
+  const said = useStatusLine().message;
+  // Only what the scans said, not the sentence already in the band when the sheet opened.
+  const [openedAt] = useState(said?.seq ?? 0);
+  const status = said && said.seq > openedAt ? said : null;
 
   useEffect(() => {
     onCodeRef.current = onCode;
@@ -98,38 +106,37 @@ export function BarcodeScanner({ onCode, onClose, notice }: BarcodeScannerProps)
       : null;
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={labels.sales.scanTitle}
-      className="fixed inset-0 z-30 flex flex-col items-center gap-4 bg-slate-950/95 p-4 text-white"
+    <Sheet
+      title={labels.sales.scanTitle}
+      closeLabel={labels.sales.closeScan}
+      onClose={onClose}
+      width="md"
+      bodyClassName="flex flex-col items-center gap-4"
     >
       {Detector && (
         <video
           ref={videoRef}
           muted
           playsInline
-          className="max-h-[60dvh] w-full max-w-xl rounded-xl bg-black object-cover"
+          className="aspect-[4/3] max-h-[50dvh] w-full rounded-key bg-ink object-cover"
         />
       )}
-      <p className="max-w-xl text-center text-lg">{message ?? labels.sales.scanHint}</p>
-      {notice && (
-        <p
-          role="status"
-          className={`max-w-xl rounded-lg px-4 py-2 text-center text-lg font-semibold ${
-            notice.ok ? 'bg-teal-600' : 'bg-red-700'
-          }`}
-        >
-          {notice.text}
-        </p>
-      )}
-      <button
-        type="button"
-        onClick={onClose}
-        className="mt-auto min-h-14 w-full max-w-xl rounded-xl bg-white text-lg font-bold text-slate-900"
-      >
-        {labels.sales.closeScan}
-      </button>
-    </div>
+      <p className="flex items-start gap-2.5 self-stretch text-16">
+        <Icon name={message ? 'alert' : 'scan'} className="size-6 text-ink-2" />
+        <span>{message ?? labels.sales.scanHint}</span>
+      </p>
+      {/* Always in the page, even empty: a live region that appears with its text is not heard. */}
+      <p role="status" className="self-stretch">
+        {status && (
+          <span
+            className={`flex min-h-12 items-center rounded-control px-4 py-3 text-16 font-semibold ${
+              status.tone === 'error' ? 'bg-madder-soft text-madder' : 'bg-indigo-soft text-ink'
+            }`}
+          >
+            {status.text}
+          </span>
+        )}
+      </p>
+    </Sheet>
   );
 }

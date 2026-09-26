@@ -9,6 +9,7 @@ Lire d'abord `../CLAUDE.md`. Ici : commandes et structure. Détail : `../Docs/02
 - `pnpm dev` — API (`tsx watch`, port 3000) + PWA (Vite, port 5173, proxy `/api` et `/socket.io`).
 - `pnpm db:up` / `pnpm db:down` — PostgreSQL 16 de dev (`infra/docker-compose.yml`, lit `.env`).
 - `pnpm lint` · `pnpm typecheck` · `pnpm test` · `pnpm format:check` · `pnpm build` ; `pnpm check` enchaîne tout.
+- `pnpm dist --nom "Épicerie Rasoa" --nom-court "Rasoa"` — version distribuable au nom voulu dans `../Dist/<nom-simplifié>/` (ADR-0006) ; sans `--nom`, le nom par défaut (`packages/shared/src/brand.json`).
 - `pnpm --filter @vente-web/api <script>` pour cibler un paquet ; `pnpm test:watch` en développement.
 
 ## Structure
