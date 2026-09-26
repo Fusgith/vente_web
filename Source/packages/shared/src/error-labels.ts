@@ -27,6 +27,9 @@ export const ERROR_LABELS = {
   PIN_REQUIRES_OPERATIONAL_ROLE:
     'Un PIN ne sert qu’aux rôles de terrain (vente, caisse, magasin, responsable).',
   STATION_INVALID: 'Poste inconnu, inactif ou incompatible avec le rôle.',
+  CUSTOMER_PHONE_TAKEN: 'Ce numéro de téléphone est déjà celui d’un client du répertoire.',
+  CUSTOMER_INACTIVE: 'Cette fiche client est désactivée ou fusionnée avec une autre.',
+  CUSTOMER_MERGE_INVALID: 'Fusion impossible : choisissez deux fiches actives différentes.',
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_LABELS;
