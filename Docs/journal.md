@@ -2,6 +2,34 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 26/09/2026 — T-040 files d'attente, écran de caisse — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- API (`f215a0e`, RG-FIL-01 à 04, RG-CMD-06), avec 8 tests d'intégration :
+  - `GET /queues/{register|delivery}` : qui est servi, puis qui attend, par rang ;
+  - appel du suivant, ou d'un ticket hors tour (journalisé) ; deux caisses n'ont jamais le même ticket ; un client à la fois par caisse ;
+  - absent : retour en fin de file, absences comptées, réservation conservée ;
+  - responsable : déplacer un ticket, le marquer prioritaire, avec un motif journalisé ;
+  - événements temps réel pour chaque changement ;
+  - table des transitions d'état partagée (CDC métier §5.2).
+- Écran de caisse (`8a81a66`), avec 10 tests :
+  - file en direct (rang, ticket, client, commercial, montant, attente) ; « Appeler le suivant » qui nomme le ticket ; « Appeler » sur une ligne ;
+  - client appelé en très grand avec son nom, à annoncer (RG-DSP-05) ; bouton « Client absent » ;
+  - la tablette du commercial est prévenue de l'appel de son ticket en mode appel verbal ; le responsable est prévenu à la 2ᵉ absence.
+- Vérifié dans l'application réelle (API + Vite, deux navigateurs) : validation, appel, annonce, absence, avis au commercial. Ce contrôle a révélé un défaut, corrigé : un retour après absence était annoncé comme une nouvelle commande. `queue.changed` porte désormais la nature du changement.
+- Galerie : écrans `caisse` et `caisse-appel`, contrôlés en paysage et en portrait sans défilement horizontal.
+- Vérifications : `format:check`, `lint`, `typecheck`, `build` et 393 tests verts. Aucune dépendance ajoutée.
+
+**Décisions** : ⚠️ H29 (CDC métier §16.2) : un client à la fois par caisse ; « prioritaire » = derrière les autres prioritaires ; attente comptée depuis la validation ; commercial prévenu en appel verbal seulement.
+
+**Reste** :
+- appel et absence au comptoir de livraison avec la livraison (T-060) ;
+- glisser-déposer du responsable (T-042) ;
+- « retirer » un ticket = annulation (T-050) ;
+- encaissement (T-051).
+
+**Questions ouvertes** : H29.
+
 ## 26/09/2026 — Décisions H14 à H28 appliquées — agent : Claude Code (Opus 5.5)
 
 **Décisions de l'utilisateur** (CDC métier v0.7, §16.5) :

@@ -72,7 +72,10 @@ export async function loadQueue(db: Db, queue: QueueName): Promise<Queue> {
   return { queue, serving: servingRows.flatMap(toItem), waiting: waitingRows.flatMap(toItem) };
 }
 
-/** One customer at a time at a register: the caller's own row locked, two taps call one ticket. */
+/**
+ * One customer at a time at a register (⚠️ H29): the caller's own row locked, two taps call one
+ * ticket.
+ */
 async function assertRegisterFree(tx: Prisma.TransactionClient, actor: Actor): Promise<void> {
   await tx.$queryRaw`SELECT 1 FROM "users" WHERE "id" = ${actor.userId}::uuid FOR UPDATE`;
   const busy = await tx.order.findFirst({
@@ -222,7 +225,7 @@ export async function moveInQueue(
 }
 
 /**
- * Marks an order priority, or no longer (RG-FIL-02). Marked, it moves behind the other priority
+ * Marks an order priority, or no longer (RG-FIL-02, ⚠️ H29). Marked, it moves behind the other priority
  * orders, ahead of all the others; unmarked, it keeps its place.
  */
 export async function setPriority(
