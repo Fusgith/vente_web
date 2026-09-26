@@ -1,4 +1,6 @@
-import type { ProductHit, ProductSearchResult } from '@vente-web/shared';
+import type { ProductHit, ProductSearchResult, Quote } from '@vente-web/shared';
+
+import type { DraftCustomer, DraftState } from './draft.js';
 
 /** Search hits shaped as the API returns them (T-021), for the quote screen tests. */
 export const SAVON: ProductHit = {
@@ -74,4 +76,59 @@ export function searchResult(
   more = false,
 ): ProductSearchResult {
   return { exact, items, more };
+}
+
+export const CUSTOMER: DraftCustomer = {
+  id: '0192a4f0-0000-7000-8000-000000000301',
+  name: 'Rasoa Hanta',
+  phone: '0341122233',
+};
+
+export const QUOTE_ID = '0192a4f0-0000-7000-8000-000000000401';
+
+/**
+ * A quote as the API returns it once saved (T-030), with the lines of a draft; `prices` by unit
+ * id stand for a price changed since the lines were added. Amounts do not matter here.
+ */
+export function savedQuote(
+  draft: DraftState,
+  number: string,
+  version = 1,
+  prices: Record<string, string> = {},
+): Quote {
+  const lines = draft.lines.map((line, index) => ({
+    position: index + 1,
+    productId: line.product.id,
+    productUnitId: line.unit.id,
+    sku: line.product.sku,
+    name: line.product.name,
+    unitLabel: line.unit.label,
+    factor: line.unit.factor,
+    baseUnit: line.product.baseUnit,
+    qty: line.qty,
+    unitPrice: prices[line.unit.id] ?? line.unit.price,
+    capPct: line.capPct,
+    gross: '0.00',
+    discountPct: '0.00',
+    discountAmount: '0.00',
+    net: '0.00',
+  }));
+  const zero = '0.00';
+  return {
+    id: QUOTE_ID,
+    number,
+    version,
+    customer: CUSTOMER,
+    salesUser: { id: '0192a4f0-0000-7000-8000-000000000501', fullName: 'Vola Commerciale' },
+    lines,
+    grossTotal: zero,
+    lineDiscounts: zero,
+    subtotal: zero,
+    orderDiscountPct: null,
+    orderDiscount: zero,
+    discountTotal: zero,
+    total: zero,
+    createdAt: '2026-09-26T07:00:00.000Z',
+    updatedAt: '2026-09-26T07:00:00.000Z',
+  };
 }

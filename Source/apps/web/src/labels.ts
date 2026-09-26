@@ -126,6 +126,16 @@ export const labels = {
     draft: {
       title: 'Lignes du devis',
       unsaved: 'Brouillon non enregistré',
+      /** The status once saved, then once changed since (T-030). */
+      savedAs: (number: string) => `Devis ${number}`,
+      changed: 'modifié, non enregistré',
+      save: 'Enregistrer le devis',
+      saveChanges: 'Enregistrer les modifications',
+      upToDate: 'Devis enregistré',
+      saving: 'Enregistrement…',
+      saved: (number: string) => `Devis ${number} enregistré.`,
+      customerFirst: 'Choisissez le client avant d’enregistrer le devis.',
+      linesConcerned: (lines: string) => `Lignes concernées : ${lines}.`,
       empty: 'Aucune ligne : tapez un code, scannez ou touchez un article.',
       number: 'N°',
       designation: 'Désignation',

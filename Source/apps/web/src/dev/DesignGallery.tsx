@@ -4,7 +4,7 @@ import { useEffect, useMemo, type ReactNode } from 'react';
 import { AuthContext, type AuthContextValue, type AuthState } from '../auth/context.js';
 import { LoginScreen } from '../auth/LoginScreen.js';
 import { labels } from '../labels.js';
-import { draftReducer, emptyDraft, type DraftState } from '../sales/draft.js';
+import { draftReducer, emptyDraft, saveSignature, type DraftState } from '../sales/draft.js';
 import { SalesWorkspace } from '../sales/SalesWorkspace.js';
 import { AppShell } from '../shell/AppShell.js';
 import { Frame } from '../shell/Frame.js';
@@ -29,6 +29,7 @@ const SCREENS = {
   'devis-long': 'Devis long : quinze lignes, la dernière au pavé, le total visible',
   'devis-erreur': 'Devis : code scanné inconnu, l’erreur dans la bande du bas',
   'devis-categories': 'Devis : choix de la catégorie ouvert',
+  'devis-enregistre': 'Devis enregistré : son numéro, rien à enregistrer',
   caisse: 'Caisse (espace à venir)',
   responsable: 'Responsable : deux rôles, le choix du rôle actif',
 } as const;
@@ -75,6 +76,25 @@ function demoDraft(picks: Pick[], padOnLine: number | null = null): DraftState {
   );
   const selected = padOnLine === null ? null : (draft.lines[padOnLine - 1]?.key ?? null);
   return { ...draft, selected };
+}
+
+/** Saved under its number, nothing changed since: the status says so, the save rests. */
+function savedDraft(): DraftState {
+  const draft: DraftState = {
+    ...demoDraft(FIVE_LINES),
+    customer: {
+      id: '0192a4f0-0000-7000-8000-000000000301',
+      name: 'Rasoa Hanta',
+      phone: '0341122233',
+    },
+  };
+  const saved = {
+    id: '0192a4f0-0000-7000-8000-000000000401',
+    number: 'D-2026-000042',
+    version: 1,
+    body: saveSignature(draft),
+  };
+  return { ...draft, saved };
 }
 
 const SCAN_ERROR: News = { tone: 'error', text: labels.sales.unknownCode('8712345678906') };
@@ -233,6 +253,8 @@ function ScreenView({ screen }: { screen: Screen }) {
       return <Sales draft={demoDraft(FIVE_LINES)} search={null} news={SCAN_ERROR} />;
     case 'devis-categories':
       return <SalesCategories />;
+    case 'devis-enregistre':
+      return <Sales draft={savedDraft()} search={null} />;
     case 'caisse':
     case 'responsable': {
       const me = demoMe(screen === 'caisse' ? 'cashier' : 'manager');

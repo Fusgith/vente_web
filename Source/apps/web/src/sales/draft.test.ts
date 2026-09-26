@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { draftReducer, emptyDraft, type DraftAction, type DraftState } from './draft.js';
-import { SAVON } from './test-hits.js';
+import {
+  draftReducer,
+  emptyDraft,
+  saveBody,
+  saveSignature,
+  unsavedChanges,
+  type DraftAction,
+  type DraftState,
+} from './draft.js';
+import { CUSTOMER, SAVON, savedQuote } from './test-hits.js';
 
 const [PIECE, PAQUET, CARTON] = SAVON.units;
 
@@ -103,5 +111,52 @@ describe('draftReducer', () => {
     expect(draftReducer(reselected, { type: 'remove', key: first!.key }).selected).toBe(
       second!.key,
     );
+  });
+});
+
+describe('saving the draft (T-030)', () => {
+  const withCustomer = (state: DraftState) =>
+    draftReducer(state, { type: 'setCustomer', customer: CUSTOMER });
+  const saved = (state: DraftState, prices: Record<string, string> = {}) =>
+    draftReducer(state, {
+      type: 'saved',
+      quote: savedQuote(state, 'D-2026-000001', 1, prices),
+      body: saveSignature(state),
+    });
+
+  it('sends units, quantities and discounts as typed, never a price, and only with a customer', () => {
+    const state = run(add(PAQUET!.id, '2'), {
+      type: 'setOrderDiscount',
+      discount: { kind: 'amount', value: '100' },
+    });
+    expect(saveBody(state)).toBeNull();
+    expect(saveBody(withCustomer(state))).toEqual({
+      customerId: CUSTOMER.id,
+      lines: [{ productUnitId: PAQUET!.id, qty: '2', discount: null }],
+      orderDiscount: { kind: 'amount', value: '100' },
+    });
+  });
+
+  it('shows the prices saved, and tells a change made since', () => {
+    const state = saved(withCustomer(run(add(PAQUET!.id, '2'))), { [PAQUET!.id]: '9000.00' });
+    expect(state.saved).toMatchObject({ number: 'D-2026-000001', version: 1 });
+    expect(state.lines[0]!.unit.price).toBe('9000.00');
+    expect(unsavedChanges(state)).toBe(false);
+
+    const key = state.lines[0]!.key;
+    expect(unsavedChanges(draftReducer(state, { type: 'setQty', key, qty: '3' }))).toBe(true);
+    // The same quantity confirmed again changes nothing.
+    expect(unsavedChanges(draftReducer(state, { type: 'setQty', key, qty: '2' }))).toBe(false);
+  });
+
+  it('keeps unsaved what was typed while the quote was being saved', () => {
+    const sent = withCustomer(run(add(PAQUET!.id, '2')));
+    const typed = draftReducer(sent, { type: 'setQty', key: sent.lines[0]!.key, qty: '5' });
+    const state = draftReducer(typed, {
+      type: 'saved',
+      quote: savedQuote(sent, 'D-2026-000001'),
+      body: saveSignature(sent),
+    });
+    expect(unsavedChanges(state)).toBe(true);
   });
 });

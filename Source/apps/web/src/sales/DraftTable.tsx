@@ -11,13 +11,15 @@ import { labels } from '../labels.js';
 import { buttonClass, sheetClass, tagClass } from '../ui/button.js';
 import { Icon } from '../ui/Icon.js';
 import { quoteInput } from './discount-entry.js';
-import type { DraftState } from './draft.js';
+import { unsavedChanges, type DraftState } from './draft.js';
 import { OrderDiscountSheet } from './OrderDiscountSheet.js';
 
 interface DraftTableProps {
   draft: DraftState;
   onSelect: (key: string) => void;
   onOrderDiscount: (discount: DiscountEntry | null) => void;
+  onSave: () => void;
+  saving: boolean;
   /** The customer's picker, at the end of the header. */
   customer?: ReactNode;
 }
@@ -31,11 +33,44 @@ const HEAD_PX = 40;
 
 const isZero = (amount: string) => amount === '0.00';
 
+const STATUS = 'rounded-full border px-2.5 text-14 leading-6';
+
+/** Unsaved, saved under its number, or saved and changed since: dashed until it is on file. */
+function QuoteStatus({ draft }: { draft: DraftState }) {
+  if (!draft.saved) {
+    return (
+      <span className={`${STATUS} border-dashed border-rule-strong text-ink-2`}>
+        {text.unsaved}
+      </span>
+    );
+  }
+  const changed = unsavedChanges(draft);
+  return (
+    <span
+      className={`${STATUS} figures ${
+        changed
+          ? 'border-dashed border-rule-strong text-ink-2'
+          : 'border-indigo bg-indigo-soft font-semibold text-ink'
+      }`}
+    >
+      {text.savedAs(draft.saved.number)}
+      {changed && `, ${text.changed}`}
+    </span>
+  );
+}
+
 /**
  * The quote as a table (RG-DEV-05): the 7 columns of the PDF, sized to fit the tablet held
  * either way; the totals sit under the table, outside its scroll, so they never hide a line.
  */
-export function DraftTable({ draft, onSelect, onOrderDiscount, customer }: DraftTableProps) {
+export function DraftTable({
+  draft,
+  onSelect,
+  onOrderDiscount,
+  onSave,
+  saving,
+  customer,
+}: DraftTableProps) {
   const { lines, selected } = draft;
   const quote = computeQuote(quoteInput(draft));
 
@@ -64,9 +99,7 @@ export function DraftTable({ draft, onSelect, onOrderDiscount, customer }: Draft
         <h2 id="draft-title" className="type-title">
           {text.title}
         </h2>
-        <span className="rounded-full border border-dashed border-rule-strong px-2.5 text-14 leading-6 text-ink-2">
-          {text.unsaved}
-        </span>
+        <QuoteStatus draft={draft} />
         {customer && <div className="ml-auto max-w-full min-w-0">{customer}</div>}
       </header>
       {lines.length === 0 ? (
@@ -159,7 +192,13 @@ export function DraftTable({ draft, onSelect, onOrderDiscount, customer }: Draft
               </tbody>
             </table>
           </div>
-          <Totals quote={quote} draft={draft} onOrderDiscount={onOrderDiscount} />
+          <Totals
+            quote={quote}
+            draft={draft}
+            onOrderDiscount={onOrderDiscount}
+            onSave={onSave}
+            saving={saving}
+          />
         </>
       )}
     </section>
@@ -170,15 +209,25 @@ interface TotalsProps {
   quote: QuoteTotals;
   draft: DraftState;
   onOrderDiscount: (discount: DiscountEntry | null) => void;
+  onSave: () => void;
+  saving: boolean;
+}
+
+function saveLabel(draft: DraftState, saving: boolean, upToDate: boolean): string {
+  if (saving) return text.saving;
+  if (upToDate) return text.upToDate;
+  return draft.saved ? text.saveChanges : text.save;
 }
 
 /**
  * Under the table, in the order of RG-DEV-05: gross total, line discounts, subtotal, order
  * discount (with its rate when typed as one), amount due, then the reminder of all discounts.
- * Without any discount, the amount due alone. The order discount is typed from here.
+ * Without any discount, the amount due alone. The order discount is typed from here, and the
+ * quote saved next to its amount due.
  */
-function Totals({ quote, draft, onOrderDiscount }: TotalsProps) {
+function Totals({ quote, draft, onOrderDiscount, onSave, saving }: TotalsProps) {
   const [open, setOpen] = useState(false);
+  const upToDate = !!draft.saved && !unsavedChanges(draft);
   const rows: { label: string; amount: string; wrong?: boolean }[] = [];
   if (!isZero(quote.discountTotal)) {
     rows.push({ label: text.grossTotal, amount: formatMga(quote.grossTotal) });
@@ -208,24 +257,36 @@ function Totals({ quote, draft, onOrderDiscount }: TotalsProps) {
         <Icon name="percent" className="size-5" />
         {labels.sales.discount.order}
       </button>
-      <dl className="ml-auto grid grid-cols-[1fr_auto] items-baseline gap-x-6 text-right">
-        {rows.map((row) => (
-          <div key={row.label} className={`contents ${row.wrong ? 'text-madder' : 'text-ink-2'}`}>
-            <dt>{row.label}</dt>
-            <dd className="figures">{row.amount}</dd>
+      {/* The amount due, and under it the save: the last step, at the right hand's reach. */}
+      <div className="ml-auto flex flex-col items-end gap-2">
+        <dl className="grid grid-cols-[1fr_auto] items-baseline gap-x-6 text-right">
+          {rows.map((row) => (
+            <div key={row.label} className={`contents ${row.wrong ? 'text-madder' : 'text-ink-2'}`}>
+              <dt>{row.label}</dt>
+              <dd className="figures">{row.amount}</dd>
+            </div>
+          ))}
+          <div className="contents">
+            <dt className="text-18 font-semibold">{text.total}</dt>
+            <dd className="text-24 font-bold figures">{formatMga(quote.total)}</dd>
           </div>
-        ))}
-        <div className="contents">
-          <dt className="text-18 font-semibold">{text.total}</dt>
-          <dd className="text-24 font-bold figures">{formatMga(quote.total)}</dd>
-        </div>
-        {!isZero(quote.discountTotal) && (
-          <div className="contents text-14 text-ink-2">
-            <dt>{text.discountTotal}</dt>
-            <dd className="figures">{text.minus(formatMga(quote.discountTotal))}</dd>
-          </div>
-        )}
-      </dl>
+          {!isZero(quote.discountTotal) && (
+            <div className="contents text-14 text-ink-2">
+              <dt>{text.discountTotal}</dt>
+              <dd className="figures">{text.minus(formatMga(quote.discountTotal))}</dd>
+            </div>
+          )}
+        </dl>
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving || upToDate}
+          className={buttonClass('primary', 'md')}
+        >
+          <Icon name="check" className="size-5" />
+          {saveLabel(draft, saving, upToDate)}
+        </button>
+      </div>
       {!quote.orderWithinLimit && (
         <p role="alert" className="flex basis-full items-start gap-2 font-semibold text-madder">
           <Icon name="alert" className="size-5 shrink-0 translate-y-px" />

@@ -4,10 +4,12 @@ import {
   type DiscountEntry,
   type ProductHit,
   type ProductUnitHit,
+  type Quote,
+  type QuoteSave,
 } from '@vente-web/shared';
 
 /**
- * Lines picked on the quote screen, kept in memory until quotes are saved (T-030).
+ * Lines picked on the quote screen, kept in memory until the quote is saved (T-030).
  * One line per product × sale unit (RG-DEV-05): adding the same pair again adds to its quantity,
  * which is how a second scan of the same article counts +1 (RG-DEV-06 §3).
  */
@@ -26,6 +28,15 @@ export interface DraftLine {
 
 export type DraftCustomer = Pick<Customer, 'id' | 'name' | 'phone'>;
 
+/** The quote as last saved: its number, the version to send back, and what was sent. */
+export interface SavedQuote {
+  id: string;
+  number: string;
+  version: number;
+  /** The body sent, to tell whether the screen still matches the saved quote. */
+  body: string;
+}
+
 export interface DraftState {
   lines: DraftLine[];
   /** The line whose quantity pad is open: the last one added, or the one tapped. */
@@ -34,6 +45,7 @@ export interface DraftState {
   customer: DraftCustomer | null;
   orderDiscount: DiscountEntry | null;
   orderGranted?: DiscountEntry | null;
+  saved?: SavedQuote | null;
 }
 
 export type DraftAction =
@@ -44,7 +56,9 @@ export type DraftAction =
   | { type: 'select'; key: string | null }
   | { type: 'setDiscount'; key: string; discount: DiscountEntry | null }
   | { type: 'setOrderDiscount'; discount: DiscountEntry | null }
-  | { type: 'setCustomer'; customer: DraftCustomer | null };
+  | { type: 'setCustomer'; customer: DraftCustomer | null }
+  /** `body`: the `saveSignature` of what was sent, lines typed meanwhile staying unsaved. */
+  | { type: 'saved'; quote: Quote; body: string };
 
 export const emptyDraft: DraftState = {
   lines: [],
@@ -113,6 +127,45 @@ function changeUnit(state: DraftState, key: string, unitId: string): DraftState 
   return { ...state, lines, selected: target };
 }
 
+/**
+ * What the tablet sends: sale units, quantities and discounts as typed, never a price or a total
+ * (the API prices again). Null while the customer is missing (RG-DEV-04).
+ */
+export function saveBody(draft: DraftState): QuoteSave | null {
+  if (!draft.customer) return null;
+  return {
+    customerId: draft.customer.id,
+    lines: draft.lines.map((line) => ({
+      productUnitId: line.unit.id,
+      qty: line.qty,
+      discount: line.discount,
+    })),
+    orderDiscount: draft.orderDiscount,
+  };
+}
+
+export const saveSignature = (draft: DraftState) => JSON.stringify(saveBody(draft));
+
+/** Saved once, and changed since: the screen no longer matches the saved quote. */
+export const unsavedChanges = (draft: DraftState) =>
+  !!draft.saved && saveSignature(draft) !== draft.saved.body;
+
+/**
+ * The saved quote's price and cap on each line: the API priced it again, and the screen shows
+ * what was saved, even if a price changed since the article was added (RG-ART-07).
+ */
+function applySaved(state: DraftState, quote: Quote, body: string): DraftState {
+  const stored = new Map(quote.lines.map((line) => [line.productUnitId, line]));
+  const lines = state.lines.map((line) => {
+    const saved = stored.get(line.unit.id);
+    return saved
+      ? { ...line, unit: { ...line.unit, price: saved.unitPrice }, capPct: saved.capPct }
+      : line;
+  });
+  const { id, number, version } = quote;
+  return { ...state, lines, saved: { id, number, version, body } };
+}
+
 export function draftReducer(state: DraftState, action: DraftAction): DraftState {
   switch (action.type) {
     case 'add':
@@ -145,5 +198,7 @@ export function draftReducer(state: DraftState, action: DraftAction): DraftState
       return { ...state, orderDiscount: action.discount };
     case 'setCustomer':
       return { ...state, customer: action.customer };
+    case 'saved':
+      return applySaved(state, action.quote, action.body);
   }
 }

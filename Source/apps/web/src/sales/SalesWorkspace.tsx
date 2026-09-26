@@ -6,6 +6,7 @@ import { DraftTable } from './DraftTable.js';
 import { draftReducer, emptyDraft, type DraftState } from './draft.js';
 import { ProductSearch } from './ProductSearch.js';
 import { QuantityPad } from './QuantityPad.js';
+import { useSaveQuote } from './useSaveQuote.js';
 
 interface SalesWorkspaceProps {
   /** Lines to start from: a quote taken up again (T-030), or the design gallery's demo. */
@@ -21,6 +22,7 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
   const [draft, dispatch] = useReducer(draftReducer, initialDraft);
   const position = draft.lines.findIndex((line) => line.key === draft.selected);
   const selected = draft.lines[position];
+  const { save, saving } = useSaveQuote(draft, dispatch);
 
   return (
     <div className="flex flex-1 flex-col gap-4 md:min-h-0 lg:grid lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)] 2xl:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
@@ -50,6 +52,8 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
         draft={draft}
         onSelect={(key) => dispatch({ type: 'select', key })}
         onOrderDiscount={(discount) => dispatch({ type: 'setOrderDiscount', discount })}
+        onSave={() => void save()}
+        saving={saving}
         customer={
           <CustomerPicker
             value={draft.customer}

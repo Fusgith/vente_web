@@ -5,9 +5,10 @@ import { describe, expect, it } from 'vitest';
 import { labels } from '../labels.js';
 import { Frame } from '../shell/Frame.js';
 import { StatusLineProvider } from '../shell/StatusLineProvider.js';
-import { fakeApi, ok } from '../test/fake-api.js';
+import { apiError, fakeApi, ok } from '../test/fake-api.js';
+import { draftReducer, emptyDraft, type DraftState } from './draft.js';
 import { SalesWorkspace } from './SalesWorkspace.js';
-import { RIZ, SAVON, searchResult } from './test-hits.js';
+import { CUSTOMER, QUOTE_ID, RIZ, SAVON, savedQuote, searchResult } from './test-hits.js';
 
 const [PIECE, PAQUET] = SAVON.units;
 const ALIMENTATION = RIZ.category!;
@@ -17,7 +18,10 @@ const mga = (amount: string) => shown(formatMga(amount));
 
 const SAV_EXACT = searchResult([SAVON], { productId: SAVON.id, unitId: PIECE!.id });
 
-function mount(handlers: Parameters<typeof fakeApi>[0] = {}) {
+function mount(
+  handlers: Parameters<typeof fakeApi>[0] = {},
+  initialDraft: DraftState = emptyDraft,
+) {
   const api = fakeApi({
     'GET /categories': ok({ items: [ALIMENTATION, SAVON.category] }),
     'GET /products/favorites': ok({ items: [SAVON, RIZ] }),
@@ -27,7 +31,7 @@ function mount(handlers: Parameters<typeof fakeApi>[0] = {}) {
   render(
     <StatusLineProvider>
       <Frame workspace="sales" name={labels.workspaces.sales.title}>
-        <SalesWorkspace />
+        <SalesWorkspace initialDraft={initialDraft} />
       </Frame>
     </StatusLineProvider>,
   );
@@ -397,5 +401,59 @@ describe('quote screen: discounts (RG-REM-02, RG-REM-06)', () => {
       shown(labels.sales.draft.minus(formatMga('75'))),
     );
     expect(amountDue()).toHaveTextContent(mga('1425'));
+  });
+});
+
+describe('quote screen: saving (T-030)', () => {
+  const text = labels.sales.draft;
+  /** Two packs of soap, the pad closed. */
+  const twoPacks = draftReducer(
+    draftReducer(emptyDraft, { type: 'add', hit: SAVON, unitId: PAQUET!.id, qty: '2' }),
+    { type: 'select', key: null },
+  );
+  const ready = draftReducer(twoPacks, { type: 'setCustomer', customer: CUSTOMER });
+  const saveButton = (name: string) => screen.getByRole('button', { name });
+
+  it('asks for the customer before saving', () => {
+    const api = mount({}, twoPacks);
+    fireEvent.click(saveButton(text.save));
+    expect(bandAlert()).toHaveTextContent(text.customerFirst);
+    expect(api.callsTo('POST /quotes')).toHaveLength(0);
+  });
+
+  it('saves the quote, then its changes over the version read', async () => {
+    const number = 'D-2026-000001';
+    const api = mount({ 'POST /quotes': ok(savedQuote(ready, number)) }, ready);
+    fireEvent.click(saveButton(text.save));
+
+    await waitFor(() => expect(band()).toHaveTextContent(text.saved(number)));
+    expect(api.callsTo('POST /quotes')[0]!.body).toEqual({
+      customerId: CUSTOMER.id,
+      lines: [{ productUnitId: PAQUET!.id, qty: '2', discount: null }],
+      orderDiscount: null,
+    });
+    expect(screen.getByText(text.savedAs(number))).toBeVisible();
+    expect(saveButton(text.upToDate)).toBeDisabled();
+
+    fireEvent.click(await lineQty(1, '2'));
+    fireEvent.click(within(pad()).getByRole('button', { name: '3' }));
+    fireEvent.click(within(pad()).getByRole('button', { name: labels.sales.pad.confirm }));
+    expect(screen.getByText(`${text.savedAs(number)}, ${text.changed}`)).toBeVisible();
+
+    api.on(`PUT /quotes/${QUOTE_ID}`, ok(savedQuote(ready, number, 2)));
+    fireEvent.click(saveButton(text.saveChanges));
+    await waitFor(() => expect(saveButton(text.upToDate)).toBeDisabled());
+    expect(api.callsTo(`PUT /quotes/${QUOTE_ID}`)[0]!.body).toMatchObject({
+      lines: [{ qty: '3' }],
+      version: 1,
+    });
+  });
+
+  it('tells which lines the API refused', async () => {
+    mount({ 'POST /quotes': apiError(422, 'QUOTE_LINE_UNAVAILABLE', { lines: [1] }) }, ready);
+    fireEvent.click(saveButton(text.save));
+    await waitFor(() => expect(bandAlert()).toHaveTextContent(text.linesConcerned('1')));
+    expect(screen.getByText(text.unsaved)).toBeVisible();
+    expect(saveButton(text.save)).toBeEnabled();
   });
 });
