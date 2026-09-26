@@ -29,6 +29,8 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 | Devis | `quote` | Commande à l'état brouillon, non engageante. |
 | Commande | `order` | Devis validé par le commercial ; porte le ticket d'appel. |
 | Ligne de commande | `order_line` | Article × unité de vente × quantité × prix figé × remise ; porte aussi la quantité en unité de base. |
+| Valider (un devis en commande) | `submit` | Passage du devis à la commande : prix figés, stock réservé, ticket, entrée en file caisse (RG-CMD-03). |
+| Stock insuffisant | `stock_shortage` | Article dont une commande demande plus que le disponible ; la validation est refusée (RG-CMD-02). |
 | Ticket d'appel | `ticket` | Code « lettre + numéro » (A15) appelé à la caisse et à la livraison. |
 | File d'attente | `queue` | Liste ordonnée des commandes en attente (caisse ou livraison). |
 | Rang | `queue_rank` | Position dans la file, modifiable par le responsable. |

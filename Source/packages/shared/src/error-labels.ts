@@ -36,6 +36,12 @@ export const ERROR_LABELS = {
     'Une remise dépasse son plafond : corrigez-la, ou demandez un code au boss.',
   QUOTE_CHANGED: 'Ce devis a été modifié entre-temps : rouvrez-le avant de l’enregistrer.',
   QUOTE_NOT_DRAFT: 'Ce devis est déjà devenu une commande : il ne se modifie plus.',
+  ORDER_PRICE_CHANGED:
+    'Un prix a changé depuis l’enregistrement du devis : vérifiez-le avec le client, puis validez.',
+  STOCK_UNAVAILABLE:
+    'Stock insuffisant pour valider la commande : réduisez les quantités signalées.',
+  TICKET_LETTER_MISSING:
+    'Aucune lettre de ticket n’est attribuée à ce commercial : l’admin doit lui en donner une.',
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_LABELS;

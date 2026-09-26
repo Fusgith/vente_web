@@ -1,9 +1,7 @@
 import {
   baseQuantity,
   computeQuote,
-  lineGross,
   quoteNumber,
-  sumAmounts,
   type DiscountEntry,
   type Quote,
   type QuoteBeyondCap,
@@ -20,12 +18,14 @@ import type { Prisma } from '../generated/prisma/client.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit, type AuditSnapshot, type AuditTx } from './audit.js';
 import { findCustomer } from './customers.js';
+import { findOrder, toQuote } from './order-view.js';
 import { defaultDiscountCap, inForceAt, unitCap } from './product-hits.js';
+import { nextSequenceValue } from './sequences.js';
 import { readSetting } from './settings.js';
 import { shopYear } from './shop-time.js';
 
 /** A line typed on the tablet, priced again here, with what the saved line freezes. */
-interface PricedLine {
+export interface PricedLine {
   entry: QuoteLineEntry;
   productId: string;
   sku: string;
@@ -33,71 +33,21 @@ interface PricedLine {
   unitLabel: string;
   factor: string;
   unitPrice: string;
+  /** The price row in force now, which a validated line references (RG-CMD-04, RG-ART-07). */
+  priceId: string;
   /** Resolved now (RG-REM-01), frozen on the line. */
   capPct: string;
 }
 
-const QUOTE_INCLUDE = {
-  customer: { select: { id: true, name: true, phone: true } },
-  salesUser: { select: { id: true, fullName: true } },
-  lines: {
-    orderBy: { position: 'asc' },
-    include: { product: { select: { baseUnit: true } } },
-  },
-} satisfies Prisma.OrderInclude;
-
-type StoredQuote = Prisma.OrderGetPayload<{ include: typeof QUOTE_INCLUDE }>;
-
-function toQuote(order: StoredQuote): Quote {
-  const lines = order.lines.map((line) => {
-    const qty = line.qty.toFixed();
-    const unitPrice = line.unitPrice.toFixed(2);
-    return {
-      position: line.position,
-      productId: line.productId,
-      productUnitId: line.productUnitId,
-      sku: line.sku,
-      name: line.name,
-      unitLabel: line.unitLabel,
-      factor: line.factor.toFixed(),
-      baseUnit: line.product.baseUnit,
-      qty,
-      unitPrice,
-      capPct: line.maxDiscountPct.toFixed(),
-      gross: lineGross(qty, unitPrice),
-      discountPct: line.discountPct.toFixed(2),
-      discountAmount: line.discountAmount.toFixed(2),
-      net: line.lineTotal.toFixed(2),
-    };
-  });
-  return {
-    id: order.id,
-    number: order.number,
-    version: order.version,
-    customer: order.customer,
-    salesUser: order.salesUser,
-    lines,
-    grossTotal: sumAmounts(lines.map((line) => line.gross)),
-    lineDiscounts: sumAmounts(lines.map((line) => line.discountAmount)),
-    subtotal: order.subtotal.toFixed(2),
-    orderDiscountPct: order.orderDiscountPct?.toFixed(2) ?? null,
-    orderDiscount: order.orderDiscountAmount.toFixed(2),
-    discountTotal: order.discountTotal.toFixed(2),
-    total: order.total.toFixed(2),
-    createdAt: order.createdAt.toISOString(),
-    updatedAt: order.updatedAt.toISOString(),
-  };
-}
-
 /** A quote, i.e. an order still in DRAFT; an order has its own screens (T-032). */
 export async function loadQuote(db: AuditTx, id: string): Promise<Quote> {
-  const order = await db.order.findUnique({ where: { id }, include: QUOTE_INCLUDE });
+  const order = await findOrder(db, id);
   if (!order || order.status !== 'DRAFT') throw new AppError(404, 'NOT_FOUND');
   return toQuote(order);
 }
 
 /** Mandatory, and never a deactivated or merged record (RG-DEV-04). */
-async function assertActiveCustomer(db: Db, id: string): Promise<void> {
+export async function assertActiveCustomer(db: Db, id: string): Promise<void> {
   if (!(await findCustomer(db, id)).isActive) throw new AppError(409, 'CUSTOMER_INACTIVE');
 }
 
@@ -105,7 +55,10 @@ async function assertActiveCustomer(db: Db, id: string): Promise<void> {
  * Each line in its sale unit at the price in force now, with its cap resolved now; a unit
  * deactivated or without a price since it was added is refused with the positions concerned.
  */
-async function priceLines(db: Db, entries: readonly QuoteLineEntry[]): Promise<PricedLine[]> {
+export async function priceLines(
+  db: Db,
+  entries: readonly QuoteLineEntry[],
+): Promise<PricedLine[]> {
   const now = new Date();
   const [units, fallbackCap] = await Promise.all([
     db.productUnit.findMany({
@@ -120,7 +73,7 @@ async function priceLines(db: Db, entries: readonly QuoteLineEntry[]): Promise<P
           where: inForceAt(now),
           orderBy: { effectiveFrom: 'desc' },
           take: 1,
-          select: { price: true },
+          select: { id: true, price: true },
         },
       },
     }),
@@ -130,7 +83,7 @@ async function priceLines(db: Db, entries: readonly QuoteLineEntry[]): Promise<P
   const unavailable: number[] = [];
   const priced = entries.flatMap((entry, index): PricedLine[] => {
     const unit = byId.get(entry.productUnitId);
-    const price = unit?.prices[0]?.price;
+    const price = unit?.prices[0];
     if (!unit || !price) {
       unavailable.push(index + 1);
       return [];
@@ -146,7 +99,8 @@ async function priceLines(db: Db, entries: readonly QuoteLineEntry[]): Promise<P
         name: unit.product.name,
         unitLabel: unit.label,
         factor,
-        unitPrice: price.toFixed(2),
+        unitPrice: price.price.toFixed(2),
+        priceId: price.id,
         capPct: unitCap(unit, unit.product, fallbackCap),
       },
     ];
@@ -240,19 +194,10 @@ async function quotePrefix(db: Db): Promise<string> {
   return typeof value === 'string' && /^[A-Z]{1,4}$/.test(value) ? value : 'D';
 }
 
-/**
- * Next number of the shop's year (RG-DEV-02). Gaps are tolerated for quotes, so a plain atomic
- * increment is enough; the row lock still serialises two tablets saving at once.
- */
+/** Next number of the shop's year (RG-DEV-02); gaps are tolerated for quotes. */
 async function nextQuoteNumber(tx: Prisma.TransactionClient, prefix: string): Promise<string> {
   const year = shopYear(new Date());
-  const key = `QUOTE-${year}`;
-  const [row] = await tx.$queryRaw<{ next_value: number }[]>`
-    INSERT INTO "number_sequences" ("key", "next_value") VALUES (${key}, 2)
-    ON CONFLICT ("key") DO UPDATE SET "next_value" = "number_sequences"."next_value" + 1
-    RETURNING "next_value"`;
-  if (!row) throw new Error('number_sequences returned no row');
-  return quoteNumber(prefix, year, row.next_value - 1);
+  return quoteNumber(prefix, year, await nextSequenceValue(tx, `QUOTE-${year}`));
 }
 
 /** A new quote of the salesperson: priced, checked and numbered here (RG-DEV-01/02/05). */

@@ -111,6 +111,8 @@ export interface TestUserInput {
   /** Base32 secret, enabled right away. */
   totpSecret?: string;
   isActive?: boolean;
+  /** Letter of a salesperson's call tickets (RG-USR-07). */
+  ticketLetter?: string;
 }
 
 export async function createUser(db: Db, input: TestUserInput): Promise<{ id: string }> {
@@ -124,6 +126,7 @@ export async function createUser(db: Db, input: TestUserInput): Promise<{ id: st
       totpSecret: input.totpSecret ?? null,
       totpEnabledAt: input.totpSecret ? new Date() : null,
       isActive: input.isActive ?? true,
+      ticketLetter: input.ticketLetter ?? null,
     },
     select: { id: true },
   });
