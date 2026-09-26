@@ -2,6 +2,31 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 26/09/2026 — T-032 validation de commande — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- API (`3ec3c10`, RG-CMD-02/03/04, RG-STK-02, RG-TKT-01, RG-FIL-01), avec 10 tests d'intégration :
+  - `POST /orders/:id/submit` (commercial, responsable) valide le devis enregistré sous la version lue, en une seule transaction : prix figés (la ligne référence le prix historisé en vigueur), plafonds relus, stock réservé par article jusqu'à la fin de journée, ticket du jour à la lettre du commercial, dernier rang de la file caisse, journal `order.submitted` (avant → après) ;
+  - contrôle du stock en unité de base, lignes d'un même article cumulées, commandes validées non livrées déduites ; lignes de stock verrouillées dans l'ordre des articles : deux commandes ne prennent jamais les mêmes dernières unités ;
+  - refus nommés : stock insuffisant (chaque article, disponible et demandé, ses lignes), prix changé depuis l'enregistrement, plafond abaissé, version périmée, commercial sans lettre ;
+  - une validation renvoyée par la même tablette (réponse perdue sur le Wi-Fi) rend son ticket au lieu d'un refus ; `GET /orders/:id` lit une commande quel que soit son état.
+- Tablette (`c70a24d`), avec 10 tests :
+  - bouton « Valider la commande » à côté du net à payer ; il enregistre d'abord ce qui est à l'écran et s'arrête si l'enregistrement a changé le montant (le client vérifie avant toute réservation) ;
+  - ticket affiché en 96 px avec le nom du client (RG-CMD-05, RG-TKT-03), puis « Nouveau devis » ;
+  - stock insuffisant : feuille par article (« 40 disponibles, 50 demandés (kg) ») avec la quantité que le stock couvre, lignes concernées en garance jusqu'à leur modification ;
+  - prix changé après l'enregistrement : le devis est réenregistré au nouveau prix, à revalider.
+- Galerie : écrans `commande-validee` et `commande-stock`. Captures contrôlées en paysage (1280 × 800) et en portrait (800 × 1280), sans défilement horizontal.
+- Vérifications : `format:check`, `lint`, `typecheck`, `build` et 353 tests verts ; CI verte pour `3ec3c10`. Aucune dépendance ajoutée.
+
+**Décisions** :
+- ⚠️ H28 (CDC métier §16.2) : la commande garde le numéro du devis ; validation sur le devis tel qu'enregistré ; reprise par un autre commercial à son nom et à sa lettre, le responsable valide pour le commercial du devis ; une réservation par article jusqu'à la prochaine `day_end_time`.
+- Notification temps réel des caisses détachée dans **T-018** (Socket.IO, socle), prérequis de la file caisse T-040 : aucun écran ne la reçoit encore.
+- `Sheet` : pied de feuille en `<div>` (un `<footer>` dans la boîte de dialogue faisait un second repère `contentinfo`). Échelle typographique : taille 96 pour le ticket.
+
+**Points de vigilance** : les codes du boss (T-034) devront être relus à la validation comme les plafonds ; l'expiration en fin de journée et la libération des réservations restent à faire (T-022).
+
+**Reste** : T-032 terminée. Suivant au backlog. Questions ouvertes : H28 à valider ; H27, H26, H23, H24, H20 ; H14–H17, H19, H21, H25.
+
 ## 26/09/2026 — Tableaux : « MGA » une seule fois, dans l'en-tête — agent : Claude Code (Opus 5.5)
 
 **Demande de l'utilisateur** : « pour tout ce qui est tableau, ne mets pas MGA partout dans les colonnes de montant pour gagner de l'espace ».
