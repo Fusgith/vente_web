@@ -85,10 +85,11 @@ describe('draftReducer', () => {
     const state = run(add(PIECE!.id), add(PAQUET!.id));
     const [first, second] = state.lines;
     const withoutSecond = draftReducer(state, { type: 'remove', key: second!.key });
-    expect(withoutSecond).toEqual({ lines: [first], selected: null });
+    expect(withoutSecond).toEqual({ ...emptyDraft, lines: [first], selected: null });
     const reselected = draftReducer(state, { type: 'select', key: second!.key });
     expect(draftReducer(reselected, { type: 'remove', key: first!.key }).selected).toBe(
       second!.key,
     );
   });
 });
+
