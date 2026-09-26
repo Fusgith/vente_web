@@ -20,11 +20,12 @@ export function createTestDb(): Db {
 }
 
 /**
- * Empties users, stations and the catalog, and through CASCADE everything that references them
- * (prices, stock, orders…); `audit_log` and `product_prices` only forbid UPDATE/DELETE, not TRUNCATE.
+ * Empties users, stations, the catalog and the number sequences, and through CASCADE everything
+ * that references them (prices, stock, orders…); `audit_log` and `product_prices` only forbid
+ * UPDATE/DELETE, not TRUNCATE.
  */
 export async function resetDb(db: Db): Promise<void> {
   await db.$executeRawUnsafe(
-    'TRUNCATE TABLE users, stations, sessions, audit_log, settings, categories, products, customers RESTART IDENTITY CASCADE',
+    'TRUNCATE TABLE users, stations, sessions, audit_log, settings, categories, products, customers, number_sequences RESTART IDENTITY CASCADE',
   );
 }

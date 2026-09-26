@@ -30,6 +30,12 @@ export const ERROR_LABELS = {
   CUSTOMER_PHONE_TAKEN: 'Ce numéro de téléphone est déjà celui d’un client du répertoire.',
   CUSTOMER_INACTIVE: 'Cette fiche client est désactivée ou fusionnée avec une autre.',
   CUSTOMER_MERGE_INVALID: 'Fusion impossible : choisissez deux fiches actives différentes.',
+  QUOTE_LINE_UNAVAILABLE:
+    'Un article du devis n’est plus en vente dans cette unité, ou n’a pas de prix : retirez la ligne.',
+  QUOTE_DISCOUNT_BEYOND_CAP:
+    'Une remise dépasse son plafond : corrigez-la, ou demandez un code au boss.',
+  QUOTE_CHANGED: 'Ce devis a été modifié entre-temps : rouvrez-le avant de l’enregistrer.',
+  QUOTE_NOT_DRAFT: 'Ce devis est déjà devenu une commande : il ne se modifie plus.',
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_LABELS;

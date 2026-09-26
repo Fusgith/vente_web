@@ -15,6 +15,32 @@ export async function defaultDiscountCap(db: Db): Promise<string> {
   return typeof value === 'number' && value >= 0 && value <= 100 ? String(value) : '0';
 }
 
+/** Prices in force at `now`: one scheduled for later does not count yet (RG-ART-07). */
+export function inForceAt(now: Date) {
+  return {
+    effectiveFrom: { lte: now },
+    OR: [{ effectiveTo: null }, { effectiveTo: { gt: now } }],
+  } satisfies Prisma.ProductPriceWhereInput;
+}
+
+interface CapHolder {
+  maxDiscountPct: Prisma.Decimal | null;
+}
+
+/** Cap of a sale unit in %: unit → product → category → setting (RG-REM-01). */
+export function unitCap(
+  unit: CapHolder,
+  product: CapHolder & { category: CapHolder | null },
+  fallback: string,
+): string {
+  return resolveDiscountCap({
+    unit: unit.maxDiscountPct ? decimal(unit.maxDiscountPct) : null,
+    product: product.maxDiscountPct ? decimal(product.maxDiscountPct) : null,
+    category: product.category?.maxDiscountPct ? decimal(product.category.maxDiscountPct) : null,
+    fallback,
+  });
+}
+
 function hitInclude(now: Date) {
   return {
     category: { select: { id: true, name: true, maxDiscountPct: true } },
@@ -23,12 +49,8 @@ function hitInclude(now: Date) {
       where: { isActive: true },
       orderBy: [{ factor: 'asc' }, { label: 'asc' }],
       include: {
-        // In force now: a price scheduled for later does not count yet (RG-ART-07).
         prices: {
-          where: {
-            effectiveFrom: { lte: now },
-            OR: [{ effectiveTo: null }, { effectiveTo: { gt: now } }],
-          },
+          where: inForceAt(now),
           orderBy: { effectiveFrom: 'desc' },
           take: 1,
           select: { price: true },
@@ -57,14 +79,6 @@ function toHit(product: ProductWithHit, fallbackCap: string, options: HitOptions
     available: onHand && reserved ? decimal(onHand.minus(reserved)) : '0',
     units: product.units.map((unit) => {
       const price = unit.prices[0]?.price;
-      const cap = resolveDiscountCap({
-        unit: unit.maxDiscountPct ? decimal(unit.maxDiscountPct) : null,
-        product: product.maxDiscountPct ? decimal(product.maxDiscountPct) : null,
-        category: product.category?.maxDiscountPct
-          ? decimal(product.category.maxDiscountPct)
-          : null,
-        fallback: fallbackCap,
-      });
       return {
         id: unit.id,
         label: unit.label,
@@ -72,7 +86,7 @@ function toHit(product: ProductWithHit, fallbackCap: string, options: HitOptions
         isBase: unit.isBase,
         barcode: unit.barcode,
         price: price ? decimal(price) : null,
-        maxDiscountPct: options.showCaps ? cap : null,
+        maxDiscountPct: options.showCaps ? unitCap(unit, product, fallbackCap) : null,
       };
     }),
   };

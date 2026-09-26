@@ -44,6 +44,14 @@ export function lineGross(quantity: string, unitPrice: string): string {
   return roundHalfUp(fromScaled(toScaled(quantity, 2) * toScaled(unitPrice, 2), 4), 2);
 }
 
+/**
+ * Quantity in base unit of a line (RG-ART-06): quantity × factor, rounded half-up to 2 decimals
+ * once — « 2 cartons × 12 » → `'24.00'`. Factors carry 3 decimals.
+ */
+export function baseQuantity(quantity: string, factor: string): string {
+  return roundHalfUp(fromScaled(toScaled(quantity, 2) * toScaled(factor, 3), 5), 2);
+}
+
 /** Sum of amounts, without any new rounding (RG-DEV-05): `'0.00'` for none. */
 export function sumAmounts(amounts: readonly string[]): string {
   return fromScaled(
