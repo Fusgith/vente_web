@@ -1,18 +1,36 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+
+import brand from '../../packages/shared/src/brand.json' with { type: 'json' };
+
+// Application name fixed at build time (RG-APP-01, ADR-0006): `pnpm dist` checks the names
+// with the shared rules and passes them here; without them, the default of brand.json.
+const appName = process.env.VITE_APP_NAME?.trim() || brand.name;
+const appShortName = process.env.VITE_APP_SHORT_NAME?.trim() || brand.shortName;
+
+const escapeHtml = (text: string) =>
+  text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+
+/** The page title before the app starts (install prompt, tab, task switcher). */
+const appTitle: Plugin = {
+  name: 'app-title',
+  transformIndexHtml: (html) =>
+    html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(appName)}</title>`),
+};
 
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    appTitle,
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons/icon.svg'],
       manifest: {
-        name: 'Vente Web',
-        short_name: 'Vente',
+        name: appName,
+        short_name: appShortName,
         description: 'Gestion des ventes du magasin',
         lang: 'fr',
         start_url: '/',
@@ -31,6 +49,10 @@ export default defineConfig({
       },
     }),
   ],
+  // Read by `labels.appName`; the tests, without this, fall back to the shared default.
+  define: {
+    'import.meta.env.VITE_APP_NAME': JSON.stringify(appName),
+  },
   server: {
     port: 5173,
     proxy: {

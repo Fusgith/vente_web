@@ -12,7 +12,7 @@ import {
  */
 export interface DraftLine {
   key: string;
-  /** \vailable\: the stock when the line was added, shown per unit on the quantity pad. */
+  /** `available`: the stock when the line was added, shown per unit on the quantity pad. */
   product: Pick<ProductHit, 'id' | 'sku' | 'name' | 'baseUnit' | 'available' | 'units'>;
   unit: ProductUnitHit & { price: string };
   qty: string;

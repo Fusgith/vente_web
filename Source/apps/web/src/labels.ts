@@ -1,8 +1,9 @@
-import type { Role } from '@vente-web/shared';
+import { DEFAULT_APP_NAME, type Role } from '@vente-web/shared';
 
 /** French UI labels (ADR-0004): no French string hard-coded in logic or components. */
 export const labels = {
-  appName: 'Vente Web',
+  /** Fixed at build time (RG-APP-01, ADR-0006): `pnpm dist --nom "…"`. */
+  appName: import.meta.env.VITE_APP_NAME ?? DEFAULT_APP_NAME,
   loading: 'Chargement…',
   retry: 'Réessayer',
 

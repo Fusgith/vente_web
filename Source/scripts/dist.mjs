@@ -17,12 +17,13 @@ function stop(lines) {
 }
 
 function run(args, env = {}) {
-  const result = spawnSync('pnpm', args, {
+  // One command line through the shell: pnpm is a .cmd shim on Windows. No argument holds a
+  // space or a user value (the names travel in the environment), so nothing needs quoting.
+  const result = spawnSync(`pnpm ${args.join(' ')}`, {
     cwd: source,
     stdio: 'inherit',
     env: { ...process.env, ...env },
-    // pnpm is a .cmd shim on Windows; no argument here contains a space or a user value.
-    shell: process.platform === 'win32',
+    shell: true,
   });
   if (result.status !== 0) stop([`Échec de : pnpm ${args.join(' ')}`]);
 }
