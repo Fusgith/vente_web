@@ -1,4 +1,4 @@
-import { formatMga, type Quote } from '@vente-web/shared';
+import { formatAmount, formatMga, type Quote } from '@vente-web/shared';
 import type { ContentColumns, ContentTable } from 'pdfmake/interfaces.js';
 import { describe, expect, it } from 'vitest';
 
@@ -96,6 +96,10 @@ describe('quote PDF (RG-DEV-05, RG-FAC-06, RG-FAC-07)', () => {
     expect(lines).toHaveLength(3);
     expect(JSON.stringify(lines[1])).toContain('(× 6 pièce)');
     expect(JSON.stringify(lines[2])).not.toContain('(×');
+    // The sign once in the head of each amount column, the figures alone in its cells (RG-FMT-01).
+    expect(lines[0]![6]).toMatchObject({ text: ['Montant net', { text: '\n(MGA)' }] });
+    expect(lines[2]![6]).toMatchObject({ text: formatAmount('19500') });
+    expect(JSON.stringify(lines.slice(1))).not.toContain('MGA');
     expect(totalRows.map((row) => (row[0] as { text: string }).text)).toEqual([
       'Total brut',
       'Remises sur les lignes',

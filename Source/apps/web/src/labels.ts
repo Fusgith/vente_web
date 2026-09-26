@@ -1,4 +1,4 @@
-import { DEFAULT_APP_NAME, type Role } from '@vente-web/shared';
+import { CURRENCY, DEFAULT_APP_NAME, type Role } from '@vente-web/shared';
 
 /** French UI labels (ADR-0004): no French string hard-coded in logic or components. */
 export const labels = {
@@ -145,6 +145,8 @@ export const labels = {
       unitPrice: 'Prix unitaire',
       netAmount: 'Montant net',
       discount: 'Remise',
+      /** Under the head of each amount column, whose cells show the figures alone (RG-FMT-01). */
+      inCurrency: `(${CURRENCY})`,
       /** Summary under the table, in the order of RG-DEV-05. */
       grossTotal: 'Total brut',
       lineDiscounts: 'Remises sur les lignes',

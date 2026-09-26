@@ -1,4 +1,4 @@
-import { formatMga, formatPhone, formatQty, type Quote } from '@vente-web/shared';
+import { formatAmount, formatMga, formatPhone, formatQty, type Quote } from '@vente-web/shared';
 import type {
   Column,
   Content,
@@ -21,8 +21,10 @@ export interface QuoteDocumentContext {
 
 const MARGIN_X = 40;
 /** N°, Désignation (the rest), Quantité, Unité, Prix unitaire, Remise, Montant net. */
-const COLUMN_WIDTHS = [22, '*', 50, 72, 80, 76, 86];
+const COLUMN_WIDTHS = [22, '*', 50, 72, 66, 62, 74];
 const RIGHT_ALIGNED = new Set([2, 4, 5, 6]);
+/** Prix unitaire, Remise, Montant net: the sign once in the head, the figures alone (RG-FMT-01). */
+const AMOUNTS = new Set([4, 5, 6]);
 
 const isZero = (amount: string) => Number(amount) === 0;
 
@@ -106,23 +108,27 @@ function lineRow(line: Quote['lines'][number]): TableCell[] {
         ...(factor === '1' ? [] : [{ text: text.factorOf(factor, line.baseUnit), style: 'small' }]),
       ],
     },
-    { text: formatMga(line.unitPrice) },
+    { text: formatAmount(line.unitPrice) },
     isZero(line.discountAmount)
       ? { text: '' }
       : {
           stack: [
-            { text: text.minus(formatMga(line.discountAmount)) },
+            { text: text.minus(formatAmount(line.discountAmount)) },
             { text: text.pct(formatQty(line.discountPct)), style: 'small' },
           ],
         },
-    { text: formatMga(line.net), bold: true },
+    { text: formatAmount(line.net), bold: true },
   ].map((cell, index) => (RIGHT_ALIGNED.has(index) ? { ...cell, alignment: 'right' } : cell));
 }
 
-/** The lines as on the screen (RG-DEV-05); the head is repeated on every page. */
+/**
+ * The lines as on the screen (RG-DEV-05); the head is repeated on every page, and aligned to
+ * the bottom since the amount columns take two lines.
+ */
 function linesTable(quote: Quote): ContentTable {
   const head = Object.values(text.columns).map((label, index): TableCell => ({
-    text: label,
+    text: AMOUNTS.has(index) ? [label, { text: `\n${text.inCurrency}`, bold: false }] : label,
+    verticalAlignment: 'bottom',
     style: 'head',
     alignment: RIGHT_ALIGNED.has(index) ? 'right' : 'left',
   }));

@@ -1,5 +1,6 @@
 import {
   computeQuote,
+  formatAmount,
   formatMga,
   formatQty,
   type DiscountEntry,
@@ -29,8 +30,18 @@ const text = labels.sales.draft;
 
 const CELL = 'px-2 first:pl-4 last:pr-4';
 const HEAD =
-  CELL + ' sticky top-0 z-10 h-10 border-b border-rule bg-white text-14 font-semibold text-ink-2';
-const HEAD_PX = 40;
+  CELL +
+  ' sticky top-0 z-10 h-12 border-b border-rule bg-white pb-1 align-bottom text-14 leading-5 font-semibold text-ink-2';
+const HEAD_PX = 48;
+
+/** An amount column: the sign once, under its name; its cells show the figures alone (RG-FMT-01). */
+function AmountHead({ label, width }: { label: string; width: string }) {
+  return (
+    <th className={`${HEAD} ${width} text-right`}>
+      {label} <span className="block font-normal">{text.inCurrency}</span>
+    </th>
+  );
+}
 
 const isZero = (amount: string) => amount === '0.00';
 
@@ -115,9 +126,9 @@ export function DraftTable({
                   <th className={HEAD}>{text.designation}</th>
                   <th className={HEAD + ' w-22 text-right'}>{text.quantity}</th>
                   <th className={HEAD + ' w-24'}>{text.unit}</th>
-                  <th className={HEAD + ' w-34 text-right'}>{text.unitPrice}</th>
-                  <th className={HEAD + ' w-32 text-right'}>{text.discount}</th>
-                  <th className={HEAD + ' w-38 text-right'}>{text.netAmount}</th>
+                  <AmountHead label={text.unitPrice} width="w-28" />
+                  <AmountHead label={text.discount} width="w-28" />
+                  <AmountHead label={text.netAmount} width="w-34" />
                 </tr>
               </thead>
               <tbody>
@@ -169,14 +180,16 @@ export function DraftTable({
                           </span>
                         )}
                       </td>
-                      <td className={row + ' text-right figures'}>{formatMga(line.unit.price)}</td>
+                      <td className={row + ' text-right figures'}>
+                        {formatAmount(line.unit.price)}
+                      </td>
                       <td
                         className={`${row} text-right leading-5 figures ${totals.withinLimit ? '' : 'text-madder'}`}
                       >
                         {!isZero(totals.discount) && (
                           <>
                             <span className="block font-semibold">
-                              {text.minus(formatMga(totals.discount))}
+                              {text.minus(formatAmount(totals.discount))}
                             </span>
                             <span className="block text-14 text-ink-2">
                               {text.pct(formatQty(totals.discountPct))}
@@ -185,7 +198,7 @@ export function DraftTable({
                         )}
                       </td>
                       <td className={row + ' text-right font-semibold figures'}>
-                        {formatMga(totals.net)}
+                        {formatAmount(totals.net)}
                       </td>
                     </tr>
                   );

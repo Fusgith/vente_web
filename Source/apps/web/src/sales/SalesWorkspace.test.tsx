@@ -1,4 +1,4 @@
-import { formatMga } from '@vente-web/shared';
+import { formatAmount, formatMga } from '@vente-web/shared';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
@@ -68,7 +68,10 @@ describe('quote screen: quick search (RG-DEV-06)', () => {
     expect(await lineQty(1, '1')).toBeVisible();
     const table = screen.getByRole('table');
     expect(within(table).getByText('SAV-001')).toBeVisible();
-    expect(within(table).getAllByText(mga('1500'))).toHaveLength(2);
+    // The sign once in the head of each amount column, the figures alone in its cells (RG-FMT-01).
+    expect(within(table).getAllByText(shown(formatAmount('1500')))).toHaveLength(2);
+    expect(table).not.toHaveTextContent(/\d\s*MGA/);
+    expect(within(table).getByRole('columnheader', { name: 'Montant net (MGA)' })).toBeVisible();
     expect(amountDue()).toHaveTextContent(mga('1500'));
     expect(band()).toHaveTextContent(shown(labels.sales.added('1', 'pièce', SAVON.name)));
     expect(pad()).toBeVisible();
@@ -314,7 +317,7 @@ describe('quote screen: discounts (RG-REM-02, RG-REM-06)', () => {
     confirm(keys);
 
     const row = screen.getAllByRole('row')[1]!;
-    expect(row).toHaveTextContent(shown(labels.sales.draft.minus(formatMga('225'))));
+    expect(row).toHaveTextContent(shown(labels.sales.draft.minus(formatAmount('225'))));
     expect(row).toHaveTextContent(shown(labels.sales.draft.pct('5')));
     expect(amountDue()).toHaveTextContent(mga('4275'));
   });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { NBSP, formatMga, formatQty, formatTyped, roundHalfUp } from './format.js';
+import { NBSP, formatAmount, formatMga, formatQty, formatTyped, roundHalfUp } from './format.js';
 
 describe('roundHalfUp — RG-FMT-01 (arrondi au plus proche, demi-supérieur)', () => {
   it('rounds .5 up, exactly, from decimal strings', () => {
@@ -45,6 +45,14 @@ describe('formatMga — RG-FMT-01', () => {
 
   it('formats credit-note style negative amounts', () => {
     expect(formatMga('-25000')).toBe(`-25${NBSP}000,00${NBSP}MGA`);
+  });
+});
+
+describe('formatAmount — RG-FMT-01 (dans un tableau, le sigle est dans l’en-tête)', () => {
+  it('formats the amount as formatMga does, without the sign', () => {
+    expect(formatAmount('1250000')).toBe(`1${NBSP}250${NBSP}000,00`);
+    expect(formatAmount('999.999')).toBe(`1${NBSP}000,00`);
+    expect(formatMga('4500')).toBe(`${formatAmount('4500')}${NBSP}MGA`);
   });
 });
 

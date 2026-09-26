@@ -1,3 +1,5 @@
+import { CURRENCY } from '@vente-web/shared';
+
 /** French wording of the printed documents (ADR-0004); the columns are those of the screen. */
 export const QUOTE_PDF = {
   title: 'Devis',
@@ -16,6 +18,8 @@ export const QUOTE_PDF = {
     discount: 'Remise',
     netAmount: 'Montant net',
   },
+  /** Under the head of each amount column, whose cells show the figures alone (RG-FMT-01). */
+  inCurrency: `(${CURRENCY})`,
   factorOf: (factor: string, base: string) => `(× ${factor} ${base})`,
   grossTotal: 'Total brut',
   lineDiscounts: 'Remises sur les lignes',
