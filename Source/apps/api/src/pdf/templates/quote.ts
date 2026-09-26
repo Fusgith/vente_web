@@ -14,7 +14,7 @@ import { INDIGO, INK, INK_2, PDF_FONT, RULE, SAFFRON_SOFT } from '../style.js';
 
 export interface QuoteDocumentContext {
   legal: StoreLegal;
-  /** The shop's day of the last save, then the last day of validity (RG-DEV-02), as printed. */
+  /** The shop's day the quote was created, then its last day of validity (RG-DEV-02, H27). */
   issuedOn: string;
   validUntil: string;
 }
