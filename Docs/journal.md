@@ -2,6 +2,34 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 26/09/2026 — Décisions H14 à H28 appliquées — agent : Claude Code (Opus 5.5)
+
+**Décisions de l'utilisateur** (CDC métier v0.7, §16.5) :
+- validées telles quelles : H14, H16, H17, H19, H23, H24, H25, H28 ;
+- H15 : plafonds de remise fixés par le boss seul ; plus de colonne de plafond à l'import ;
+- H20 : l'admin ne pose jamais le mot de passe du boss ; code d'activation à usage unique (24 h) remis au boss (RG-USR-10) ;
+- H21 : une session par personne, une nouvelle connexion ferme l'ancienne ; poste obligatoire dans le magasin (RG-USR-09) ;
+- H26 : deux téléphones au plus par client ;
+- H27 : devis daté du jour de sa création.
+
+**Fait** :
+- CDC métier v0.7 : règles démarquées, RG-USR-09/10 ajoutées, RG-REM-01, RG-DEV-04, RG-FAC-06, annexes A et B mises à jour ; `CLAUDE.md` : plus d'hypothèse ouverte ; commentaires du code : décisions citées au lieu des ⚠️.
+- H27 (`eab1c8f`) : le PDF du devis porte le jour de création, validité comptée depuis.
+- H20 (`933f455`) : `PUT /users/:id/password` refuse un compte boss (`OWNER_PASSWORD_SELF_ONLY`).
+- H21 (`d173cbc`) : la connexion verrouille le compte et ferme ses autres sessions (`auth.session_replaced`) ; trois connexions simultanées laissent une seule session. Sept tests qui ouvraient deux sessions d'une même personne ont été réécrits.
+- H26 (`3c860be`) : colonne `second_phone` ; table `customer_phones` tenue par un déclencheur, dont la clé garantit qu'un numéro n'appartient qu'à un client actif ; recherche sur les deux numéros ; formulaire de la tablette avec second téléphone facultatif. Migration appliquée sur base vide et sur base existante ; schéma Prisma et base concordent.
+- Vérifications : `format:check`, `lint`, `typecheck`, `build`, seed lancé deux fois, 375 tests verts.
+
+**Reste, inscrit au backlog** :
+- T-016 : code d'activation du boss ;
+- T-015 : poste obligatoire à la connexion dans le magasin ;
+- T-024 (nouvelle) : saisie des plafonds par le boss ;
+- T-020 : import sans colonne de plafond.
+
+**Point de vigilance** : une tablette dont la session a été remplacée revient à l'écran de connexion avec « Connexion requise », sans dire qu'une connexion a eu lieu ailleurs.
+
+**Questions ouvertes** : aucune.
+
 ## 26/09/2026 — T-018 temps réel (Socket.IO) — agent : Claude Code (Opus 5.5)
 
 **Fait** :
