@@ -80,7 +80,10 @@ export async function adminSetPin(
   await storePin(db, actor, target, pin);
 }
 
-/** Same for the password, `owner` included: the admin is trusted, and every reset is audited. */
+/**
+ * Same for the password, never the owner's: only the owner knows and chooses it (RG-USR-10,
+ * decision H20); a one-time activation code will let them set it (T-016).
+ */
 export async function adminSetPassword(
   db: Db,
   actor: Actor,
@@ -88,6 +91,7 @@ export async function adminSetPassword(
   password: string,
 ): Promise<void> {
   const target = await loadUser(db, targetId);
+  if (target.roles.includes('owner')) throw new AppError(403, 'OWNER_PASSWORD_SELF_ONLY');
   await storePassword(db, actor, target, password);
 }
 

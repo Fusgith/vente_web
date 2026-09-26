@@ -152,22 +152,42 @@ describe.skipIf(!TEST_DATABASE_URL)('admin credential management (/users/:id/*, 
   });
 
   it('sets a password, refusing a PIN on a non-operational account', async () => {
-    const boss = await createUser(t.db, { username: 'boss', roles: ['owner'] });
-    const pin = await request(t.app, 'PUT', `/api/v1/users/${boss.id}/pin`, {
+    const other = await createUser(t.db, { username: 'adm2', roles: ['admin'] });
+    const pin = await request(t.app, 'PUT', `/api/v1/users/${other.id}/pin`, {
       cookie: adminCookie,
       body: { pin: '1234' },
     });
     expect(pin.statusCode).toBe(400);
     expect(pin.json().code).toBe('PIN_REQUIRES_OPERATIONAL_ROLE');
 
-    const password = await request(t.app, 'PUT', `/api/v1/users/${boss.id}/password`, {
+    const password = await request(t.app, 'PUT', `/api/v1/users/${other.id}/password`, {
       cookie: adminCookie,
-      body: { password: 'Boss-1234!' },
+      body: { password: 'Admin2-1234!' },
     });
     expect(password.statusCode).toBe(204);
     expect(
-      (await login(t.app, { username: 'boss', role: 'owner', password: 'Boss-1234!' })).response
+      (await login(t.app, { username: 'adm2', role: 'admin', password: 'Admin2-1234!' })).response
         .statusCode,
     ).toBe(200);
+  });
+
+  it('never sets the owner’s password: the owner alone chooses it (RG-USR-10)', async () => {
+    const boss = await createUser(t.db, {
+      username: 'boss',
+      roles: ['owner'],
+      password: 'Boss-1234!',
+    });
+    const response = await request(t.app, 'PUT', `/api/v1/users/${boss.id}/password`, {
+      cookie: adminCookie,
+      body: { password: 'Admin-knows-1!' },
+    });
+    expect(response.statusCode).toBe(403);
+    expect(response.json().code).toBe('OWNER_PASSWORD_SELF_ONLY');
+    expect(
+      (await login(t.app, { username: 'boss', role: 'owner', password: 'Admin-knows-1!' })).response
+        .statusCode,
+    ).toBe(401);
+    // Nothing changed: the only trace is the failed login with the admin's password.
+    expect(await auditActions(t.db, boss.id)).toEqual(['auth.login_failed']);
   });
 });
