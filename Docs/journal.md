@@ -2,6 +2,30 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 26/09/2026 — T-018 temps réel (Socket.IO) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- API, avec 9 tests (4 d'intégration sur un vrai serveur, 5 unitaires) :
+  - Socket.IO sur le serveur HTTP de l'API, WebSocket seul ;
+  - poignée de main refusée sans `Origin` du site (ou avec un `Sec-Fetch-Site` autre que `same-origin`), sans session valide, ou pour une session du magasin présentée de l'extérieur ;
+  - session contrôlée par les règles HTTP sans prolonger l'inactivité, recontrôlée toutes les 30 s : session finie ou rôle changé → connexion coupée ;
+  - salles par rôle, utilisateur, poste et file, déduites de la session ;
+  - à la validation d'une commande : `queue.changed` à la file caisse, `order.status_changed` au responsable, au boss et au commercial ; identifiants seulement, émis après la transaction.
+- Web, avec 4 tests : une connexion par session et par rôle, reconnexion au changement de rôle, fermeture à la déconnexion ; `useRealtimeEvent` ignore toute charge utile hors schéma. Premier écran branché : la caisse relit la commande et affiche « Nouvelle commande en file caisse : A15 — Rasoa Hanta » (RG-CMD-03).
+- Vérifié dans l'application réelle (API + Vite, deux navigateurs) : la tablette valide, la caisse reçoit l'annonce.
+- Vérifications : `format:check`, `lint`, `typecheck`, `build` et 366 tests verts.
+
+**Dépendances** :
+- `socket.io` 4.8 (API) : prévu par ADR-0003 ; salles, reconnexion et diffusion prêtes à l'emploi. Écartés : `ws` seul (salles et reconnexion à réécrire), SSE (pas de canal par salle côté client, reconnexion moins maîtrisée).
+- `socket.io-client` 4.8 (web ; aussi en développement dans l'API pour les tests) : 41,9 ko minifié, 13 ko compressé.
+
+**Décisions** :
+- WebSocket seul, sans requêtes de repli : rien d'autre que la poignée de main à protéger contre les requêtes intersites.
+- Salle `user:<id>` en plus du CDC : les tablettes du commercial, faute de poste appairé (T-015).
+- Rien n'est écrit en base par le temps réel : un événement perdu (coupure) est rattrapé en relisant la ressource ; les écrans de file (T-040) relisent la file à la reconnexion.
+
+**Reste** : T-018 terminée. Suivant au backlog. Questions ouvertes inchangées : H28, H27, H26, H23, H24, H20 ; H14–H17, H19, H21, H25.
+
 ## 26/09/2026 — T-032 validation de commande — agent : Claude Code (Opus 5.5)
 
 **Fait** :
