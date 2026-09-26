@@ -2,6 +2,34 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 26/09/2026 — T-030 devis : PDF A4 (étape d), T-030 terminée — agent : Claude Code (Opus 5.5)
+
+**Fait** (`eeec587`) :
+- API : `GET /quotes/:id/pdf` produit le devis enregistré en A4 (RG-DEV-05, RG-FAC-06, RG-FAC-07) :
+  - en-tête : mentions légales du paramètre `store.legal`, seulement les champs remplis, jamais le nom de l'application (RG-APP-01) ; à droite « Devis », le numéro, la date, la validité et le commercial ;
+  - client avec un liseré indigo, puis le même tableau et les mêmes totaux que l'écran ; l'en-tête du tableau se répète sur chaque page et une ligne n'est jamais coupée ;
+  - mention « Devis — valable jusqu'au … — ne vaut pas facture » sur fond safran ; pied de page : texte libre de `store.legal` et « Devis D-… — page 1 sur 3 » ;
+  - mêmes lecteurs que le devis (le magasinier est refusé) ; ouvert dans le navigateur (`inline`), jamais mis en cache.
+- Tablette : une fois le devis enregistré et inchangé, le bouton d'enregistrement cède la place à « Ouvrir le PDF », qui ouvre un onglet où imprimer ou partager (RG-PDF-01). Nouvelle icône `document`.
+- Dépendances (API) :
+  - `pdfmake` : produit le PDF côté serveur sans navigateur sans interface (CDC technique §9, ADR-0003) ; tableaux, pagination et en-têtes répétés inclus ;
+  - `@fontsource/asap` : les fichiers de la police Asap des écrans, embarqués dans chaque PDF (rien ne dépend des polices du serveur) ;
+  - `@types/pdfmake` (développement).
+  pdfmake ne lit que ces fichiers de police : aucune adresse réseau, aucun autre fichier.
+- Vérifications : `format:check`, `lint`, `typecheck` et 323 tests verts (7 nouveaux : dates du magasin, gabarit, route) ; PDF d'exemple de 6 et 40 lignes contrôlés à l'écran.
+
+**Décisions** :
+- Le PDF est refait à chaque ouverture depuis le devis enregistré, jamais conservé : un devis change jusqu'à sa validation, et seule la facture est figée (RG-FAC-04).
+- ⚠️ H27 (CDC métier §16.2) : date du devis = son dernier enregistrement ; validité = `quote_validity_days` jours après, à l'heure du magasin.
+- Le lien n'apparaît que sur un devis enregistré et non modifié : le PDF ne montre jamais autre chose que ce qui est enregistré.
+
+**Points de vigilance** :
+- Pas de TVA sur le devis tant qu'elle est désactivée (RG-FAC-03) ; à reprendre quand elle sera activable.
+- Asap n'a pas de glyphe pour l'espace fine insécable (U+202F) : les montants utilisent l'espace insécable ordinaire, qui s'affiche bien.
+- T-080 (paquet du serveur) devra embarquer les fichiers de police de `@fontsource/asap` ; `pnpm dist` ne construit encore que l'application web.
+
+**Reste** : T-030 terminée. Suivant au backlog.
+
 ## 26/09/2026 — T-030 devis : enregistrement (étape c) — agent : Claude Code (Opus 5.5)
 
 **Fait** :

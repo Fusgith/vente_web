@@ -1,6 +1,6 @@
 # Cahier des charges MÉTIER — Vente Web
 
-Version 0.6 — 26/09/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16), **corrections du 23/09/2026** (§16.3), **décisions du 25/09/2026** (§16.4, dont H22) ; ADR 0001–0006 acceptés ; points à confirmer : H14–H17, H19–H21 (auth, T-012), H23 (remise sur le total), H24 (borne libre-service), H25 (nom de l'application), H26 (téléphone et fusion des clients).
+Version 0.6 — 26/09/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16), **corrections du 23/09/2026** (§16.3), **décisions du 25/09/2026** (§16.4, dont H22) ; ADR 0001–0006 acceptés ; points à confirmer : H14–H17, H19–H21 (auth, T-012), H23 (remise sur le total), H24 (borne libre-service), H25 (nom de l'application), H26 (téléphone et fusion des clients), H27 (date et validité du devis imprimé).
 
 Nouveautés v0.6 : écran du devis allégé — le disponible converti et le plafond de chaque unité s'affichent sur le pavé de quantité, les catégories s'ouvrent en grosses tuiles quel que soit leur nombre (RG-DEV-06, ADR-0005) ; **nom de l'application fixé avant la distribution** (RG-APP-01, ADR-0006).
 
@@ -313,7 +313,7 @@ Principe *(décisions H4, H5, H13)* : les remises sont **paramétrées d'avance*
 - **RG-FAC-03** TVA : paramètres `vat_enabled` (défaut **non**), `vat_rate` (défaut 20 %), `prices_include_vat` (défaut oui). Si désactivée : aucune ligne TVA, mention paramétrable (ex. « TVA non applicable »).
 - **RG-FAC-04** Le PDF est généré et **stocké** à l'émission ; toute réimpression restitue le même fichier (jamais régénéré avec les paramètres du moment).
 - **RG-FAC-05** Avoir : `AV-AAAA-nnnnnn`, séquentiel sans trou, référence la facture d'origine, motif, remboursement (moyen, référence, montant).
-- **RG-FAC-06** Devis PDF : mention « Devis — valable jusqu'au JJ/MM/AAAA — ne vaut pas facture ».
+- **RG-FAC-06** Devis PDF : mention « Devis — valable jusqu'au JJ/MM/AAAA — ne vaut pas facture ». *(Date et point de départ de la validité ⚠️ HYPOTHÈSE H27.)*
 - **RG-FAC-07** Mentions légales paramétrables : raison sociale, adresse, téléphone, **NIF, STAT, RCS**, logo, texte de pied de page. *(Décision H9.)*
 
 ### 6.6 Sessions et clôtures de caisse
@@ -480,6 +480,7 @@ Les ADR 0001 à 0004 ont été **acceptés** par l'utilisateur le 21/09/2026.
 | H25 | **Nom de l'application** : fixé à la construction, non modifiable par l'admin ; nom de 1 à 40 caractères ; nom court sous l'icône de 12 caractères au plus ; le logo (T-010c) et les couleurs ne changent pas avec le nom | RG-APP-01, ADR-0006 | Nom modifiable par l'admin dans les paramètres ; logo et couleurs propres à chaque magasin |
 | H24 | **Borne libre-service** (C6) : dans le lot MVP (dernière tâche de la vente) ; le panier devient un devis repris par un commercial, qui seul valide ; aucune remise à la borne ; stock affiché « disponible / épuisé » sans quantité ; remise à zéro après 2 min d'inactivité ; 20 paniers par heure et par borne au plus | §5.10, RG-BOR-01 à 06, §13 | Lot V1.1 ; validation directe à la caisse sans commercial ; commande depuis le téléphone du client (QR code en magasin) [V2] |
 | H26 | **Téléphone et fusion des clients** (T-029) : numéro malgache de 10 chiffres commençant par 0 (`+261`, `00261` et `261` convertis), ou numéro étranger en `+indicatif` suivi de 8 à 15 chiffres ; enregistré sans espaces, affiché `034 12 345 67` ; un seul client actif par numéro. La fusion désactive la fiche en double, qui pointe vers la fiche conservée ; ses devis, commandes et factures restent sur elle (facture figée, RG-FAC-02) et la fiche du client les regroupe | RG-DEV-04 | Plusieurs téléphones par client ; historique déplacé vers la fiche conservée |
+| H27 | **Date et validité du devis imprimé** (T-030) : le devis porte la date de son dernier enregistrement, jour où ses prix ont été fixés ; il est valable le nombre de jours du paramètre `quote_validity_days` après (défaut 7, RG-DEV-02), jours comptés à l'heure du magasin. Le PDF est refait à chaque ouverture depuis le devis enregistré, jamais conservé (seule la facture est figée, RG-FAC-04) ; il ne s'ouvre que sur un devis enregistré et non modifié depuis. La TVA n'y figure pas tant qu'elle est désactivée (RG-FAC-03) | RG-DEV-02, RG-FAC-06 | Date de création du devis ; PDF conservé à chaque version |
 
 ### 16.3 Corrections de l'utilisateur du 23/09/2026
 
