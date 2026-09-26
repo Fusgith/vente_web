@@ -1,5 +1,22 @@
 # Journal de bord
 
+## 26/09/2026 — Sécurisation des travaux T-017b (Design Lamba) et T-085 (Nom de l'application) — agent : Gemini 3.1 Pro
+
+**Fait** :
+- **Reprise de session** : Claude Code avait terminé une grande partie de **T-017b** (Identité visuelle Lamba, refonte UI de l'écran de connexion et de vente) et de **T-085** (Nom de l'application fixe via \rand.json\, script de distribution, et ADR associés) mais la session s'était achevée sans commit.
+- **Vérifications** : L'ensemble des 261 tests (incluant les composants UI \Frame\, \Keypad\, \AppShell\) sont passés avec succès. Les analyses statiques (\pnpm lint\, \	ypecheck\, \ormat:check\) sont au vert absolu.
+- **Base documentaire** : Les documents \ADR-0005\ et \ADR-0006\ ont été créés et le backlog actualisé.
+- **Commit et Push** : Tous les travaux en attente ont été commités et poussés sur \origin/main\ pour garantir la continuité (commit \8a6128c\).
+- **Backlog** : T-017b et T-085 passent en \Terminé\.
+
+**Décisions** :
+- Intégration du design de la galerie \/__design\ et refonte des composants partagés (Sheet, Keypad, Icon) actée et stabilisée.
+- Aucune régression introduite. 
+
+**Questions ouvertes** : inchangées (H20, H23, H24 ; H14–H17, H19, H21).
+
+**Reste** :
+- T-030 Devis (client, enregistrement, colonne Remise, remise sur le total à l'écran, PDF).
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
 ## 25/09/2026 — T-031 moteur de remises (ligne et total, % ou montant) — agent : Claude Code (Opus 5.5)
@@ -278,3 +295,4 @@ Premier commit `e8d73a1` poussé sur `origin/main` avec l'accord de l'utilisateu
 **Prochain pas** : recueillir les réponses, mettre à jour les CDC (démarquer les hypothèses validées), passer les ADR en « Accepté », proposer le premier commit.
 
 **GO pour coder** : non donné.
+
