@@ -153,10 +153,20 @@ describe.skipIf(!TEST_DATABASE_URL)('account lockout (RG-USR-05, H19)', () => {
     const statuses = results.map((r) => r.response.statusCode).sort();
     expect(statuses).toEqual([401, 401, 401, 401, 401, 423, 423, 423]);
     expect((await vola()).failedLoginCount).toBe(5);
-    expect(await auditActions(t.db, volaId)).toEqual([
-      ...Array<string>(5).fill('auth.login_failed'),
+    // Entries follow the order in which the racing requests finish verifying, not the order of
+    // their slots: the lock may be written before a slower failure of the same window.
+    expect((await auditActions(t.db, volaId)).sort()).toEqual([
       'auth.locked',
+      ...Array<string>(5).fill('auth.login_failed'),
     ]);
+    const failures = await t.db.auditLog.findMany({
+      where: { entityId: volaId, action: 'auth.login_failed' },
+      select: { after: true },
+    });
+    const counts = failures.map(
+      (row) => (row.after as { failedLoginCount: number }).failedLoginCount,
+    );
+    expect(counts.sort()).toEqual([1, 2, 3, 4, 5]);
   });
 
   describe('with a password session enrolling TOTP (H20)', () => {
