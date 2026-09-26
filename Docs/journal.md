@@ -2,6 +2,21 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 26/09/2026 — Tableaux : « MGA » une seule fois, dans l'en-tête — agent : Claude Code (Opus 5.5)
+
+**Demande de l'utilisateur** : « pour tout ce qui est tableau, ne mets pas MGA partout dans les colonnes de montant pour gagner de l'espace ».
+
+**Fait** (`ebd700c`) :
+- RG-FMT-01 et RG-DEV-05 amendées (CDC métier), invariant de `CLAUDE.md` aussi : dans un tableau, les cellules de montant montrent le nombre seul (`1 500,00`) et l'en-tête porte « (MGA) » une seule fois, en deuxième ligne.
+- Partagé : `CURRENCY` et `formatAmount` (le nombre seul) ; `formatMga` s'appuie dessus.
+- Tablette : Prix unitaire, Remise et Montant net portent « (MGA) » sous leur nom ; ces colonnes rétrécissent et la Désignation gagne 56 px. Sans défilement horizontal en paysage (1280 × 800) comme en portrait (800 × 1280) ; 15 000 000,00 tient encore.
+- PDF A4 : mêmes en-têtes, calés en bas ; colonnes de montants plus étroites.
+- Vérifications : `format:check`, `lint`, `typecheck` et 324 tests verts ; écran et PDF contrôlés à l'œil.
+
+**Décision** : les totaux sous le tableau, les cartes d'articles, le pavé et les phrases gardent « MGA » après chaque montant : ils sont lus isolément, sans en-tête de colonne.
+
+**Reste** : suivant au backlog (T-032). Question ouverte : H27, date du devis.
+
 ## 26/09/2026 — T-030 devis : PDF A4 (étape d), T-030 terminée — agent : Claude Code (Opus 5.5)
 
 **Fait** (`eeec587`) :
