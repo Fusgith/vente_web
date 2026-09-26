@@ -217,7 +217,7 @@ function Sales({ draft, search, news = null }: SalesProps) {
   const me = demoMe('sales');
   return (
     <DemoAuth state={{ status: 'authenticated', me }}>
-      <AppShell me={me}>
+      <AppShell me={me} realtime={false}>
         <SalesWorkspace initialDraft={draft} />
         <DemoNews news={news} />
       </AppShell>
@@ -309,7 +309,7 @@ function ScreenView({ screen }: { screen: Screen }) {
       const me = demoMe(screen === 'caisse' ? 'cashier' : 'manager');
       return (
         <DemoAuth state={{ status: 'authenticated', me }}>
-          <AppShell me={me} />
+          <AppShell me={me} realtime={false} />
         </DemoAuth>
       );
     }

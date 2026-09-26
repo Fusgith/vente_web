@@ -67,6 +67,7 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 | Ligne d'état | `status_line` | Bandeau bas du cadre : la seule phrase d'état de l'écran (« Ajouté : … », erreurs). |
 | Nom de l'application | `app_name` | Nom affiché de l'application, fixé à la construction (RG-APP-01, ADR-0006) ; distinct de la raison sociale. |
 | Version distribuable | `dist` | Application construite au nom voulu, rangée dans `Dist/` pour le déploiement (ADR-0006). |
+| Temps réel | `realtime` | Canal Socket.IO par lequel le serveur signale un changement (file, état d'une commande) ; l'écran relit alors la ressource par l'API. |
 | Tableau de bord | `dashboard` | Indicateurs du boss et du responsable. |
 | TVA | `vat` | Taxe optionnelle. |
 | Ariary | `MGA` | Devise (code ISO 4217). Les montants s'affichent avec le sigle « MGA » (`1 250 000,00 MGA`) ; « Ariary » en toutes lettres ; jamais « Ar » (RG-FMT-01). |

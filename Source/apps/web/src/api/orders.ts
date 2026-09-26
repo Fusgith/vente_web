@@ -9,6 +9,10 @@ import { ApiError, apiRequest, parseResponse } from './client.js';
 
 /** Orders (T-032, RG-CMD-03): the API freezes the prices, reserves the stock, gives the ticket. */
 export const ordersApi = {
+  async get(id: string): Promise<Order> {
+    return parseResponse(orderSchema, await apiRequest(`/orders/${id}`));
+  },
+
   /** Validates the quote saved under `version`, the one last read. */
   async submit(id: string, version: number): Promise<Order> {
     const data = await apiRequest(`/orders/${id}/submit`, { method: 'POST', body: { version } });

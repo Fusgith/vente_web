@@ -80,6 +80,14 @@ const userSelect = {
   totpEnabledAt: true,
 } as const;
 
+export interface ResolveOptions {
+  /**
+   * Whether this use counts as activity (`last_seen_at`). A request does; a realtime connection
+   * does not, or an open socket would keep an idle session alive for ever (T-018).
+   */
+  touch?: boolean;
+}
+
 /**
  * Turns a cookie token into an auth context, enforcing every per-request rule of CDC technique
  * §8: lifetime, active account, role still held, origin (a LAN session never works remotely),
@@ -90,9 +98,21 @@ export async function resolveSession(
   token: string,
   requestOrigin: AccessOrigin,
   now = new Date(),
+  options: ResolveOptions = {},
+): Promise<SessionResolution> {
+  return resolveSessionHash(db, hashSessionToken(token), requestOrigin, now, options);
+}
+
+/** `resolveSession` from the stored hash, for a connection that keeps it rather than the token. */
+export async function resolveSessionHash(
+  db: Db,
+  tokenHash: string,
+  requestOrigin: AccessOrigin,
+  now = new Date(),
+  { touch = true }: ResolveOptions = {},
 ): Promise<SessionResolution> {
   const row = await db.session.findUnique({
-    where: { tokenHash: hashSessionToken(token) },
+    where: { tokenHash },
     include: { user: { select: userSelect }, station: { select: { type: true } } },
   });
   if (!row) return { auth: null, failure: 'AUTH_REQUIRED' };
@@ -130,7 +150,7 @@ export async function resolveSession(
   if (idleMs > idleMinutes * 60_000 + TOUCH_INTERVAL_MS) {
     return end('auth.session_expired', 'idle', 'AUTH_SESSION_IDLE');
   }
-  if (idleMs > TOUCH_INTERVAL_MS) {
+  if (touch && idleMs > TOUCH_INTERVAL_MS) {
     await db.session.updateMany({ where: { id: row.id }, data: { lastSeenAt: now } });
   }
 

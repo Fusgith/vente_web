@@ -234,6 +234,12 @@ export const labels = {
     },
   },
 
+  /** The register (T-040 onwards); for now, orders entering its queue (RG-CMD-03). */
+  register: {
+    newOrder: (ticket: string, name: string) =>
+      `Nouvelle commande en file caisse : ${ticket} — ${name}`,
+  },
+
   /** One workspace per active role (annexe B). */
   workspaces: {
     sales: { title: 'Ventes', summary: 'Devis et commandes sur tablette.' },

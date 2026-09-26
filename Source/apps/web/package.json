@@ -15,7 +15,8 @@
     "@fontsource/asap": "^5.3.0",
     "@vente-web/shared": "workspace:*",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "socket.io-client": "^4.8.4"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

@@ -15,5 +15,6 @@ export { addQuantities, baseQuantity, isQuantity, lineGross, sumAmounts } from '
 export * from './discount.js';
 export * from './orders.js';
 export * from './quotes.js';
+export * from './realtime.js';
 export { ROLE_LABELS } from './role-labels.js';
 export { ERROR_LABELS, isErrorCode, type ApiErrorBody, type ErrorCode } from './error-labels.js';

@@ -200,6 +200,13 @@ Salles : `role:<role>`, `station:<id>`, `queue:register`, `queue:delivery`, `dis
 
 Le client applique l'événement puis **revalide** la ressource via l'API (jamais de confiance aveugle dans le contenu d'un événement).
 
+Mise en œuvre (T-018, 26/09/2026) :
+- Socket.IO sur le serveur HTTP de l'API, chemin `/socket.io`, **WebSocket seul** (pas de requêtes de repli, donc aucune requête modifiante à protéger au-delà de la poignée de main).
+- Poignée de main refusée si l'`Origin` n'est pas exactement celle du site (schéma et hôte, lus dans `X-Forwarded-*` du seul proxy de confiance) ou si `Sec-Fetch-Site` dit autre chose que `same-origin` : une page d'un autre site ne peut pas ouvrir de connexion avec le cookie du magasin.
+- La connexion est la session de son cookie, contrôlée par les règles HTTP (durée, compte actif, rôle détenu, origine LAN/REMOTE, inactivité) **sans compter comme activité** ; elle garde le haché du jeton, jamais le jeton. Chaque connexion est recontrôlée toutes les 30 s : session finie ou rôle changé → connexion coupée (le client se reconnecte avec son nouveau rôle).
+- Salles déduites de la session, jamais demandées par le client : `role:<rôle>`, `user:<id>` (les tablettes du commercial, à défaut de poste appairé, T-015), `station:<id>` si un poste est donné, `queue:register` (caissier, responsable, boss), `queue:delivery` (magasinier, responsable, boss). Les salles `order:<id>` et `display` viendront avec leurs écrans (T-040, T-041).
+- Événements : identifiants seulement, schémas zod partagés (`packages/shared/src/realtime.ts`) vérifiés par le client ; émis par la route **après** la validation de la transaction. En service : `queue.changed` et `order.status_changed` à la validation d'une commande.
+
 ## 7. Front (PWA)
 
 - Une application, un espace par rôle ; navigation limitée au rôle actif ; sélecteur de rôle pour les cumuls.

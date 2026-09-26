@@ -13,6 +13,7 @@ import { AppError, registerErrorHandler } from './errors.js';
 import { accessOriginPlugin } from './plugins/access-origin.js';
 import { csrfPlugin } from './plugins/csrf.js';
 import { dbPlugin } from './plugins/db.js';
+import { realtimePlugin } from './plugins/realtime.js';
 import { sessionPlugin } from './plugins/session.js';
 import { healthRoutes } from './routes/health.js';
 import { apiRoutes } from './routes/index.js';
@@ -26,6 +27,8 @@ export interface BuildAppOptions {
   db?: Db;
   /** Override Fastify options (tests pass `logger: false`). */
   fastify?: ServerOptions;
+  /** Tests check the realtime sessions on demand rather than every 30 s. */
+  realtime?: { revalidateMs?: number };
 }
 
 function loggerOptions(env: Env): LoggerOptions {
@@ -65,6 +68,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   });
   await app.register(csrfPlugin);
   await app.register(sessionPlugin, { env });
+  await app.register(realtimePlugin, { env, ...options.realtime });
 
   await app.register(healthRoutes);
   await app.register(apiRoutes, { env, prefix: '/api/v1' });

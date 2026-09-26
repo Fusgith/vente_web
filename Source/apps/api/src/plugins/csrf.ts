@@ -26,15 +26,24 @@ export function isCsrfSafe(input: CsrfInput): boolean {
   if (input.secFetchSite !== undefined) {
     return input.secFetchSite === 'same-origin' || input.secFetchSite === 'none';
   }
-  if (typeof input.origin !== 'string') return false;
+  return isSameOrigin(input.origin, input.protocol, input.host);
+}
+
+/** The `Origin` header is exactly ours: same scheme, same host and port. */
+export function isSameOrigin(
+  originHeader: string | string[] | undefined,
+  protocol: string,
+  requestHost: string,
+): boolean {
+  if (typeof originHeader !== 'string') return false;
   try {
-    const origin = new URL(input.origin);
-    if (origin.protocol !== `${input.protocol}:`) return false;
+    const origin = new URL(originHeader);
+    if (origin.protocol !== `${protocol}:`) return false;
     // `URL` drops the scheme's default port; a Host header may still carry it explicitly.
     const defaultPort = origin.protocol === 'https:' ? ':443' : ':80';
-    const host = input.host.endsWith(defaultPort)
-      ? input.host.slice(0, -defaultPort.length)
-      : input.host;
+    const host = requestHost.endsWith(defaultPort)
+      ? requestHost.slice(0, -defaultPort.length)
+      : requestHost;
     return origin.host === host;
   } catch {
     return false;

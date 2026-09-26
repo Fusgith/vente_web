@@ -6,6 +6,8 @@ import { useAuth } from '../auth/context.js';
 import { switchableRoles } from '../auth/roles.js';
 import { useIdleLock } from '../auth/useIdleLock.js';
 import { labels } from '../labels.js';
+import { RealtimeProvider } from '../realtime/RealtimeProvider.js';
+import { RegisterQueueNotices } from '../register/RegisterQueueNotices.js';
 import { SalesWorkspace } from '../sales/SalesWorkspace.js';
 import { buttonClass, sheetClass } from '../ui/button.js';
 import { Icon } from '../ui/Icon.js';
@@ -17,21 +19,25 @@ interface AppShellProps {
   me: AuthMe;
   /** Stands in for the workspace (the design gallery shows it with demo lines). */
   children?: ReactNode;
+  /** The realtime channel (T-018); off in the design gallery, which has no server. */
+  realtime?: boolean;
 }
 
 /**
  * Signed-in frame: the lamba in the active role's colour, who is signed in, which role, sign out;
  * one workspace per active role. Its bottom band is the workspace's status line.
  */
-export function AppShell({ me, children }: AppShellProps) {
+export function AppShell({ me, children, realtime = true }: AppShellProps) {
   return (
-    <StatusLineProvider>
-      <Shell me={me}>{children}</Shell>
-    </StatusLineProvider>
+    <RealtimeProvider me={me} enabled={realtime}>
+      <StatusLineProvider>
+        <Shell me={me}>{children}</Shell>
+      </StatusLineProvider>
+    </RealtimeProvider>
   );
 }
 
-function Shell({ me, children }: AppShellProps) {
+function Shell({ me, children }: Omit<AppShellProps, 'realtime'>) {
   const { signOut, lock, keepAlive, switchRole } = useAuth();
   const { sayError, clear } = useStatusLine();
   const [busy, setBusy] = useState(false);
@@ -113,6 +119,7 @@ function Workspace({ role }: { role: Role }) {
   const workspace = labels.workspaces[role];
   return (
     <section className={`${sheetClass} mx-auto mt-8 flex w-full max-w-2xl flex-col gap-3 p-8`}>
+      {role === 'cashier' && <RegisterQueueNotices />}
       <h1 className="type-title">{workspace.title}</h1>
       <p className="text-18 text-ink">{workspace.summary}</p>
       <p className="mt-3 flex items-center gap-3 border-t border-rule pt-5 text-ink-2">

@@ -1,0 +1,26 @@
+/**
+ * Realtime events (CDC technique §6.1). They carry identifiers only: a screen that receives one
+ * reads the resource again through the API, with its own rights, and never trusts the event's
+ * content blindly. WebSocket only, same origin, authenticated by the session cookie (T-018).
+ */
+import { z } from 'zod';
+
+import { orderStatusSchema } from './orders.js';
+
+export const REALTIME_PATH = '/socket.io';
+
+export const queueNameSchema = z.enum(['register', 'delivery']);
+export type QueueName = z.infer<typeof queueNameSchema>;
+
+/** Each event's payload, which a screen checks before using it: an event is a hint, not data. */
+export const realtimePayloadSchemas = {
+  /** An order entered, left or moved in a queue (RG-FIL-01). */
+  'queue.changed': z.object({ queue: queueNameSchema, orderId: z.uuid() }),
+  /** Any transition of an order (RG-CMD-06). */
+  'order.status_changed': z.object({ orderId: z.uuid(), status: orderStatusSchema }),
+};
+
+export type RealtimeEvent = keyof typeof realtimePayloadSchemas;
+export type RealtimeEvents = {
+  [E in RealtimeEvent]: z.infer<(typeof realtimePayloadSchemas)[E]>;
+};

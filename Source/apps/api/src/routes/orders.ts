@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { actorOf, authOf, requireRole } from '../plugins/session.js';
 import { loadOrder, submitOrder } from '../services/orders.js';
+import { orderSubmitted } from '../services/realtime-rooms.js';
 
 const paramsSchema = z.object({ id: z.uuid() });
 
@@ -28,7 +29,10 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
     async (request): Promise<Order> => {
       const { id } = paramsSchema.parse(request.params);
       const body = orderSubmitSchema.parse(request.body);
-      return submitOrder(app.db, actorOf(authOf(request)), id, body);
+      const order = await submitOrder(app.db, actorOf(authOf(request)), id, body);
+      // Committed: the cashiers see the order enter their queue (RG-CMD-03).
+      app.realtime.publish(orderSubmitted({ id: order.id, salesUserId: order.salesUser.id }));
+      return order;
     },
   );
 };
