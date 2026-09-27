@@ -56,6 +56,8 @@ export const quoteLineSchema = z.object({
   gross: decimalString,
   discountPct: decimalString,
   discountAmount: decimalString,
+  /** Where the discount comes from, shown to the cashier (§5.6): the cap, or an owner's code. */
+  discountSource: z.enum(['NONE', 'WITHIN_CAP', 'CODE']),
   /** Gross − line discount. */
   net: decimalString,
 });

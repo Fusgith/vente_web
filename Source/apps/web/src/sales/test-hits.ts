@@ -111,6 +111,7 @@ export function savedQuote(
     gross: '0.00',
     discountPct: '0.00',
     discountAmount: '0.00',
+    discountSource: 'NONE' as const,
     net: '0.00',
   }));
   const zero = '0.00';

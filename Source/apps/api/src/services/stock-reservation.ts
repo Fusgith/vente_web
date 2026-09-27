@@ -82,3 +82,38 @@ export async function reserveStock(
     qty: product.baseQty,
   }));
 }
+
+/**
+ * The reservations of an order brought to what its lines now ask (RG-STK-01): a product whose
+ * lines were lowered frees the difference, one left without any line frees it all. Nothing is
+ * ever added here — only the salesperson validates more (RG-CMD-05b).
+ */
+export async function shrinkReservations(
+  tx: Prisma.TransactionClient,
+  orderId: string,
+  lines: readonly StockDemandLine[],
+): Promise<void> {
+  const asked = new Map(demandByProduct(lines).map((product) => [product.productId, product]));
+  const active = await tx.reservation.findMany({ where: { orderId, status: 'ACTIVE' } });
+  for (const reservation of active) {
+    const now = asked.get(reservation.productId)?.baseQty ?? '0.00';
+    const freed = reservation.qty.minus(now);
+    if (freed.lte(0)) continue;
+    await tx.productStock.update({
+      where: { productId: reservation.productId },
+      data: { reserved: { decrement: freed } },
+    });
+    await tx.reservation.update({
+      where: { id: reservation.id },
+      data: now === '0.00' ? { status: 'RELEASED', closedAt: new Date() } : { qty: now },
+    });
+  }
+}
+
+/** Every active reservation of an order given back to the available stock (RG-ANN-01, RG-STK-01). */
+export async function releaseReservations(
+  tx: Prisma.TransactionClient,
+  orderId: string,
+): Promise<void> {
+  await shrinkReservations(tx, orderId, []);
+}

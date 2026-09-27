@@ -35,6 +35,7 @@ export function toQuote(order: StoredOrder): Quote {
       gross: lineGross(qty, unitPrice),
       discountPct: line.discountPct.toFixed(2),
       discountAmount: line.discountAmount.toFixed(2),
+      discountSource: line.discountSource,
       net: line.lineTotal.toFixed(2),
     };
   });

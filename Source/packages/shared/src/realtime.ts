@@ -18,7 +18,7 @@ export const realtimePayloadSchemas = {
   'queue.changed': z.object({
     queue: queueNameSchema,
     orderId: z.uuid(),
-    change: z.enum(['entered', 'called', 'no_show', 'reordered']),
+    change: z.enum(['entered', 'called', 'no_show', 'reordered', 'updated', 'cancelled']),
   }),
   /** Any transition of an order (RG-CMD-06). */
   'order.status_changed': z.object({ orderId: z.uuid(), status: orderStatusSchema }),

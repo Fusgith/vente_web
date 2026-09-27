@@ -5,8 +5,8 @@
  */
 import { z } from 'zod';
 
-import { fromScaled, toScaled } from './decimal.js';
-import { quoteSchema } from './quotes.js';
+import { fromScaled, isQuantity, toScaled } from './decimal.js';
+import { QUOTE_MAX_LINES, quoteSchema } from './quotes.js';
 
 /** Order lifecycle (CDC métier §5.2). */
 export const ORDER_STATUSES = [
@@ -160,6 +160,33 @@ export function fittingQuantity(available: string, factor: string): string {
   const hundredths = (stock * 1000n) / size;
   return fromScaled(hundredths, 2).replace(/\.?0+$/, '');
 }
+
+/**
+ * Lines lowered or removed at the register, before payment (RG-CMD-05b): by position, `qty` in
+ * the sale unit, lower than it was; `null` removes the line. Never an addition, never a discount
+ * changed: those go through the salesperson (T-035).
+ */
+export const orderAdjustSchema = z.object({
+  version: z.int().positive(),
+  changes: z
+    .array(
+      z.object({
+        position: z.int().positive(),
+        qty: z.string().refine(isQuantity).nullable(),
+      }),
+    )
+    .min(1)
+    .max(QUOTE_MAX_LINES)
+    .refine((changes) => new Set(changes.map((change) => change.position)).size === changes.length),
+});
+export type OrderAdjust = z.infer<typeof orderAdjustSchema>;
+
+/** Cancelling before payment needs a reason (RG-ANN-01). */
+export const orderCancelSchema = z.object({
+  version: z.int().positive(),
+  reason: z.string().trim().min(3).max(300),
+});
+export type OrderCancel = z.infer<typeof orderCancelSchema>;
 
 /** Details of `ORDER_PRICE_CHANGED`: lines whose price in force is no longer the saved one. */
 export interface OrderPriceChanged {

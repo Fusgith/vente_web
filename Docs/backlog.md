@@ -62,7 +62,7 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-040 | MVP | Files caisse/livraison : rang, appel, absence, réordonnancement | Terminé | E04 | RG-FIL ; H29 (validée le 27/09) ; API des deux files et écran de caisse le 26/09 ; appel et absence au comptoir avec T-060 ; glisser-déposer du responsable avec T-042 ; « retirer » = annulation (T-050), « réaffecter » avec T-060 |
 | T-041 | MVP | Écran public optionnel (clé de poste, temps réel, son) et mode appel verbal | À faire | E04 | RG-DSP-01 à 03, RG-DSP-05 |
 | T-042 | MVP | Vue de supervision responsable | À faire | E04 | RG-DSP-04 ; API de réordonnancement et de priorité prête (T-040) |
-| T-050 | MVP | Caisse : contrôle, modifications limitées, saisie de code, blocage sans code | À faire | E05 | RG-CMD-05b, RG-REM-05 |
+| T-050 | MVP | Caisse : contrôle, modifications limitées, saisie de code, blocage sans code | En cours | E05 | RG-CMD-05b, RG-REM-05 |
 | T-051 | MVP | Paiement multi-moyens, rendu, références, idempotence | À faire | E05 | RG-PAY |
 | T-052 | MVP | Numérotation sans trou + facture PDF stockée + test de concurrence | À faire | E05 | RG-FAC-01 à 04 |
 | T-053 | MVP | Avoir total/partiel, remboursement | À faire | E05 | RG-ANN-02/03, RG-FAC-05 |

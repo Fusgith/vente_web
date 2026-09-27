@@ -125,3 +125,13 @@ export function orderNoShow(order: CalledOrder, noShowCount: number): Emission[]
 
 /** RG-FIL-04: « Après 2 absences, le responsable est notifié. » */
 export const NO_SHOWS_BEFORE_NOTICE = 2;
+
+/** Lines lowered or removed at the register: the queue shows the new amount (RG-CMD-05b). */
+export function orderAdjusted(orderId: string): Emission[] {
+  return queueChanged('register', orderId, 'updated');
+}
+
+/** Cancelled before payment: out of the register queue, its ticket closed (RG-ANN-01). */
+export function orderCancelled(order: CalledOrder): Emission[] {
+  return [...queueChanged('register', order.id, 'cancelled'), statusChanged(order, 'CANCELLED')];
+}

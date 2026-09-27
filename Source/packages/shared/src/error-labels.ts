@@ -44,6 +44,12 @@ export const ERROR_LABELS = {
   STOCK_UNAVAILABLE:
     'Stock insuffisant pour valider la commande : réduisez les quantités signalées.',
   QUEUE_EMPTY: 'Aucun client en attente dans cette file.',
+  ORDER_CHANGED:
+    'Cette commande a été modifiée entre-temps : elle vient d’être rechargée, recommencez.',
+  ORDER_NOT_ADJUSTABLE:
+    'Une quantité ne peut que baisser à la caisse : un ajout passe par le commercial.',
+  ORDER_LAST_LINE: 'C’est la dernière ligne : annulez la commande plutôt que de la supprimer.',
+  ORDER_NOT_CANCELLABLE: 'Cette commande ne s’annule plus ici : elle est payée, livrée ou close.',
   REGISTER_BUSY:
     'Un client est déjà à votre caisse : encaissez-le ou déclarez-le absent avant d’en appeler un autre.',
   ORDER_NOT_IN_QUEUE: 'Ce ticket n’attend plus dans la file : la liste a été mise à jour.',
