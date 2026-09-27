@@ -1,6 +1,6 @@
 # Cahier des charges MÉTIER — Vente Web
 
-Version 0.7 — 26/09/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16), **corrections du 23/09/2026** (§16.3), **décisions du 25/09/2026** (§16.4, dont H22), **décisions du 26/09/2026** (§16.5 : H14 à H28) ; ADR 0001–0006 acceptés ; point à confirmer : H29 (files d'attente, T-040).
+Version 0.7 — 26/09/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16), **corrections du 23/09/2026** (§16.3), **décisions du 25/09/2026** (§16.4, dont H22), **décisions du 26/09/2026** (§16.5 : H14 à H28) ; ADR 0001–0006 acceptés , **décision du 27/09/2026** (§16.6 : H29) ; aucun point ouvert.
 
 Nouveautés v0.7 : toutes les hypothèses ouvertes tranchées (§16.5) ; **plafonds de remise fixés par le boss seul** (RG-REM-01) ; **mot de passe du boss choisi par lui seul**, avec un code d'activation (RG-USR-10) ; **une seule session par personne**, et un poste déclaré pour toute connexion dans le magasin (RG-USR-09) ; **deux téléphones au plus par client** (RG-DEV-04) ; devis daté du jour de sa **création** (RG-FAC-06).
 
@@ -211,7 +211,7 @@ Règles :
 
 - **RG-FIL-01** Deux files : **CAISSE** (commandes `SUBMITTED`) et **LIVRAISON** (commandes `PAID`, `PREPARING`, `READY`). Ordre par défaut : ordre d'entrée dans la file.
 - **RG-FIL-02** Le **responsable** peut réordonner (rang), marquer prioritaire, retirer ou réaffecter ; chaque modification est journalisée avec motif facultatif.
-- **RG-FIL-03** *(Modalités ⚠️ HYPOTHÈSE H29.)* Le caissier appelle en priorité le premier de la file ; il peut appeler un ticket précis si le client est devant lui (journalisé). L'appel affiche « A15 → Caisse 2 » sur l'écran public s'il existe (RG-DSP-01), sinon le caissier appelle verbalement le ticket et le nom du client (RG-DSP-05) ; la commande passe en `AT_REGISTER`.
+- **RG-FIL-03** *(Modalités : décision H29, 27/09/2026.)* Le caissier appelle en priorité le premier de la file ; il peut appeler un ticket précis si le client est devant lui (journalisé). L'appel affiche « A15 → Caisse 2 » sur l'écran public s'il existe (RG-DSP-01), sinon le caissier appelle verbalement le ticket et le nom du client (RG-DSP-05) ; la commande passe en `AT_REGISTER`.
 - **RG-FIL-04** Client absent : le caissier clique « Absent » ; la commande revient en file **en dernière position** avec un compteur d'absences ; la réservation continue de courir (RG-STK-02). Après 2 absences, le responsable est notifié.
 - **RG-FIL-05** Le temps d'attente (entrée en file → appel) et le temps de traitement (appel → paiement) sont conservés pour les statistiques.
 - **RG-FIL-06** Les mêmes règles s'appliquent à la file LIVRAISON (appel par le magasinier, absence, réordonnancement), avec autant de comptoirs que déclarés.
@@ -471,11 +471,8 @@ Les ADR 0001 à 0004 ont été **acceptés** par l'utilisateur le 21/09/2026.
 
 ### 16.2 Points nouveaux à confirmer
 
-Les points H14 à H28 ont été tranchés le 26/09/2026 (§16.5). Un nouveau point s'inscrit ici, marqué ⚠️ HYPOTHÈSE dans la règle concernée.
+Aucun au 27/09/2026 : H14 à H28 tranchés le 26/09 (§16.5), H29 le 27/09 (§16.6). Un nouveau point s'inscrit ici, marqué ⚠️ HYPOTHÈSE dans la règle concernée.
 
-| # | Hypothèse | Règle | Alternative |
-|---|---|---|---|
-| H29 | **Files d'attente** (T-040) : un caissier (ou le responsable) n'a qu'**un client à sa caisse** : il l'encaisse ou le déclare absent avant d'en appeler un autre ; « Appeler le suivant » prend le premier de la file, et deux caisses qui appellent au même instant n'ont jamais le même ticket ; seul le caissier qui a appelé le client, ou le responsable, le déclare absent ; un ticket marqué **prioritaire** passe derrière les autres prioritaires et devant tous les autres, et le retrait de la priorité le laisse à sa place ; l'attente affichée court depuis la validation, y compris après une absence (statistiques RG-FIL-05 : attente = validation → dernier appel, traitement = dernier appel → paiement) ; tant que les postes ne sont pas appairés (T-015), l'appel indique le caissier au lieu du nom de la caisse ; le commercial n'est prévenu de l'appel de son ticket qu'en mode appel verbal (sans écran public, RG-DSP-05) | RG-FIL-02/03/04/05, RG-DSP-05 | Plusieurs clients à la fois à une caisse ; prioritaire = tête de file absolue ; attente comptée depuis le retour en file ; commercial toujours prévenu |
 
 ### 16.3 Corrections de l'utilisateur du 23/09/2026
 
@@ -518,6 +515,12 @@ Toutes les hypothèses ouvertes ont été tranchées ; les règles citées ont �
 | H26 | **Téléphone et fusion des clients** (T-029) : numéro malgache de 10 chiffres commençant par 0 (`+261`, `00261` et `261` convertis), ou numéro étranger en `+indicatif` suivi de 8 à 15 chiffres ; enregistré sans espaces, affiché `034 12 345 67` ; un seul client actif par numéro. La fusion désactive la fiche en double, qui pointe vers la fiche conservée ; ses devis, commandes et factures restent sur elle (facture figée, RG-FAC-02) et la fiche du client les regroupe | **OK**, avec **deux téléphones au plus** par client ; un numéro n'appartient qu'à un seul client actif | RG-DEV-04 |
 | H27 | **Date et validité du devis imprimé** (T-030) : le devis porte la date de son dernier enregistrement, jour où ses prix ont été fixés ; il est valable le nombre de jours du paramètre `quote_validity_days` après (défaut 7, RG-DEV-02), jours comptés à l'heure du magasin. Le PDF est refait à chaque ouverture depuis le devis enregistré, jamais conservé (seule la facture est figée, RG-FAC-04) ; il ne s'ouvre que sur un devis enregistré et non modifié depuis. La TVA n'y figure pas tant qu'elle est désactivée (RG-FAC-03) | **Date du devis = date de sa création** ; validité comptée depuis cette date ; PDF toujours refait depuis le devis enregistré | RG-DEV-02, RG-FAC-06 |
 | H28 | **Validation de la commande** (T-032) : la commande garde le **numéro de son devis** (`D-AAAA-nnnnnn`, même objet, §4) ; dans la journée, le ticket l'identifie. Elle porte sur le devis **tel qu'enregistré** : si un prix a changé depuis l'enregistrement, la validation est refusée et la tablette réenregistre le devis au nouveau prix, que le commercial vérifie avec le client avant de valider à nouveau ; les plafonds sont relus au moment de la validation. Un commercial qui valide le devis d'un collègue le reprend tel quel : la commande porte son nom et sa lettre (RG-DEV-03), le créateur du devis reste dans le journal d'audit ; le **responsable** qui valide laisse la commande au commercial du devis, dont la lettre fait le ticket. Un commercial sans lettre de ticket ne peut pas valider. Une réservation par **article** (ses lignes cumulées, RG-CMD-02), jusqu'à la prochaine `day_end_time` : celle du jour, ou celle du lendemain si l'heure est déjà passée | **OK** | RG-CMD-01/02/03/04, RG-DEV-03, RG-STK-02, RG-TKT-01 |
+
+### 16.6 Décisions de l'utilisateur du 27/09/2026
+
+| # | Hypothèse | Décision de l'utilisateur | Règles impactées |
+|---|---|---|---|
+| H29 | **Files d'attente** (T-040) : un caissier (ou le responsable) n'a qu'**un client à sa caisse** : il l'encaisse ou le déclare absent avant d'en appeler un autre ; « Appeler le suivant » prend le premier de la file, et deux caisses qui appellent au même instant n'ont jamais le même ticket ; seul le caissier qui a appelé le client, ou le responsable, le déclare absent ; un ticket marqué **prioritaire** passe derrière les autres prioritaires et devant tous les autres, et le retrait de la priorité le laisse à sa place ; l'attente affichée court depuis la validation, y compris après une absence (statistiques RG-FIL-05 : attente = validation → dernier appel, traitement = dernier appel → paiement) ; tant que les postes ne sont pas appairés (T-015), l'appel indique le caissier au lieu du nom de la caisse ; le commercial n'est prévenu de l'appel de son ticket qu'en mode appel verbal (sans écran public, RG-DSP-05) | **OK** | RG-FIL-02/03/04/05, RG-DSP-05 |
 
 ## Annexe A — Modèle Excel d'import des articles
 
