@@ -1,10 +1,13 @@
-import type {
-  Queue,
-  QueueItem,
-  AuthMe,
-  AuthUserDirectory,
-  CategorySummary,
-  ProductHit,
+import {
+  computeQuote,
+  lineGross,
+  type Order,
+  type Queue,
+  type QueueItem,
+  type AuthMe,
+  type AuthUserDirectory,
+  type CategorySummary,
+  type ProductHit,
 } from '@vente-web/shared';
 
 /**
@@ -282,5 +285,74 @@ export function demoRegisterQueue(called: boolean): Queue {
       queueItem(16, 'Rakotomalala Jean-Baptiste', '156400.00', 4),
       queueItem(17, 'Razafy Lova', '32000.00', 1),
     ],
+  };
+}
+
+/**
+ * Rasoa's order at Soa's register in the gallery: five lines, two discounts within their cap,
+ * 2 000 off the total — what the cashier checks before payment (T-050).
+ */
+export function demoOrderAtRegister(): Order {
+  const picks: [ProductHit, string, string, string | null][] = [
+    [PRODUCTS.savon, 'paquet', '4', '5'],
+    [PRODUCTS.riz, 'sac 50 kg', '1', null],
+    [PRODUCTS.huile, 'bouteille', '6', null],
+    [PRODUCTS.sucre, 'kg', '12.5', '2'],
+    [PRODUCTS.bougies, 'paquet', '2', null],
+  ];
+  const lines = picks.map(([hit, label, qty, pct], index) => {
+    const unit = hit.units.find((candidate) => candidate.label === label) ?? hit.units[0]!;
+    return { hit, unit, qty, pct, position: index + 1, price: unit.price ?? '0' };
+  });
+  const totals = computeQuote({
+    lines: lines.map((line) => ({
+      quantity: line.qty,
+      unitPrice: line.price,
+      capPct: line.unit.maxDiscountPct ?? '0',
+      discount: line.pct ? { kind: 'pct', value: line.pct } : null,
+    })),
+    orderDiscount: { kind: 'amount', value: '2000' },
+  });
+  const rasoa = demoRegisterQueue(true).serving[1]!;
+  return {
+    id: rasoa.orderId,
+    number: rasoa.number,
+    version: 2,
+    customer: { id: id(301), ...rasoa.customer },
+    salesUser: rasoa.salesUser,
+    lines: lines.map((line, index) => {
+      const computed = totals.lines[index]!;
+      return {
+        position: line.position,
+        productId: line.hit.id,
+        productUnitId: line.unit.id,
+        sku: line.hit.sku,
+        name: line.hit.name,
+        unitLabel: line.unit.label,
+        factor: line.unit.factor,
+        baseUnit: line.hit.baseUnit,
+        qty: line.qty,
+        unitPrice: Number(line.price).toFixed(2),
+        capPct: line.unit.maxDiscountPct ?? '0',
+        gross: lineGross(line.qty, line.price),
+        discountPct: computed.discountPct,
+        discountAmount: computed.discount,
+        discountSource: computed.source,
+        net: computed.net,
+      };
+    }),
+    grossTotal: totals.grossTotal,
+    lineDiscounts: totals.lineDiscounts,
+    subtotal: totals.subtotal,
+    orderDiscountPct: null,
+    orderDiscount: totals.orderDiscount,
+    discountTotal: totals.discountTotal,
+    total: totals.total,
+    createdAt: rasoa.submittedAt,
+    updatedAt: rasoa.submittedAt,
+    status: 'AT_REGISTER',
+    ticket: rasoa.ticket,
+    submittedAt: rasoa.submittedAt,
+    expiresAt: null,
   };
 }

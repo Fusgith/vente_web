@@ -1,4 +1,4 @@
-import { formatMga, formatPhone, ticketLabel, type QueueItem } from '@vente-web/shared';
+import { formatPhone, ticketLabel, type QueueItem } from '@vente-web/shared';
 
 import { labels } from '../labels.js';
 import { buttonClass, sheetClass } from '../ui/button.js';
@@ -34,7 +34,7 @@ export function ServingPanel({
   return (
     <section
       aria-labelledby="register-serving"
-      className={`${sheetClass} order-first flex min-w-0 flex-col gap-4 p-4 lg:order-none`}
+      className={`${sheetClass} flex min-w-0 flex-col gap-4 p-4`}
     >
       <h2 id="register-serving" className="type-title">
         {text.servingTitle}
@@ -48,13 +48,6 @@ export function ServingPanel({
           <p className="text-36 font-bold">{mine.customer.name}</p>
           <p className="text-ink-2 figures">{formatPhone(mine.customer.phone)}</p>
           <p className="mt-2 text-ink-2">{text.orderOf(mine.number, mine.salesUser.fullName)}</p>
-          <p className="text-24 font-bold figures">
-            {labels.sales.draft.total} {formatMga(mine.total)}
-          </p>
-          <p className="mt-2 flex items-center gap-2 text-14 text-ink-2">
-            <Icon name="info" className="size-5 shrink-0" />
-            {text.paymentComing}
-          </p>
           <button
             type="button"
             onClick={() => onNoShow(mine)}

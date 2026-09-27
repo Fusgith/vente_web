@@ -1,10 +1,4 @@
-import {
-  ERROR_LABELS,
-  formatAmount,
-  type Order,
-  type Queue,
-  type QueueItem,
-} from '@vente-web/shared';
+import { ERROR_LABELS, formatAmount } from '@vente-web/shared';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
@@ -15,72 +9,10 @@ import { StatusLineProvider } from '../shell/StatusLineProvider.js';
 import { apiError, fakeApi, HERY, meFor, ok } from '../test/fake-api.js';
 import { fakeRealtime } from '../test/fake-socket.js';
 import { RegisterWorkspace } from './RegisterWorkspace.js';
+import { atMyRegister, ID, item, orderOf, queueOf } from './test-queue.js';
 
 const text = labels.register;
 const shown = (value: string) => value.replace(/\s/g, ' ');
-
-const ID = (n: number) => `0192a4f0-0000-7000-8000-00000000040${n}`;
-
-function item(n: number, overrides: Partial<QueueItem> = {}): QueueItem {
-  return {
-    orderId: ID(n),
-    number: `D-2026-00004${n}`,
-    status: 'SUBMITTED',
-    ticket: { letter: 'A', seq: n, date: '2026-09-26' },
-    customer: {
-      name: ['Rasoa Hanta', 'Rabe Paul', 'Randria Solo'][n - 1] ?? 'Client',
-      phone: '0341122233',
-    },
-    salesUser: { id: '0192a4f0-0000-7000-8000-000000000501', fullName: 'Vola Commerciale' },
-    total: '65000.00',
-    priority: false,
-    noShowCount: 0,
-    submittedAt: new Date(Date.now() - n * 5 * 60_000).toISOString(),
-    calledAt: null,
-    servedBy: null,
-    station: null,
-    ...overrides,
-  };
-}
-
-const queueOf = (waiting: QueueItem[], serving: QueueItem[] = []): Queue => ({
-  queue: 'register',
-  waiting,
-  serving,
-});
-
-/** The order as the API returns it after a call; only the ticket and the name matter here. */
-function orderOf(entry: QueueItem): Order {
-  const zero = '0.00';
-  return {
-    id: entry.orderId,
-    number: entry.number,
-    version: 2,
-    customer: { id: '0192a4f0-0000-7000-8000-000000000301', ...entry.customer },
-    salesUser: entry.salesUser,
-    lines: [],
-    grossTotal: zero,
-    lineDiscounts: zero,
-    subtotal: zero,
-    orderDiscountPct: null,
-    orderDiscount: zero,
-    discountTotal: zero,
-    total: entry.total,
-    createdAt: entry.submittedAt,
-    updatedAt: entry.submittedAt,
-    status: 'AT_REGISTER',
-    ticket: entry.ticket,
-    submittedAt: entry.submittedAt,
-    expiresAt: null,
-  };
-}
-
-const atMyRegister = (entry: QueueItem): QueueItem => ({
-  ...entry,
-  status: 'AT_REGISTER',
-  calledAt: new Date().toISOString(),
-  servedBy: { id: HERY.id, fullName: HERY.fullName },
-});
 
 function mount(handlers: Parameters<typeof fakeApi>[0]) {
   const api = fakeApi(handlers);
@@ -130,23 +62,32 @@ describe('register screen (T-040, RG-FIL-01 à 04)', () => {
     const api = mount({
       'GET /queues/register': ok(queueOf([first, item(2)])),
       'POST /queues/register/call-next': ok(orderOf(first)),
+      [`GET /orders/${first.orderId}`]: ok(orderOf(first)),
     });
     await table();
     api.on('GET /queues/register', ok(queueOf([item(2)], [atMyRegister(first)])));
     fireEvent.click(screen.getByRole('button', { name: new RegExp(text.callNext) }));
 
-    const panel = await screen.findByRole('region', { name: text.servingTitle });
-    await waitFor(() => expect(within(panel).getByText('A1')).toHaveClass('text-96'));
-    expect(within(panel).getByText('Rasoa Hanta')).toBeVisible();
+    // The layout changes once a customer is called: the panel is looked for afresh.
+    const panel = () => screen.getByRole('region', { name: text.servingTitle });
+    await waitFor(() => expect(within(panel()).getByText('A1')).toHaveClass('text-96'));
+    expect(within(panel()).getByText('Rasoa Hanta')).toBeVisible();
     expect(band()).toHaveTextContent(text.called('A1', 'Rasoa Hanta'));
-    // One customer at a time: no other ticket can be called meanwhile.
-    expect(screen.getByRole('button', { name: text.call('A2') })).toBeDisabled();
+    // One customer at a time: their order to check, the queue in short, no other call.
+    expect(
+      await screen.findByRole('region', { name: text.orderTitle(first.number) }),
+    ).toBeVisible();
+    expect(screen.getByRole('region', { name: new RegExp(text.queueTitle) })).toHaveTextContent(
+      'A2',
+    );
+    expect(screen.queryByRole('button', { name: text.call('A2') })).toBeNull();
   });
 
   it('sends an absent customer back to the queue (RG-FIL-04)', async () => {
     const first = atMyRegister(item(1));
     const api = mount({
       'GET /queues/register': ok(queueOf([item(2)], [first])),
+      [`GET /orders/${first.orderId}`]: ok(orderOf(first)),
       [`POST /orders/${first.orderId}/no-show`]: ok({ ...orderOf(first), status: 'SUBMITTED' }),
     });
     fireEvent.click(await screen.findByRole('button', { name: text.noShow }));

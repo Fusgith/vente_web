@@ -6,7 +6,14 @@ import {
 } from '@vente-web/shared';
 
 import { API_BASE } from '../api/client.js';
-import { CATEGORIES, DIRECTORY, demoRegisterQueue, FAVORITES, PRODUCTS } from './fixtures.js';
+import {
+  CATEGORIES,
+  DIRECTORY,
+  demoOrderAtRegister,
+  demoRegisterQueue,
+  FAVORITES,
+  PRODUCTS,
+} from './fixtures.js';
 
 const fold = (text: string) =>
   text
@@ -45,8 +52,10 @@ function answer(url: URL): unknown {
       return demoRegisterQueue(
         new URLSearchParams(window.location.search).get('screen') === 'caisse-appel',
       );
-    default:
-      return undefined;
+    default: {
+      const order = demoOrderAtRegister();
+      return url.pathname.endsWith(`/orders/${order.id}`) ? order : undefined;
+    }
   }
 }
 
