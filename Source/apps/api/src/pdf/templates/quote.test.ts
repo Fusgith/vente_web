@@ -15,6 +15,7 @@ function sampleQuote(): Quote {
     capPct: '15',
     discountPct: '0.00',
     discountAmount: '0.00',
+    discountSource: 'NONE' as const,
   };
   return {
     id: ID,
@@ -36,6 +37,7 @@ function sampleQuote(): Quote {
         gross: '50000.00',
         discountPct: '5.00',
         discountAmount: '2500.00',
+        discountSource: 'WITHIN_CAP',
         net: '47500.00',
       },
       {
