@@ -2,6 +2,37 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 27/09/2026 — H29 validée, T-050 contrôle à la caisse — agent : Claude Code (Opus 5.5)
+
+**Reprise après le crash du PC** : rien de perdu, tout était poussé (`3fd8258`, CI verte). Seul PostgreSQL local était arrêté.
+
+**Décision de l'utilisateur** : H29 (files d'attente) validée telle quelle (CDC métier §16.6).
+
+**Fait** :
+- API (`4ab1991`, `d47c476`), avec 6 tests d'intégration :
+  - `POST /orders/{id}/adjust` : le caissier qui a appelé la commande (ou le responsable) baisse une quantité ou supprime une ligne (RG-CMD-05b) ; totaux recalculés, réservations réduites ou libérées, journal avant → après ; ni ajout, ni dernière ligne ;
+  - `POST /orders/{id}/cancel` : annulation avant paiement avec motif obligatoire (RG-ANN-01) ; commercial pour ses commandes, caissier, responsable ; stock libéré, ticket clos ;
+  - les lignes indiquent l'origine de leur remise (plafond ou code du boss).
+- Écran de caisse (`f183b3e`), avec 6 tests :
+  - client appelé → sa commande en tableau (RG-DEV-05), origine de chaque remise, totaux ;
+  - la quantité ouvre un pavé qui la baisse ou supprime la ligne ;
+  - « Annuler la commande » avec motif ;
+  - mise en page : commande à gauche, ticket à annoncer et file condensée à droite (portrait : ticket, commande, file).
+- Vérifié dans l'application réelle : validation, appel, baisse, suppression, annulation, avec le stock disponible juste à chaque étape (150 → 120 → 132 → 150).
+- Vérifications : `format:check`, `lint`, `typecheck` (0 erreur), `build` et 405 tests verts. Aucune dépendance ajoutée.
+- Incident : `4ab1991` a été committé avec deux erreurs de typage dans un test (fixture du PDF sans `discountSource`), corrigées aussitôt par `d47c476`, avant tout envoi.
+
+**Décisions** : ⚠️ H30 (CDC métier §16.2). La remise d'une ligne baissée suit la quantité. La remise sur le total garde son % ou son montant, ramenée au maximum permis si les lignes restantes ne la couvrent plus. La dernière ligne ne se supprime pas. Le motif d'annulation est libre et obligatoire.
+
+**Constat** : la file du jour contient encore des commandes non payées d'hier (tickets « A1 » en double). Leur expiration en fin de journée est T-022, non faite : à passer en priorité.
+
+**Reste** :
+- saisie du code du boss à la caisse (T-034), blocage du paiement sans code (T-033) ;
+- renvoi au commercial et liste de ses commandes (T-035, créée) ;
+- paiement (T-051).
+
+**Questions ouvertes** : H30.
+
 ## 26/09/2026 — T-040 files d'attente, écran de caisse — agent : Claude Code (Opus 5.5)
 
 **Fait** :

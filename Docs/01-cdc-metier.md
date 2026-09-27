@@ -1,6 +1,6 @@
 # Cahier des charges MÉTIER — Vente Web
 
-Version 0.7 — 26/09/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16), **corrections du 23/09/2026** (§16.3), **décisions du 25/09/2026** (§16.4, dont H22), **décisions du 26/09/2026** (§16.5 : H14 à H28) ; ADR 0001–0006 acceptés , **décision du 27/09/2026** (§16.6 : H29) ; aucun point ouvert.
+Version 0.7 — 26/09/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16), **corrections du 23/09/2026** (§16.3), **décisions du 25/09/2026** (§16.4, dont H22), **décisions du 26/09/2026** (§16.5 : H14 à H28) ; ADR 0001–0006 acceptés , **décision du 27/09/2026** (§16.6 : H29) ; point à confirmer : H30 (contrôle à la caisse, T-050).
 
 Nouveautés v0.7 : toutes les hypothèses ouvertes tranchées (§16.5) ; **plafonds de remise fixés par le boss seul** (RG-REM-01) ; **mot de passe du boss choisi par lui seul**, avec un code d'activation (RG-USR-10) ; **une seule session par personne**, et un poste déclaré pour toute connexion dans le magasin (RG-USR-09) ; **deux téléphones au plus par client** (RG-DEV-04) ; devis daté du jour de sa **création** (RG-FAC-06).
 
@@ -224,7 +224,7 @@ Règles :
 4. Il enregistre le paiement : un ou plusieurs moyens (RG-PAY).
 5. Le paiement complet **génère la facture** (RG-FAC-01) et notifie la livraison.
 
-- **RG-CMD-05b** Modifications autorisées à la caisse avant paiement : suppression de ligne, baisse de quantité, saisie d'un code de remise, retrait d'une remise non couverte (avec l'accord du client). Un ajout d'article ou un changement de remise dans le plafond passe par le commercial (renvoi en un clic, la commande garde son ticket).
+- **RG-CMD-05b** *(Modalités ⚠️ HYPOTHÈSE H30.)* Modifications autorisées à la caisse avant paiement : suppression de ligne, baisse de quantité, saisie d'un code de remise, retrait d'une remise non couverte (avec l'accord du client). Un ajout d'article ou un changement de remise dans le plafond passe par le commercial (renvoi en un clic, la commande garde son ticket).
 
 ### 5.7 Étape 5 — Facture
 
@@ -471,7 +471,11 @@ Les ADR 0001 à 0004 ont été **acceptés** par l'utilisateur le 21/09/2026.
 
 ### 16.2 Points nouveaux à confirmer
 
-Aucun au 27/09/2026 : H14 à H28 tranchés le 26/09 (§16.5), H29 le 27/09 (§16.6). Un nouveau point s'inscrit ici, marqué ⚠️ HYPOTHÈSE dans la règle concernée.
+H14 à H28 tranchés le 26/09 (§16.5), H29 le 27/09 (§16.6). Un nouveau point s'inscrit ici, marqué ⚠️ HYPOTHÈSE dans la règle concernée.
+
+| # | Hypothèse | Règle | Alternative |
+|---|---|---|---|
+| H30 | **Contrôle à la caisse** (T-050) : les modifications se font sur la commande appelée à la caisse (client présent), par le caissier qui l'a appelée ou le responsable ; jamais d'ajout ni de hausse, et la dernière ligne ne se supprime pas (c'est une annulation). Une **quantité baissée** garde le taux de remise de sa ligne (la remise suit la quantité) ; une ligne inchangée garde sa remise au centime ; la **remise sur le total** saisie en % garde son %, saisie en montant elle garde son montant, **ramenée au maximum permis** (marge restante, RG-REM-06) si les lignes restantes ne la couvrent plus. Une ligne supprimée sort de la commande, les numéros se suivent à nouveau ; le journal garde l'avant/après. **Annulation** : motif en texte libre, obligatoire (3 caractères au moins) ; le commercial annule ses propres commandes, en file comme à la caisse | RG-CMD-05b, RG-ANN-01, RG-REM-06 | Remise gardée en montant ; modifications possibles dès la file ; motifs d'annulation dans une liste paramétrée |
 
 
 ### 16.3 Corrections de l'utilisateur du 23/09/2026
