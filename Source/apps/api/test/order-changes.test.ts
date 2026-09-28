@@ -98,7 +98,7 @@ describe.skipIf(!TEST_DATABASE_URL)(
     const adjust = (order: Order, changes: unknown, cookie = cookies.cashier) =>
       post(`/orders/${order.id}/adjust`, cookie, { version: order.version, changes });
 
-    it('lowers a quantity: its discount follows at the same rate, the stock freed (⚠️ H30)', async () => {
+    it('lowers a quantity: its discount follows at the same rate, the stock freed (H30)', async () => {
       const order = await orderAtRegister({ kind: 'amount', value: '2000' });
       expect(order).toMatchObject({ subtotal: '114500.00', total: '112500.00' });
       expect(await reserved(ids.soap)).toBe('24.00');
@@ -133,7 +133,7 @@ describe.skipIf(!TEST_DATABASE_URL)(
       });
     });
 
-    it('removes a line: the rest renumbered, its reservation freed, the total discount capped (⚠️ H30)', async () => {
+    it('removes a line: the rest renumbered, its reservation freed, the total discount capped (H30)', async () => {
       const order = await orderAtRegister({ kind: 'amount', value: '2000' });
       const response = await adjust(order, [{ position: 2, qty: null }]);
       expect(response.statusCode, response.body).toBe(200);

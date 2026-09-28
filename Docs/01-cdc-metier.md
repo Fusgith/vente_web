@@ -1,6 +1,8 @@
 # Cahier des charges MÉTIER — Vente Web
 
-Version 0.7 — 26/09/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16), **corrections du 23/09/2026** (§16.3), **décisions du 25/09/2026** (§16.4, dont H22), **décisions du 26/09/2026** (§16.5 : H14 à H28) ; ADR 0001–0006 acceptés , **décision du 27/09/2026** (§16.6 : H29) ; point à confirmer : H30 (contrôle à la caisse, T-050).
+Version 0.8 — 28/09/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16), **corrections du 23/09/2026** (§16.3), **décisions du 25/09/2026** (§16.4, dont H22), **décisions du 26/09/2026** (§16.5 : H14 à H28) ; ADR 0001–0006 acceptés , **décision du 27/09/2026** (§16.6 : H29), **décisions du 28/09/2026** (§16.7 : H30, perte de la priorité) ; aucun point ouvert.
+
+Nouveautés v0.8 : contrôle à la caisse validé (H30, RG-CMD-05b) ; **un client absent perd sa priorité**, de même qu'une commande prioritaire placée en dernier par le responsable (RG-FIL-02, RG-FIL-04).
 
 Nouveautés v0.7 : toutes les hypothèses ouvertes tranchées (§16.5) ; **plafonds de remise fixés par le boss seul** (RG-REM-01) ; **mot de passe du boss choisi par lui seul**, avec un code d'activation (RG-USR-10) ; **une seule session par personne**, et un poste déclaré pour toute connexion dans le magasin (RG-USR-09) ; **deux téléphones au plus par client** (RG-DEV-04) ; devis daté du jour de sa **création** (RG-FAC-06).
 
@@ -210,9 +212,9 @@ Règles :
 ### 5.5 Étape 3 — File d'attente caisse et appel
 
 - **RG-FIL-01** Deux files : **CAISSE** (commandes `SUBMITTED`) et **LIVRAISON** (commandes `PAID`, `PREPARING`, `READY`). Ordre par défaut : ordre d'entrée dans la file.
-- **RG-FIL-02** Le **responsable** peut réordonner (rang), marquer prioritaire, retirer ou réaffecter ; chaque modification est journalisée avec motif facultatif.
+- **RG-FIL-02** Le **responsable** peut réordonner (rang), marquer prioritaire, retirer ou réaffecter ; chaque modification est journalisée avec motif facultatif. Une commande prioritaire qu'il place **en dernière position** perd sa priorité (décision du 28/09/2026) ; le journal garde la position et la priorité avant → après.
 - **RG-FIL-03** *(Modalités : décision H29, 27/09/2026.)* Le caissier appelle en priorité le premier de la file ; il peut appeler un ticket précis si le client est devant lui (journalisé). L'appel affiche « A15 → Caisse 2 » sur l'écran public s'il existe (RG-DSP-01), sinon le caissier appelle verbalement le ticket et le nom du client (RG-DSP-05) ; la commande passe en `AT_REGISTER`.
-- **RG-FIL-04** Client absent : le caissier clique « Absent » ; la commande revient en file **en dernière position** avec un compteur d'absences ; la réservation continue de courir (RG-STK-02). Après 2 absences, le responsable est notifié.
+- **RG-FIL-04** Client absent : le caissier clique « Absent » ; la commande revient en file **en dernière position** avec un compteur d'absences ; la réservation continue de courir (RG-STK-02). Une commande prioritaire **perd sa priorité** (RG-FIL-02, décision du 28/09/2026), changement journalisé avant → après. Après 2 absences, le responsable est notifié.
 - **RG-FIL-05** Le temps d'attente (entrée en file → appel) et le temps de traitement (appel → paiement) sont conservés pour les statistiques.
 - **RG-FIL-06** Les mêmes règles s'appliquent à la file LIVRAISON (appel par le magasinier, absence, réordonnancement), avec autant de comptoirs que déclarés.
 
@@ -224,7 +226,7 @@ Règles :
 4. Il enregistre le paiement : un ou plusieurs moyens (RG-PAY).
 5. Le paiement complet **génère la facture** (RG-FAC-01) et notifie la livraison.
 
-- **RG-CMD-05b** *(Modalités ⚠️ HYPOTHÈSE H30.)* Modifications autorisées à la caisse avant paiement : suppression de ligne, baisse de quantité, saisie d'un code de remise, retrait d'une remise non couverte (avec l'accord du client). Un ajout d'article ou un changement de remise dans le plafond passe par le commercial (renvoi en un clic, la commande garde son ticket).
+- **RG-CMD-05b** *(Modalités : décision H30, 28/09/2026.)* Modifications autorisées à la caisse avant paiement : suppression de ligne, baisse de quantité, saisie d'un code de remise, retrait d'une remise non couverte (avec l'accord du client). Un ajout d'article ou un changement de remise dans le plafond passe par le commercial (renvoi en un clic, la commande garde son ticket).
 
 ### 5.7 Étape 5 — Facture
 
@@ -471,11 +473,10 @@ Les ADR 0001 à 0004 ont été **acceptés** par l'utilisateur le 21/09/2026.
 
 ### 16.2 Points nouveaux à confirmer
 
-H14 à H28 tranchés le 26/09 (§16.5), H29 le 27/09 (§16.6). Un nouveau point s'inscrit ici, marqué ⚠️ HYPOTHÈSE dans la règle concernée.
+H14 à H28 tranchés le 26/09 (§16.5), H29 le 27/09 (§16.6), H30 le 28/09 (§16.7). Aucun point ouvert ; un nouveau point s'inscrit ici, marqué ⚠️ HYPOTHÈSE dans la règle concernée.
 
 | # | Hypothèse | Règle | Alternative |
 |---|---|---|---|
-| H30 | **Contrôle à la caisse** (T-050) : les modifications se font sur la commande appelée à la caisse (client présent), par le caissier qui l'a appelée ou le responsable ; jamais d'ajout ni de hausse, et la dernière ligne ne se supprime pas (c'est une annulation). Une **quantité baissée** garde le taux de remise de sa ligne (la remise suit la quantité) ; une ligne inchangée garde sa remise au centime ; la **remise sur le total** saisie en % garde son %, saisie en montant elle garde son montant, **ramenée au maximum permis** (marge restante, RG-REM-06) si les lignes restantes ne la couvrent plus. Une ligne supprimée sort de la commande, les numéros se suivent à nouveau ; le journal garde l'avant/après. **Annulation** : motif en texte libre, obligatoire (3 caractères au moins) ; le commercial annule ses propres commandes, en file comme à la caisse | RG-CMD-05b, RG-ANN-01, RG-REM-06 | Remise gardée en montant ; modifications possibles dès la file ; motifs d'annulation dans une liste paramétrée |
 
 
 ### 16.3 Corrections de l'utilisateur du 23/09/2026
@@ -525,6 +526,15 @@ Toutes les hypothèses ouvertes ont été tranchées ; les règles citées ont �
 | # | Hypothèse | Décision de l'utilisateur | Règles impactées |
 |---|---|---|---|
 | H29 | **Files d'attente** (T-040) : un caissier (ou le responsable) n'a qu'**un client à sa caisse** : il l'encaisse ou le déclare absent avant d'en appeler un autre ; « Appeler le suivant » prend le premier de la file, et deux caisses qui appellent au même instant n'ont jamais le même ticket ; seul le caissier qui a appelé le client, ou le responsable, le déclare absent ; un ticket marqué **prioritaire** passe derrière les autres prioritaires et devant tous les autres, et le retrait de la priorité le laisse à sa place ; l'attente affichée court depuis la validation, y compris après une absence (statistiques RG-FIL-05 : attente = validation → dernier appel, traitement = dernier appel → paiement) ; tant que les postes ne sont pas appairés (T-015), l'appel indique le caissier au lieu du nom de la caisse ; le commercial n'est prévenu de l'appel de son ticket qu'en mode appel verbal (sans écran public, RG-DSP-05) | **OK** | RG-FIL-02/03/04/05, RG-DSP-05 |
+
+### 16.7 Décisions de l'utilisateur du 28/09/2026
+
+H30 en réponse à la v0.7 ; C7 à la relecture du code de T-018 à T-050.
+
+| # | Hypothèse ou constat | Décision de l'utilisateur | Règles impactées |
+|---|---|---|---|
+| H30 | **Contrôle à la caisse** (T-050) : les modifications se font sur la commande appelée à la caisse (client présent), par le caissier qui l'a appelée ou le responsable ; jamais d'ajout ni de hausse, et la dernière ligne ne se supprime pas (c'est une annulation). Une **quantité baissée** garde le taux de remise de sa ligne (la remise suit la quantité) ; une ligne inchangée garde sa remise au centime ; la **remise sur le total** saisie en % garde son %, saisie en montant elle garde son montant, **ramenée au maximum permis** (marge restante, RG-REM-06) si les lignes restantes ne la couvrent plus. Une ligne supprimée sort de la commande, les numéros se suivent à nouveau ; le journal garde l'avant/après. **Annulation** : motif en texte libre, obligatoire (3 caractères au moins) ; le commercial annule ses propres commandes, en file comme à la caisse | **OK** | RG-CMD-05b, RG-ANN-01, RG-REM-06 |
+| C7 | Une commande prioritaire déclarée absente revenait en fin de file **en gardant sa priorité** : au marquage prioritaire suivant, elle repassait en tête avec les autres prioritaires, sans trace au journal | Un client **absent perd sa priorité** ; de même pour une commande prioritaire que le responsable **place en dernier**. Le journal garde la priorité avant → après | RG-FIL-02, RG-FIL-04 |
 
 ## Annexe A — Modèle Excel d'import des articles
 

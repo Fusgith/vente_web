@@ -77,7 +77,7 @@ const amount = (value: string): DiscountEntry | null =>
   value === '0.00' ? null : { kind: 'amount', value };
 
 /**
- * Totals once lines are lowered or removed (RG-DEV-05, RG-REM-06, ⚠️ H30): a line left as it was
+ * Totals once lines are lowered or removed (RG-DEV-05, RG-REM-06, H30): a line left as it was
  * keeps its discount to the cent; a lowered one keeps its rate, the discount following the
  * quantity. The order discount keeps its rate when typed as one, its amount otherwise — brought
  * down to the headroom when the remaining lines no longer cover it. Caps are the ones frozen
