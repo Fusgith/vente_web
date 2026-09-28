@@ -142,25 +142,32 @@ async function registerOf(tx: Prisma.TransactionClient, actor: Actor): Promise<s
  * Calls a ticket to the caller's register (RG-FIL-03): the first waiting one, or `id` when the
  * customer stands in front of the cashier — audited as such. Two registers calling at the same
  * moment never get the same ticket: calls take the queue one after the other, and the call is
- * guarded on the order still waiting.
+ * guarded on the order still waiting. An order past its day end is never called, even before the
+ * sweep expires it (RG-CMD-08).
  */
 export async function callToRegister(db: Db, actor: Actor, id: string | null): Promise<Order> {
   return db.$transaction(async (tx) => {
     await assertRegisterFree(tx, actor);
     await lockQueue(tx, 'register');
+    const now = new Date();
     let orderId = id;
     if (orderId === null) {
       const [first] = await tx.$queryRaw<{ id: string }[]>`
-        SELECT "id" FROM "orders" WHERE "status" = 'SUBMITTED'
+        SELECT "id" FROM "orders"
+         WHERE "status" = 'SUBMITTED' AND ("expires_at" IS NULL OR "expires_at" > ${now})
          ORDER BY "queue_rank", "id" LIMIT 1 FOR UPDATE`;
       if (!first) throw new AppError(409, 'QUEUE_EMPTY');
       orderId = first.id;
     }
     const { count } = await tx.order.updateMany({
-      where: { id: orderId, status: 'SUBMITTED' },
+      where: {
+        id: orderId,
+        status: 'SUBMITTED',
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+      },
       data: {
         status: 'AT_REGISTER',
-        calledAt: new Date(),
+        calledAt: now,
         cashierUserId: actor.userId,
         registerStationId: await registerOf(tx, actor),
         version: { increment: 1 },
@@ -233,6 +240,7 @@ export async function markNoShow(
 interface Waiting {
   id: string;
   priority: number;
+  queue_rank: number;
 }
 
 /** The queue taken, then its waiting orders locked, in their calling order. */
@@ -240,15 +248,29 @@ async function lockWaiting(tx: Prisma.TransactionClient, queue: QueueName): Prom
   await lockQueue(tx, queue);
   const statuses = QUEUE_STATUSES[queue].waiting.map(String);
   return tx.$queryRaw<Waiting[]>`
-    SELECT "id", "priority" FROM "orders"
+    SELECT "id", "priority", "queue_rank" FROM "orders"
      WHERE "status"::text = ANY(${statuses})
      ORDER BY "queue_rank", "id" FOR UPDATE`;
 }
 
-/** Ranks 1…n in the new order; orders entering later take the next value, hence stay behind. */
-async function rerank(tx: AuditTx, ids: readonly string[]): Promise<void> {
+/**
+ * The waiting orders in their new order, on the ranks they already hold: an order being served
+ * keeps a rank comparable with theirs and, released, gets its place back; orders entering later
+ * take the next value, hence stay behind. Strictly increasing, so that two equal ranks never
+ * leave the order to the id.
+ */
+async function rerank(
+  tx: AuditTx,
+  rows: readonly Waiting[],
+  ids: readonly string[],
+): Promise<void> {
+  const held = new Map(rows.map((row) => [row.id, row.queue_rank]));
+  let previous = Number.NEGATIVE_INFINITY;
   for (const [index, id] of ids.entries()) {
-    await tx.order.update({ where: { id }, data: { queueRank: index + 1 } });
+    const rank = Math.max(rows[index]!.queue_rank, previous + 1);
+    previous = rank;
+    if (held.get(id) === rank) continue;
+    await tx.order.update({ where: { id }, data: { queueRank: rank } });
   }
 }
 
@@ -260,7 +282,7 @@ function positionOf(ids: readonly string[], id: string): number {
 
 /**
  * The manager places an order before another one, or last (RG-FIL-02); audited with a reason.
- * Placed last, a priority order loses its priority.
+ * Placed behind an order that is not priority, a priority order loses its priority.
  */
 export async function moveInQueue(
   db: Db,
@@ -276,8 +298,11 @@ export async function moveInQueue(
     const rest = ids.filter((id) => id !== orderId);
     const at = beforeId === null ? rest.length : positionOf(rest, beforeId) - 1;
     const next = [...rest.slice(0, at), orderId, ...rest.slice(at)];
-    await rerank(tx, next);
-    const priority = wasPriority && beforeId !== null;
+    await rerank(tx, rows, next);
+    // Still priority only among the priority orders: behind another one, it would jump back
+    // ahead at the next priority given (RG-FIL-02).
+    const isPriority = new Set(rows.filter((row) => row.priority > 0).map((row) => row.id));
+    const priority = wasPriority && next.slice(0, at).every((id) => isPriority.has(id));
     if (wasPriority && !priority) {
       await tx.order.update({ where: { id: orderId }, data: { priority: 0 } });
     }
@@ -312,7 +337,7 @@ export async function setPriority(
       const rest = rows.filter((row) => row.id !== orderId);
       const lead = rest.filter((row) => row.priority > 0).map((row) => row.id);
       const others = rest.filter((row) => row.priority <= 0).map((row) => row.id);
-      await rerank(tx, [...lead, orderId, ...others]);
+      await rerank(tx, rows, [...lead, orderId, ...others]);
       to = lead.length + 1;
     }
     await tx.order.update({ where: { id: orderId }, data: { priority: priority ? 1 : 0 } });

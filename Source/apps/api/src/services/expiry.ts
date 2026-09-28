@@ -17,11 +17,17 @@ const BATCH = 100;
 /**
  * Expires the orders validated and still not called at their day end (RG-CMD-08, RG-STK-02):
  * `SUBMITTED` → `EXPIRED`, their reservations given back to the available stock, audited as the
- * system's doing. One transaction per order: one that fails leaves the others expired. An order
+ * system's doing. One transaction per order: one that fails is handed to `onError` and tried
+ * again at the next sweep, the others expired all the same and returned, so that their followers
+ * are told. An order
  * called to a register meanwhile is left to the cashier; once back in the queue after an
  * absence, the next sweep expires it.
  */
-export async function expireOrders(db: Db, now = new Date()): Promise<ExpiredOrder[]> {
+export async function expireOrders(
+  db: Db,
+  onError: (orderId: string, error: unknown) => void,
+  now = new Date(),
+): Promise<ExpiredOrder[]> {
   const due = await db.order.findMany({
     where: { status: 'SUBMITTED', expiresAt: { lte: now } },
     orderBy: [{ expiresAt: 'asc' }, { id: 'asc' }],
@@ -30,23 +36,30 @@ export async function expireOrders(db: Db, now = new Date()): Promise<ExpiredOrd
   });
   const expired: ExpiredOrder[] = [];
   for (const { id } of due) {
-    const order = await db.$transaction(async (tx) => {
-      const [row] = await tx.$queryRaw<{ sales_user_id: string; expires_at: Date }[]>`
-        UPDATE "orders" SET "status" = 'EXPIRED', "version" = "version" + 1, "updated_at" = now()
-         WHERE "id" = ${id}::uuid AND "status" = 'SUBMITTED' AND "expires_at" <= ${now}
-        RETURNING "sales_user_id", "expires_at"`;
-      if (!row) return null;
-      await releaseReservations(tx, id);
-      await recordAudit(tx, {
-        action: 'order.expired',
-        entityType: 'order',
-        entityId: id,
-        before: { status: 'SUBMITTED', expiresAt: row.expires_at.toISOString() },
-        after: { status: 'EXPIRED' },
-      });
-      return { id, salesUserId: row.sales_user_id };
+    const order = await expireOne(db, id, now).catch((error: unknown) => {
+      onError(id, error);
+      return null;
     });
     if (order) expired.push(order);
   }
   return expired;
+}
+
+async function expireOne(db: Db, id: string, now: Date): Promise<ExpiredOrder | null> {
+  return db.$transaction(async (tx) => {
+    const [row] = await tx.$queryRaw<{ sales_user_id: string; expires_at: Date }[]>`
+        UPDATE "orders" SET "status" = 'EXPIRED', "version" = "version" + 1, "updated_at" = now()
+         WHERE "id" = ${id}::uuid AND "status" = 'SUBMITTED' AND "expires_at" <= ${now}
+        RETURNING "sales_user_id", "expires_at"`;
+    if (!row) return null;
+    await releaseReservations(tx, id);
+    await recordAudit(tx, {
+      action: 'order.expired',
+      entityType: 'order',
+      entityId: id,
+      before: { status: 'SUBMITTED', expiresAt: row.expires_at.toISOString() },
+      after: { status: 'EXPIRED' },
+    });
+    return { id, salesUserId: row.sales_user_id };
+  });
 }

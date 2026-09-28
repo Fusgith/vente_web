@@ -1,6 +1,8 @@
 import { customerSchema, queueSchema, quoteSchema } from '@vente-web/shared';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { Db } from '../src/db.js';
+import { expireOrders } from '../src/services/expiry.js';
 import type { Emission } from '../src/services/realtime-rooms.js';
 import { productId, seedDemoCatalog, unitId } from './catalog.js';
 import { TEST_DATABASE_URL } from './db.js';
@@ -125,6 +127,16 @@ describe.skipIf(!TEST_DATABASE_URL)('orders expired at the day end (RG-CMD-08, R
     expect(cancel.json().code).toBe('ORDER_NOT_CANCELLABLE');
   });
 
+  it('never calls an order past its day end, even before the sweep', async () => {
+    const [late, next] = [await validated('2'), await validated('3')];
+    await dayEnded(late);
+    const called = await post('/queues/register/call-next', cookies.cashier);
+    expect(called.json().id).toBe(next);
+    expect((await post(`/orders/${next}/no-show`, cookies.cashier)).statusCode).toBe(200);
+    const specific = await post(`/orders/${late}/call`, cookies.cashier);
+    expect([specific.statusCode, specific.json().code]).toEqual([409, 'ORDER_NOT_IN_QUEUE']);
+  });
+
   it('expires a customer sent back to the queue after the day end', async () => {
     const order = await validated('2');
     await post('/queues/register/call-next', cookies.cashier);
@@ -133,5 +145,28 @@ describe.skipIf(!TEST_DATABASE_URL)('orders expired at the day end (RG-CMD-08, R
     expect((await post(`/orders/${order}/no-show`, cookies.cashier)).statusCode).toBe(200);
     expect(await t.app.expiry.sweep()).toEqual([{ id: order, salesUserId: ids.vola }]);
     expect(await reserved()).toBe('0.00');
+  });
+
+  it('expires the other orders when one of them fails, and tells of those', async () => {
+    const [first, second] = [await validated('2'), await validated('3')];
+    await dayEnded(first, second);
+    let calls = 0;
+    const flaky = new Proxy(t.db, {
+      get(target, property, receiver) {
+        if (property === '$transaction' && calls++ === 0) {
+          return () => Promise.reject(new Error('deadlock'));
+        }
+        return Reflect.get(target, property, receiver) as unknown;
+      },
+    }) as Db;
+    const onError = vi.fn();
+    const expired = await expireOrders(flaky, onError);
+    expect(expired).toHaveLength(1);
+    expect(onError).toHaveBeenCalledTimes(1);
+    const failed = onError.mock.calls[0]?.[0] as string;
+    expect(await status(failed)).toBe('SUBMITTED');
+    // Tried again at the next sweep.
+    expect(await t.app.expiry.sweep()).toEqual([{ id: failed, salesUserId: ids.vola }]);
+    expect([first, second]).toContain(failed);
   });
 });

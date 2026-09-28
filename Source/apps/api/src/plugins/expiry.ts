@@ -23,7 +23,9 @@ export const expiryPlugin = fp<{ sweepMs?: number }>(
   async (app, { sweepMs = SWEEP_MS }) => {
     let running: Promise<ExpiredOrder[]> | null = null;
     async function run(): Promise<ExpiredOrder[]> {
-      const expired = await expireOrders(app.db);
+      const expired = await expireOrders(app.db, (orderId, error) =>
+        app.log.error({ err: error, orderId }, 'order expiry failed'),
+      );
       app.realtime.publish(expired.flatMap(orderExpired));
       if (expired.length > 0) app.log.info({ count: expired.length }, 'orders expired');
       return expired;

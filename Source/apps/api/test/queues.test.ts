@@ -252,7 +252,7 @@ describe.skipIf(!TEST_DATABASE_URL)('register queue (RG-FIL-01 à 05)', () => {
     expect(orderSchema.parse((await callNext()).json()).id).toBe(a3);
   });
 
-  it('takes the priority from an absent customer, and from an order placed last (RG-FIL-02, RG-FIL-04)', async () => {
+  it('takes the priority from an absent customer, and from an order placed behind the others (RG-FIL-02, RG-FIL-04)', async () => {
     const [a1, a2, a3] = (await validated(3)) as [string, string, string];
     const priority = (orderId: string) =>
       post('/queues/register/priority', cookies.manager, { orderId, priority: true });
@@ -276,16 +276,16 @@ describe.skipIf(!TEST_DATABASE_URL)('register queue (RG-FIL-01 à 05)', () => {
     await priority(a2);
     expect(await waitingIds()).toEqual([a2, a1, a3]);
 
-    // Placed last by the manager, a priority order is one like the others.
-    await post('/queues/register/reorder', cookies.manager, { orderId: a2, beforeId: null });
+    // Placed behind an order that is not priority, a priority order is one like the others.
+    await post('/queues/register/reorder', cookies.manager, { orderId: a2, beforeId: a3 });
     expect((await queue()).waiting.map((item) => [item.orderId, item.priority])).toEqual([
       [a1, false],
-      [a3, false],
       [a2, false],
+      [a3, false],
     ]);
     expect(await audit('queue.reordered')).toMatchObject({
       before: { position: 1, priority: true },
-      after: { position: 3, priority: false },
+      after: { position: 2, priority: false },
     });
   });
 });

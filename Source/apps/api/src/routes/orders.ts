@@ -3,11 +3,13 @@ import {
   orderCancelSchema,
   orderSubmitSchema,
   type Order,
+  type OrderStatus,
   type Role,
 } from '@vente-web/shared';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
+import { AppError } from '../errors.js';
 import { actorOf, authOf, requireRole } from '../plugins/session.js';
 import { adjustOrder, cancelOrder } from '../services/order-changes.js';
 import { loadOrder, submitOrder } from '../services/orders.js';
@@ -18,13 +20,29 @@ const paramsSchema = z.object({ id: z.uuid() });
 /** Annexe B: same readers as the quotes, and the warehouse, which prepares the lines (T-060). */
 const READERS: readonly Role[] = ['sales', 'cashier', 'warehouse', 'manager', 'owner', 'admin'];
 
+/** The warehouse reads only the orders paid, to hand over or handed over. */
+const DELIVERY_STATUSES: ReadonlySet<OrderStatus> = new Set([
+  'PAID',
+  'PREPARING',
+  'READY',
+  'ISSUE',
+  'DELIVERED',
+]);
+
 export const orderRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     '/orders/:id',
     { preHandler: requireRole(...READERS) },
     async (request): Promise<Order> => {
       const { id } = paramsSchema.parse(request.params);
-      return loadOrder(app.db, id);
+      const order = await loadOrder(app.db, id);
+      if (
+        authOf(request).session.activeRole === 'warehouse' &&
+        !DELIVERY_STATUSES.has(order.status)
+      ) {
+        throw new AppError(403, 'AUTH_FORBIDDEN');
+      }
+      return order;
     },
   );
 

@@ -152,6 +152,22 @@ describe.skipIf(!TEST_DATABASE_URL)('delivery at the counters (RG-LIV-01 à 03, 
     expect(await code(await takeNext())).toEqual([409, 'QUEUE_EMPTY']);
   });
 
+  it('shows the warehouse only the orders paid', async () => {
+    const quote = await post('/quotes', cookies.sales, {
+      customerId: ids.customer,
+      lines: [{ productUnitId: ids.soapPack, qty: '1', discount: null }],
+      orderDiscount: null,
+    });
+    const { id } = quoteSchema.parse(quote.json());
+    const read = () => request(t.app, 'GET', `/api/v1/orders/${id}`, { cookie: cookies.feno });
+    expect(await code(await read())).toEqual([403, 'AUTH_FORBIDDEN']);
+    const order = await paid();
+    const paidRead = await request(t.app, 'GET', `/api/v1/orders/${order}`, {
+      cookie: cookies.feno,
+    });
+    expect(paidRead.statusCode).toBe(200);
+  });
+
   it('holds an order for one warehouse user only (RG-USR-08)', async () => {
     const [first, second] = [await paid(), await paid()];
     await takeNext();
@@ -206,5 +222,24 @@ describe.skipIf(!TEST_DATABASE_URL)('delivery at the counters (RG-LIV-01 à 03, 
     // Another warehouse user takes it; Feno is free again.
     expect(orderSchema.parse((await takeNext(cookies.tahina)).json()).id).toBe(first);
     expect(orderSchema.parse((await takeNext()).json()).id).toBe(second);
+  });
+
+  it('gives a released order its place back after the queue was reordered (RG-FIL-02)', async () => {
+    const [first, second, third] = [await paid(), await paid(), await paid()];
+    await takeNext();
+    const reordered = await post('/queues/delivery/reorder', cookies.manager, {
+      orderId: third,
+      beforeId: second,
+      reason: '',
+    });
+    expect(reordered.statusCode, reordered.body).toBe(204);
+    const fourth = await paid();
+    await act(first, 'release', cookies.manager);
+    expect((await queue()).waiting.map((item) => item.orderId)).toEqual([
+      first,
+      third,
+      second,
+      fourth,
+    ]);
   });
 });

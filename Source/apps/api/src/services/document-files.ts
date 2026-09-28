@@ -1,4 +1,5 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
+import { access, mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 /** A document issued once and kept (RG-FAC-04): an invoice, a credit note. */
@@ -32,10 +33,22 @@ export async function storedPdf(
   }
   const pdf = await render();
   await mkdir(path.dirname(absolute), { recursive: true });
-  // Written aside then renamed: a reader never gets half a file.
-  const partial = `${absolute}.${process.pid}.partial`;
+  // Written aside then renamed: a reader never gets half a file. Two reprints at once each write
+  // their own; one that cannot rename (the file held open by a reader) leaves the other's.
+  const partial = `${absolute}.${randomUUID()}.partial`;
   await writeFile(partial, pdf);
-  await rename(partial, absolute);
+  try {
+    await rename(partial, absolute);
+  } catch (error) {
+    await rm(partial, { force: true });
+    if (
+      !(await access(absolute).then(
+        () => true,
+        () => false,
+      ))
+    )
+      throw error;
+  }
   if (document.pdfPath === null) await record(file);
   return pdf;
 }
