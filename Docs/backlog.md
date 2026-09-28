@@ -70,7 +70,7 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-054 | MVP | Sessions de caisse, clôture, rapport | À faire | E05 | RG-CAI ; ouverture faite avec T-051 (H32) : reste clôture, théorique par moyen, écart, rapport, session oubliée (RG-CAI-05) |
 | T-056 | MVP | Arrondi espèces (`cash_rounding`) : net à payer en espèces arrondi, ligne distincte sur la facture | À faire | E05 | RG-FMT-04 ; détachée de T-052 (H33) |
 | T-057 | V1.1 | TVA avec des prix hors taxes (`prices_include_vat` = non) : net à payer TTC calculé | À faire | E05 | RG-FAC-03 ; détachée de T-052 (H33) ; défaut « prix TTC » déjà pris en charge |
-| T-060 | MVP | Livraison multi-comptoirs : prise en charge (verrou), prête, remise ligne par ligne, sortie de stock | Terminé | E06 | RG-USR-08, RG-LIV-01 à 03, RG-STK-04 ; ⚠️ H34 ; fait le 28/09 : API et écran du comptoir ; remise en file par le responsable : API prête, bouton avec la supervision (T-042) ; nom du comptoir avec T-015 |
+| T-060 | MVP | Livraison multi-comptoirs : prise en charge (verrou), prête, remise ligne par ligne, sortie de stock | Terminé | E06 | RG-USR-08, RG-LIV-01 à 03, RG-STK-04 ; H34 (validée le 28/09) ; fait le 28/09 : API et écran du comptoir ; remise en file par le responsable : API prête, bouton avec la supervision (T-042) ; nom du comptoir avec T-015 |
 | T-061 | MVP | Anomalies de livraison et décision du responsable | À faire | E06 | RG-LIV-04 |
 | T-070 | MVP | Tableau de bord boss (indicateurs, files, stock, comparaisons) | À faire | E07 | RG-DSH-01 à 04 |
 | T-071 | MVP | Exports Excel | À faire | E07 | RG-EXP |
