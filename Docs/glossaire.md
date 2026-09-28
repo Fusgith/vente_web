@@ -50,6 +50,10 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 | Ligne de paiement | `payment_line` | Un moyen × un montant × une référence. |
 | Moyen de paiement | `payment_method` | Espèces, MVola, Orange Money, Airtel Money, carte, virement, chèque… |
 | Rendu monnaie | `change` | Montant rendu au client sur un paiement en espèces. |
+| Fond de caisse | `opening_float` | Espèces dans le tiroir à l'ouverture de la session de caisse. |
+| Montant reçu | `cash_received` | Espèces remises par le client ; rendu = reçu − part en espèces. |
+| Clé d'idempotence | `idempotency_key` | Identifiant donné par l'écran à un paiement : renvoyé, il n'en crée pas un second. |
+| Encaisser | `pay` | Enregistrer le paiement de la commande à la caisse. |
 | Facture | `invoice` | Document légal numéroté sans trou, émis au paiement. |
 | Avoir | `credit_note` | Document annulant tout ou partie d'une facture. |
 | Bon de livraison | `delivery_note` | Document listant la marchandise remise. |

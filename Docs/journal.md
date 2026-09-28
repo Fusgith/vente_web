@@ -2,6 +2,31 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 28/09/2026 — H31 validée, T-051 encaissement — agent : Claude Code (Opus 5.5)
+
+**Décision de l'utilisateur** : H31 (expiration et réactivation) validée telle quelle (CDC métier §16.7).
+
+**Fait** :
+- CDC (`37f805c`) : ⚠️ H32 ouverte. Un paiement doit être rattaché à une session de caisse ouverte (RG-PAY-07), prévue en T-054, et le choix du poste à la connexion n'existe pas (T-015). T-051 inclut donc l'**ouverture** de la caisse : choix de la caisse, fond de caisse.
+- API (`0e2990a`), 7 tests d'intégration et 5 tests du calcul partagé :
+  - ouverture de caisse, une par personne et une par caisse (index partiels uniques), journalisée ;
+  - `POST /orders/{id}/pay` : paiement simple ou mixte dont la somme est exactement le net à payer ; une ligne en espèces au plus, avec montant reçu et rendu ; référence exigée selon le moyen, carte comprise (RG-PAY-04) ;
+  - clé d'idempotence : le même paiement envoyé deux fois, même en même temps, n'est enregistré qu'une fois ;
+  - commande payée, réservation ferme jusqu'à la livraison, entrée en file livraison, journal avant → après ;
+  - l'appel d'un ticket enregistre la caisse ouverte (« A15 → Caisse 2 ») ;
+  - migration : colonne `idempotency_key`, index « une session ouverte par caisse », carte bancaire avec référence.
+- Écran de caisse (`02c99bc`), 7 tests :
+  - panneau « Ouvrir la caisse » tant qu'aucune n'est ouverte ; personne ne peut être appelé avant ;
+  - bouton « Encaisser » : espèces pour le tout par défaut, autres moyens ajoutés pour un paiement mixte, référence, montant reçu et rendu affichés en direct ; bouton actif seulement quand le compte est juste ;
+  - une nouvelle tentative après une coupure réseau garde la même clé.
+- Points mineurs de la relecture corrigés au passage : nom du client avec le ticket dans trois messages (RG-TKT-03), rejet de promesse non traité, commande de la caisse protégée des réponses dans le désordre et relue à la reconnexion.
+- Vérifié dans l'application réelle : ouverture de Caisse 1 (fond 50 000), appel de A2, paiement mixte 10 000 espèces + 45 000 MVola avec référence, reçu 20 000, rendu 10 000 ; commande payée, réservation ferme, stock toujours réservé jusqu'à la livraison (RG-STK-04).
+- Vérifications : `format:check`, `lint`, `typecheck` (0 erreur), `build` et 431 tests verts. Aucune dépendance ajoutée.
+
+**Reste** : facture numérotée et PDF, arrondi espèces (T-052) ; clôture de caisse (T-054) ; blocage du paiement tant qu'une demande au boss est en attente (T-033) ; points mineurs restants de la relecture (entrée « Relecture » ci-dessous).
+
+**Questions ouvertes** : H32.
+
 ## 28/09/2026 — T-022 expiration des commandes en fin de journée — agent : Claude Code (Opus 5.5)
 
 **Fait** :

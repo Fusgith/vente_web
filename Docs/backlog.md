@@ -64,10 +64,10 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-041 | MVP | Écran public optionnel (clé de poste, temps réel, son) et mode appel verbal | À faire | E04 | RG-DSP-01 à 03, RG-DSP-05 |
 | T-042 | MVP | Vue de supervision responsable | À faire | E04 | RG-DSP-04 ; API de réordonnancement et de priorité prête (T-040) |
 | T-050 | MVP | Caisse : contrôle, modifications limitées (baisser, supprimer), annulation avant paiement | Terminé | E05 | RG-CMD-05b, RG-ANN-01 ; ⚠️ H30 ; API et écran le 27/09 ; saisie du code → T-034, blocage sans code → T-033, renvoi au commercial → T-035 |
-| T-051 | MVP | Paiement multi-moyens, rendu, références, idempotence | À faire | E05 | RG-PAY |
-| T-052 | MVP | Numérotation sans trou + facture PDF stockée + test de concurrence | À faire | E05 | RG-FAC-01 à 04 |
+| T-051 | MVP | Paiement multi-moyens, rendu, références, idempotence | Terminé | E05 | RG-PAY ; ⚠️ H32 ; fait le 28/09 avec l'**ouverture** de la session de caisse (choix de la caisse, fond de caisse) ; facture et arrondi espèces → T-052, blocage sans code → T-033, clôture → T-054 |
+| T-052 | MVP | Numérotation sans trou + facture PDF stockée + test de concurrence | À faire | E05 | RG-FAC-01 à 04 ; numéro attribué dans la transaction du paiement (T-051) ; arrondi espèces `cash_rounding` (RG-FMT-04) ; commandes payées sans facture en base de dev avant T-052 |
 | T-053 | MVP | Avoir total/partiel, remboursement | À faire | E05 | RG-ANN-02/03, RG-FAC-05 |
-| T-054 | MVP | Sessions de caisse, clôture, rapport | À faire | E05 | RG-CAI |
+| T-054 | MVP | Sessions de caisse, clôture, rapport | À faire | E05 | RG-CAI ; ouverture faite avec T-051 (H32) : reste clôture, théorique par moyen, écart, rapport, session oubliée (RG-CAI-05) |
 | T-060 | MVP | Livraison multi-comptoirs : prise en charge (verrou), prête, remise ligne par ligne, sortie de stock | À faire | E06 | RG-USR-08, RG-LIV-01 à 03, RG-STK-04 |
 | T-061 | MVP | Anomalies de livraison et décision du responsable | À faire | E06 | RG-LIV-04 |
 | T-070 | MVP | Tableau de bord boss (indicateurs, files, stock, comparaisons) | À faire | E07 | RG-DSH-01 à 04 |
