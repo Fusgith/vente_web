@@ -6,7 +6,7 @@ import {
   type QueueItem,
   type QuoteLine,
 } from '@vente-web/shared';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { ApiError } from '../api/client.js';
 import { errorMessage } from '../api/error-message.js';
@@ -29,6 +29,15 @@ import { useNow, useQueue } from './useQueue.js';
 
 const text = labels.register;
 
+/** A payment sent whose reply never came: it may have gone through. */
+interface LostPayment {
+  orderId: string;
+  input: PaymentInput;
+  key: string;
+  ticket: string;
+  name: string;
+}
+
 /** How often the waits shown move on. */
 const CLOCK_MS = 30_000;
 
@@ -50,6 +59,7 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
   const [closing, setClosing] = useState(false);
   const [refunding, setRefunding] = useState(false);
   const now = useNow(CLOCK_MS);
+  const lost = useRef<LostPayment | null>(null);
 
   const waiting = queue?.waiting ?? [];
   const serving = queue?.serving ?? [];
@@ -84,7 +94,13 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
     let message = '';
     return act(
       async () => {
-        const paid = await paymentsApi.pay(order.id, input, key);
+        lost.current = { orderId: order.id, input, key, ticket, name: mine.customer.name };
+        const paid = await paymentsApi.pay(order.id, input, key).catch((failure: unknown) => {
+          // A reply refused by the server: nothing recorded. Only a lost one may have gone through.
+          if (!(failure instanceof ApiError && failure.status === 0)) lost.current = null;
+          throw failure;
+        });
+        lost.current = null;
         const change = paid.payment.changeGiven;
         setLastPaid({ ticket, name: mine.customer.name, invoice: paid.invoice });
         message = text.paid(
@@ -98,6 +114,34 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
       () => message,
     );
   };
+  // The customer left the register after a payment whose reply was lost: it went through. Sent
+  // again with the same key, the server gives back that payment and its invoice (idempotency).
+  const mineId = mine?.orderId ?? null;
+  useEffect(() => {
+    const payment = lost.current;
+    if (!queue || !payment || mineId === payment.orderId) return;
+    lost.current = null;
+    paymentsApi.pay(payment.orderId, payment.input, payment.key).then(
+      (paid) => {
+        setLastPaid({ ticket: payment.ticket, name: payment.name, invoice: paid.invoice });
+        const change = paid.payment.changeGiven;
+        say(
+          text.paid(
+            payment.ticket,
+            payment.name,
+            paid.invoice.number,
+            change === '0.00' ? null : formatMga(change),
+          ),
+          'check',
+        );
+      },
+      (failure: unknown) => {
+        // Still unreachable: tried again at the next change of the queue. Refused: never paid.
+        if (failure instanceof ApiError && failure.status === 0) lost.current = payment;
+      },
+    );
+  }, [queue, mineId, say]);
+
   const announced = (order: Order) =>
     order.ticket ? text.called(ticketLabel(order.ticket), order.customer.name) : '';
   const adjust = (line: QuoteLine, qty: string | null) => {

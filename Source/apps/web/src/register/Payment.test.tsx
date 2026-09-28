@@ -168,6 +168,53 @@ describe('payment at the register (RG-PAY-01 à 04)', () => {
     });
   });
 
+  const PAY = `POST ${ORDER}/pay`;
+
+  it('ignores the cash received left typed once no line is paid in cash', async () => {
+    const api = atRegister({ [PAY]: ok(paid('0.00')) });
+    const sheet = await paySheet();
+    type(within(sheet).getByLabelText(text.cashReceived), '1 000x');
+    fireEvent.change(within(sheet).getByLabelText(text.method), { target: { value: MVOLA } });
+    type(within(sheet).getByLabelText(text.reference), 'MP240928');
+    expect(confirm(sheet)).toBeEnabled();
+    fireEvent.click(confirm(sheet));
+    await waitFor(() => expect(api.callsTo(PAY)).toHaveLength(1));
+    expect(api.callsTo(PAY)[0]!.body).toMatchObject({ cashReceived: null });
+  });
+
+  it('never sends a line at zero', async () => {
+    atRegister({});
+    const sheet = await paySheet();
+    fireEvent.click(within(sheet).getByRole('button', { name: text.addMethod }));
+    expect(
+      shown((within(sheet).getAllByLabelText(text.lineAmount)[1] as HTMLInputElement).value),
+    ).toBe('0');
+    expect(confirm(sheet)).toBeDisabled();
+  });
+
+  it('gives the invoice of a payment that went through while its reply was lost', async () => {
+    const api = atRegister();
+    let tries = 0;
+    api.on(PAY, () => {
+      tries += 1;
+      if (tries > 1) return ok(paid('0.00'));
+      // Recorded by the server, the reply lost: the customer is no longer at the register.
+      api.on('GET /queues/register', ok(queueOf([], [])));
+      throw new TypeError('Failed to fetch');
+    });
+    const sheet = await paySheet();
+    fireEvent.click(confirm(sheet));
+    await waitFor(() =>
+      expect(band()).toHaveTextContent(text.paid('A1', 'Rasoa Hanta', 'F-2026-000001', null)),
+    );
+    expect(await screen.findByRole('link', { name: text.openInvoice })).toHaveAttribute(
+      'href',
+      `/api/v1/invoices/${INVOICE_ID}/pdf`,
+    );
+    const [first, second] = api.callsTo(PAY);
+    expect(second!.headers['idempotency-key']).toBe(first!.headers['idempotency-key']);
+  });
+
   it('sends the same payment again with the same key after a network failure', async () => {
     const api = atRegister({ [`POST ${ORDER}/pay`]: 'network' });
     const sheet = await paySheet();

@@ -75,9 +75,14 @@ export function PaymentSheet({ order, ticket, busy, onPay, onClose }: PaymentShe
 
   const methodOf = (line: Line) => methods?.find((method) => method.id === line.methodId);
   const amounts = lines.map((line) => typedAmount(line.amount));
-  const cashTyped = received.trim() === '' ? null : typedAmount(received);
+  const hasCash = lines.some((line) => methodOf(line)?.code === CASH_METHOD);
+  // The cash received counts only with a cash line: left typed after one is removed, it is ignored.
+  const receivedTyped = hasCash && received.trim() !== '';
+  const cashTyped = receivedTyped ? typedAmount(received) : null;
   const readable =
-    amounts.every((amount) => amount !== null) && (received.trim() === '' || cashTyped !== null);
+    amounts.every((amount) => amount !== null) && (!receivedTyped || cashTyped !== null);
+  // Every line takes something: a line at zero is removed, never sent (RG-PAY-02).
+  const allPositive = amounts.every((amount) => amount !== null && /[1-9]/.test(amount));
   const settled = settle(
     order.total,
     lines.map((line, index) => ({
@@ -86,11 +91,11 @@ export function PaymentSheet({ order, ticket, busy, onPay, onClose }: PaymentShe
     })),
     cashTyped,
   );
-  const hasCash = lines.some((line) => methodOf(line)?.code === CASH_METHOD);
   const missingReference = lines.some(
     (line) => methodOf(line)?.requiresReference && line.reference.trim() === '',
   );
-  const ready = readable && settled.issue === null && !missingReference && lines.length > 0;
+  const ready =
+    readable && allPositive && settled.issue === null && !missingReference && lines.length > 0;
 
   const update = (key: number, change: Partial<Line>) =>
     setLines((current) =>
