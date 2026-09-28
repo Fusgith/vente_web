@@ -2,6 +2,36 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 28/09/2026 — Relecture de T-018 à T-050 : 4 défauts corrigés — agent : Claude Code (Opus 5.5)
+
+**Contexte** : relecture du code faite à part par l'utilisateur (Claude Code en local). CI de `7df1d0e` verte. Auteur git des commits désormais « Fenitra » (`git config` en début de session ; l'historique n'est pas réécrit).
+
+**Décisions de l'utilisateur** (CDC métier v0.8, §16.7) :
+- H30 (contrôle à la caisse) validée telle quelle ;
+- C7 : un client absent perd sa priorité, de même qu'une commande prioritaire placée en dernier par le responsable ; journalisé avant → après (RG-FIL-02, RG-FIL-04).
+
+**Fait** (un commit par défaut, chacun avec son test, qui échoue sans la correction) :
+- `01dd7ba` — **blocage mutuel sur le stock** : `shrinkReservations` libère les articles dans l'ordre de leur identifiant, comme `reserveStock` les verrouille. Une annulation ou une baisse croisant une validation attend au lieu de finir en erreur 40P01 (500). Priorité avant T-022, qui libérera beaucoup de stock d'un coup.
+- `a282053` — CDC : H30 et C7.
+- `619d322` — **priorité perdue** à l'absence et au placement en dernier ; le journal d'une priorité enregistre aussi la nouvelle position (point mineur `queues.ts:254`).
+- `95c6591` — **« Appeler le suivant » ne répond plus « file vide » à tort** : appels, réordonnancements et priorités d'une file prennent un verrou de transaction propre à la file (`pg_advisory_xact_lock`) ; l'appel lit sans `SKIP LOCKED`. Règle aussi deux réordonnancements simultanés (point mineur `queues.ts:185`).
+- `1de1305` — **fenêtre d'une ligne à la caisse** : elle suit l'article (unité de vente, unique dans une commande), plus son numéro ; elle se ferme si la ligne a disparu.
+- `ad833d6` — doublon supprimé : en-tête des colonnes de montants et bloc des totaux communs au devis et à la commande (`ui/DocumentTable.tsx`).
+- Vérifications : `format:check`, `lint`, `typecheck` (0 erreur), `build` et 409 tests verts. Aucune dépendance ajoutée.
+
+**Reste — points mineurs de la relecture**, corrigés quand une tâche touche le fichier :
+- `order-changes.ts` : quantité baissée qui fait 0 en unité de base → 500 au lieu de 400 ; tests manquants : annulation par le commercial d'une commande déjà appelée, baisse par le responsable, contenu des journaux `order.adjusted` et `order.cancelled`, remise sur le total ramenée au plafond ;
+- `login.ts:192` : ordre des verrous entre une connexion et la fermeture de l'ancienne session ;
+- `customers.ts:147` : `updateCustomer` lit la fiche sans la verrouiller ; tests du déclencheur `customer_phones` (échange des deux numéros, numéros libérés par fusion ou désactivation) ;
+- `prisma/seed.ts:94` : téléphones des clients de démonstration non normalisés ;
+- `register/useOrderAtRegister.ts` : réponses dans le désordre, commande non relue après reconnexion ;
+- `register/RegisterWorkspace.tsx:53` : rejet de promesse non traité ;
+- caisse : trois messages affichent le ticket sans le nom du client (RG-TKT-03).
+
+**Ensuite** : T-022, puis T-051.
+
+**Questions ouvertes** : aucune.
+
 ## 27/09/2026 — H29 validée, T-050 contrôle à la caisse — agent : Claude Code (Opus 5.5)
 
 **Reprise après le crash du PC** : rien de perdu, tout était poussé (`3fd8258`, CI verte). Seul PostgreSQL local était arrêté.
