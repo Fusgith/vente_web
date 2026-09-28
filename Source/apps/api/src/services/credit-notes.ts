@@ -21,6 +21,7 @@ import { storedPdf } from './document-files.js';
 import { invoiceSnapshotSchema } from './invoices.js';
 import { loadOrder } from './orders.js';
 import { PAYMENT_INCLUDE, toPaymentView } from './payments.js';
+import { lockOpenSession } from './register-sessions.js';
 import { nextSequenceValue } from './sequences.js';
 import { readSetting } from './settings.js';
 import { shopDate, shopYear } from './shop-time.js';
@@ -48,11 +49,14 @@ export type CreditNoteSnapshot = z.infer<typeof creditNoteSnapshotSchema>;
 
 const PREFIX = /^[A-Z0-9]{1,6}$/;
 
-const LOOKUP_INCLUDE = { payment: { include: PAYMENT_INCLUDE } } satisfies Prisma.InvoiceInclude;
+const LOOKUP_INCLUDE = {
+  payment: { include: PAYMENT_INCLUDE },
+  creditNotes: { select: { id: true, number: true }, orderBy: { seq: 'asc' } },
+} satisfies Prisma.InvoiceInclude;
 
 /**
  * A sale found by its invoice number, as the customer shows it (⚠️ H36): trimmed, any case.
- * The order and how it was paid, to cancel it.
+ * The order, how it was paid, to cancel it, and the credit notes already issued on it.
  */
 export async function lookupInvoice(db: Db, number: string): Promise<InvoiceLookup> {
   const invoice = await db.invoice.findUnique({
@@ -64,6 +68,7 @@ export async function lookupInvoice(db: Db, number: string): Promise<InvoiceLook
     invoice: { id: invoice.id, number: invoice.number, issuedAt: invoice.issuedAt.toISOString() },
     order: await loadOrder(db, invoice.orderId),
     payment: toPaymentView(invoice.payment),
+    creditNotes: invoice.creditNotes,
   };
 }
 
@@ -98,10 +103,7 @@ export async function refundOrder(
       select: { id: true, number: true, issuedAt: true, snapshot: true },
     });
     if (!invoice) throw new AppError(409, 'ORDER_NOT_REFUNDABLE');
-    const session = await tx.registerSession.findFirst({
-      where: { cashierId: actor.userId, closedAt: null },
-      select: { id: true },
-    });
+    const session = await lockOpenSession(tx, actor.userId);
     if (!session) throw new AppError(409, 'REGISTER_SESSION_REQUIRED');
     const method = await tx.paymentMethod.findUnique({ where: { id: refund.methodId } });
     if (!method?.isActive) throw new AppError(409, 'PAYMENT_METHOD_INVALID');

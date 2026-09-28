@@ -16,6 +16,7 @@ import { by, type Actor } from './actor.js';
 import { recordAudit } from './audit.js';
 import { issueInvoice, readInvoiceSettings } from './invoices.js';
 import { loadOrder } from './orders.js';
+import { lockOpenSession } from './register-sessions.js';
 import { nextSequenceValue } from './sequences.js';
 
 /** The methods offered at the register, in their order (RG-PAY-01). */
@@ -96,9 +97,16 @@ export async function payOrder(
   return db.$transaction(async (tx) => {
     // The order row locked: a second tap, or the same key sent again, waits for this one.
     const [order] = await tx.$queryRaw<
-      { status: string; version: number; cashier_user_id: string | null; total: string }[]
+      {
+        status: string;
+        version: number;
+        cashier_user_id: string | null;
+        total: string;
+        priority: number;
+      }[]
     >`
-      SELECT "status"::text AS "status", "version", "cashier_user_id", "total"::text AS "total"
+      SELECT "status"::text AS "status", "version", "cashier_user_id", "total"::text AS "total",
+             "priority"
         FROM "orders" WHERE "id" = ${id}::uuid FOR UPDATE`;
     if (!order) throw new AppError(404, 'NOT_FOUND');
 
@@ -121,10 +129,7 @@ export async function payOrder(
     const mine = actor.activeRole === 'manager' || order.cashier_user_id === actor.userId;
     if (order.status !== 'AT_REGISTER' || !mine) throw new AppError(409, 'ORDER_NOT_AT_REGISTER');
     if (order.version !== version) throw new AppError(409, 'ORDER_CHANGED');
-    const session = await tx.registerSession.findFirst({
-      where: { cashierId: actor.userId, closedAt: null },
-      select: { id: true, stationId: true },
-    });
+    const session = await lockOpenSession(tx, actor.userId);
     if (!session) throw new AppError(409, 'REGISTER_SESSION_REQUIRED');
 
     const checked = await checkedLines(tx, lines);
@@ -183,8 +188,10 @@ export async function payOrder(
         paidAt: now,
         expiresAt: null,
         registerStationId: session.stationId,
-        // Last in the delivery queue: the order of payment (RG-LIV-01, RG-FIL-06).
+        // Last in the delivery queue: the order of payment (RG-LIV-01, RG-FIL-06). A priority
+        // given at the register stays there: it never jumps the delivery queue later.
         queueRank: await nextSequenceValue(tx, 'QUEUE-DELIVERY'),
+        priority: 0,
         version: { increment: 1 },
       },
     });
@@ -199,7 +206,7 @@ export async function payOrder(
       action: 'order.paid',
       entityType: 'order',
       entityId: id,
-      before: { status: 'AT_REGISTER', total: order.total },
+      before: { status: 'AT_REGISTER', total: order.total, priority: order.priority > 0 },
       after: {
         status: 'PAID',
         invoice: invoice.number,
@@ -211,6 +218,7 @@ export async function payOrder(
         })),
         cashReceived: result.cashReceived,
         change: result.changeGiven,
+        priority: false,
       },
     });
     return { order: await loadOrder(tx, id), payment: result, invoice };

@@ -76,6 +76,7 @@ export const ERROR_LABELS = {
   ORDER_NOT_REFUNDABLE:
     'Cette vente ne s’annule pas ici : elle est en préparation, livrée ou déjà remboursée.',
   APPROVAL_NOT_MANAGER: 'Seul un responsable valide une annulation après paiement.',
+  APPROVAL_SELF: 'Un autre responsable que vous doit valider cette annulation.',
   REFUND_REFERENCE_REQUIRED: 'Saisissez la référence du remboursement pour ce moyen.',
   TICKET_LETTER_MISSING:
     'Aucune lettre de ticket n’est attribuée à ce commercial : l’admin doit lui en donner une.',

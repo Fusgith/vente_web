@@ -13,6 +13,8 @@ export const invoiceLookupSchema = z.object({
   invoice: z.object({ id: z.uuid(), number: z.string(), issuedAt: z.string() }),
   order: orderSchema,
   payment: paymentSchema,
+  /** Its credit notes, oldest first: reprinted from here, even when the refund reply was lost. */
+  creditNotes: z.array(creditNoteRefSchema),
 });
 export type InvoiceLookup = z.infer<typeof invoiceLookupSchema>;
 

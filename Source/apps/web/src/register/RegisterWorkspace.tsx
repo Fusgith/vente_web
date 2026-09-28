@@ -166,6 +166,7 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
       )}
       {refunding && (
         <RefundSheet
+          userId={userId}
           onRefunded={(sale, done) =>
             say(
               labels.refund.refunded(

@@ -96,6 +96,8 @@ describe.skipIf(!TEST_DATABASE_URL)('payment at the register (RG-PAY, H32)', () 
   it('takes cash, gives the change, the order paid and off to delivery (RG-PAY-03, RG-LIV-01)', async () => {
     const order = await atRegister();
     expect(order).toMatchObject({ total: '65000.00' });
+    // Called ahead as a priority in the register queue (RG-FIL-02).
+    await t.db.order.update({ where: { id: order.id }, data: { priority: 1 } });
     const response = await pay(order, { lines: [cash('65000')], cashReceived: '70000' });
     expect(response.statusCode, response.body).toBe(200);
     const paid = response.json();
@@ -119,10 +121,15 @@ describe.skipIf(!TEST_DATABASE_URL)('payment at the register (RG-PAY, H32)', () 
         (await request(t.app, 'GET', `/api/v1/queues/${name}`, { cookie: cookies.manager })).json(),
       );
     expect((await queue('register')).serving).toEqual([]);
-    expect((await queue('delivery')).waiting.map((item) => item.orderId)).toEqual([order.id]);
+    // Last in the delivery queue, the register priority left behind: it never jumps it later.
+    expect((await queue('delivery')).waiting).toMatchObject([
+      { orderId: order.id, priority: false },
+    ]);
     const audit = await t.db.auditLog.findFirstOrThrow({ where: { action: 'order.paid' } });
+    expect(audit.before).toMatchObject({ priority: true });
     expect(audit.after).toMatchObject({
       status: 'PAID',
+      priority: false,
       lines: [{ method: 'CASH', amount: '65000.00', reference: null }],
       change: '5000.00',
     });

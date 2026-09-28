@@ -11,6 +11,7 @@ import type { Env } from '../env.js';
 import { actorOf, authOf, requireRole } from '../plugins/session.js';
 import { creditNotePdf, lookupInvoice, refundOrder } from '../services/credit-notes.js';
 import { orderRefunded } from '../services/realtime-rooms.js';
+import { authRateLimit } from './rate-limit.js';
 
 const idParams = z.object({ id: z.uuid() });
 const lookupQuery = z.object({ number: z.string().trim().min(1).max(32) });
@@ -31,7 +32,8 @@ export const creditNoteRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { 
 
   app.post(
     '/orders/:id/refund',
-    { preHandler: requireRole(...TAKERS) },
+    // The manager's PIN is guessed here like at login (CDC technique §8).
+    { preHandler: requireRole(...TAKERS), ...authRateLimit },
     async (request): Promise<RefundedOrder> => {
       const { id } = idParams.parse(request.params);
       const body = orderRefundSchema.parse(request.body);

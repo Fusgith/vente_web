@@ -1,3 +1,6 @@
+const AT_COUNTER =
+  'La marchandise est au comptoir de livraison : le responsable doit d’abord la remettre en file.';
+
 /** Cancelling a paid sale, refund and credit note (T-053, RG-ANN-02, ⚠️ H36); `labels.refund`. */
 export const refundLabels = {
   open: 'Annuler une vente payée',
@@ -13,8 +16,9 @@ export const refundLabels = {
   /** Why a sale found cannot be cancelled here, by its status. */
   notRefundable: (status: string) =>
     ({
-      AT_DELIVERY:
-        'La marchandise est en préparation au comptoir : elle doit y être rendue d’abord.',
+      PREPARING: AT_COUNTER,
+      READY: AT_COUNTER,
+      ISSUE: AT_COUNTER,
       DELIVERED: 'La marchandise est déjà livrée : l’annulation n’est plus possible ici.',
       REFUNDED: 'Cette vente est déjà annulée et remboursée.',
     })[status] ?? 'Cette vente ne peut pas être annulée ici.',
@@ -30,6 +34,8 @@ export const refundLabels = {
   done: (creditNote: string, amount: string, method: string) =>
     `Avoir ${creditNote} émis. Rendez ${amount} au client (${method}).`,
   openCreditNote: 'Ouvrir l’avoir',
+  /** A credit note already issued on the sale found, to reprint. */
+  creditNoteOf: (number: string) => `Ouvrir l’avoir ${number}`,
   finish: 'Terminer',
   /** In the status line, once done. */
   refunded: (ticket: string, name: string, creditNote: string) =>

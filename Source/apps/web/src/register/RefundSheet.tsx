@@ -9,6 +9,7 @@ import {
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 
 import { authApi } from '../api/auth.js';
+import { ApiError } from '../api/client.js';
 import { creditNotesApi } from '../api/credit-notes.js';
 import { errorMessage } from '../api/error-message.js';
 import { paymentsApi } from '../api/payments.js';
@@ -25,9 +26,14 @@ const FIELD =
 const REASON_MIN = 3;
 const PIN = /^\d{4,6}$/;
 
+/** Refusals after which the sale is looked up again. */
+const REFRESH_ON = new Set(['ORDER_CHANGED', 'ORDER_NOT_REFUNDABLE', 'NETWORK_ERROR']);
+
 type Manager = AuthUserDirectory['users'][number];
 
 interface RefundSheetProps {
+  /** The one refunding: never among the managers validating it (annexe B). */
+  userId: string;
   /** Once cancelled and refunded: the sale and its credit note, for the status line. */
   onRefunded: (sale: InvoiceLookup, done: RefundedOrder) => void;
   onClose: () => void;
@@ -46,7 +52,7 @@ function defaultMethod(sale: InvoiceLookup, methods: PaymentMethod[]): string {
  * invoice, cancelled with a reason and refunded whole by one method from this register, on the
  * manager's name, picked from the list, and PIN typed on the spot. The credit note, numbered, is then at hand.
  */
-export function RefundSheet({ onRefunded, onClose }: RefundSheetProps) {
+export function RefundSheet({ userId, onRefunded, onClose }: RefundSheetProps) {
   const id = useId();
   const field = useRef<HTMLInputElement>(null);
   const [number, setNumber] = useState('');
@@ -59,6 +65,8 @@ export function RefundSheet({ onRefunded, onClose }: RefundSheetProps) {
   const [username, setUsername] = useState('');
   const [pin, setPin] = useState('');
   const [failure, setFailure] = useState<string | null>(null);
+  // Methods or managers not loaded: stays in view, a search does not hide it.
+  const [loadFailure, setLoadFailure] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<RefundedOrder | null>(null);
 
@@ -68,16 +76,24 @@ export function RefundSheet({ onRefunded, onClose }: RefundSheetProps) {
       ([list, directory]) => {
         if (!live) return;
         setMethods(list);
-        const found = directory.users.filter((user) => user.roles.includes('manager'));
+        const found = directory.users.filter(
+          (user) => user.roles.includes('manager') && user.id !== userId,
+        );
         setManagers(found);
         if (found.length === 1) setUsername(found[0]!.username);
       },
-      (error: unknown) => live && setFailure(errorMessage(error)),
+      (error: unknown) => live && setLoadFailure(errorMessage(error)),
     );
     return () => {
       live = false;
     };
-  }, []);
+  }, [userId]);
+
+  const lookup = (value: string) =>
+    creditNotesApi.lookup(value).then((found) => {
+      setSale(found);
+      setMethodId('');
+    });
 
   const find = (event: FormEvent) => {
     event.preventDefault();
@@ -85,19 +101,14 @@ export function RefundSheet({ onRefunded, onClose }: RefundSheetProps) {
     setBusy(true);
     setFailure(null);
     setSale(null);
-    creditNotesApi
-      .lookup(number)
-      .then(
-        (found) => {
-          setSale(found);
-          setMethodId(defaultMethod(found, methods));
-        },
-        (error: unknown) => setFailure(errorMessage(error)),
-      )
+    lookup(number)
+      .catch((error: unknown) => setFailure(errorMessage(error)))
       .finally(() => setBusy(false));
   };
 
-  const method = methods.find((item) => item.id === methodId) ?? null;
+  // Until the cashier picks one: the method paid with, whichever of the sale and the methods came last.
+  const chosenId = methodId || (sale ? defaultMethod(sale, methods) : '');
+  const method = methods.find((item) => item.id === chosenId) ?? null;
   const refundable = sale?.order.status === 'PAID';
   const ready =
     refundable &&
@@ -128,6 +139,11 @@ export function RefundSheet({ onRefunded, onClose }: RefundSheetProps) {
           setFailure(errorMessage(error));
           // The PIN is typed again, never kept after a refusal.
           setPin('');
+          // Changed elsewhere, or the reply lost after the refund: the sale as it now stands,
+          // with its credit note to reprint when it went through.
+          if (error instanceof ApiError && REFRESH_ON.has(error.code)) {
+            return lookup(sale.invoice.number).catch(() => undefined);
+          }
         },
       )
       .finally(() => setBusy(false));
@@ -197,6 +213,14 @@ export function RefundSheet({ onRefunded, onClose }: RefundSheetProps) {
           </button>
         </form>
       )}
+      {loadFailure && (
+        <p
+          role="alert"
+          className="rounded-control bg-madder-soft px-3 py-2.5 font-semibold text-madder"
+        >
+          {loadFailure}
+        </p>
+      )}
       {failure && (
         <p
           role="alert"
@@ -210,6 +234,22 @@ export function RefundSheet({ onRefunded, onClose }: RefundSheetProps) {
         <p role="status" className="rounded-control bg-cotton p-3 font-semibold">
           {text.notRefundable(sale.order.status)}
         </p>
+      )}
+      {sale && !done && sale.creditNotes.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {sale.creditNotes.map((note) => (
+            <a
+              key={note.id}
+              href={creditNotesApi.pdfUrl(note.id)}
+              target="_blank"
+              rel="noopener"
+              className={buttonClass('secondary', 'lg')}
+            >
+              <Icon name="document" className="size-5" />
+              {text.creditNoteOf(note.number)}
+            </a>
+          ))}
+        </div>
       )}
       {done && method && (
         <p role="status" className="rounded-control bg-cotton p-3 text-18 font-semibold">
@@ -234,7 +274,7 @@ export function RefundSheet({ onRefunded, onClose }: RefundSheetProps) {
               <span className="font-semibold">{text.method}</span>
               <select
                 id={`${id}-method`}
-                value={methodId}
+                value={chosenId}
                 onChange={(event) => setMethodId(event.target.value)}
                 className={FIELD}
               >

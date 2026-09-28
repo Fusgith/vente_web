@@ -27,7 +27,10 @@ const entry = item(1);
 const LOOKUP = 'GET /invoices/lookup?number=f-2026-000001';
 const REFUND = `POST /orders/${entry.orderId}/refund`;
 
-function sale(status: InvoiceLookup['order']['status']): InvoiceLookup {
+function sale(
+  status: InvoiceLookup['order']['status'],
+  creditNotes: InvoiceLookup['creditNotes'] = [],
+): InvoiceLookup {
   return {
     invoice: {
       id: '0192a4f0-0000-7000-8000-000000000901',
@@ -44,6 +47,7 @@ function sale(status: InvoiceLookup['order']['status']): InvoiceLookup {
       createdAt: '2026-09-28T06:00:00.000Z',
       lines: [{ method: { code: 'CASH', label: 'Espèces' }, amount: '65000.00', reference: null }],
     },
+    creditNotes,
   };
 }
 
@@ -54,7 +58,12 @@ function mount(handlers: Parameters<typeof fakeApi>[0]) {
     'GET /payment-methods': ok(METHODS),
     'GET /auth/users': ok({
       users: [
-        { id: HERY.id, username: 'hery', fullName: 'Hery Caissier', roles: ['cashier'] },
+        {
+          id: HERY.id,
+          username: 'hery',
+          fullName: 'Hery Caissier',
+          roles: ['cashier', 'manager'],
+        },
         {
           id: MANAGER,
           username: 'responsable',
@@ -110,7 +119,7 @@ describe('cancelling a paid sale at the register (RG-ANN-02, ⚠️ H36)', () =>
     fireEvent.change(method, { target: { value: MVOLA } });
     expect(within(sheet).getByLabelText(text.reference)).toBeVisible();
     fireEvent.change(method, { target: { value: CASH } });
-    // Picked by name among the managers only.
+    // Picked by name among the managers only, never the cashier refunding (annexe B).
     const manager = within(sheet).getByLabelText(text.manager);
     expect(
       within(manager)
@@ -160,7 +169,34 @@ describe('cancelling a paid sale at the register (RG-ANN-02, ⚠️ H36)', () =>
     mount({ [LOOKUP]: ok(sale('PREPARING')) });
     const sheet = await find();
     expect(within(sheet).getByRole('status')).toHaveTextContent(text.notRefundable('PREPARING'));
+    expect(text.notRefundable('PREPARING')).not.toBe(text.notRefundable('PAID'));
     expect(within(sheet).queryByLabelText(text.pin)).not.toBeInTheDocument();
+  });
+
+  it('reprints the credit note of a sale already refunded, when the reply was lost', async () => {
+    const api = mount({
+      [LOOKUP]: ok(sale('PAID')),
+      [REFUND]: 'network',
+    });
+    const sheet = await find();
+    fireEvent.change(within(sheet).getByLabelText(text.reason), {
+      target: { value: 'Le client renonce' },
+    });
+    fireEvent.change(within(sheet).getByLabelText(text.manager), {
+      target: { value: 'responsable' },
+    });
+    fireEvent.change(within(sheet).getByLabelText(text.pin), { target: { value: '1234' } });
+    // The refund went through, its reply did not: the sale is looked up again.
+    api.on(
+      'GET /invoices/lookup?number=F-2026-000001',
+      ok(sale('REFUNDED', [{ id: CREDIT_NOTE, number: 'AV-2026-000001' }])),
+    );
+    fireEvent.click(within(sheet).getByRole('button', { name: text.confirm(formatMga('65000')) }));
+    const link = await within(sheet).findByRole('link', {
+      name: text.creditNoteOf('AV-2026-000001'),
+    });
+    expect(link).toHaveAttribute('href', `/api/v1/credit-notes/${CREDIT_NOTE}/pdf`);
+    expect(within(sheet).getByRole('status')).toHaveTextContent(text.notRefundable('REFUNDED'));
   });
 
   it('says so when no invoice has that number', async () => {

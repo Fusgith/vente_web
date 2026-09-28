@@ -7,7 +7,8 @@ import { verifySecret } from './password-hash.js';
 /**
  * The manager's validation on the spot (RG-ANN-02, ⚠️ H36): their name and PIN typed on the
  * screen asking for it. The attempt counts like a login (RG-USR-05): a locked account cannot
- * validate, a wrong PIN is a failure towards the lock. Returns the manager's id.
+ * validate, a wrong PIN is a failure towards the lock. A second person: never the one asking
+ * (annexe B, the cashier creates, the manager validates). Returns the manager's id.
  */
 export async function managerApproval(
   db: Db,
@@ -20,6 +21,7 @@ export async function managerApproval(
     await verifySecret(null, pin);
     throw new AppError(401, 'AUTH_INVALID_CREDENTIALS');
   }
+  if (manager.id === actor.userId) throw new AppError(403, 'APPROVAL_SELF');
   const slot = await reserveAttemptOrThrow(db, manager.id);
   if (!(await verifySecret(manager.pinHash, pin)) || !manager.isActive) {
     await recordLoginFailure(db, manager.id, slot, failureContext(actor, 'approval_invalid'));

@@ -118,6 +118,7 @@ describe.skipIf(!TEST_DATABASE_URL)('refund after payment, credit note (RG-ANN-0
       invoice: { number: sale.invoice },
       order: { id: sale.id, status: 'PAID', total: '6500.00' },
       payment: { lines: [{ method: { code: 'CASH' }, amount: '6500.00' }] },
+      creditNotes: [],
     });
     expect(await code(await get('/invoices/lookup?number=F-2000-999999', cookies.soa))).toEqual([
       404,
@@ -169,6 +170,11 @@ describe.skipIf(!TEST_DATABASE_URL)('refund after payment, credit note (RG-ANN-0
       refunds: [{ code: 'CASH', count: 1, total: '6500.00' }],
       cashExpected: '50000.00',
     });
+    // Found again by its invoice, with its credit note to reprint.
+    const again = invoiceLookupSchema.parse(
+      (await get(`/invoices/lookup?number=${sale.invoice}`, cookies.soa)).json(),
+    );
+    expect(again.creditNotes).toEqual([creditNote]);
     // Done once: the same order is no longer refundable.
     expect(await code(await refund(sale.id, { version: 5 }))).toEqual([
       409,
@@ -196,6 +202,22 @@ describe.skipIf(!TEST_DATABASE_URL)('refund after payment, credit note (RG-ANN-0
       409,
       'ORDER_NOT_REFUNDABLE',
     ]);
+  });
+
+  it('never lets the one refunding validate their own refund (annexe B)', async () => {
+    const sale = await paid();
+    await createUser(t.db, { username: 'hery', roles: ['cashier', 'manager'], pin: '6789' });
+    const hery = (await loginOk(t.app, { username: 'hery', role: 'cashier', pin: '6789' })).cookie;
+    const register = (await createStation(t.db, 'REGISTER')).id;
+    await post('/register-sessions', hery, { stationId: register, openingFloat: '0' });
+    const self = await post(`/orders/${sale.id}/refund`, hery, {
+      version: 4,
+      reason: 'Le client renonce',
+      refund: { methodId: methods['CASH'], reference: null },
+      approval: { username: 'hery', pin: '6789' },
+    });
+    expect(await code(self)).toEqual([403, 'APPROVAL_SELF']);
+    expect(await t.db.creditNote.count()).toBe(0);
   });
 
   it('numbers the credit notes without a gap (RG-FAC-05)', async () => {

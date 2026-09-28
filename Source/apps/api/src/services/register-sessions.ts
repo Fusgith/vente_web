@@ -33,6 +33,20 @@ export async function openSessionOf(db: AuditTx, userId: string): Promise<Regist
   return session ? toSession(session) : null;
 }
 
+/**
+ * The caller's open session, held until their transaction ends (RG-CAI-03): a closing running at
+ * the same time waits for the payment or refund, or it goes first and the session is no longer open.
+ */
+export async function lockOpenSession(
+  tx: AuditTx,
+  userId: string,
+): Promise<{ id: string; stationId: string } | null> {
+  const [session] = await tx.$queryRaw<{ id: string; station_id: string }[]>`
+    SELECT "id", "station_id" FROM "register_sessions"
+     WHERE "cashier_id" = ${userId}::uuid AND "closed_at" IS NULL FOR SHARE`;
+  return session ? { id: session.id, stationId: session.station_id } : null;
+}
+
 /** The active registers, each marked busy when someone else has it open (RG-CAI-01). */
 export async function registerStations(db: Db, userId: string): Promise<RegisterStation[]> {
   const stations = await db.station.findMany({
