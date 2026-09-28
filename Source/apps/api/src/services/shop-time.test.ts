@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { nextShopTime, shopDate, shopDateValue, shopYear } from './shop-time.js';
+import { nextShopTime, shopDate, shopDateValue, shopDayStart, shopYear } from './shop-time.js';
 
 describe('shop time (Indian/Antananarivo, UTC+3)', () => {
   it('takes the day of the shop, not of the server', () => {
@@ -53,5 +53,17 @@ describe('shop time (Indian/Antananarivo, UTC+3)', () => {
       '2027-01-01T20:00:00.000Z',
     );
     expect(() => nextShopTime(new Date(), '24:00')).toThrow(RangeError);
+  });
+});
+
+describe('shopDayStart', () => {
+  it('is midnight at the shop, 21:00 UTC the day before', () => {
+    const at = new Date('2026-09-28T05:02:00.000Z');
+    expect(shopDayStart(at).toISOString()).toBe('2026-09-27T21:00:00.000Z');
+    expect(shopDayStart(at, 1).toISOString()).toBe('2026-09-28T21:00:00.000Z');
+    // 22:30 UTC is already the next day at the shop.
+    expect(shopDayStart(new Date('2026-09-28T22:30:00.000Z')).toISOString()).toBe(
+      '2026-09-28T21:00:00.000Z',
+    );
   });
 });

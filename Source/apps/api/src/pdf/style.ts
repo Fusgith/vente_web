@@ -6,3 +6,4 @@ export const INDIGO = '#2b3a92';
 export const SAFFRON_SOFT = '#fff2cc';
 
 export const PDF_FONT = 'Asap';
+export const MADDER = '#b42318';

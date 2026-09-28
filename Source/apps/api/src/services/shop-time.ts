@@ -64,6 +64,21 @@ export function shopDateValue(at: Date): Date {
   return shopDay(at, 0);
 }
 
+/** The instant the shop's day of `at` starts (00:00 at the shop), `days` later. */
+export function shopDayStart(at: Date, days = 0): Date {
+  const clock = shopClock(at);
+  const wall = Date.UTC(
+    clock.year,
+    clock.month - 1,
+    clock.day,
+    clock.hour,
+    clock.minute,
+    clock.second,
+  );
+  const offset = wall - Math.floor(at.getTime() / 1000) * 1000;
+  return new Date(Date.UTC(clock.year, clock.month - 1, clock.day + days) - offset);
+}
+
 /** `HH:MM` on the 24-hour clock, as the `day_end_time` setting holds it. */
 export const CLOCK_TIME = /^([01]\d|2[0-3]):([0-5]\d)$/;
 

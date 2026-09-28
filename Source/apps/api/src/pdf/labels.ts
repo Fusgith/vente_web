@@ -62,3 +62,33 @@ export const INVOICE_PDF = {
   page: (number: string, current: number, count: number) =>
     `Facture ${number} — page ${current} sur ${count}`,
 };
+
+/** The register closing report (RG-CAI-03, H35). */
+export const CLOSING_PDF = {
+  title: 'Clôture de caisse',
+  open: 'Session ouverte',
+  register: 'Caisse',
+  cashier: 'Caissier',
+  openedAt: 'Ouverture',
+  closedAt: 'Clôture',
+  notClosed: 'non clôturée',
+  byMethod: 'Encaissements par moyen de paiement',
+  method: 'Moyen',
+  payments: 'Paiements',
+  total: 'Total',
+  inCurrency: `(${CURRENCY})`,
+  cash: 'Espèces',
+  openingFloat: 'Fond de caisse',
+  cashTaken: 'Espèces encaissées',
+  cashExpected: 'Espèces attendues',
+  countedCash: 'Espèces comptées',
+  variance: 'Écart',
+  note: 'Commentaire',
+  invoices: 'Factures de la session',
+  invoice: 'Facture',
+  amount: 'Montant',
+  none: 'Aucun paiement.',
+  at: (date: string, time: string) => `${date} à ${time}`,
+  page: (register: string, current: number, count: number) =>
+    `Clôture ${register} — page ${current} sur ${count}`,
+};

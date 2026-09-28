@@ -70,6 +70,8 @@ export const ERROR_LABELS = {
   ORDER_NOT_AT_COUNTER: 'Cette commande n’est plus à votre comptoir : la liste a été mise à jour.',
   DELIVERY_INCOMPLETE:
     'Cochez chaque ligne remise au client ; une ligne manquante ou abîmée se signale comme anomalie.',
+  REGISTER_SESSION_NOTE_REQUIRED:
+    'La caisse ne tombe pas juste : expliquez l’écart dans le commentaire avant de clôturer.',
   TICKET_LETTER_MISSING:
     'Aucune lettre de ticket n’est attribuée à ce commercial : l’admin doit lui en donner une.',
 } as const;
