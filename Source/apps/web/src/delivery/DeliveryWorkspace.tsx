@@ -28,7 +28,7 @@ const WORDING: QueueTableText = {
 };
 
 /**
- * The warehouse user's screen (T-060, RG-LIV-01 à 03, ⚠️ H34). Without an order: the delivery
+ * The warehouse user's screen (T-060, RG-LIV-01 à 03, H34). Without an order: the delivery
  * queue live, the next one taken, or a ticket out of turn. With one: what to prepare, then —
  * called — each line ticked as handed over, and the delivery; absent, back to the queue.
  */

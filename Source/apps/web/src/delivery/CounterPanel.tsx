@@ -18,7 +18,7 @@ interface CounterPanelProps {
 }
 
 /**
- * The counter's own order (RG-LIV-02, ⚠️ H34). Ready, its ticket and the customer's name show
+ * The counter's own order (RG-LIV-02, H34). Ready, its ticket and the customer's name show
  * big, to be read out without a public display (RG-DSP-05, RG-TKT-03); absent, it goes back to
  * the queue. Otherwise, one button takes the next paid order, which it names.
  */

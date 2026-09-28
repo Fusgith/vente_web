@@ -35,7 +35,7 @@ export const ORDER_TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatu
   SUBMITTED: ['AT_REGISTER', 'EXPIRED', 'CANCELLED'],
   AT_REGISTER: ['PAID', 'SUBMITTED', 'CANCELLED'],
   PAID: ['PREPARING', 'REFUNDED'],
-  // Back in the delivery queue: reassigned by the manager, or absent when called (⚠️ H34).
+  // Back in the delivery queue: reassigned by the manager, or absent when called (H34).
   PREPARING: ['READY', 'ISSUE', 'PAID'],
   READY: ['DELIVERED', 'ISSUE', 'PAID'],
   ISSUE: ['READY', 'DELIVERED'],

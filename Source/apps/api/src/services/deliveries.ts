@@ -23,7 +23,7 @@ async function heldBy(tx: Prisma.TransactionClient, id: string) {
   return { ...order, delivery };
 }
 
-/** The caller's own order at their counter, or the manager's reach (RG-USR-08, ⚠️ H34). */
+/** The caller's own order at their counter, or the manager's reach (RG-USR-08, H34). */
 async function atMyCounter(tx: Prisma.TransactionClient, actor: Actor, id: string, status: string) {
   const held = await heldBy(tx, id);
   const mine = actor.activeRole === 'manager' || held.delivery?.warehouseUserId === actor.userId;
@@ -34,7 +34,7 @@ async function atMyCounter(tx: Prisma.TransactionClient, actor: Actor, id: strin
 }
 
 /**
- * Takes an order to prepare (RG-LIV-02, RG-USR-08, ⚠️ H34): the first paid one, or `id` when
+ * Takes an order to prepare (RG-LIV-02, RG-USR-08, H34): the first paid one, or `id` when
  * the customer stands at the counter — audited as such. One order at a time per warehouse user,
  * held under their name so that nobody else prepares it; the delivery queue taken one change at
  * a time, as the register's.
@@ -104,7 +104,7 @@ export async function markReady(db: Db, actor: Actor, id: string): Promise<Order
 }
 
 /**
- * Back to the delivery queue (⚠️ H34): the customer absent when called — last, one more absence,
+ * Back to the delivery queue (H34): the customer absent when called — last, one more absence,
  * the priority lost (RG-FIL-04, RG-FIL-06) — or, by the manager, an order in preparation or
  * ready given to another counter at its place (RG-USR-08). Still paid, its reservation firm.
  */

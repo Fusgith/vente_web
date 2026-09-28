@@ -1,4 +1,4 @@
-/** The counters' wording (T-060, RG-LIV-01 à 03, ⚠️ H34); part of `labels` (`labels.delivery`). */
+/** The counters' wording (T-060, RG-LIV-01 à 03, H34); part of `labels` (`labels.delivery`). */
 export const deliveryLabels = {
   queueTitle: 'File livraison',
   empty: 'Aucune commande à livrer : les commandes payées apparaissent ici.',

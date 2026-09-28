@@ -21,7 +21,7 @@ const orderParams = z.object({ id: z.uuid() });
 /** Annexe B « Livraison » (the manager standing in, RG-USR-08). */
 const COUNTER: Role[] = ['warehouse', 'manager'];
 
-/** The counters (T-060, RG-LIV-01 à 03, ⚠️ H34): take, prepare, call, hand over. */
+/** The counters (T-060, RG-LIV-01 à 03, H34): take, prepare, call, hand over. */
 export const deliveryRoutes: FastifyPluginAsync = async (app) => {
   const owner = (order: Order) => ({ id: order.id, salesUserId: order.salesUser.id });
 
