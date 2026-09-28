@@ -73,6 +73,15 @@ export async function loadQueue(db: Db, queue: QueueName): Promise<Queue> {
 }
 
 /**
+ * One change of a queue at a time (RG-FIL-02, RG-FIL-03): a call waits for a reorder in progress
+ * instead of skipping its locked rows, and a reorder reads the order the previous one left.
+ * Released with the transaction.
+ */
+async function lockQueue(tx: Prisma.TransactionClient, queue: QueueName): Promise<void> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${RANK_KEY[queue]}))`;
+}
+
+/**
  * One customer at a time at a register (H29): the caller's own row locked, two taps call one
  * ticket.
  */
@@ -88,17 +97,18 @@ async function assertRegisterFree(tx: Prisma.TransactionClient, actor: Actor): P
 /**
  * Calls a ticket to the caller's register (RG-FIL-03): the first waiting one, or `id` when the
  * customer stands in front of the cashier — audited as such. Two registers calling at the same
- * moment never get the same ticket: a row being called is skipped, and the call is guarded on
- * the order still waiting.
+ * moment never get the same ticket: calls take the queue one after the other, and the call is
+ * guarded on the order still waiting.
  */
 export async function callToRegister(db: Db, actor: Actor, id: string | null): Promise<Order> {
   return db.$transaction(async (tx) => {
     await assertRegisterFree(tx, actor);
+    await lockQueue(tx, 'register');
     let orderId = id;
     if (orderId === null) {
       const [first] = await tx.$queryRaw<{ id: string }[]>`
         SELECT "id" FROM "orders" WHERE "status" = 'SUBMITTED'
-         ORDER BY "queue_rank", "id" LIMIT 1 FOR UPDATE SKIP LOCKED`;
+         ORDER BY "queue_rank", "id" LIMIT 1 FOR UPDATE`;
       if (!first) throw new AppError(409, 'QUEUE_EMPTY');
       orderId = first.id;
     }
@@ -181,8 +191,9 @@ interface Waiting {
   priority: number;
 }
 
-/** The waiting orders of a queue, locked, in their calling order. */
+/** The queue taken, then its waiting orders locked, in their calling order. */
 async function lockWaiting(tx: Prisma.TransactionClient, queue: QueueName): Promise<Waiting[]> {
+  await lockQueue(tx, queue);
   const statuses = QUEUE_STATUSES[queue].waiting.map(String);
   return tx.$queryRaw<Waiting[]>`
     SELECT "id", "priority" FROM "orders"

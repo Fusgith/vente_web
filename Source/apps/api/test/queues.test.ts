@@ -10,6 +10,7 @@ import {
   createUser,
   loginOk,
   request,
+  someoneWaits,
   type TestApp,
 } from './helpers.js';
 
@@ -150,6 +151,18 @@ describe.skipIf(!TEST_DATABASE_URL)('register queue (RG-FIL-01 à 05)', () => {
     expect(answers.map((answer) => answer.statusCode)).toEqual([200, 200]);
     const [first, second] = answers.map((answer) => orderSchema.parse(answer.json()).id);
     expect(first).not.toBe(second);
+  });
+
+  it('waits for a change of the queue instead of calling past it (RG-FIL-02, RG-FIL-03)', async () => {
+    const [a1] = await validated(2);
+    // The waiting orders held, as a reorder in progress holds them.
+    let called: Promise<[number, unknown]> | undefined;
+    await t.db.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT 1 FROM "orders" WHERE "status" = 'SUBMITTED' FOR UPDATE`;
+      called = callNext().then((response) => [response.statusCode, response.json().id]);
+      await someoneWaits(t.db);
+    });
+    expect(await called).toEqual([200, a1]);
   });
 
   it('calls a ticket out of turn when the customer is at the register, audited', async () => {

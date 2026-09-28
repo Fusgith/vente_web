@@ -198,3 +198,15 @@ export async function auditEntries(db: Db): Promise<[string, string | null][]> {
   });
   return rows.map((row) => [row.action, row.reason]);
 }
+
+/** Resolves once a backend of the test database waits on a lock: a request is held up. */
+export async function someoneWaits(db: Db): Promise<void> {
+  for (let attempt = 0; attempt < 100; attempt += 1) {
+    const [row] = await db.$queryRaw<{ waiting: bigint }[]>`
+      SELECT count(*) AS "waiting" FROM pg_stat_activity
+      WHERE "datname" = current_database() AND "wait_event_type" = 'Lock'`;
+    if (row && row.waiting > 0n) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  throw new Error('nobody waits on a lock');
+}

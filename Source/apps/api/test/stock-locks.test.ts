@@ -3,7 +3,14 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { productId, seedDemoCatalog, unitId } from './catalog.js';
 import { TEST_DATABASE_URL } from './db.js';
-import { createTestApp, createUser, loginOk, request, type TestApp } from './helpers.js';
+import {
+  createTestApp,
+  createUser,
+  loginOk,
+  request,
+  someoneWaits,
+  type TestApp,
+} from './helpers.js';
 
 describe.skipIf(!TEST_DATABASE_URL)('stock rows locked in one order (RG-STK-01)', () => {
   let t: TestApp;
@@ -22,18 +29,6 @@ describe.skipIf(!TEST_DATABASE_URL)('stock rows locked in one order (RG-STK-01)'
 
   const post = (url: string, body: unknown) =>
     request(t.app, 'POST', `/api/v1${url}`, { cookie, body });
-
-  /** Resolves once a backend of the test database waits on a row lock. */
-  async function someoneWaits(): Promise<void> {
-    for (let attempt = 0; attempt < 100; attempt += 1) {
-      const [row] = await t.db.$queryRaw<{ waiting: bigint }[]>`
-        SELECT count(*) AS "waiting" FROM pg_stat_activity
-        WHERE "datname" = current_database() AND "wait_event_type" = 'Lock'`;
-      if (row && row.waiting > 0n) return;
-      await new Promise((resolve) => setTimeout(resolve, 20));
-    }
-    throw new Error('nobody waits on a lock');
-  }
 
   it('frees the stock of a cancelled order in product order, as a validation takes it', async () => {
     const soap = {
@@ -62,7 +57,7 @@ describe.skipIf(!TEST_DATABASE_URL)('stock rows locked in one order (RG-STK-01)'
       cancelled = post(`/orders/${id}/cancel`, { version: 2, reason: 'Le client renonce' }).then(
         (response) => response.statusCode,
       );
-      await someoneWaits();
+      await someoneWaits(t.db);
       // The cancellation waits on the first product without holding the last: no deadlock.
       return tx.$queryRaw`SELECT 1 FROM "product_stock" WHERE "product_id" = ${last.id}::uuid FOR UPDATE NOWAIT`.then(
         () => 'free',
