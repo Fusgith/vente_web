@@ -238,4 +238,41 @@ describe.skipIf(!TEST_DATABASE_URL)('register queue (RG-FIL-01 à 05)', () => {
     expect(await waitingIds()).toEqual([a3, a2, a1]);
     expect(orderSchema.parse((await callNext()).json()).id).toBe(a3);
   });
+
+  it('takes the priority from an absent customer, and from an order placed last (RG-FIL-02, RG-FIL-04)', async () => {
+    const [a1, a2, a3] = (await validated(3)) as [string, string, string];
+    const priority = (orderId: string) =>
+      post('/queues/register/priority', cookies.manager, { orderId, priority: true });
+    const audit = (action: string) =>
+      t.db.auditLog.findFirstOrThrow({ where: { action }, orderBy: { at: 'desc' } });
+
+    await priority(a3);
+    expect((await audit('queue.priority_set')).after).toEqual({
+      queue: 'register',
+      position: 1,
+      priority: true,
+    });
+    await callNext();
+    await post(`/orders/${a3}/no-show`, cookies.cashier);
+    expect((await queue()).waiting.at(-1)).toMatchObject({ orderId: a3, priority: false });
+    expect(await audit('order.no_show')).toMatchObject({
+      before: { priority: true },
+      after: { priority: false },
+    });
+    // The next priority no longer brings the absent customer back ahead.
+    await priority(a2);
+    expect(await waitingIds()).toEqual([a2, a1, a3]);
+
+    // Placed last by the manager, a priority order is one like the others.
+    await post('/queues/register/reorder', cookies.manager, { orderId: a2, beforeId: null });
+    expect((await queue()).waiting.map((item) => [item.orderId, item.priority])).toEqual([
+      [a1, false],
+      [a3, false],
+      [a2, false],
+    ]);
+    expect(await audit('queue.reordered')).toMatchObject({
+      before: { position: 1, priority: true },
+      after: { position: 3, priority: false },
+    });
+  });
 });

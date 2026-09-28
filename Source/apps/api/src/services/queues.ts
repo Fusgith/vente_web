@@ -129,8 +129,8 @@ export async function callToRegister(db: Db, actor: Actor, id: string | null): P
 
 /**
  * The customer called did not come (RG-FIL-04): the order goes back to the end of the queue,
- * its reservation still running, and one more absence is counted. Only the register that called
- * it, or the manager, says so.
+ * its reservation still running, one more absence counted and its priority lost (RG-FIL-02).
+ * Only the register that called it, or the manager, says so.
  */
 export async function markNoShow(
   db: Db,
@@ -140,7 +140,7 @@ export async function markNoShow(
   return db.$transaction(async (tx) => {
     const current = await tx.order.findUnique({
       where: { id },
-      select: { status: true, cashierUserId: true, noShowCount: true },
+      select: { status: true, cashierUserId: true, noShowCount: true, priority: true },
     });
     if (!current) throw new AppError(404, 'NOT_FOUND');
     const own = actor.activeRole === 'manager' || current.cashierUserId === actor.userId;
@@ -153,6 +153,7 @@ export async function markNoShow(
         status: 'SUBMITTED',
         queueRank: await nextSequenceValue(tx, RANK_KEY.register),
         noShowCount: { increment: 1 },
+        priority: 0,
         cashierUserId: null,
         registerStationId: null,
         version: { increment: 1 },
@@ -164,8 +165,12 @@ export async function markNoShow(
       action: 'order.no_show',
       entityType: 'order',
       entityId: id,
-      before: { status: 'AT_REGISTER', noShowCount: current.noShowCount },
-      after: { status: 'SUBMITTED', noShowCount: current.noShowCount + 1 },
+      before: {
+        status: 'AT_REGISTER',
+        noShowCount: current.noShowCount,
+        priority: current.priority > 0,
+      },
+      after: { status: 'SUBMITTED', noShowCount: current.noShowCount + 1, priority: false },
     });
     return { order: await loadOrder(tx, id), noShowCount: current.noShowCount + 1 };
   });
@@ -198,7 +203,10 @@ function positionOf(ids: readonly string[], id: string): number {
   return index + 1;
 }
 
-/** The manager places an order before another one, or last (RG-FIL-02); audited with a reason. */
+/**
+ * The manager places an order before another one, or last (RG-FIL-02); audited with a reason.
+ * Placed last, a priority order loses its priority.
+ */
 export async function moveInQueue(
   db: Db,
   actor: Actor,
@@ -206,19 +214,25 @@ export async function moveInQueue(
   { orderId, beforeId, reason }: QueueMove,
 ): Promise<void> {
   await db.$transaction(async (tx) => {
-    const ids = (await lockWaiting(tx, queue)).map((row) => row.id);
+    const rows = await lockWaiting(tx, queue);
+    const ids = rows.map((row) => row.id);
     const from = positionOf(ids, orderId);
+    const wasPriority = (rows[from - 1]?.priority ?? 0) > 0;
     const rest = ids.filter((id) => id !== orderId);
     const at = beforeId === null ? rest.length : positionOf(rest, beforeId) - 1;
     const next = [...rest.slice(0, at), orderId, ...rest.slice(at)];
     await rerank(tx, next);
+    const priority = wasPriority && beforeId !== null;
+    if (wasPriority && !priority) {
+      await tx.order.update({ where: { id: orderId }, data: { priority: 0 } });
+    }
     await recordAudit(tx, {
       ...by(actor),
       action: 'queue.reordered',
       entityType: 'order',
       entityId: orderId,
-      before: { queue, position: from },
-      after: { queue, position: at + 1 },
+      before: { queue, position: from, priority: wasPriority },
+      after: { queue, position: at + 1, priority },
       reason: reason || null,
     });
   });
@@ -238,11 +252,13 @@ export async function setPriority(
     const rows = await lockWaiting(tx, queue);
     const ids = rows.map((row) => row.id);
     const from = positionOf(ids, orderId);
+    let to = from;
     if (priority) {
       const rest = rows.filter((row) => row.id !== orderId);
       const lead = rest.filter((row) => row.priority > 0).map((row) => row.id);
       const others = rest.filter((row) => row.priority <= 0).map((row) => row.id);
       await rerank(tx, [...lead, orderId, ...others]);
+      to = lead.length + 1;
     }
     await tx.order.update({ where: { id: orderId }, data: { priority: priority ? 1 : 0 } });
     await recordAudit(tx, {
@@ -251,7 +267,7 @@ export async function setPriority(
       entityType: 'order',
       entityId: orderId,
       before: { queue, position: from, priority: (rows[from - 1]?.priority ?? 0) > 0 },
-      after: { queue, priority },
+      after: { queue, position: to, priority },
       reason: reason || null,
     });
   });
