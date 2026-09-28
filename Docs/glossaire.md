@@ -55,6 +55,8 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 | Clé d'idempotence | `idempotency_key` | Identifiant donné par l'écran à un paiement : renvoyé, il n'en crée pas un second. |
 | Encaisser | `pay` | Enregistrer le paiement de la commande à la caisse. |
 | Facture | `invoice` | Document légal numéroté sans trou, émis au paiement. |
+| Contenu figé (facture) | `snapshot` | Tout ce que la facture imprime, fixé à l'émission ; le PDF n'est fait que depuis lui. |
+| Mention TVA | `vat_notice` | Texte imprimé sur la facture quand la TVA est désactivée. |
 | Avoir | `credit_note` | Document annulant tout ou partie d'une facture. |
 | Bon de livraison | `delivery_note` | Document listant la marchandise remise. |
 | Livraison | `delivery` | Remise physique de la marchandise au client (sortie de stock). |

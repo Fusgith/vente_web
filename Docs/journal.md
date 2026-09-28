@@ -2,6 +2,29 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 28/09/2026 — H32 validée, T-052 facture — agent : Claude Code (Opus 5.5)
+
+**Décision de l'utilisateur** : H32 (encaissement) validée telle quelle (CDC métier §16.7).
+
+**Fait** :
+- CDC (`9c85993`) : ⚠️ H33 ouverte (modalités de la facture). Paramètre `vat_notice` ajouté au §13. Deux tâches détachées : T-056 (arrondi espèces) et T-057 (TVA avec prix hors taxes, V1.1).
+- API (`aaaf2d6`), 4 tests d'intégration, 3 du gabarit, 3 du calcul partagé :
+  - la facture est émise dans la transaction même du paiement, après tous les contrôles ; numéro `F-2026-000001`, compteur par année du magasin ;
+  - **sans trou** : prouvé par des paiements simultanés, un paiement refusé et un paiement qui échoue après avoir pris son numéro ; dans les deux derniers cas, le numéro est rendu ;
+  - contenu figé : mentions légales, date et heure, ticket, commande, commercial, caissier, client, lignes, totaux, TVA ventilée (HT, TVA, TTC) ou mention, paiements, reçu et rendu ;
+  - PDF écrit dans `files/invoices/<année>/<numéro>.pdf` juste après le paiement, rouvert tel quel ; un fichier perdu est refait une seule fois depuis le contenu figé ;
+  - blocs du PDF (magasin, client, tableau, totaux) communs au devis et à la facture ;
+  - nouvelle variable d'environnement `FILES_DIR` (défaut `files`). ⚠️ `Source/.env.example` est à compléter par l'utilisateur : l'agent n'a pas le droit de le lire.
+- Caisse (`ec95a97`), 1 test complété : le bandeau cite le numéro de facture ; « À votre caisse » garde le dernier encaissement avec « Ouvrir la facture ».
+- Vérifié dans l'application réelle : paiement de A3 (2 lignes, remises ligne et total, 80 000,00 MGA, reçu 100 000, rendu 20 000) → facture `F-2026-000001` ; PDF contrôlé visuellement ; deux ouvertures donnent le même fichier, octet pour octet.
+- Défaut trouvé et corrigé en cours de route : un PDF resté d'une base remise à zéro aurait été servi pour une nouvelle facture de même numéro. Désormais, seul le fichier enregistré par la facture fait foi.
+- Outil de vérification : PyMuPDF, installé hors du projet pour regarder le PDF ; ce n'est pas une dépendance du code.
+- Vérifications : `format:check`, `lint`, `typecheck` (0 erreur), `build` et 440 tests verts. Aucune dépendance ajoutée.
+
+**Reste** : arrondi espèces (T-056) ; code de remise du boss sur la facture (T-034) ; clôture de caisse (T-054) ; points mineurs de la relecture.
+
+**Questions ouvertes** : H33.
+
 ## 28/09/2026 — H31 validée, T-051 encaissement — agent : Claude Code (Opus 5.5)
 
 **Décision de l'utilisateur** : H31 (expiration et réactivation) validée telle quelle (CDC métier §16.7).
