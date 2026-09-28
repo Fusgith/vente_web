@@ -22,6 +22,7 @@ const METHODS = {
   ],
 };
 const CREDIT_NOTE = '0192a4f0-0000-7000-8000-000000000951';
+const MANAGER = '0192a4f0-0000-7000-8000-000000000952';
 const entry = item(1);
 const LOOKUP = 'GET /invoices/lookup?number=f-2026-000001';
 const REFUND = `POST /orders/${entry.orderId}/refund`;
@@ -51,6 +52,18 @@ function mount(handlers: Parameters<typeof fakeApi>[0]) {
     ...OPENED,
     'GET /queues/register': ok(queueOf([])),
     'GET /payment-methods': ok(METHODS),
+    'GET /auth/users': ok({
+      users: [
+        { id: HERY.id, username: 'hery', fullName: 'Hery Caissier', roles: ['cashier'] },
+        {
+          id: MANAGER,
+          username: 'responsable',
+          fullName: 'Rakoto Responsable',
+          roles: ['manager'],
+        },
+        { id: CREDIT_NOTE, username: 'fara', fullName: 'Fara Responsable', roles: ['manager'] },
+      ],
+    }),
     ...handlers,
   });
   render(
@@ -97,9 +110,14 @@ describe('cancelling a paid sale at the register (RG-ANN-02, ⚠️ H36)', () =>
     fireEvent.change(method, { target: { value: MVOLA } });
     expect(within(sheet).getByLabelText(text.reference)).toBeVisible();
     fireEvent.change(method, { target: { value: CASH } });
-    fireEvent.change(within(sheet).getByLabelText(text.manager), {
-      target: { value: 'responsable' },
-    });
+    // Picked by name among the managers only.
+    const manager = within(sheet).getByLabelText(text.manager);
+    expect(
+      within(manager)
+        .getAllByRole('option')
+        .map((option) => option.textContent),
+    ).toEqual([text.pickManager, 'Rakoto Responsable', 'Fara Responsable']);
+    fireEvent.change(manager, { target: { value: 'responsable' } });
     const pin = within(sheet).getByLabelText(text.pin);
     fireEvent.change(pin, { target: { value: '9999' } });
     expect(confirm).toBeEnabled();

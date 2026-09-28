@@ -1,12 +1,14 @@
 import {
   CASH_METHOD,
   formatMga,
+  type AuthUserDirectory,
   type InvoiceLookup,
   type PaymentMethod,
   type RefundedOrder,
 } from '@vente-web/shared';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 
+import { authApi } from '../api/auth.js';
 import { creditNotesApi } from '../api/credit-notes.js';
 import { errorMessage } from '../api/error-message.js';
 import { paymentsApi } from '../api/payments.js';
@@ -22,6 +24,8 @@ const FIELD =
 /** RG-ANN-01: a reason of three characters at least, as the API checks. */
 const REASON_MIN = 3;
 const PIN = /^\d{4,6}$/;
+
+type Manager = AuthUserDirectory['users'][number];
 
 interface RefundSheetProps {
   /** Once cancelled and refunded: the sale and its credit note, for the status line. */
@@ -40,7 +44,7 @@ function defaultMethod(sale: InvoiceLookup, methods: PaymentMethod[]): string {
 /**
  * Cancelling a paid sale before delivery (RG-ANN-02, ⚠️ H36): found by the number of its
  * invoice, cancelled with a reason and refunded whole by one method from this register, on the
- * manager's name and PIN typed on the spot. The credit note, numbered, is then at hand.
+ * manager's name, picked from the list, and PIN typed on the spot. The credit note, numbered, is then at hand.
  */
 export function RefundSheet({ onRefunded, onClose }: RefundSheetProps) {
   const id = useId();
@@ -48,6 +52,7 @@ export function RefundSheet({ onRefunded, onClose }: RefundSheetProps) {
   const [number, setNumber] = useState('');
   const [sale, setSale] = useState<InvoiceLookup | null>(null);
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
+  const [managers, setManagers] = useState<Manager[]>([]);
   const [methodId, setMethodId] = useState('');
   const [reference, setReference] = useState('');
   const [reason, setReason] = useState('');
@@ -59,8 +64,14 @@ export function RefundSheet({ onRefunded, onClose }: RefundSheetProps) {
 
   useEffect(() => {
     let live = true;
-    paymentsApi.methods().then(
-      (list) => live && setMethods(list),
+    Promise.all([paymentsApi.methods(), authApi.users()]).then(
+      ([list, directory]) => {
+        if (!live) return;
+        setMethods(list);
+        const found = directory.users.filter((user) => user.roles.includes('manager'));
+        setManagers(found);
+        if (found.length === 1) setUsername(found[0]!.username);
+      },
       (error: unknown) => live && setFailure(errorMessage(error)),
     );
     return () => {
@@ -94,7 +105,7 @@ export function RefundSheet({ onRefunded, onClose }: RefundSheetProps) {
     method !== null &&
     (!method.requiresReference || reference.trim() !== '') &&
     reason.trim().length >= REASON_MIN &&
-    username.trim() !== '' &&
+    username !== '' &&
     PIN.test(pin);
 
   const confirm = () => {
@@ -106,7 +117,7 @@ export function RefundSheet({ onRefunded, onClose }: RefundSheetProps) {
         version: sale.order.version,
         reason: reason.trim(),
         refund: { methodId: method.id, reference: reference.trim() || null },
-        approval: { username: username.trim(), pin },
+        approval: { username, pin },
       })
       .then(
         (refunded) => {
@@ -252,14 +263,19 @@ export function RefundSheet({ onRefunded, onClose }: RefundSheetProps) {
             <legend className="float-left mb-1 w-full font-semibold">{text.approval}</legend>
             <label htmlFor={`${id}-manager`} className="flex min-w-0 flex-1 flex-col gap-1">
               <span className="text-14 text-ink-2">{text.manager}</span>
-              <input
+              <select
                 id={`${id}-manager`}
-                autoComplete="off"
-                autoCapitalize="none"
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
                 className={FIELD}
-              />
+              >
+                {managers.length !== 1 && <option value="">{text.pickManager}</option>}
+                {managers.map((user) => (
+                  <option key={user.id} value={user.username}>
+                    {user.fullName}
+                  </option>
+                ))}
+              </select>
             </label>
             <label htmlFor={`${id}-pin`} className="flex w-40 flex-col gap-1">
               <span className="text-14 text-ink-2">{text.pin}</span>
