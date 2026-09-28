@@ -2,6 +2,29 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 28/09/2026 — H35 validée, T-053 annulation après paiement et avoir — agent : Claude Code (Opus 5.5)
+
+**Décisions de l'utilisateur** : H35 (clôture de caisse) validée telle quelle (CDC métier §16.7) ; T-053 avant T-061 (les avoirs d'abord).
+
+**Fait** :
+- CDC (`ce81300`) : ⚠️ H36 ouverte (annulation après paiement et avoir).
+- API (`f558604`), 4 tests d'intégration :
+  - recherche d'une vente par le numéro de facture (espaces et casse ignorés) ;
+  - annulation d'une commande payée, pas encore prise en charge au comptoir, sur **nom et PIN du responsable** : mauvais PIN compté comme à la connexion, caissier refusé comme validateur ;
+  - avoir `AV-2026-000001`, compteur par année **sans trou**, contenu figé, PDF stocké et réimprimé tel quel ;
+  - remboursement d'un seul moyen, référence exigée selon le moyen, rattaché à la session de caisse du caissier ;
+  - réservation libérée, commande « remboursée », facture « créditée » (jamais modifiée autrement), journal ;
+  - clôture : remboursements par moyen, espèces attendues diminuées des espèces rendues, rapport de clôture complété.
+- Écran de caisse (`ae9afdd`, `9f37d76`), 3 tests : bouton « Annuler une vente payée » ; numéro de facture → vente (ticket, client, paiement, montant) ; motif, moyen de remboursement (celui du paiement proposé), référence si besoin ; le responsable **choisit son nom** dans la liste et tape son PIN ; puis « Ouvrir l'avoir ». Vente au comptoir ou déjà livrée : raison affichée, pas d'annulation. La fiche de clôture montre les remboursements.
+- PDF de l'avoir : « Total de la facture » au lieu de « Net à payer » (un avoir ne se paie pas) ; test du gabarit.
+- Format de date `JJ/MM/AAAA` à l'heure du magasin ajouté aux règles partagées (RG-FMT-03).
+- Vérifié dans l'application réelle : F-2026-000002 (13 000,00 MGA en espèces) retrouvée, PIN faux refusé, avoir AV-2026-000001 émis, PDF contrôlé ; clôture : 100 000 + 39 000 − 26 000 (2 avoirs) = 113 000 attendus.
+- Vérifications : `format:check`, `lint`, `typecheck` (0 erreur) et 469 tests verts. Aucune dépendance ajoutée.
+
+**Reste** : avoir partiel (RG-ANN-03) avec T-061 ; annulation d'une commande en préparation après remise en file par le responsable (T-042) ; remboursement en plusieurs moyens et validation depuis l'écran du responsable non prévus (H36).
+
+**Questions ouvertes** : H36.
+
 ## 28/09/2026 — Compte-rendu pour le boss, H34 validée, T-054 clôture de caisse — agent : Claude Code (Opus 5.5)
 
 **Demande de l'utilisateur** : un compte-rendu HTML pour son boss (ce que l'application sait faire, par catégories, avec captures). Fichier autonome livré à l'utilisateur (images intégrées, 1,7 Mo), non versionné. Captures refaites sur la galerie de démonstration.

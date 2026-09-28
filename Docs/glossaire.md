@@ -61,6 +61,8 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 | Contenu figé (facture) | `snapshot` | Tout ce que la facture imprime, fixé à l'émission ; le PDF n'est fait que depuis lui. |
 | Mention TVA | `vat_notice` | Texte imprimé sur la facture quand la TVA est désactivée. |
 | Avoir | `credit_note` | Document annulant tout ou partie d'une facture. |
+| Rembourser (une vente payée) | `refund` | Annuler une commande payée avant livraison : avoir, remboursement depuis la caisse (`REFUNDED`). |
+| Validation du responsable | `approval` | Nom et PIN du responsable tapés sur place pour autoriser une opération (avoir). |
 | Bon de livraison | `delivery_note` | Document listant la marchandise remise. |
 | Livraison | `delivery` | Remise physique de la marchandise au client (sortie de stock). |
 | Prendre en charge (livraison) | `take` | Le magasinier prend une commande payée à son nom pour la préparer (`PREPARING`). |
