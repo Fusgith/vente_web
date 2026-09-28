@@ -67,13 +67,13 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-051 | MVP | Paiement multi-moyens, rendu, références, idempotence | Terminé | E05 | RG-PAY ; H32 (validée le 28/09) ; fait le 28/09 avec l'**ouverture** de la session de caisse (choix de la caisse, fond de caisse) ; facture et arrondi espèces → T-052, blocage sans code → T-033, clôture → T-054 |
 | T-052 | MVP | Numérotation sans trou + facture PDF stockée + test de concurrence | Terminé | E05 | RG-FAC-01 à 04 ; H33 (validée le 28/09) ; fait le 28/09 : numéro dans la transaction du paiement, contenu figé, PDF stocké, réimpression ; arrondi espèces → T-056, prix HT → T-057, code de remise sur la facture → T-034 ; une commande payée en base de dev avant T-052 n'a pas de facture |
 | T-053 | MVP | Avoir total/partiel, remboursement | À faire | E05 | RG-ANN-02/03, RG-FAC-05 |
-| T-054 | MVP | Sessions de caisse, clôture, rapport | À faire | E05 | RG-CAI ; ouverture faite avec T-051 (H32) : reste clôture, théorique par moyen, écart, rapport, session oubliée (RG-CAI-05) |
+| T-054 | MVP | Sessions de caisse, clôture, rapport | Terminé | E05 | RG-CAI ; ouverture faite avec T-051 (H32) ; ⚠️ H35 ; fait le 28/09 : clôture (théorique par moyen, compté, écart, commentaire), rapport PDF, « Caisses du jour » du responsable et du boss avec les sessions oubliées ; export Excel → T-071 ; validation par le responsable [V1.1] |
 | T-056 | MVP | Arrondi espèces (`cash_rounding`) : net à payer en espèces arrondi, ligne distincte sur la facture | À faire | E05 | RG-FMT-04 ; détachée de T-052 (H33) |
 | T-057 | V1.1 | TVA avec des prix hors taxes (`prices_include_vat` = non) : net à payer TTC calculé | À faire | E05 | RG-FAC-03 ; détachée de T-052 (H33) ; défaut « prix TTC » déjà pris en charge |
 | T-060 | MVP | Livraison multi-comptoirs : prise en charge (verrou), prête, remise ligne par ligne, sortie de stock | Terminé | E06 | RG-USR-08, RG-LIV-01 à 03, RG-STK-04 ; H34 (validée le 28/09) ; fait le 28/09 : API et écran du comptoir ; remise en file par le responsable : API prête, bouton avec la supervision (T-042) ; nom du comptoir avec T-015 |
 | T-061 | MVP | Anomalies de livraison et décision du responsable | À faire | E06 | RG-LIV-04 |
 | T-070 | MVP | Tableau de bord boss (indicateurs, files, stock, comparaisons) | À faire | E07 | RG-DSH-01 à 04 |
-| T-071 | MVP | Exports Excel | À faire | E07 | RG-EXP |
+| T-071 | MVP | Exports Excel | À faire | E07 | RG-EXP ; dont le rapport de clôture de caisse (RG-CAI-03, H35) |
 | T-080 | MVP | Docker Compose prod, Caddy TLS DNS-01, tunnel, DNS local | À faire | E08 | CDC technique §2, §10 ; Caddy écrase `x-access-origin` et transmet `X-Forwarded-Proto`, l'hôte d'origine et `X-Forwarded-For` sur ses deux écoutes, depuis un pair de `TRUST_PROXY` (§2.2 : sinon CSRF et limitation de débit cassés) |
 | T-081 | MVP | Sauvegardes chiffrées + procédure de reprise testée | À faire | E08 | §2.3 |
 | T-082 | MVP | Surveillance et alertes | À faire | E08 | §10.5 |

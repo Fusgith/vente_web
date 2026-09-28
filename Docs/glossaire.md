@@ -46,6 +46,9 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 | Caisse | `register` | Poste d'encaissement. |
 | Session de caisse | `register_session` | Période ouverte par un caissier sur une caisse, avec fond de caisse. |
 | Clôture de caisse | `register_closing` | Comptage de fin de session, écarts, rapport. |
+| Espèces attendues | `cash_expected` | Fond de caisse + part des paiements en espèces : ce que le tiroir doit contenir. |
+| Écart de caisse | `variance` | Espèces comptées − espèces attendues. |
+| Session oubliée | `forgotten` | Session de caisse encore ouverte, ouverte un jour précédent (RG-CAI-05). |
 | Paiement | `payment` | Règlement total d'une commande, composé d'une ou plusieurs lignes. |
 | Ligne de paiement | `payment_line` | Un moyen × un montant × une référence. |
 | Moyen de paiement | `payment_method` | Espèces, MVola, Orange Money, Airtel Money, carte, virement, chèque… |

@@ -2,6 +2,29 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 28/09/2026 — Compte-rendu pour le boss, H34 validée, T-054 clôture de caisse — agent : Claude Code (Opus 5.5)
+
+**Demande de l'utilisateur** : un compte-rendu HTML pour son boss (ce que l'application sait faire, par catégories, avec captures). Fichier autonome livré à l'utilisateur (images intégrées, 1,7 Mo), non versionné. Captures refaites sur la galerie de démonstration.
+
+**Décision de l'utilisateur** : H34 (livraison) validée telle quelle (CDC métier §16.7). Marqueurs ⚠️ des hypothèses H32 à H34 retirés du code et du CDC technique (`a28b660`, `e72cee9`).
+
+**Fait** :
+- CDC (`839f2eb`) : ⚠️ H35 ouverte (modalités de la clôture).
+- API (`a4d73f0`), 5 tests d'intégration, 2 tests du calcul partagé, 1 de l'heure du magasin :
+  - encaissements de la session par moyen de paiement ; espèces attendues = fond + part en espèces ;
+  - clôture : client à la caisse refusé, écart calculé, commentaire obligatoire si écart, clôture définitive et journalisée ; une nouvelle session peut s'ouvrir ;
+  - rapport de clôture PDF (caissier, responsable, boss ; jamais un autre caissier) ;
+  - sessions du jour pour le responsable et le boss, session oubliée d'un jour précédent signalée.
+- Écrans (`7945f82`), 2 tests :
+  - à la caisse, « Clôturer la caisse » : tableau par moyen, espèces attendues, comptage, écart en direct, commentaire, puis rapport ;
+  - chez le responsable et le boss, « Caisses du jour » : état (ouverte, clôturée à…, oubliée), encaissé, écart, rapport.
+- Vérifié dans l'application réelle : Caisse 1, fond 50 000 ; espèces 90 000 (2 paiements), MVola 45 000 ; attendues 140 000, comptées 139 000, écart −1 000 avec commentaire. PDF contrôlé, liste du responsable juste.
+- Vérifications : `format:check`, `lint`, `typecheck` (0 erreur), `build` et 459 tests verts. Aucune dépendance ajoutée.
+
+**Reste** : export Excel du rapport (T-071) ; validation de la clôture par le responsable [V1.1] ; anomalies de livraison (T-061).
+
+**Questions ouvertes** : H35.
+
 ## 28/09/2026 — H33 validée, T-060 livraison — agent : Claude Code (Opus 5.5)
 
 **Décision de l'utilisateur** : H33 (facture) validée telle quelle (CDC métier §16.7). `FILES_DIR` ajouté par l'utilisateur à `Source/.env.example` (`6adfdd1`).
