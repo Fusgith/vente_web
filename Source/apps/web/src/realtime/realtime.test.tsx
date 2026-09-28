@@ -51,7 +51,8 @@ describe('realtime connection (T-018)', () => {
     render(<App />);
     await screen.findByRole('heading', { name: labels.workspaces.manager.title });
 
-    expect(open()).toHaveLength(1);
+    // The connection opens in an effect, after the first paint: waited for, never assumed.
+    await waitFor(() => expect(open()).toHaveLength(1));
     // No URL: the page's own origin, and its cookie.
     expect(open()[0]!.options).toEqual({
       path: REALTIME_PATH,
@@ -63,8 +64,8 @@ describe('realtime connection (T-018)', () => {
       target: { value: 'cashier' },
     });
     await screen.findByRole('heading', { name: labels.workspaces.cashier.title });
+    await waitFor(() => expect(open()).toEqual([fakeRealtime.sockets[1]]));
     expect(fakeRealtime.sockets).toHaveLength(2);
-    expect(open()).toEqual([fakeRealtime.sockets[1]]);
   });
 
   it('closes the connection when the user signs out', async () => {

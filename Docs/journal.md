@@ -20,6 +20,8 @@ Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-c
 
 **Reste** : anomalies de livraison (T-061) ; bouton « remettre en file » du responsable avec la supervision (T-042) ; nom du comptoir avec l'appairage des postes (T-015) ; clôture de caisse (T-054).
 
+- CI : le push `6adfdd1` était rouge sur un test web instable (`realtime.test.tsx` vérifiait la connexion temps réel avant qu'elle soit ouverte, sur la CI plus lente) ; sans rapport avec `.env.example`. Test rendu robuste (attente explicite), 3 passages verts de suite.
+
 **Questions ouvertes** : H34.
 
 ## 28/09/2026 — H32 validée, T-052 facture — agent : Claude Code (Opus 5.5)
