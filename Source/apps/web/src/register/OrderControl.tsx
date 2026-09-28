@@ -1,6 +1,5 @@
 import {
   formatAmount,
-  formatMga,
   formatQty,
   ticketLabel,
   type Order,
@@ -10,6 +9,8 @@ import { useState } from 'react';
 
 import { labels } from '../labels.js';
 import { buttonClass, sheetClass, tagClass } from '../ui/button.js';
+import { CELL, HEAD, isZero } from '../ui/document-table.js';
+import { AmountHead, TotalsList } from '../ui/DocumentTable.js';
 import { Icon } from '../ui/Icon.js';
 import { CancelOrderSheet } from './CancelOrderSheet.js';
 import { LineAdjustSheet } from './LineAdjustSheet.js';
@@ -17,67 +18,11 @@ import { LineAdjustSheet } from './LineAdjustSheet.js';
 const text = labels.register;
 const draft = labels.sales.draft;
 
-const CELL = 'px-2 first:pl-4 last:pr-4';
-const HEAD = `${CELL} sticky top-0 z-10 h-12 border-b border-rule bg-white pb-1 align-bottom text-14 leading-5 font-semibold text-ink-2`;
-const isZero = (amount: string) => amount === '0.00';
-
-/** An amount column: the sign once, under its name; its cells show the figures alone (RG-FMT-01). */
-function AmountHead({ label, width }: { label: string; width: string }) {
-  return (
-    <th className={`${HEAD} ${width} text-right`}>
-      {label} <span className="block font-normal">{draft.inCurrency}</span>
-    </th>
-  );
-}
-
 /** Where a line's discount comes from, as the cashier checks it (§5.6). */
 function origin(line: QuoteLine): string | null {
   if (line.discountSource === 'WITHIN_CAP') return text.withinCap;
   if (line.discountSource === 'CODE') return text.byCode;
   return null;
-}
-
-/** Under the table, in the order of RG-DEV-05; the amount due alone when there is no discount. */
-function Totals({ order }: { order: Order }) {
-  const rows: { label: string; amount: string }[] = [];
-  if (!isZero(order.discountTotal)) {
-    rows.push({ label: draft.grossTotal, amount: formatMga(order.grossTotal) });
-    if (!isZero(order.lineDiscounts)) {
-      rows.push({
-        label: draft.lineDiscounts,
-        amount: draft.minus(formatMga(order.lineDiscounts)),
-      });
-    }
-    if (!isZero(order.orderDiscount)) {
-      rows.push({ label: draft.subtotal, amount: formatMga(order.subtotal) });
-      rows.push({
-        label: order.orderDiscountPct
-          ? draft.orderDiscountPct(formatQty(order.orderDiscountPct))
-          : draft.orderDiscount,
-        amount: draft.minus(formatMga(order.orderDiscount)),
-      });
-    }
-  }
-  return (
-    <dl className="grid grid-cols-[1fr_auto] items-baseline gap-x-6 text-right">
-      {rows.map((row) => (
-        <div key={row.label} className="contents text-ink-2">
-          <dt>{row.label}</dt>
-          <dd className="figures">{row.amount}</dd>
-        </div>
-      ))}
-      <div className="contents">
-        <dt className="text-18 font-semibold">{draft.total}</dt>
-        <dd className="text-24 font-bold figures">{formatMga(order.total)}</dd>
-      </div>
-      {!isZero(order.discountTotal) && (
-        <div className="contents text-14 text-ink-2">
-          <dt>{draft.discountTotal}</dt>
-          <dd className="figures">{draft.minus(formatMga(order.discountTotal))}</dd>
-        </div>
-      )}
-    </dl>
-  );
 }
 
 interface OrderControlProps {
@@ -195,7 +140,7 @@ export function OrderControl({ order, busy, onLower, onRemove, onCancel }: Order
           {text.cancelOrder}
         </button>
         <div className="ml-auto flex flex-col items-end gap-1">
-          <Totals order={order} />
+          <TotalsList totals={order} />
           <p className="flex items-center gap-2 text-14 text-ink-2">
             <Icon name="info" className="size-5 shrink-0" />
             {text.paymentComing}

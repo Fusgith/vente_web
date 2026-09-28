@@ -11,6 +11,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { quotesApi } from '../api/quotes.js';
 import { labels } from '../labels.js';
 import { buttonClass, sheetClass, tagClass } from '../ui/button.js';
+import { CELL, HEAD, isZero } from '../ui/document-table.js';
+import { AmountHead, TotalsList } from '../ui/DocumentTable.js';
 import { Icon } from '../ui/Icon.js';
 import { quoteInput } from './discount-entry.js';
 import { unsavedChanges, type DraftState } from './draft.js';
@@ -30,22 +32,7 @@ interface DraftTableProps {
 
 const text = labels.sales.draft;
 
-const CELL = 'px-2 first:pl-4 last:pr-4';
-const HEAD =
-  CELL +
-  ' sticky top-0 z-10 h-12 border-b border-rule bg-white pb-1 align-bottom text-14 leading-5 font-semibold text-ink-2';
 const HEAD_PX = 48;
-
-/** An amount column: the sign once, under its name; its cells show the figures alone (RG-FMT-01). */
-function AmountHead({ label, width }: { label: string; width: string }) {
-  return (
-    <th className={`${HEAD} ${width} text-right`}>
-      {label} <span className="block font-normal">{text.inCurrency}</span>
-    </th>
-  );
-}
-
-const isZero = (amount: string) => amount === '0.00';
 
 const STATUS = 'rounded-full border px-2.5 text-14 leading-6';
 
@@ -243,33 +230,13 @@ function saveLabel(draft: DraftState, busy: TotalsProps['busy']): string {
 }
 
 /**
- * Under the table, in the order of RG-DEV-05: gross total, line discounts, subtotal, order
- * discount (with its rate when typed as one), amount due, then the reminder of all discounts.
- * Without any discount, the amount due alone. The order discount is typed from here; under the
+ * Under the table, the totals (RG-DEV-05). The order discount is typed from here; under the
  * amount due, the quote is saved — once saved and unchanged, its PDF opened instead, the PDF
  * being always the quote as saved — and validated into an order, the last step (T-032).
  */
 function Totals({ quote, draft, onOrderDiscount, onSave, onSubmit, busy }: TotalsProps) {
   const [open, setOpen] = useState(false);
   const upToDate = !!draft.saved && !unsavedChanges(draft);
-  const rows: { label: string; amount: string; wrong?: boolean }[] = [];
-  if (!isZero(quote.discountTotal)) {
-    rows.push({ label: text.grossTotal, amount: formatMga(quote.grossTotal) });
-    if (!isZero(quote.lineDiscounts)) {
-      rows.push({ label: text.lineDiscounts, amount: text.minus(formatMga(quote.lineDiscounts)) });
-    }
-    if (!isZero(quote.orderDiscount)) {
-      rows.push({ label: text.subtotal, amount: formatMga(quote.subtotal) });
-      rows.push({
-        label: quote.orderDiscountPct
-          ? text.orderDiscountPct(formatQty(quote.orderDiscountPct))
-          : text.orderDiscount,
-        amount: text.minus(formatMga(quote.orderDiscount)),
-        wrong: !quote.orderWithinLimit,
-      });
-    }
-  }
-
   return (
     <div className="flex shrink-0 flex-wrap items-end gap-x-6 gap-y-2 border-t-2 border-ink px-4 py-2">
       <button
@@ -283,24 +250,7 @@ function Totals({ quote, draft, onOrderDiscount, onSave, onSubmit, busy }: Total
       </button>
       {/* The amount due, and under it the save: the last step, at the right hand's reach. */}
       <div className="ml-auto flex flex-col items-end gap-2">
-        <dl className="grid grid-cols-[1fr_auto] items-baseline gap-x-6 text-right">
-          {rows.map((row) => (
-            <div key={row.label} className={`contents ${row.wrong ? 'text-madder' : 'text-ink-2'}`}>
-              <dt>{row.label}</dt>
-              <dd className="figures">{row.amount}</dd>
-            </div>
-          ))}
-          <div className="contents">
-            <dt className="text-18 font-semibold">{text.total}</dt>
-            <dd className="text-24 font-bold figures">{formatMga(quote.total)}</dd>
-          </div>
-          {!isZero(quote.discountTotal) && (
-            <div className="contents text-14 text-ink-2">
-              <dt>{text.discountTotal}</dt>
-              <dd className="figures">{text.minus(formatMga(quote.discountTotal))}</dd>
-            </div>
-          )}
-        </dl>
+        <TotalsList totals={quote} orderDiscountWrong={!quote.orderWithinLimit} />
         <div className="flex flex-wrap justify-end gap-2">
           {draft.saved && upToDate ? (
             <a
