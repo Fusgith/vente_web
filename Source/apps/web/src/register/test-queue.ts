@@ -122,7 +122,7 @@ export function orderWithLines(entry: QueueItem, version = 2): Order {
   };
 }
 
-/** The register this cashier opened (T-051, ⚠️ H32). */
+/** The register this cashier opened (T-051, H32). */
 export const SESSION = {
   id: '0192a4f0-0000-7000-8000-000000000601',
   station: { id: '0192a4f0-0000-7000-8000-000000000611', name: 'Caisse 2' },

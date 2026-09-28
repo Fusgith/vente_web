@@ -128,7 +128,7 @@ async function assertRegisterFree(tx: Prisma.TransactionClient, actor: Actor): P
 
 /**
  * The register the call shows (« A15 → Caisse 2 », RG-FIL-03): the one the caller opened
- * (⚠️ H32), else the station of their session.
+ * (H32), else the station of their session.
  */
 async function registerOf(tx: Prisma.TransactionClient, actor: Actor): Promise<string | null> {
   const session = await tx.registerSession.findFirst({

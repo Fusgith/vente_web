@@ -11,7 +11,7 @@ interface SessionState {
   error: string | null;
 }
 
-/** The cashier's open register session (RG-CAI-02, ⚠️ H32), read once, replaced on opening. */
+/** The cashier's open register session (RG-CAI-02, H32), read once, replaced on opening. */
 export function useRegisterSession() {
   const [state, setState] = useState<SessionState>({ session: null, loaded: false, error: null });
   useEffect(() => {

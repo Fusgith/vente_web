@@ -12,7 +12,7 @@ import {
   type TestApp,
 } from './helpers.js';
 
-describe.skipIf(!TEST_DATABASE_URL)('register sessions opened (RG-CAI-01/02, ⚠️ H32)', () => {
+describe.skipIf(!TEST_DATABASE_URL)('register sessions opened (RG-CAI-01/02, H32)', () => {
   let t: TestApp;
   const cookies = { soa: '', rina: '', sales: '' };
   const stations = { one: '', two: '', counter: '' };

@@ -13,7 +13,7 @@ import {
 } from '@vente-web/shared';
 import { API_BASE, apiRequest, parseResponse } from './client.js';
 
-/** The register session and the payment (T-051, RG-CAI-01/02, RG-PAY, ⚠️ H32). */
+/** The register session and the payment (T-051, RG-CAI-01/02, RG-PAY, H32). */
 export const paymentsApi = {
   async methods(): Promise<PaymentMethod[]> {
     return parseResponse(paymentMethodListSchema, await apiRequest('/payment-methods')).methods;

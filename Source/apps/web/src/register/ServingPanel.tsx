@@ -28,7 +28,7 @@ interface ServingPanelProps {
   next: QueueItem | null;
   /** Orders at the other registers. */
   elsewhere: QueueItem[];
-  /** The register opened, named under the title (⚠️ H32). */
+  /** The register opened, named under the title (H32). */
   register: RegisterSession | null;
   lastPaid: LastPaid | null;
   busy: boolean;

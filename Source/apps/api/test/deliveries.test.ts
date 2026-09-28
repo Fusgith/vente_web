@@ -15,7 +15,7 @@ import {
   type TestApp,
 } from './helpers.js';
 
-describe.skipIf(!TEST_DATABASE_URL)('delivery at the counters (RG-LIV-01 à 03, ⚠️ H34)', () => {
+describe.skipIf(!TEST_DATABASE_URL)('delivery at the counters (RG-LIV-01 à 03, H34)', () => {
   let t: TestApp;
   const cookies = { sales: '', cashier: '', feno: '', tahina: '', manager: '' };
   const ids = { customer: '', soap: '', soapPack: '', feno: '' };

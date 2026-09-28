@@ -11,7 +11,7 @@ import { typedAmount } from './amount.js';
 const text = labels.register;
 
 /**
- * Opening the register before taking payments (RG-CAI-01/02, ⚠️ H32): which register, and the
+ * Opening the register before taking payments (RG-CAI-01/02, H32): which register, and the
  * cash counted in the drawer. A register someone else opened is shown, not offered.
  */
 export function OpenRegisterPanel({ onOpened }: { onOpened: (session: RegisterSession) => void }) {

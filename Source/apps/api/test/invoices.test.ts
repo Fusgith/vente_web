@@ -19,7 +19,7 @@ import {
 } from './helpers.js';
 
 describe.skipIf(!TEST_DATABASE_URL)(
-  'invoice issued with the payment (RG-FAC-01 à 04, ⚠️ H33)',
+  'invoice issued with the payment (RG-FAC-01 à 04, H33)',
   () => {
     let t: TestApp;
     let sales = '';

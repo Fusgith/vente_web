@@ -76,7 +76,7 @@ async function checkedLines(tx: Prisma.TransactionClient, lines: PaymentInput['l
 }
 
 /**
- * Records the payment of the order at the caller's register (RG-PAY-01 à 07, ⚠️ H32), all or
+ * Records the payment of the order at the caller's register (RG-PAY-01 à 07, H32), all or
  * nothing: lines adding up exactly to the amount due, the change on the cash part, the caller's
  * open register session; the order paid, its reservation firm until delivery (RG-STK-03), last
  * in the delivery queue (RG-LIV-01), audited before → after. The same `key` sent again — a

@@ -35,7 +35,7 @@ const CLOCK_MS = 30_000;
  * ticket (T-040, RG-FIL-01 à 04). With one: their order checked line by line — lowered, removed,
  * or cancelled with a reason (T-050, RG-CMD-05b, RG-ANN-01) — beside the ticket to announce and
  * the queue in short, then paid (T-051, RG-PAY). Payments need the register opened first, with
- * its cash float (RG-CAI-01/02, ⚠️ H32): until then the queue shows, nobody is called.
+ * its cash float (RG-CAI-01/02, H32): until then the queue shows, nobody is called.
  */
 export function RegisterWorkspace({ userId }: { userId: string }) {
   const { queue, error, refresh } = useQueue('register');

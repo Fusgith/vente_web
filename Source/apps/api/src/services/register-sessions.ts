@@ -53,7 +53,7 @@ export async function registerStations(db: Db, userId: string): Promise<Register
 
 /**
  * Opens the caller's register session on a register, with the cash in the drawer (RG-CAI-01,
- * ⚠️ H32): one open session per person and per register, both held by partial unique indexes
+ * H32): one open session per person and per register, both held by partial unique indexes
  * whatever two screens do at once. Audited; its closing comes with T-054.
  */
 export async function openSession(

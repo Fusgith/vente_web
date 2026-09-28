@@ -21,7 +21,7 @@ export const paymentMethodSchema = z.object({
 });
 export type PaymentMethod = z.infer<typeof paymentMethodSchema>;
 
-/** A register the cashier may open: one open session each (RG-CAI-01/02, ⚠️ H32). */
+/** A register the cashier may open: one open session each (RG-CAI-01/02, H32). */
 export const registerStationSchema = z.object({
   id: z.uuid(),
   name: z.string(),

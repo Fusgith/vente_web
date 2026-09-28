@@ -26,7 +26,7 @@ export const registerLabels = {
   orderOf: (number: string, salesUser: string) => `Commande ${number} · ${salesUser}`,
   lines: (count: number) => (count === 1 ? '1 ligne' : `${count} lignes`),
   noShow: 'Client absent',
-  /** Opening the register (RG-CAI-01, ⚠️ H32). */
+  /** Opening the register (RG-CAI-01, H32). */
   openTitle: 'Ouvrir la caisse',
   openHint:
     'Choisissez votre caisse et comptez le fond de caisse : chaque paiement de la journée y sera rattaché.',

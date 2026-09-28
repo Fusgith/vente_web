@@ -41,7 +41,7 @@ interface PaymentSheetProps {
 }
 
 /**
- * The payment of the order at the register (RG-PAY-01 à 04, ⚠️ H32): cash by default for the
+ * The payment of the order at the register (RG-PAY-01 à 04, H32): cash by default for the
  * whole amount; other methods added for a mixed payment, each with its reference when required;
  * on the cash part, the cash handed over and the change. Confirmed only once the lines add up
  * exactly to the amount due — the same check as the API's (`settle`).

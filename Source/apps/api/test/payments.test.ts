@@ -22,7 +22,7 @@ import {
   type TestApp,
 } from './helpers.js';
 
-describe.skipIf(!TEST_DATABASE_URL)('payment at the register (RG-PAY, ⚠️ H32)', () => {
+describe.skipIf(!TEST_DATABASE_URL)('payment at the register (RG-PAY, H32)', () => {
   let t: TestApp;
   const cookies = { sales: '', cashier: '', otherCashier: '', manager: '' };
   const ids = { vola: '', customer: '', nails: '', nailsUnit: '', register: '' };

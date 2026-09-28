@@ -72,7 +72,7 @@ const confirm = (sheet: HTMLElement) =>
   within(sheet).getByRole('button', { name: text.confirmPay(formatMga('114500')) });
 const type = (field: HTMLElement, value: string) => fireEvent.change(field, { target: { value } });
 
-describe('opening the register (RG-CAI-01/02, ⚠️ H32)', () => {
+describe('opening the register (RG-CAI-01/02, H32)', () => {
   it('asks for a register and its float before anyone is called', async () => {
     const api = mount({
       'GET /register-sessions/current': ok({ session: null }),
