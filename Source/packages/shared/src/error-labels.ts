@@ -65,6 +65,11 @@ export const ERROR_LABELS = {
   PAYMENT_CASH_TWICE: 'Une seule ligne en espèces par paiement.',
   PAYMENT_CASH_WITHOUT_LINE: 'Un montant reçu en espèces demande une ligne en espèces.',
   IDEMPOTENCY_KEY_REQUIRED: 'Requête de paiement incomplète : rechargez la page.',
+  COUNTER_BUSY:
+    'Une commande est déjà à votre comptoir : livrez-la ou déclarez le client absent avant d’en prendre une autre.',
+  ORDER_NOT_AT_COUNTER: 'Cette commande n’est plus à votre comptoir : la liste a été mise à jour.',
+  DELIVERY_INCOMPLETE:
+    'Cochez chaque ligne remise au client ; une ligne manquante ou abîmée se signale comme anomalie.',
   TICKET_LETTER_MISSING:
     'Aucune lettre de ticket n’est attribuée à ce commercial : l’admin doit lui en donner une.',
 } as const;

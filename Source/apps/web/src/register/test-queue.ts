@@ -21,6 +21,7 @@ export function item(n: number, overrides: Partial<QueueItem> = {}): QueueItem {
     noShowCount: 0,
     submittedAt: new Date(Date.now() - n * 5 * 60_000).toISOString(),
     calledAt: null,
+    paidAt: null,
     servedBy: null,
     station: null,
     ...overrides,

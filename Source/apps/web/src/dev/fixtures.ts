@@ -255,6 +255,7 @@ function queueItem(
     noShowCount: 0,
     submittedAt: new Date(Date.now() - waitedMinutes * 60_000).toISOString(),
     calledAt: null,
+    paidAt: null,
     servedBy: null,
     station: null,
     ...extra,

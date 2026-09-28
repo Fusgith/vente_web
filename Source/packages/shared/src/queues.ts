@@ -33,6 +33,8 @@ export const queueItemSchema = z.object({
   /** Entry in the queue: the wait shown runs from it (RG-FIL-05). */
   submittedAt: z.iso.datetime({ offset: true }),
   calledAt: z.iso.datetime({ offset: true }).nullable(),
+  /** Paid, hence in the delivery queue since then (RG-LIV-01). */
+  paidAt: z.iso.datetime({ offset: true }).nullable(),
   /** Who serves it, and at which station, once called. */
   servedBy: person.nullable(),
   station: z.object({ id: z.uuid(), name: z.string() }).nullable(),

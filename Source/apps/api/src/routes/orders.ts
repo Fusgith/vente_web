@@ -15,8 +15,8 @@ import { orderAdjusted, orderCancelled, orderSubmitted } from '../services/realt
 
 const paramsSchema = z.object({ id: z.uuid() });
 
-/** Annexe B: same readers as the quotes; the warehouse gets its own view with deliveries (T-060). */
-const READERS: readonly Role[] = ['sales', 'cashier', 'manager', 'owner', 'admin'];
+/** Annexe B: same readers as the quotes, and the warehouse, which prepares the lines (T-060). */
+const READERS: readonly Role[] = ['sales', 'cashier', 'warehouse', 'manager', 'owner', 'admin'];
 
 export const orderRoutes: FastifyPluginAsync = async (app) => {
   app.get(

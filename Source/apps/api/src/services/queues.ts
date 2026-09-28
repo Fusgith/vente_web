@@ -21,11 +21,21 @@ const ITEM_INCLUDE = {
   salesUser: { select: { id: true, fullName: true } },
   cashierUser: { select: { id: true, fullName: true } },
   registerStation: { select: { id: true, name: true } },
+  // The delivery under way: the warehouse user holding the order, at their counter (RG-USR-08).
+  deliveries: {
+    orderBy: { startedAt: 'desc' },
+    take: 1,
+    select: {
+      startedAt: true,
+      warehouseUser: { select: { id: true, fullName: true } },
+      station: { select: { id: true, name: true } },
+    },
+  },
 } satisfies Prisma.OrderInclude;
 
 type StoredItem = Prisma.OrderGetPayload<{ include: typeof ITEM_INCLUDE }>;
 
-function toItem(order: StoredItem): QueueItem[] {
+function toItem(queue: QueueName, order: StoredItem): QueueItem[] {
   const { ticketLetter, ticketSeq, ticketDate, submittedAt } = order;
   // An order enters a queue validated, hence with its ticket (RG-CMD-03).
   if (!ticketLetter || !ticketSeq || !ticketDate || !submittedAt) return [];
@@ -41,11 +51,32 @@ function toItem(order: StoredItem): QueueItem[] {
       priority: order.priority > 0,
       noShowCount: order.noShowCount,
       submittedAt: submittedAt.toISOString(),
+      paidAt: order.paidAt?.toISOString() ?? null,
+      ...served(queue, order),
+    },
+  ];
+}
+
+/** Who serves an order being served in the queue shown, where, since when. */
+function served(
+  queue: QueueName,
+  order: StoredItem,
+): Pick<QueueItem, 'calledAt' | 'servedBy' | 'station'> {
+  if (queue === 'register') {
+    return {
       calledAt: order.calledAt?.toISOString() ?? null,
       servedBy: order.cashierUser,
       station: order.registerStation,
-    },
-  ];
+    };
+  }
+  const delivery = QUEUE_STATUSES.delivery.serving.includes(order.status)
+    ? order.deliveries[0]
+    : undefined;
+  return {
+    calledAt: delivery?.startedAt.toISOString() ?? null,
+    servedBy: delivery?.warehouseUser ?? null,
+    station: delivery?.station ?? null,
+  };
 }
 
 /** Rank key of each queue in `number_sequences`: last place is the next value (RG-FIL-01). */
@@ -69,7 +100,8 @@ export async function loadQueue(db: Db, queue: QueueName): Promise<Queue> {
       include: ITEM_INCLUDE,
     }),
   ]);
-  return { queue, serving: servingRows.flatMap(toItem), waiting: waitingRows.flatMap(toItem) };
+  const item = (order: StoredItem) => toItem(queue, order);
+  return { queue, serving: servingRows.flatMap(item), waiting: waitingRows.flatMap(item) };
 }
 
 /**
@@ -77,7 +109,7 @@ export async function loadQueue(db: Db, queue: QueueName): Promise<Queue> {
  * instead of skipping its locked rows, and a reorder reads the order the previous one left.
  * Released with the transaction.
  */
-async function lockQueue(tx: Prisma.TransactionClient, queue: QueueName): Promise<void> {
+export async function lockQueue(tx: Prisma.TransactionClient, queue: QueueName): Promise<void> {
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${RANK_KEY[queue]}))`;
 }
 

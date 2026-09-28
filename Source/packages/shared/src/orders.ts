@@ -35,8 +35,9 @@ export const ORDER_TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatu
   SUBMITTED: ['AT_REGISTER', 'EXPIRED', 'CANCELLED'],
   AT_REGISTER: ['PAID', 'SUBMITTED', 'CANCELLED'],
   PAID: ['PREPARING', 'REFUNDED'],
-  PREPARING: ['READY', 'ISSUE'],
-  READY: ['DELIVERED', 'ISSUE'],
+  // Back in the delivery queue: reassigned by the manager, or absent when called (⚠️ H34).
+  PREPARING: ['READY', 'ISSUE', 'PAID'],
+  READY: ['DELIVERED', 'ISSUE', 'PAID'],
   ISSUE: ['READY', 'DELIVERED'],
   DELIVERED: [],
   EXPIRED: ['SUBMITTED'],
@@ -51,6 +52,16 @@ export function canTransition(from: OrderStatus, to: OrderStatus): boolean {
 /** The version read: a quote saved or validated meanwhile elsewhere is never validated blind. */
 export const orderSubmitSchema = z.object({ version: z.int().positive() });
 export type OrderSubmit = z.infer<typeof orderSubmitSchema>;
+
+/**
+ * The hand-over at the counter (RG-LIV-03): the lines ticked, by position, in the version read;
+ * every one of them, or it is an issue (T-061).
+ */
+export const orderDeliverSchema = z.object({
+  version: z.int().positive(),
+  delivered: z.array(z.int().positive()).min(1).max(200),
+});
+export type OrderDeliver = z.infer<typeof orderDeliverSchema>;
 
 /** « A15 »: letter of the salesperson, number of the day for that letter (RG-TKT-01). */
 export const ticketSchema = z.object({

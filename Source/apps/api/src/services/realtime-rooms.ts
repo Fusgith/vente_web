@@ -152,3 +152,37 @@ export function orderPaid(order: CalledOrder): Emission[] {
     statusChanged(order, 'PAID'),
   ];
 }
+
+/** Taken to a counter to prepare (RG-LIV-02, RG-USR-08): the others see who holds it. */
+export function orderTaken(order: CalledOrder): Emission[] {
+  return [...queueChanged('delivery', order.id, 'called'), statusChanged(order, 'PREPARING')];
+}
+
+/** Prepared: the ticket is called to the counter (RG-LIV-02, RG-DSP-01/05). */
+export function orderReady(order: CalledOrder): Emission[] {
+  return [
+    ...queueChanged('delivery', order.id, 'updated'),
+    emission([room.queue('delivery')], 'ticket.called', { queue: 'delivery', orderId: order.id }),
+    statusChanged(order, 'READY'),
+  ];
+}
+
+/** Back in the delivery queue: absent when called (RG-FIL-06), or given to another counter. */
+export function orderBackToDelivery(
+  order: CalledOrder,
+  why: 'no_show' | 'released',
+  noShowCount: number,
+): Emission[] {
+  return [
+    ...queueChanged('delivery', order.id, why),
+    statusChanged(order, 'PAID'),
+    ...(why === 'no_show' && noShowCount >= NO_SHOWS_BEFORE_NOTICE
+      ? [emission([room.role('manager')], 'order.no_show', { orderId: order.id, noShowCount })]
+      : []),
+  ];
+}
+
+/** Handed over, the stock out (RG-LIV-03, RG-STK-04). */
+export function orderDelivered(order: CalledOrder): Emission[] {
+  return [...queueChanged('delivery', order.id, 'delivered'), statusChanged(order, 'DELIVERED')];
+}
