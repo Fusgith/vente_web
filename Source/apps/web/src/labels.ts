@@ -311,8 +311,12 @@ export const labels = {
     },
     confirmPay: (amount: string) => `Encaisser ${amount}`,
     paying: 'Encaissement…',
-    paid: (ticket: string, name: string, change: string | null) =>
-      change ? `${ticket} — ${name} payé. Rendu : ${change}.` : `${ticket} — ${name} payé.`,
+    paid: (ticket: string, name: string, invoice: string, change: string | null) =>
+      `${ticket} — ${name} payé, facture ${invoice}.` + (change ? ` Rendu : ${change}.` : ''),
+    /** The invoice of the last payment, to print (RG-FAC-04, T-052). */
+    lastPaid: 'Dernier encaissement',
+    invoiceOf: (invoice: string) => `Facture ${invoice}`,
+    openInvoice: 'Ouvrir la facture',
     /** Control before payment (T-050, §5.6, RG-CMD-05b, RG-ANN-01). */
     orderTitle: (number: string) => `Commande ${number}`,
     loadingOrder: 'Chargement de la commande…',

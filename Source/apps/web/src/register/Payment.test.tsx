@@ -22,6 +22,7 @@ const METHODS = {
   ],
 };
 
+const INVOICE_ID = '0192a4f0-0000-7000-8000-000000000901';
 const entry = atMyRegister(item(1));
 const ORDER = `/orders/${entry.orderId}`;
 const paid = (change: string) => ({
@@ -35,6 +36,7 @@ const paid = (change: string) => ({
     createdAt: '2026-09-28T06:00:00.000Z',
     lines: [],
   },
+  invoice: { id: INVOICE_ID, number: 'F-2026-000001' },
 });
 
 function mount(handlers: Parameters<typeof fakeApi>[0]) {
@@ -109,14 +111,23 @@ describe('payment at the register (RG-PAY-01 à 04)', () => {
     const api = atRegister({ [`POST ${ORDER}/pay`]: ok(paid('5500.00')) });
     const sheet = await paySheet();
     type(within(sheet).getByLabelText(text.cashReceived), '120 000');
+    // Paid, the customer leaves the register.
+    api.on('GET /queues/register', ok(queueOf([], [])));
     expect(within(sheet).getByRole('status', { name: text.change })).toHaveTextContent(
       shown(formatMga('5500')),
     );
     fireEvent.click(confirm(sheet));
 
     await waitFor(() =>
-      expect(band()).toHaveTextContent(text.paid('A1', 'Rasoa Hanta', shown(formatMga('5500')))),
+      expect(band()).toHaveTextContent(
+        text.paid('A1', 'Rasoa Hanta', 'F-2026-000001', shown(formatMga('5500'))),
+      ),
     );
+    // The invoice of the last payment stays at hand, to print (RG-FAC-04).
+    const invoice = await screen.findByRole('link', { name: text.openInvoice });
+    expect(invoice).toHaveAttribute('href', `/api/v1/invoices/${INVOICE_ID}/pdf`);
+    expect(invoice).toHaveAttribute('target', '_blank');
+    expect(screen.getByText(text.invoiceOf('F-2026-000001'))).toBeVisible();
     const [call] = api.callsTo(`POST ${ORDER}/pay`);
     expect(call!.body).toEqual({
       version: 2,
@@ -144,7 +155,9 @@ describe('payment at the register (RG-PAY-01 à 04)', () => {
     expect(sheet).not.toHaveTextContent(text.remaining);
     fireEvent.click(confirm(sheet));
 
-    await waitFor(() => expect(band()).toHaveTextContent(text.paid('A1', 'Rasoa Hanta', null)));
+    await waitFor(() =>
+      expect(band()).toHaveTextContent(text.paid('A1', 'Rasoa Hanta', 'F-2026-000001', null)),
+    );
     expect(api.callsTo(`POST ${ORDER}/pay`)[0]!.body).toEqual({
       version: 2,
       lines: [

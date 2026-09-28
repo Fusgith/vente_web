@@ -11,12 +11,17 @@ import {
   type RegisterSessionOpen,
   type RegisterStation,
 } from '@vente-web/shared';
-import { apiRequest, parseResponse } from './client.js';
+import { API_BASE, apiRequest, parseResponse } from './client.js';
 
 /** The register session and the payment (T-051, RG-CAI-01/02, RG-PAY, ⚠️ H32). */
 export const paymentsApi = {
   async methods(): Promise<PaymentMethod[]> {
     return parseResponse(paymentMethodListSchema, await apiRequest('/payment-methods')).methods;
+  },
+
+  /** The invoice as issued (RG-FAC-04), opened in a tab and printed from the browser. */
+  invoicePdfUrl(invoiceId: string): string {
+    return `${API_BASE}/invoices/${invoiceId}/pdf`;
   },
 
   async currentSession(): Promise<RegisterSession | null> {

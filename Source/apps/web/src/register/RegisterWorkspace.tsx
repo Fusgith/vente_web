@@ -20,7 +20,7 @@ import { OrderControl } from './OrderControl.js';
 import { QueueSummary } from './QueueSummary.js';
 import { QueueTable } from './QueueTable.js';
 import { RegisterQueueNotices } from './RegisterQueueNotices.js';
-import { ServingPanel } from './ServingPanel.js';
+import { ServingPanel, type LastPaid } from './ServingPanel.js';
 import { useOrderAtRegister } from './useOrderAtRegister.js';
 import { useRegisterSession } from './useRegisterSession.js';
 import { useNow, useRegisterQueue } from './useRegisterQueue.js';
@@ -42,6 +42,8 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
   const register = useRegisterSession();
   const { say, sayError } = useStatusLine();
   const [busy, setBusy] = useState(false);
+  // The invoice of the last payment, to print, until the next customer is called (RG-FAC-04).
+  const [lastPaid, setLastPaid] = useState<LastPaid | null>(null);
   const now = useNow(CLOCK_MS);
 
   const waiting = queue?.waiting ?? [];
@@ -73,19 +75,22 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
   const pay = (input: PaymentInput, key: string) => {
     const order = atRegister.order;
     if (!order || !mine) return Promise.resolve(false);
-    let change = '0.00';
+    const ticket = ticketLabel(mine.ticket);
+    let message = '';
     return act(
       async () => {
         const paid = await paymentsApi.pay(order.id, input, key);
-        change = paid.payment.changeGiven;
+        const change = paid.payment.changeGiven;
+        setLastPaid({ ticket, name: mine.customer.name, invoice: paid.invoice });
+        message = text.paid(
+          ticket,
+          mine.customer.name,
+          paid.invoice.number,
+          change === '0.00' ? null : formatMga(change),
+        );
         return paid.order;
       },
-      () =>
-        text.paid(
-          ticketLabel(mine.ticket),
-          mine.customer.name,
-          change === '0.00' ? null : formatMga(change),
-        ),
+      () => message,
     );
   };
   const announced = (order: Order) =>
@@ -105,6 +110,7 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
       next={waiting[0] ?? null}
       elsewhere={elsewhere}
       register={register.session}
+      lastPaid={mine ? null : lastPaid}
       busy={busy}
       onCallNext={() => void act(() => queuesApi.callNext(), announced)}
       onNoShow={(item) =>

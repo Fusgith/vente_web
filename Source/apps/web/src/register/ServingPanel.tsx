@@ -2,15 +2,24 @@ import {
   formatPhone,
   formatTime,
   ticketLabel,
+  type InvoiceRef,
   type QueueItem,
   type RegisterSession,
 } from '@vente-web/shared';
 
+import { paymentsApi } from '../api/payments.js';
 import { labels } from '../labels.js';
 import { buttonClass, sheetClass } from '../ui/button.js';
 import { Icon } from '../ui/Icon.js';
 
 const text = labels.register;
+
+/** The last customer paid at this register, their invoice to print (T-052). */
+export interface LastPaid {
+  ticket: string;
+  name: string;
+  invoice: InvoiceRef;
+}
 
 interface ServingPanelProps {
   /** The order at this register, if any. */
@@ -21,6 +30,7 @@ interface ServingPanelProps {
   elsewhere: QueueItem[];
   /** The register opened, named under the title (⚠️ H32). */
   register: RegisterSession | null;
+  lastPaid: LastPaid | null;
   busy: boolean;
   onCallNext: () => void;
   onNoShow: (item: QueueItem) => void;
@@ -36,6 +46,7 @@ export function ServingPanel({
   next,
   elsewhere,
   register,
+  lastPaid,
   busy,
   onCallNext,
   onNoShow,
@@ -87,6 +98,26 @@ export function ServingPanel({
           <p className="text-center text-ink-2">
             {next ? text.next(ticketLabel(next.ticket), next.customer.name) : text.waitingCount(0)}
           </p>
+        </div>
+      )}
+      {lastPaid && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-rule pt-3">
+          <div className="min-w-0 flex-1">
+            <h3 className="font-semibold text-ink-2">{text.lastPaid}</h3>
+            <p>
+              <span className="font-bold figures">{lastPaid.ticket}</span> — {lastPaid.name}
+            </p>
+            <p className="text-ink-2 figures">{text.invoiceOf(lastPaid.invoice.number)}</p>
+          </div>
+          <a
+            href={paymentsApi.invoicePdfUrl(lastPaid.invoice.id)}
+            target="_blank"
+            rel="noopener"
+            className={buttonClass('secondary', 'md')}
+          >
+            <Icon name="document" className="size-5" />
+            {text.openInvoice}
+          </a>
         </div>
       )}
       {elsewhere.length > 0 && (
