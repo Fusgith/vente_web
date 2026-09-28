@@ -47,13 +47,36 @@ async function totalsByMethod(db: AuditTx, sessionId: string): Promise<MethodTot
   }));
 }
 
+/** What was paid back from this register, by refund method (RG-ANN-02, H36). */
+async function refundsByMethod(db: AuditTx, sessionId: string): Promise<MethodTotal[]> {
+  const rows = await db.$queryRaw<{ code: string; label: string; count: bigint; total: string }[]>`
+    SELECT "m"."code", "m"."label", COUNT(*) AS "count", SUM("c"."amount")::text AS "total"
+      FROM "credit_notes" "c"
+      JOIN "payment_methods" "m" ON "m"."id" = "c"."refund_method_id"
+     WHERE "c"."register_session_id" = ${sessionId}::uuid
+     GROUP BY "m"."code", "m"."label", "m"."sort_order"
+     ORDER BY "m"."sort_order", "m"."label"`;
+  return rows.map((row) => ({
+    code: row.code,
+    label: row.label,
+    count: Number(row.count),
+    total: sumAmounts([row.total]),
+  }));
+}
+
 /**
  * The session with what it took (RG-CAI-03, H35): the drawer should hold the float plus the
- * part paid in cash — the change given back is already out of it.
+ * part paid in cash — the change given back is already out of it — less the cash refunded
+ * (H36).
  */
 async function summarize(db: AuditTx, session: StoredSession, now: Date): Promise<SessionSummary> {
-  const byMethod = await totalsByMethod(db, session.id);
-  const cash = byMethod.find((method) => method.code === CASH_METHOD)?.total ?? '0.00';
+  const [byMethod, refunds] = await Promise.all([
+    totalsByMethod(db, session.id),
+    refundsByMethod(db, session.id),
+  ]);
+  const cashOf = (totals: MethodTotal[]) =>
+    totals.find((method) => method.code === CASH_METHOD)?.total ?? '0.00';
+  const cashOut = cashVariance('0', cashOf(refunds));
   return {
     id: session.id,
     station: session.station,
@@ -62,7 +85,8 @@ async function summarize(db: AuditTx, session: StoredSession, now: Date): Promis
     openingFloat: session.openingFloat.toFixed(2),
     closedAt: session.closedAt?.toISOString() ?? null,
     byMethod,
-    cashExpected: sumAmounts([session.openingFloat.toFixed(2), cash]),
+    refunds,
+    cashExpected: sumAmounts([session.openingFloat.toFixed(2), cashOf(byMethod), cashOut]),
     countedCash: session.countedCash?.toFixed(2) ?? null,
     variance: session.variance?.toFixed(2) ?? null,
     note: session.note,
@@ -115,7 +139,11 @@ export async function closeSession(
         countedCash,
         variance,
         note,
-        expectedByMethod: { byMethod: before.byMethod, cashExpected: before.cashExpected },
+        expectedByMethod: {
+          byMethod: before.byMethod,
+          refunds: before.refunds,
+          cashExpected: before.cashExpected,
+        },
       },
       select: SESSION_SELECT,
     });

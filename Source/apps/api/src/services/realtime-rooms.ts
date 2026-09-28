@@ -186,3 +186,8 @@ export function orderBackToDelivery(
 export function orderDelivered(order: CalledOrder): Emission[] {
   return [...queueChanged('delivery', order.id, 'delivered'), statusChanged(order, 'DELIVERED')];
 }
+
+/** Cancelled after payment, refunded (RG-ANN-02): out of the delivery queue. */
+export function orderRefunded(order: CalledOrder): Emission[] {
+  return [...queueChanged('delivery', order.id, 'cancelled'), statusChanged(order, 'REFUNDED')];
+}

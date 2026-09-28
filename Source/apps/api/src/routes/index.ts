@@ -4,6 +4,7 @@ import type { Env } from '../env.js';
 import { authCredentialRoutes } from './auth-credentials.js';
 import { authRoutes } from './auth.js';
 import { catalogRoutes } from './catalog.js';
+import { creditNoteRoutes } from './credit-notes.js';
 import { customerRoutes } from './customers.js';
 import { deliveryRoutes } from './deliveries.js';
 import { orderRoutes } from './orders.js';
@@ -26,4 +27,5 @@ export const apiRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) 
   await app.register(paymentRoutes, { env });
   await app.register(deliveryRoutes);
   await app.register(registerClosingRoutes);
+  await app.register(creditNoteRoutes, { env });
 };

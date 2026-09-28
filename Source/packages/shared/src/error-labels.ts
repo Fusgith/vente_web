@@ -72,6 +72,11 @@ export const ERROR_LABELS = {
     'Cochez chaque ligne remise au client ; une ligne manquante ou abîmée se signale comme anomalie.',
   REGISTER_SESSION_NOTE_REQUIRED:
     'La caisse ne tombe pas juste : expliquez l’écart dans le commentaire avant de clôturer.',
+  INVOICE_NOT_FOUND: 'Aucune facture à ce numéro : vérifiez-le sur la facture du client.',
+  ORDER_NOT_REFUNDABLE:
+    'Cette vente ne s’annule pas ici : elle est en préparation, livrée ou déjà remboursée.',
+  APPROVAL_NOT_MANAGER: 'Seul un responsable valide une annulation après paiement.',
+  REFUND_REFERENCE_REQUIRED: 'Saisissez la référence du remboursement pour ce moyen.',
   TICKET_LETTER_MISSING:
     'Aucune lettre de ticket n’est attribuée à ce commercial : l’admin doit lui en donner une.',
 } as const;

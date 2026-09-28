@@ -55,7 +55,10 @@ function table(
  * cash expected, counted and the variance with its comment; the invoices of the session.
  */
 export function closingDocument({ legal, summary, invoices }: ClosingReport): TDocumentDefinitions {
-  const cash = summary.byMethod.find((method) => method.code === CASH_METHOD)?.total ?? '0.00';
+  const cashOf = (totals: SessionSummary['byMethod']) =>
+    totals.find((method) => method.code === CASH_METHOD)?.total ?? '0.00';
+  const cash = cashOf(summary.byMethod);
+  const cashRefunded = cashOf(summary.refunds);
   const variance = summary.variance;
   const off = variance !== null && variance !== '0.00';
   const row = (label: string, amount: string, strong = false, color = INK): TableCell[] => [
@@ -65,6 +68,7 @@ export function closingDocument({ legal, summary, invoices }: ClosingReport): TD
   const cashRows = [
     row(text.openingFloat, summary.openingFloat),
     row(text.cashTaken, cash),
+    ...(cashRefunded === '0.00' ? [] : [row(text.cashRefunded, cashRefunded)]),
     row(text.cashExpected, summary.cashExpected, true),
     ...(summary.countedCash === null
       ? []
@@ -118,6 +122,21 @@ export function closingDocument({ legal, summary, invoices }: ClosingReport): TD
             ['*', 70, 110],
             new Set([1, 2]),
           ),
+      ...(summary.refunds.length === 0
+        ? []
+        : [
+            { text: text.refunds, style: 'section' },
+            table(
+              [text.method, text.creditNotes, `${text.total} ${text.inCurrency}`],
+              summary.refunds.map((method) => [
+                { text: method.label },
+                { text: String(method.count), alignment: 'right' },
+                { text: formatAmount(method.total), alignment: 'right', bold: true },
+              ]),
+              ['*', 70, 110],
+              new Set([1, 2]),
+            ),
+          ]),
       { text: text.cash, style: 'section' },
       { layout: 'noBorders', table: { widths: [180, 140], body: cashRows } },
       ...(summary.note ? [{ text: text.note, style: 'section' }, { text: summary.note }] : []),

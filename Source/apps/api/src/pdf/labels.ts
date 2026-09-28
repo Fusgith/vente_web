@@ -80,6 +80,9 @@ export const CLOSING_PDF = {
   cash: 'Espèces',
   openingFloat: 'Fond de caisse',
   cashTaken: 'Espèces encaissées',
+  cashRefunded: 'Espèces remboursées',
+  refunds: 'Remboursements (avoirs)',
+  creditNotes: 'Avoirs',
   cashExpected: 'Espèces attendues',
   countedCash: 'Espèces comptées',
   variance: 'Écart',
@@ -91,4 +94,23 @@ export const CLOSING_PDF = {
   at: (date: string, time: string) => `${date} à ${time}`,
   page: (register: string, current: number, count: number) =>
     `Clôture ${register} — page ${current} sur ${count}`,
+};
+
+/** The credit note (RG-FAC-05, H36). */
+export const CREDIT_NOTE_PDF = {
+  ...DOCUMENT_PDF,
+  title: 'Avoir',
+  time: 'Heure',
+  invoice: 'Facture d’origine',
+  ticket: 'Ticket',
+  cashier: 'Caissier',
+  approvedBy: 'Validé par',
+  credited: 'Montant de l’avoir',
+  reason: 'Motif',
+  refund: 'Remboursement',
+  reference: (reference: string) => `réf. ${reference}`,
+  notice: (invoice: string) =>
+    `Avoir sur la facture ${invoice} — la facture d’origine reste inchangée`,
+  page: (number: string, current: number, count: number) =>
+    `Avoir ${number} — page ${current} sur ${count}`,
 };

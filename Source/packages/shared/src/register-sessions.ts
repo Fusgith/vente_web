@@ -20,7 +20,9 @@ export const sessionSummarySchema = registerSessionSchema.extend({
   cashier: z.object({ id: z.uuid(), fullName: z.string() }),
   closedAt: z.string().nullable(),
   byMethod: z.array(methodTotalSchema),
-  /** Opening float + the part paid in cash: what the drawer should hold. */
+  /** Refunds paid back from this register, by method (RG-ANN-02, H36). */
+  refunds: z.array(methodTotalSchema),
+  /** Opening float + the part paid in cash − the cash refunded: what the drawer should hold. */
   cashExpected: z.string(),
   countedCash: z.string().nullable(),
   /** Counted − expected: negative when cash is missing. */

@@ -5,7 +5,7 @@ import {
   type RegisterSession,
   type SessionSummary,
 } from '@vente-web/shared';
-import { useEffect, useId, useState } from 'react';
+import { Fragment, useEffect, useId, useState } from 'react';
 
 import { errorMessage } from '../api/error-message.js';
 import { paymentsApi } from '../api/payments.js';
@@ -30,7 +30,7 @@ interface CloseRegisterSheetProps {
 /**
  * Closing the register (RG-CAI-03, H35): what each method took, the cash the drawer should
  * hold, the cash counted and the variance live, a comment required when it is not nil. Once
- * closed, the report is at hand.
+ * closed, the report is at hand. Refunds paid back from it are listed (⚠️ H36).
  */
 export function CloseRegisterSheet({ session, onClose, onDone }: CloseRegisterSheetProps) {
   const countedId = useId();
@@ -143,6 +143,12 @@ export function CloseRegisterSheet({ session, onClose, onDone }: CloseRegisterSh
           <dl className="grid grid-cols-[1fr_auto] items-baseline gap-x-6 gap-y-1">
             <dt className="text-ink-2">{text.openingFloat}</dt>
             <dd className="text-right figures">{formatMga(shown.openingFloat)}</dd>
+            {shown.refunds.map((refund) => (
+              <Fragment key={refund.code}>
+                <dt className="text-ink-2">{text.refunded(refund.label, refund.count)}</dt>
+                <dd className="text-right figures">{formatMga(refund.total)}</dd>
+              </Fragment>
+            ))}
             <dt className="font-semibold">{text.cashExpected}</dt>
             <dd className="text-right text-24 font-bold figures">
               {formatMga(shown.cashExpected)}

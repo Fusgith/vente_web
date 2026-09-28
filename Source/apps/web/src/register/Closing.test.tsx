@@ -23,6 +23,7 @@ function summary(overrides: Partial<SessionSummary> = {}): SessionSummary {
       { code: 'CASH', label: 'Espèces', count: 3, total: '80000.00' },
       { code: 'MVOLA', label: 'MVola', count: 1, total: '45000.00' },
     ],
+    refunds: [],
     cashExpected: '130000.00',
     countedCash: null,
     variance: null,
@@ -57,7 +58,11 @@ describe('closing the register (RG-CAI-03, H35)', () => {
     const api = mount({
       ...OPENED,
       'GET /queues/register': ok(queueOf([])),
-      'GET /register-sessions/current/summary': ok({ summary: summary() }),
+      'GET /register-sessions/current/summary': ok({
+        summary: summary({
+          refunds: [{ code: 'CASH', label: 'Espèces', count: 1, total: '6500.00' }],
+        }),
+      }),
       'POST /register-sessions/current/close': ok(closed),
       'GET /register-sessions/stations': ok({ stations: [] }),
     });
@@ -65,6 +70,7 @@ describe('closing the register (RG-CAI-03, H35)', () => {
     const sheet = await screen.findByRole('dialog', { name: text.closeTitle('Caisse 2') });
     expect(await within(sheet).findByText('MVola')).toBeVisible();
     expect(sheet).toHaveTextContent(shown(formatMga('130000')));
+    expect(within(sheet).getByText(text.refunded('Espèces', 1))).toBeVisible();
 
     const counted = within(sheet).getByLabelText(text.counted);
     const confirm = within(sheet).getByRole('button', { name: text.confirm });

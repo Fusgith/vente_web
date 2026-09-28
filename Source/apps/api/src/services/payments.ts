@@ -27,7 +27,7 @@ export async function paymentMethods(db: Db): Promise<PaymentMethod[]> {
   });
 }
 
-const PAYMENT_INCLUDE = {
+export const PAYMENT_INCLUDE = {
   invoice: { select: { id: true, number: true } },
   lines: {
     orderBy: { id: 'asc' },
@@ -37,7 +37,8 @@ const PAYMENT_INCLUDE = {
 
 type StoredPayment = Prisma.PaymentGetPayload<{ include: typeof PAYMENT_INCLUDE }>;
 
-function toPayment(payment: StoredPayment): Payment {
+/** A payment as the screens read it. */
+export function toPaymentView(payment: StoredPayment): Payment {
   return {
     id: payment.id,
     orderId: payment.orderId,
@@ -112,7 +113,7 @@ export async function payOrder(
       if (!replayed.invoice) throw new AppError(409, 'ORDER_CHANGED');
       return {
         order: await loadOrder(tx, id),
-        payment: toPayment(replayed),
+        payment: toPaymentView(replayed),
         invoice: replayed.invoice,
       };
     }
@@ -192,7 +193,7 @@ export async function payOrder(
       where: { orderId: id, status: 'ACTIVE' },
       data: { expiresAt: null },
     });
-    const result = toPayment(payment);
+    const result = toPaymentView(payment);
     await recordAudit(tx, {
       ...by(actor),
       action: 'order.paid',

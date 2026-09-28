@@ -12,6 +12,7 @@ export {
 export * from './auth.js';
 export * from './brand.js';
 export * from './catalog.js';
+export * from './credit-notes.js';
 export * from './customers.js';
 export { addQuantities, baseQuantity, isQuantity, lineGross, sumAmounts } from './decimal.js';
 export * from './discount.js';

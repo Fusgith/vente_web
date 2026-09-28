@@ -1,6 +1,3 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-
 import {
   formatTime,
   invoiceNumber,
@@ -17,6 +14,7 @@ import { AppError } from '../errors.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { renderPdf } from '../pdf/render.js';
 import { invoiceDocument } from '../pdf/templates/invoice.js';
+import { storedPdf } from './document-files.js';
 import { nextSequenceValue } from './sequences.js';
 import { readSetting } from './settings.js';
 import { shopDate, shopYear } from './shop-time.js';
@@ -156,14 +154,7 @@ function pickVat(total: string, rate: string) {
   return { base, vat };
 }
 
-/** `invoices/<year>/<number>.pdf` under the files volume (CDC technique §7). */
-const relativePath = (year: number, number: string) =>
-  path.join('invoices', String(year), `${number}.pdf`);
-
-/**
- * The invoice's PDF as issued (RG-FAC-04): the file it recorded when there is one; otherwise
- * made once from the frozen content, written, and kept — every later reprint sends that file.
- */
+/** The invoice's PDF as issued (RG-FAC-04), made from its frozen content only. */
 export async function invoicePdf(
   db: Db,
   filesDir: string,
@@ -174,23 +165,11 @@ export async function invoicePdf(
     select: { number: true, year: true, snapshot: true, pdfPath: true },
   });
   if (!invoice) throw new AppError(404, 'NOT_FOUND');
-  const file = invoice.pdfPath ?? relativePath(invoice.year, invoice.number);
-  const absolute = path.resolve(filesDir, file);
-  // Only a file this invoice recorded is its own: one left by a database reset is replaced.
-  if (invoice.pdfPath !== null) {
-    const stored = await readFile(absolute).catch(() => null);
-    if (stored) return { number: invoice.number, pdf: stored };
-  }
-
-  const snapshot = invoiceSnapshotSchema.parse(invoice.snapshot);
-  const pdf = await renderPdf(invoiceDocument(snapshot));
-  await mkdir(path.dirname(absolute), { recursive: true });
-  // Written aside then renamed: a reader never gets half a file.
-  const partial = `${absolute}.${process.pid}.partial`;
-  await writeFile(partial, pdf);
-  await rename(partial, absolute);
-  if (invoice.pdfPath === null) {
-    await db.invoice.update({ where: { id }, data: { pdfPath: file } });
-  }
+  const pdf = await storedPdf(
+    filesDir,
+    { folder: 'invoices', ...invoice },
+    () => renderPdf(invoiceDocument(invoiceSnapshotSchema.parse(invoice.snapshot))),
+    (file) => db.invoice.update({ where: { id }, data: { pdfPath: file } }),
+  );
   return { number: invoice.number, pdf };
 }
