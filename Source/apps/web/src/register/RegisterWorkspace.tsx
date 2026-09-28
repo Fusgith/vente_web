@@ -23,7 +23,7 @@ import { RegisterQueueNotices } from './RegisterQueueNotices.js';
 import { ServingPanel, type LastPaid } from './ServingPanel.js';
 import { useOrderAtRegister } from './useOrderAtRegister.js';
 import { useRegisterSession } from './useRegisterSession.js';
-import { useNow, useRegisterQueue } from './useRegisterQueue.js';
+import { useNow, useQueue } from './useQueue.js';
 
 const text = labels.register;
 
@@ -38,7 +38,7 @@ const CLOCK_MS = 30_000;
  * its cash float (RG-CAI-01/02, ⚠️ H32): until then the queue shows, nobody is called.
  */
 export function RegisterWorkspace({ userId }: { userId: string }) {
-  const { queue, error, refresh } = useRegisterQueue();
+  const { queue, error, refresh } = useQueue('register');
   const register = useRegisterSession();
   const { say, sayError } = useStatusLine();
   const [busy, setBusy] = useState(false);

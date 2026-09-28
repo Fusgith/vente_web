@@ -1,5 +1,8 @@
 import { CURRENCY, DEFAULT_APP_NAME, type Role } from '@vente-web/shared';
 
+import { deliveryLabels } from './labels-delivery.js';
+import { registerLabels } from './labels-register.js';
+
 /** French UI labels (ADR-0004): no French string hard-coded in logic or components. */
 export const labels = {
   /** Fixed at build time (RG-APP-01, ADR-0006): `pnpm dist --nom "…"`. */
@@ -246,116 +249,11 @@ export const labels = {
     },
   },
 
-  /** The register: its queue (T-040, RG-FIL-01 à 05); payment comes with T-051. */
-  register: {
-    newOrder: (ticket: string, name: string) =>
-      `Nouvelle commande en file caisse : ${ticket} — ${name}`,
-    queueTitle: 'File caisse',
-    waitingCount: (count: number) =>
-      count === 0
-        ? 'Aucun client en attente'
-        : count === 1
-          ? '1 en attente'
-          : `${count} en attente`,
-    empty: 'Aucun client en attente : les commandes validées apparaissent ici.',
-    rank: 'Rang',
-    ticket: 'Ticket',
-    customer: 'Client',
-    salesUser: 'Commercial',
-    amount: 'Montant',
-    wait: 'Attente',
-    priority: 'Prioritaire',
-    absences: (count: number) => (count === 1 ? '1 absence' : `${count} absences`),
-    /** Out of turn: the customer stands at the register (RG-FIL-03). */
-    call: (ticket: string) => `Appeler ${ticket}`,
-    callShort: 'Appeler',
-    servingTitle: 'À votre caisse',
-    callNext: 'Appeler le suivant',
-    next: (ticket: string, name: string) => `Suivant : ${ticket} — ${name}`,
-    calling: 'Appel…',
-    /** The verbal call (RG-DSP-05): what to say aloud, big. */
-    announce: 'Annoncez',
-    orderOf: (number: string, salesUser: string) => `Commande ${number} · ${salesUser}`,
-    lines: (count: number) => (count === 1 ? '1 ligne' : `${count} lignes`),
-    noShow: 'Client absent',
-    /** Opening the register (RG-CAI-01, ⚠️ H32). */
-    openTitle: 'Ouvrir la caisse',
-    openHint:
-      'Choisissez votre caisse et comptez le fond de caisse : chaque paiement de la journée y sera rattaché.',
-    registerChoice: 'Caisse',
-    registerBusy: 'déjà ouverte',
-    noRegister: 'Aucune caisse active : l’admin doit en déclarer une.',
-    openingFloat: 'Fond de caisse (MGA)',
-    openRegister: 'Ouvrir la caisse',
-    opening: 'Ouverture…',
-    opened: (register: string) => `${register} ouverte.`,
-    sessionOf: (register: string, time: string) => `${register} · ouverte à ${time}`,
-    /** Payment (RG-PAY-01 à 04). */
-    pay: 'Encaisser',
-    payTitle: (ticket: string, name: string) => `Encaisser ${ticket} — ${name}`,
-    amountDue: 'Net à payer',
-    method: 'Moyen de paiement',
-    lineAmount: 'Montant (MGA)',
-    reference: 'Référence de la transaction (obligatoire)',
-    addMethod: 'Ajouter un moyen de paiement',
-    removeMethod: (label: string) => `Retirer ${label}`,
-    cashReceived: 'Montant reçu en espèces (MGA)',
-    change: 'Rendu',
-    remaining: 'Reste à payer',
-    overpaid: 'Trop saisi',
-    payIssues: {
-      TOTAL_MISMATCH: 'Les montants doivent faire exactement le net à payer.',
-      CASH_SHORT: 'Le montant reçu ne couvre pas la part en espèces.',
-      CASH_TWICE: 'Une seule ligne en espèces.',
-      CASH_WITHOUT_LINE: 'Montant reçu sans ligne en espèces.',
-    },
-    confirmPay: (amount: string) => `Encaisser ${amount}`,
-    paying: 'Encaissement…',
-    paid: (ticket: string, name: string, invoice: string, change: string | null) =>
-      `${ticket} — ${name} payé, facture ${invoice}.` + (change ? ` Rendu : ${change}.` : ''),
-    /** The invoice of the last payment, to print (RG-FAC-04, T-052). */
-    lastPaid: 'Dernier encaissement',
-    invoiceOf: (invoice: string) => `Facture ${invoice}`,
-    openInvoice: 'Ouvrir la facture',
-    /** Control before payment (T-050, §5.6, RG-CMD-05b, RG-ANN-01). */
-    orderTitle: (number: string) => `Commande ${number}`,
-    loadingOrder: 'Chargement de la commande…',
-    modify: 'Modifier',
-    modifyLine: (position: number) => `Modifier la ligne ${position}`,
-    adjustTitle: (position: number) => `Ligne ${position}`,
-    currentQty: (qty: string, unit: string) => `Quantité actuelle : ${qty} ${unit}`,
-    newQty: 'Nouvelle quantité',
-    lowerOnly: (qty: string, unit: string) =>
-      `Moins de ${qty} ${unit} : une quantité ne peut que baisser, un ajout passe par le commercial.`,
-    confirmQty: 'Valider',
-    removeLine: 'Supprimer la ligne',
-    lastLine: 'Dernière ligne : pour tout retirer, annulez la commande.',
-    close: 'Fermer',
-    withinCap: 'dans le plafond',
-    byCode: 'code du boss',
-    cancelOrder: 'Annuler la commande',
-    cancelTitle: (ticket: string, name: string) => `Annuler la commande ${ticket} — ${name}`,
-    cancelReason: 'Motif de l’annulation (obligatoire)',
-    cancelHint: 'Le stock réservé est libéré et le ticket clos. L’annulation est journalisée.',
-    keepOrder: 'Revenir',
-    cancelled: (ticket: string, name: string) => `Commande ${ticket} — ${name} annulée.`,
-    adjusted: (position: number) => `Ligne ${position} modifiée.`,
-    removed: (position: number) => `Ligne ${position} supprimée.`,
-    waitingShort: 'En attente',
-    moreWaiting: (count: number) => `… et ${count} autre${count > 1 ? 's' : ''}`,
-    elsewhere: 'Aux autres caisses',
-    servedBy: (name: string, station: string | null) =>
-      station ? `${station} — ${name}` : `Caisse de ${name}`,
-    called: (ticket: string, name: string) => `Ticket ${ticket} appelé : ${name}.`,
-    absent: (ticket: string, name: string) => `${ticket} — ${name} absent : remis en fin de file.`,
-    /** Wait since the order entered the queue (RG-FIL-05). */
-    minutes: (minutes: number) =>
-      minutes < 1
-        ? '< 1 min'
-        : minutes < 60
-          ? `${minutes} min`
-          : `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, '0')}`,
-  },
+  /** The register: its queue, the control of the order, the payment (T-040 à T-052). */
+  register: registerLabels,
+
+  /** The delivery counters (T-060, RG-LIV-01 à 03). */
+  delivery: deliveryLabels,
 
   /** The manager's notices, until the supervision view (T-042). */
   manager: {

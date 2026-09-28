@@ -1,4 +1,4 @@
-import type { Queue } from '@vente-web/shared';
+import type { Queue, QueueName } from '@vente-web/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { errorMessage } from '../api/error-message.js';
@@ -6,18 +6,18 @@ import { queuesApi } from '../api/queues.js';
 import { useRealtimeConnect, useRealtimeEvent } from '../realtime/context.js';
 
 /**
- * The register queue, read again whenever it changes (`queue.changed`) or the realtime channel
+ * A queue — the register's or the delivery's — read again whenever it changes (`queue.changed`) or the realtime channel
  * comes back: an event is only a hint, the API says what the queue is (CDC technique §6.1).
  * A slower, older answer never replaces a newer one.
  */
-export function useRegisterQueue() {
+export function useQueue(name: QueueName) {
   const [queue, setQueue] = useState<Queue | null>(null);
   const [error, setError] = useState<string | null>(null);
   const latest = useRef(0);
 
   const refresh = useCallback(() => {
     const request = ++latest.current;
-    queuesApi.get('register').then(
+    queuesApi.get(name).then(
       (next) => {
         if (request !== latest.current) return;
         setQueue(next);
@@ -27,13 +27,13 @@ export function useRegisterQueue() {
         if (request === latest.current) setError(errorMessage(failure));
       },
     );
-  }, []);
+  }, [name]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
   useRealtimeEvent('queue.changed', ({ queue: changed }) => {
-    if (changed === 'register') refresh();
+    if (changed === name) refresh();
   });
   useRealtimeConnect(refresh);
 

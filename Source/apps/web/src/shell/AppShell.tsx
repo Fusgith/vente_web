@@ -5,6 +5,7 @@ import { errorMessage } from '../api/error-message.js';
 import { useAuth } from '../auth/context.js';
 import { switchableRoles } from '../auth/roles.js';
 import { useIdleLock } from '../auth/useIdleLock.js';
+import { DeliveryWorkspace } from '../delivery/DeliveryWorkspace.js';
 import { labels } from '../labels.js';
 import { RealtimeProvider } from '../realtime/RealtimeProvider.js';
 import { NoShowNotices } from '../manager/NoShowNotices.js';
@@ -118,6 +119,7 @@ function Shell({ me, children }: Omit<AppShellProps, 'realtime'>) {
 function Workspace({ role, userId }: { role: Role; userId: string }) {
   if (role === 'sales') return <SalesWorkspace />;
   if (role === 'cashier') return <RegisterWorkspace userId={userId} />;
+  if (role === 'warehouse') return <DeliveryWorkspace userId={userId} />;
   const workspace = labels.workspaces[role];
   return (
     <section className={`${sheetClass} mx-auto mt-8 flex w-full max-w-2xl flex-col gap-3 p-8`}>

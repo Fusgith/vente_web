@@ -9,15 +9,21 @@ const text = labels.register;
 const SHOWN = 6;
 
 /** The queue in short, beside the order being checked: ticket, name, wait (RG-FIL-01). */
-export function QueueSummary({ waiting, now }: { waiting: QueueItem[]; now: number }) {
+export function QueueSummary({
+  waiting,
+  now,
+  title = text.queueTitle,
+}: {
+  waiting: QueueItem[];
+  now: number;
+  /** The register's queue unless named (the delivery's at the counters). */
+  title?: string;
+}) {
   const shown = waiting.slice(0, SHOWN);
   return (
-    <section
-      aria-labelledby="register-queue-short"
-      className={`${sheetClass} flex flex-col gap-2 p-4`}
-    >
-      <h2 id="register-queue-short" className="flex items-baseline gap-2">
-        <span className="type-title">{text.queueTitle}</span>
+    <section aria-labelledby="queue-short" className={`${sheetClass} flex flex-col gap-2 p-4`}>
+      <h2 id="queue-short" className="flex items-baseline gap-2">
+        <span className="type-title">{title}</span>
         <span className="text-ink-2">{text.waitingCount(waiting.length)}</span>
       </h2>
       <ol className="flex flex-col gap-1">
