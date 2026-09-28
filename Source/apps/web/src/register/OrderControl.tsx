@@ -94,9 +94,11 @@ interface OrderControlProps {
  * (RG-CMD-05b), or the whole order cancelled with a reason (RG-ANN-01).
  */
 export function OrderControl({ order, busy, onLower, onRemove, onCancel }: OrderControlProps) {
-  const [editing, setEditing] = useState<number | null>(null);
+  // The line open by its sale unit, one per order: a line removed elsewhere renumbers the others,
+  // never the article the sheet was opened on; gone itself, the sheet closes.
+  const [editing, setEditing] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
-  const line = order.lines.find((candidate) => candidate.position === editing) ?? null;
+  const line = order.lines.find((candidate) => candidate.productUnitId === editing) ?? null;
   const ticket = order.ticket ? ticketLabel(order.ticket) : order.number;
   const done = (ok: boolean) => {
     if (ok) setEditing(null);
@@ -134,7 +136,7 @@ export function OrderControl({ order, busy, onLower, onRemove, onCancel }: Order
               const factor = formatQty(item.factor);
               const source = origin(item);
               return (
-                <tr key={item.position}>
+                <tr key={item.productUnitId}>
                   <td className={`${row} figures`}>{item.position}</td>
                   <td className={row}>
                     <span className={tagClass}>{item.sku}</span>
@@ -145,7 +147,7 @@ export function OrderControl({ order, busy, onLower, onRemove, onCancel }: Order
                     <button
                       type="button"
                       aria-label={text.modifyLine(item.position)}
-                      onClick={() => setEditing(item.position)}
+                      onClick={() => setEditing(item.productUnitId)}
                       disabled={busy}
                       className="min-h-12 min-w-14 rounded-control border border-rule-strong bg-white px-2.5 text-right text-18 font-semibold figures transition-colors duration-100 active:bg-indigo-soft disabled:border-dashed"
                     >
@@ -202,7 +204,7 @@ export function OrderControl({ order, busy, onLower, onRemove, onCancel }: Order
       </div>
       {line && (
         <LineAdjustSheet
-          key={line.position}
+          key={line.productUnitId}
           line={line}
           lastLine={order.lines.length === 1}
           busy={busy}

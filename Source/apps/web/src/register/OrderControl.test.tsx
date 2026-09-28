@@ -1,5 +1,5 @@
 import { ERROR_LABELS, formatMga } from '@vente-web/shared';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { labels } from '../labels.js';
@@ -7,6 +7,7 @@ import { RealtimeProvider } from '../realtime/RealtimeProvider.js';
 import { Frame } from '../shell/Frame.js';
 import { StatusLineProvider } from '../shell/StatusLineProvider.js';
 import { apiError, fakeApi, HERY, meFor, ok } from '../test/fake-api.js';
+import { fakeRealtime } from '../test/fake-socket.js';
 import { RegisterWorkspace } from './RegisterWorkspace.js';
 import { atMyRegister, item, orderWithLines, queueOf } from './test-queue.js';
 
@@ -109,6 +110,30 @@ describe('register: the order checked before payment (T-050, §5.6)', () => {
       version: 2,
       reason: 'Le client renonce',
     });
+  });
+
+  it('keeps the sheet on its article when another line is removed elsewhere', async () => {
+    const api = mount();
+    fireEvent.click(await screen.findByRole('button', { name: text.modifyLine(2) }));
+    await waitFor(() =>
+      expect(fakeRealtime.sockets[0]?.listeners.get('queue.changed')?.size).toBeGreaterThan(0),
+    );
+    // The manager removed the soap: the nails come first.
+    const [, nails] = orderWithLines(entry).lines;
+    api.on(
+      `GET ${ORDER}`,
+      ok({ ...orderWithLines(entry, 3), lines: [{ ...nails!, position: 1 }] }),
+    );
+    act(() =>
+      fakeRealtime.emit('queue.changed', {
+        queue: 'register',
+        orderId: entry.orderId,
+        change: 'updated',
+      }),
+    );
+    const sheet = await screen.findByRole('dialog', { name: text.adjustTitle(1) });
+    expect(sheet).toHaveTextContent('CLO-001');
+    expect(sheet).not.toHaveTextContent('SAV-001');
   });
 
   it('reloads the order changed meanwhile elsewhere', async () => {
