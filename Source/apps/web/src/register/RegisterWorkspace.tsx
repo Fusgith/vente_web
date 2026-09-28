@@ -15,6 +15,7 @@ import { paymentsApi } from '../api/payments.js';
 import { queuesApi } from '../api/queues.js';
 import { labels } from '../labels.js';
 import { useStatusLine } from '../shell/status-line.js';
+import { CloseRegisterSheet } from './CloseRegisterSheet.js';
 import { OpenRegisterPanel } from './OpenRegisterPanel.js';
 import { OrderControl } from './OrderControl.js';
 import { QueueSummary } from './QueueSummary.js';
@@ -44,6 +45,7 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
   const [busy, setBusy] = useState(false);
   // The invoice of the last payment, to print, until the next customer is called (RG-FAC-04).
   const [lastPaid, setLastPaid] = useState<LastPaid | null>(null);
+  const [closing, setClosing] = useState(false);
   const now = useNow(CLOCK_MS);
 
   const waiting = queue?.waiting ?? [];
@@ -112,6 +114,7 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
       register={register.session}
       lastPaid={mine ? null : lastPaid}
       busy={busy}
+      onCloseRegister={() => setClosing(true)}
       onCallNext={() => void act(() => queuesApi.callNext(), announced)}
       onNoShow={(item) =>
         void act(
@@ -126,11 +129,37 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
   const toOpen = register.loaded && !register.session;
   const openPanel = toOpen ? <OpenRegisterPanel onOpened={register.opened} /> : null;
 
+  const closeRegister = async (countedCash: string, note: string | null) => {
+    try {
+      const closed = await paymentsApi.close({ countedCash, note });
+      const variance =
+        closed.variance && closed.variance !== '0.00' ? formatMga(closed.variance) : null;
+      say(labels.closing.closed(closed.station.name, variance), 'check');
+      return closed;
+    } catch (failure) {
+      sayError(errorMessage(failure));
+      return null;
+    }
+  };
+
   const alert = error ?? register.error ?? atRegister.error;
   return (
     <div className="flex flex-1 flex-col gap-4 md:min-h-0">
       <h1 className="sr-only">{labels.workspaces.cashier.title}</h1>
       <RegisterQueueNotices />
+      {closing && register.session && (
+        <CloseRegisterSheet
+          session={register.session}
+          onClose={closeRegister}
+          onDone={(closed) => {
+            setClosing(false);
+            if (closed) {
+              setLastPaid(null);
+              register.closed();
+            }
+          }}
+        />
+      )}
       {alert && (
         <p
           role="alert"

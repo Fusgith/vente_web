@@ -9,6 +9,7 @@ import { DeliveryWorkspace } from '../delivery/DeliveryWorkspace.js';
 import { labels } from '../labels.js';
 import { RealtimeProvider } from '../realtime/RealtimeProvider.js';
 import { NoShowNotices } from '../manager/NoShowNotices.js';
+import { RegisterSessionsPanel } from '../manager/RegisterSessionsPanel.js';
 import { RegisterWorkspace } from '../register/RegisterWorkspace.js';
 import { SalesWorkspace } from '../sales/SalesWorkspace.js';
 import { buttonClass, sheetClass } from '../ui/button.js';
@@ -122,14 +123,18 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
   if (role === 'warehouse') return <DeliveryWorkspace userId={userId} />;
   const workspace = labels.workspaces[role];
   return (
-    <section className={`${sheetClass} mx-auto mt-8 flex w-full max-w-2xl flex-col gap-3 p-8`}>
-      {role === 'manager' && <NoShowNotices />}
-      <h1 className="type-title">{workspace.title}</h1>
-      <p className="text-18 text-ink">{workspace.summary}</p>
-      <p className="mt-3 flex items-center gap-3 border-t border-rule pt-5 text-ink-2">
-        <Icon name="info" className="size-5" />
-        {labels.shell.workspaceComing}
-      </p>
-    </section>
+    <div className="flex flex-col">
+      <section className={`${sheetClass} mx-auto mt-8 flex w-full max-w-2xl flex-col gap-3 p-8`}>
+        {role === 'manager' && <NoShowNotices />}
+        <h1 className="type-title">{workspace.title}</h1>
+        <p className="text-18 text-ink">{workspace.summary}</p>
+        <p className="mt-3 flex items-center gap-3 border-t border-rule pt-5 text-ink-2">
+          <Icon name="info" className="size-5" />
+          {labels.shell.workspaceComing}
+        </p>
+      </section>
+      {/* RG-CAI-04/05: the day's registers, until the dashboard (T-070) and supervision (T-042). */}
+      {(role === 'manager' || role === 'owner') && <RegisterSessionsPanel />}
+    </div>
   );
 }

@@ -1,5 +1,10 @@
 import {
   currentRegisterSessionSchema,
+  currentSessionSummarySchema,
+  sessionSummaryListSchema,
+  sessionSummarySchema,
+  type RegisterSessionClose,
+  type SessionSummary,
   paidOrderSchema,
   paymentMethodListSchema,
   registerSessionSchema,
@@ -22,6 +27,29 @@ export const paymentsApi = {
   /** The invoice as issued (RG-FAC-04), opened in a tab and printed from the browser. */
   invoicePdfUrl(invoiceId: string): string {
     return `${API_BASE}/invoices/${invoiceId}/pdf`;
+  },
+
+  /** The open session with its takings so far (RG-CAI-03). */
+  async summary(): Promise<SessionSummary | null> {
+    const data = await apiRequest('/register-sessions/current/summary');
+    return parseResponse(currentSessionSummarySchema, data).summary;
+  },
+
+  async close(input: RegisterSessionClose): Promise<SessionSummary> {
+    const data = await apiRequest('/register-sessions/current/close', {
+      method: 'POST',
+      body: input,
+    });
+    return parseResponse(sessionSummarySchema, data);
+  },
+
+  /** The shop day's sessions, forgotten ones included (RG-CAI-04/05). */
+  async sessions(): Promise<SessionSummary[]> {
+    return parseResponse(sessionSummaryListSchema, await apiRequest('/register-sessions')).sessions;
+  },
+
+  reportUrl(sessionId: string): string {
+    return `${API_BASE}/register-sessions/${sessionId}/report`;
   },
 
   async currentSession(): Promise<RegisterSession | null> {

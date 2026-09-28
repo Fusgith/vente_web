@@ -28,5 +28,8 @@ export function useRegisterSession() {
   const opened = useCallback((session: RegisterSession) => {
     setState({ session, loaded: true, error: null });
   }, []);
-  return { ...state, opened };
+  const closed = useCallback(() => {
+    setState({ session: null, loaded: true, error: null });
+  }, []);
+  return { ...state, opened, closed };
 }

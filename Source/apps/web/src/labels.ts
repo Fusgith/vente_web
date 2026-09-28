@@ -1,5 +1,6 @@
 import { CURRENCY, DEFAULT_APP_NAME, type Role } from '@vente-web/shared';
 
+import { closingLabels } from './labels-closing.js';
 import { deliveryLabels } from './labels-delivery.js';
 import { registerLabels } from './labels-register.js';
 
@@ -251,6 +252,9 @@ export const labels = {
 
   /** The register: its queue, the control of the order, the payment (T-040 à T-052). */
   register: registerLabels,
+
+  /** The register closing and the day's sessions (T-054). */
+  closing: closingLabels,
 
   /** The delivery counters (T-060, RG-LIV-01 à 03). */
   delivery: deliveryLabels,

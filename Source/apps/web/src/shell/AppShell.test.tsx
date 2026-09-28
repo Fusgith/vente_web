@@ -38,6 +38,7 @@ describe('signed-in shell', () => {
     fakeApi({
       'GET /auth/me': ok(meFor({ user: HERY, activeRole: 'manager' })),
       'POST /auth/switch-role': apiError(403, 'AUTH_ROLE_REMOTE_FORBIDDEN'),
+      'GET /register-sessions': ok({ sessions: [] }),
     });
     render(<App />);
 

@@ -32,6 +32,8 @@ interface ServingPanelProps {
   register: RegisterSession | null;
   lastPaid: LastPaid | null;
   busy: boolean;
+  /** Closing the register, with nobody at it (RG-CAI-03). */
+  onCloseRegister: () => void;
   onCallNext: () => void;
   onNoShow: (item: QueueItem) => void;
 }
@@ -48,6 +50,7 @@ export function ServingPanel({
   register,
   lastPaid,
   busy,
+  onCloseRegister,
   onCallNext,
   onNoShow,
 }: ServingPanelProps) {
@@ -119,6 +122,16 @@ export function ServingPanel({
             {text.openInvoice}
           </a>
         </div>
+      )}
+      {register && !mine && (
+        <button
+          type="button"
+          onClick={onCloseRegister}
+          disabled={busy}
+          className={buttonClass('secondary', 'md', 'self-start')}
+        >
+          {labels.closing.close}
+        </button>
       )}
       {elsewhere.length > 0 && (
         <div className="flex flex-col gap-2 border-t border-rule pt-3">
