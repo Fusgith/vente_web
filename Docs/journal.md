@@ -2,6 +2,24 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 28/09/2026 — T-022 expiration des commandes en fin de journée — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- API (`95d6e44`), 2 tests d'intégration : tâche interne toutes les 30 s et au démarrage (`plugins/expiry.ts`). Une commande en file non payée à sa fin de journée passe `EXPIRED`. Son stock réservé revient au disponible, dans l'ordre des articles. Le journal note `order.expired` sans auteur. La file caisse et le commercial sont avertis. Une transaction par commande ; 100 au plus par passage.
+- Tablette (`7a0806d`), 1 test : le bandeau du commercial annonce « Commande A1 de … expirée : non payée à la fin de la journée, son stock est libéré. » (`CallNotices` devient `OrderNotices`).
+- Vérifié dans l'application réelle :
+  - au démarrage, les 11 commandes non payées des 26 et 27/09 de la base de dev ont expiré (stock réservé revenu à 0, 11 entrées au journal) ;
+  - une commande du jour (ticket A1, sans doublon) échue à la main dans la base de dev a expiré en 18 s : bandeau du commercial, sortie de la file caisse, eau disponible 150 → 180.
+- Vérifications : `format:check`, `lint`, `typecheck` (0 erreur), `build` et 412 tests verts. Aucune dépendance ajoutée.
+
+**Décisions** : ⚠️ H31 (CDC métier §16.2) :
+- seule une commande en file expire ; un client à la caisse reste au caissier, et sa commande expire s'il est ensuite déclaré absent ;
+- réactivation proposée pour T-035 : par le commercial ou le responsable, mêmes contrôles qu'une validation ; si un prix a changé, la commande redevient un devis au nouveau prix.
+
+**Reste** : réactivation (T-035) ; expiration des codes de remise (T-034) et des paniers de borne (T-036) ; points mineurs de la relecture (entrée précédente).
+
+**Questions ouvertes** : H31.
+
 ## 28/09/2026 — Relecture de T-018 à T-050 : 4 défauts corrigés — agent : Claude Code (Opus 5.5)
 
 **Contexte** : relecture du code faite à part par l'utilisateur (Claude Code en local). CI de `7df1d0e` verte. Auteur git des commits désormais « Fenitra » (`git config` en début de session ; l'historique n'est pas réécrit).

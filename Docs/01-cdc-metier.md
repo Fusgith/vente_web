@@ -1,6 +1,6 @@
 # Cahier des charges MÉTIER — Vente Web
 
-Version 0.8 — 28/09/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16), **corrections du 23/09/2026** (§16.3), **décisions du 25/09/2026** (§16.4, dont H22), **décisions du 26/09/2026** (§16.5 : H14 à H28) ; ADR 0001–0006 acceptés , **décision du 27/09/2026** (§16.6 : H29), **décisions du 28/09/2026** (§16.7 : H30, perte de la priorité) ; aucun point ouvert.
+Version 0.8 — 28/09/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16), **corrections du 23/09/2026** (§16.3), **décisions du 25/09/2026** (§16.4, dont H22), **décisions du 26/09/2026** (§16.5 : H14 à H28) ; ADR 0001–0006 acceptés , **décision du 27/09/2026** (§16.6 : H29), **décisions du 28/09/2026** (§16.7 : H30, perte de la priorité) ; point à confirmer : H31 (expiration et réactivation, T-022).
 
 Nouveautés v0.8 : contrôle à la caisse validé (H30, RG-CMD-05b) ; **un client absent perd sa priorité**, de même qu'une commande prioritaire placée en dernier par le responsable (RG-FIL-02, RG-FIL-04).
 
@@ -243,7 +243,7 @@ Voir RG-FAC. La facture est produite en PDF, imprimable en A4 et, en option, en 
 
 ### 5.9 Cas particuliers
 
-- **RG-CMD-08 Expiration** : une commande `SUBMITTED` non payée à la **fin de la journée** (RG-STK-02) passe `EXPIRED` ; le stock est libéré ; le commercial est notifié. Le commercial peut la **réactiver** le lendemain ou plus tard : nouveau contrôle de stock, nouveau ticket (le jour a changé), nouvelle échéance en fin de journée.
+- **RG-CMD-08 Expiration** *(modalités ⚠️ HYPOTHÈSE H31)* : une commande `SUBMITTED` non payée à la **fin de la journée** (RG-STK-02) passe `EXPIRED` ; le stock est libéré ; le commercial est notifié. Le commercial peut la **réactiver** le lendemain ou plus tard : nouveau contrôle de stock, nouveau ticket (le jour a changé), nouvelle échéance en fin de journée.
 - **RG-ANN-01 Annulation avant paiement** : par le commercial (ses commandes), le caissier ou le responsable, motif obligatoire ; réservation libérée ; ticket clos.
 - **RG-ANN-02 Annulation après paiement, avant livraison** : par le caissier **avec validation du responsable** ; émet un **avoir total**, enregistre le remboursement (moyen, référence), libère la réservation ; état `REFUNDED`.
 - **RG-ANN-03 Avoir partiel** : suite à une anomalie de livraison, avoir sur les lignes ou quantités non livrées ; la sortie de stock ne porte que sur le livré.
@@ -473,10 +473,11 @@ Les ADR 0001 à 0004 ont été **acceptés** par l'utilisateur le 21/09/2026.
 
 ### 16.2 Points nouveaux à confirmer
 
-H14 à H28 tranchés le 26/09 (§16.5), H29 le 27/09 (§16.6), H30 le 28/09 (§16.7). Aucun point ouvert ; un nouveau point s'inscrit ici, marqué ⚠️ HYPOTHÈSE dans la règle concernée.
+H14 à H28 tranchés le 26/09 (§16.5), H29 le 27/09 (§16.6), H30 le 28/09 (§16.7). Un nouveau point s'inscrit ici, marqué ⚠️ HYPOTHÈSE dans la règle concernée.
 
 | # | Hypothèse | Règle | Alternative |
 |---|---|---|---|
+| H31 | **Expiration et réactivation** (T-022, T-035) : le serveur vérifie toutes les 30 s, et à son démarrage, les commandes échues ; seule une commande **en file** (`SUBMITTED`) expire. Un client **à la caisse** à la fin de la journée reste au caissier (il l'encaisse ou l'annule) ; déclaré absent ensuite, sa commande expire aussitôt. Le commercial en est averti sur sa tablette s'il est connecté ; sinon il la retrouve dans sa liste (T-035). **Réactivation** (T-035) : par le commercial pour ses commandes, ou par le responsable (la commande reste au commercial) ; mêmes contrôles qu'une validation (stock, prix, plafonds, H28) : si un prix a changé depuis, la réactivation est refusée et la commande redevient un **devis** au nouveau prix, même numéro, à revoir avec le client avant de valider de nouveau | RG-CMD-08, RG-STK-02, RG-CMD-06 | Commande à la caisse expirée elle aussi ; réactivation aux prix de la première validation |
 
 
 ### 16.3 Corrections de l'utilisateur du 23/09/2026
