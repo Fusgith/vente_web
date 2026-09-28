@@ -137,6 +137,7 @@ model Order {
   payments          Payment[]
   invoice           Invoice?
   deliveries        Delivery[]
+  deliveryIssues    DeliveryIssue[]
 
   @@unique([ticketDate, ticketLetter, ticketSeq])
   @@index([status, queueRank])
@@ -176,12 +177,13 @@ model OrderLine {
   orderDiscountShare Decimal        @default(0) @map("order_discount_share") @db.Decimal(14, 2)
   deliveredQty       Decimal        @default(0) @map("delivered_qty") @db.Decimal(12, 2)
 
-  order            Order             @relation(fields: [orderId], references: [id])
-  product          Product           @relation(fields: [productId], references: [id])
-  productUnit      ProductUnit       @relation(fields: [productUnitId], references: [id])
-  productPrice     ProductPrice?     @relation(fields: [productPriceId], references: [id])
-  discountCode     DiscountCode?     @relation(fields: [discountCodeId], references: [id])
+  order            Order               @relation(fields: [orderId], references: [id])
+  product          Product             @relation(fields: [productId], references: [id])
+  productUnit      ProductUnit         @relation(fields: [productUnitId], references: [id])
+  productPrice     ProductPrice?       @relation(fields: [productPriceId], references: [id])
+  discountCode     DiscountCode?       @relation(fields: [discountCodeId], references: [id])
   discountRequests DiscountRequest[]
+  issueLines       DeliveryIssueLine[]
 
   @@index([orderId])
   @@index([productId])

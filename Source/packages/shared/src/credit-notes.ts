@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { pinSchema } from './auth.js';
+import { deliveryIssueSchema } from './delivery-issues.js';
 import { orderSchema } from './orders.js';
 import { paymentSchema } from './payments.js';
 
@@ -15,6 +16,8 @@ export const invoiceLookupSchema = z.object({
   payment: paymentSchema,
   /** Its credit notes, oldest first: reprinted from here, even when the refund reply was lost. */
   creditNotes: z.array(creditNoteRefSchema),
+  /** The partial delivery and its credit (⚠️ H37): refunded here once; null when none. */
+  issue: deliveryIssueSchema.nullable(),
 });
 export type InvoiceLookup = z.infer<typeof invoiceLookupSchema>;
 
@@ -46,3 +49,13 @@ export const refundedOrderSchema = z.object({
   creditNote: creditNoteRefSchema,
 });
 export type RefundedOrder = z.infer<typeof refundedOrderSchema>;
+
+/**
+ * Refunding what a partial delivery left (RG-ANN-03, ⚠️ H37): the amount frozen by the manager's
+ * decision, so no reason and no PIN — only the one refund method.
+ */
+export const partialRefundSchema = z.object({
+  issueId: z.uuid(),
+  refund: orderRefundSchema.shape.refund,
+});
+export type PartialRefund = z.infer<typeof partialRefundSchema>;

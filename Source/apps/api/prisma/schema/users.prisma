@@ -77,6 +77,8 @@ model User {
   creditNotesIssued   CreditNote[]      @relation("CreditNoteIssuedBy")
   creditNotesApproved CreditNote[]      @relation("CreditNoteApprovedBy")
   deliveries          Delivery[]
+  issuesReported      DeliveryIssue[]   @relation("DeliveryIssueReportedBy")
+  issuesDecided       DeliveryIssue[]   @relation("DeliveryIssueDecidedBy")
   auditEntries        AuditLog[]
   settingsUpdated     Setting[]
 

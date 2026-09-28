@@ -1,6 +1,7 @@
 import {
   formatTime,
   invoiceNumber,
+  issueCauseSchema,
   quoteLineSchema,
   type CreditNoteRef,
   type InvoiceLookup,
@@ -17,6 +18,7 @@ import { creditNoteDocument } from '../pdf/templates/credit-note.js';
 import { by, type Actor } from './actor.js';
 import { managerApproval } from './approval.js';
 import { recordAudit } from './audit.js';
+import { partialDelivery } from './delivery-issues.js';
 import { storedPdf } from './document-files.js';
 import { invoiceSnapshotSchema } from './invoices.js';
 import { loadOrder } from './orders.js';
@@ -44,6 +46,18 @@ export const creditNoteSnapshotSchema = z.object({
   refund: z.object({ method: z.string(), reference: z.string().nullable(), amount: z.string() }),
   cashier: z.string(),
   approvedBy: z.string(),
+  /** A partial credit note's lines (⚠️ H37): what was not handed over, why, and its credit. */
+  credited: z
+    .array(
+      z.object({
+        name: z.string(),
+        unitLabel: z.string(),
+        qty: z.string(),
+        cause: issueCauseSchema,
+        amount: z.string(),
+      }),
+    )
+    .optional(),
 });
 export type CreditNoteSnapshot = z.infer<typeof creditNoteSnapshotSchema>;
 
@@ -69,7 +83,40 @@ export async function lookupInvoice(db: Db, number: string): Promise<InvoiceLook
     order: await loadOrder(db, invoice.orderId),
     payment: toPaymentView(invoice.payment),
     creditNotes: invoice.creditNotes,
+    issue: await partialDelivery(db, invoice.orderId),
   };
+}
+
+/** What every credit note of today prints, read before its transaction (RG-FAC-07). */
+export async function creditNoteContext(db: Db, actor: Actor) {
+  const [prefix, legal, cashier] = await Promise.all([
+    readSetting(db, 'credit_note_prefix'),
+    readStoreLegal(db),
+    db.user.findUniqueOrThrow({ where: { id: actor.userId }, select: { fullName: true } }),
+  ]);
+  return { prefix, legal, cashier: cashier.fullName };
+}
+
+/** The refund's one method: active, its reference given when it asks one (⚠️ H36). */
+export async function refundMethod(tx: Prisma.TransactionClient, refund: OrderRefund['refund']) {
+  const method = await tx.paymentMethod.findUnique({ where: { id: refund.methodId } });
+  if (!method?.isActive) throw new AppError(409, 'PAYMENT_METHOD_INVALID');
+  if (method.requiresReference && !refund.reference) {
+    throw new AppError(422, 'REFUND_REFERENCE_REQUIRED');
+  }
+  return method;
+}
+
+/** The next credit note of the shop's year, total or partial, without a gap (RG-FAC-05). */
+export async function nextCreditNote(tx: Prisma.TransactionClient, prefix: unknown, now: Date) {
+  const year = shopYear(now);
+  const seq = await nextSequenceValue(tx, `CREDIT-${year}`);
+  const number = invoiceNumber(
+    typeof prefix === 'string' && PREFIX.test(prefix) ? prefix : 'AV',
+    year,
+    seq,
+  );
+  return { year, seq, number };
 }
 
 /**
@@ -85,12 +132,7 @@ export async function refundOrder(
   { version, reason, refund, approval }: OrderRefund,
 ): Promise<RefundedOrder> {
   const approver = await managerApproval(db, actor, approval);
-  // A credit note is a document of today: today's legal mentions (RG-FAC-07).
-  const [prefix, legal, cashier] = await Promise.all([
-    readSetting(db, 'credit_note_prefix'),
-    readStoreLegal(db),
-    db.user.findUniqueOrThrow({ where: { id: actor.userId }, select: { fullName: true } }),
-  ]);
+  const context = await creditNoteContext(db, actor);
 
   return db.$transaction(async (tx) => {
     const [order] = await tx.$queryRaw<{ status: string; version: number }[]>`
@@ -105,27 +147,17 @@ export async function refundOrder(
     if (!invoice) throw new AppError(409, 'ORDER_NOT_REFUNDABLE');
     const session = await lockOpenSession(tx, actor.userId);
     if (!session) throw new AppError(409, 'REGISTER_SESSION_REQUIRED');
-    const method = await tx.paymentMethod.findUnique({ where: { id: refund.methodId } });
-    if (!method?.isActive) throw new AppError(409, 'PAYMENT_METHOD_INVALID');
-    if (method.requiresReference && !refund.reference) {
-      throw new AppError(422, 'REFUND_REFERENCE_REQUIRED');
-    }
+    const method = await refundMethod(tx, refund);
 
     const frozen = invoiceSnapshotSchema.parse(invoice.snapshot);
     const now = new Date();
-    const year = shopYear(now);
-    const seq = await nextSequenceValue(tx, `CREDIT-${year}`);
-    const number = invoiceNumber(
-      typeof prefix === 'string' && PREFIX.test(prefix) ? prefix : 'AV',
-      year,
-      seq,
-    );
+    const { year, seq, number } = await nextCreditNote(tx, context.prefix, now);
     const amount = frozen.totals.total;
     const snapshot: CreditNoteSnapshot = {
       number,
       issuedOn: shopDate(now),
       issuedAt: formatTime(now),
-      legal,
+      legal: context.legal,
       invoice: { number: invoice.number, issuedOn: shopDate(invoice.issuedAt) },
       order: frozen.order,
       customer: frozen.customer,
@@ -134,7 +166,7 @@ export async function refundOrder(
       amount,
       reason,
       refund: { method: method.label, reference: refund.reference, amount },
-      cashier: cashier.fullName,
+      cashier: context.cashier,
       approvedBy: approver.fullName,
     };
     const creditNote: CreditNoteRef = await tx.creditNote.create({

@@ -38,6 +38,7 @@ function sale(
       issuedAt: '2026-09-28T06:00:00.000Z',
     },
     order: { ...orderOf(entry), status, version: 4 },
+    issue: null,
     payment: {
       id: '0192a4f0-0000-7000-8000-000000000801',
       orderId: entry.orderId,

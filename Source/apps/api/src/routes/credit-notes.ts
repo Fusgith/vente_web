@@ -1,5 +1,6 @@
 import {
   orderRefundSchema,
+  partialRefundSchema,
   type InvoiceLookup,
   type RefundedOrder,
   type Role,
@@ -10,7 +11,8 @@ import { z } from 'zod';
 import type { Env } from '../env.js';
 import { actorOf, authOf, requireRole } from '../plugins/session.js';
 import { creditNotePdf, lookupInvoice, refundOrder } from '../services/credit-notes.js';
-import { orderRefunded } from '../services/realtime-rooms.js';
+import { refundPartly } from '../services/partial-refunds.js';
+import { orderPartlyRefunded, orderRefunded } from '../services/realtime-rooms.js';
 import { authRateLimit } from './rate-limit.js';
 
 const idParams = z.object({ id: z.uuid() });
@@ -40,6 +42,25 @@ export const creditNoteRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { 
       const refunded = await refundOrder(app.db, actorOf(authOf(request)), id, body);
       app.realtime.publish(orderRefunded({ id, salesUserId: refunded.order.salesUser.id }));
       // Stored at issue (RG-FAC-04); a failure here is made good at the first reprint.
+      await creditNotePdf(app.db, env.FILES_DIR, refunded.creditNote.id).catch((error: unknown) =>
+        request.log.error(
+          { err: error, creditNote: refunded.creditNote.number },
+          'credit note PDF not stored',
+        ),
+      );
+      return refunded;
+    },
+  );
+
+  // What a partial delivery left (⚠️ H37): frozen by the manager's decision, no PIN here.
+  app.post(
+    '/orders/:id/partial-refund',
+    { preHandler: requireRole(...TAKERS) },
+    async (request): Promise<RefundedOrder> => {
+      const { id } = idParams.parse(request.params);
+      const body = partialRefundSchema.parse(request.body);
+      const refunded = await refundPartly(app.db, actorOf(authOf(request)), id, body);
+      app.realtime.publish(orderPartlyRefunded({ id, salesUserId: refunded.order.salesUser.id }));
       await creditNotePdf(app.db, env.FILES_DIR, refunded.creditNote.id).catch((error: unknown) =>
         request.log.error(
           { err: error, creditNote: refunded.creditNote.number },

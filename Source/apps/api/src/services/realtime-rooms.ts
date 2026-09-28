@@ -187,6 +187,21 @@ export function orderDelivered(order: CalledOrder): Emission[] {
   return [...queueChanged('delivery', order.id, 'delivered'), statusChanged(order, 'DELIVERED')];
 }
 
+/** Reported at the counter (RG-LIV-04): off the counter, the manager told (⚠️ H37). */
+export function orderIssue(order: CalledOrder): Emission[] {
+  return [...queueChanged('delivery', order.id, 'issue'), statusChanged(order, 'ISSUE')];
+}
+
+/** The manager's decision: back in the delivery queue at its place (⚠️ H37). */
+export function orderRequeued(order: CalledOrder): Emission[] {
+  return [...queueChanged('delivery', order.id, 'requeued'), statusChanged(order, 'PAID')];
+}
+
+/** What a partial delivery left, refunded at the register: the manager's list follows it. */
+export function orderPartlyRefunded(order: CalledOrder): Emission[] {
+  return [statusChanged(order, 'DELIVERED')];
+}
+
 /** Cancelled after payment, refunded (RG-ANN-02): out of the delivery queue. */
 export function orderRefunded(order: CalledOrder): Emission[] {
   return [...queueChanged('delivery', order.id, 'cancelled'), statusChanged(order, 'REFUNDED')];

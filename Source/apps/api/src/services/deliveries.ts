@@ -11,7 +11,7 @@ import { lockQueue } from './queues.js';
 import { nextSequenceValue } from './sequences.js';
 
 /** The order at a counter, and who holds it: the latest delivery of an order being served. */
-async function heldBy(tx: Prisma.TransactionClient, id: string) {
+export async function heldBy(tx: Prisma.TransactionClient, id: string) {
   const [order] = await tx.$queryRaw<{ status: string; version: number }[]>`
     SELECT "status"::text AS "status", "version" FROM "orders" WHERE "id" = ${id}::uuid FOR UPDATE`;
   if (!order) throw new AppError(404, 'NOT_FOUND');
@@ -213,6 +213,8 @@ export async function deliverOrder(
       where: { orderId: id, status: 'ACTIVE' },
       data: { status: 'CONSUMED', closedAt: now },
     });
+    await tx.$executeRaw`
+      UPDATE "order_lines" SET "delivered_qty" = "qty" WHERE "order_id" = ${id}::uuid`;
     await tx.order.update({
       where: { id },
       data: { status: 'DELIVERED', deliveredAt: now, version: { increment: 1 } },

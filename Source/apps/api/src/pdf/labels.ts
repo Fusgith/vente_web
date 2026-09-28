@@ -105,7 +105,13 @@ export const CREDIT_NOTE_PDF = {
   ticket: 'Ticket',
   cashier: 'Caissier',
   approvedBy: 'Validé par',
+  decidedBy: 'Décidé par',
   invoiceTotal: 'Total de la facture',
+  notHandedOver: 'Non remis à la livraison',
+  creditedColumns: ['Désignation', 'Quantité', 'Cause', 'Crédité (MGA)'],
+  causes: { MISSING: 'Manquant', DAMAGED: 'Abîmé' },
+  partialReason: (causes: string, note: string | null) =>
+    `Livraison partielle (${causes})${note ? ` : ${note}` : ''}`,
   credited: 'Montant de l’avoir',
   reason: 'Motif',
   refund: 'Remboursement',

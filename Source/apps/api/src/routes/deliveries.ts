@@ -1,4 +1,11 @@
-import { orderDeliverSchema, type Order, type Role } from '@vente-web/shared';
+import {
+  deliveryIssueReportSchema,
+  issueDecisionSchema,
+  orderDeliverSchema,
+  type IssueEntry,
+  type Order,
+  type Role,
+} from '@vente-web/shared';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
@@ -10,9 +17,17 @@ import {
   takeForDelivery,
 } from '../services/deliveries.js';
 import {
+  deliverPartly,
+  listIssues,
+  reportIssue,
+  requeueIssue,
+} from '../services/delivery-issues.js';
+import {
   orderBackToDelivery,
   orderDelivered,
+  orderIssue,
   orderReady,
+  orderRequeued,
   orderTaken,
 } from '../services/realtime-rooms.js';
 
@@ -98,6 +113,49 @@ export const deliveryRoutes: FastifyPluginAsync = async (app) => {
       const { id } = orderParams.parse(request.params);
       const body = orderDeliverSchema.parse(request.body);
       const order = await deliverOrder(app.db, actorOf(authOf(request)), id, body);
+      app.realtime.publish(orderDelivered(owner(order)));
+      return order;
+    },
+  );
+
+  // A line missing or damaged (RG-LIV-04, ⚠️ H37): the manager decides.
+  app.post(
+    '/orders/:id/delivery/issue',
+    { preHandler: requireRole(...COUNTER) },
+    async (request): Promise<Order> => {
+      const { id } = orderParams.parse(request.params);
+      const body = deliveryIssueReportSchema.parse(request.body);
+      const order = await reportIssue(app.db, actorOf(authOf(request)), id, body);
+      app.realtime.publish(orderIssue(owner(order)));
+      return order;
+    },
+  );
+
+  app.get(
+    '/deliveries/issues',
+    { preHandler: requireRole('manager') },
+    async (): Promise<IssueEntry[]> => listIssues(app.db),
+  );
+
+  app.post(
+    '/orders/:id/issue/requeue',
+    { preHandler: requireRole('manager') },
+    async (request): Promise<Order> => {
+      const { id } = orderParams.parse(request.params);
+      const body = issueDecisionSchema.parse(request.body);
+      const order = await requeueIssue(app.db, actorOf(authOf(request)), id, body);
+      app.realtime.publish(orderRequeued(owner(order)));
+      return order;
+    },
+  );
+
+  app.post(
+    '/orders/:id/issue/deliver-partly',
+    { preHandler: requireRole('manager') },
+    async (request): Promise<Order> => {
+      const { id } = orderParams.parse(request.params);
+      const body = issueDecisionSchema.parse(request.body);
+      const order = await deliverPartly(app.db, actorOf(authOf(request)), id, body);
       app.realtime.publish(orderDelivered(owner(order)));
       return order;
     },

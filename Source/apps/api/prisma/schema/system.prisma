@@ -57,3 +57,60 @@ model Setting {
 
   @@map("settings")
 }
+
+enum IssueCause {
+  MISSING
+  DAMAGED
+
+  @@map("issue_cause")
+}
+
+enum IssueResolution {
+  REQUEUED
+  PARTLY_DELIVERED
+
+  @@map("issue_resolution")
+}
+
+/// What a warehouse user could not hand over, and the manager's decision (RG-LIV-04, ⚠️ H37).
+/// One open issue per order at most (partial unique index in the migration).
+model DeliveryIssue {
+  id           String           @id @default(uuid(7)) @db.Uuid
+  orderId      String           @map("order_id") @db.Uuid
+  reportedById String           @map("reported_by") @db.Uuid
+  reportedAt   DateTime         @default(now()) @map("reported_at") @db.Timestamptz(6)
+  note         String?          @db.VarChar(300)
+  /// Null while the manager has not decided (waiting keeps it open).
+  resolution   IssueResolution?
+  decidedById  String?          @map("decided_by") @db.Uuid
+  decidedAt    DateTime?        @map("decided_at") @db.Timestamptz(6)
+  /// What the customer gets back, frozen at the partial delivery (RG-ANN-03).
+  creditAmount Decimal?         @map("credit_amount") @db.Decimal(14, 2)
+  /// The partial credit note, once refunded at the register.
+  creditNoteId String?          @unique @map("credit_note_id") @db.Uuid
+
+  order      Order               @relation(fields: [orderId], references: [id])
+  reportedBy User                @relation("DeliveryIssueReportedBy", fields: [reportedById], references: [id])
+  decidedBy  User?               @relation("DeliveryIssueDecidedBy", fields: [decidedById], references: [id], onDelete: Restrict)
+  creditNote CreditNote?         @relation(fields: [creditNoteId], references: [id], onDelete: Restrict)
+  lines      DeliveryIssueLine[]
+
+  @@index([orderId])
+  @@map("delivery_issues")
+}
+
+/// A line not handed over, in its sale unit, with its cause; its credit once decided.
+model DeliveryIssueLine {
+  issueId      String     @map("issue_id") @db.Uuid
+  orderLineId  String     @map("order_line_id") @db.Uuid
+  qty          Decimal    @db.Decimal(12, 2)
+  cause        IssueCause
+  creditAmount Decimal?   @map("credit_amount") @db.Decimal(14, 2)
+
+  issue     DeliveryIssue @relation(fields: [issueId], references: [id])
+  orderLine OrderLine     @relation(fields: [orderLineId], references: [id])
+
+  @@id([issueId, orderLineId])
+  @@index([orderLineId])
+  @@map("delivery_issue_lines")
+}

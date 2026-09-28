@@ -6,6 +6,7 @@
 import { z } from 'zod';
 
 import { fromScaled, isQuantity, toScaled } from './decimal.js';
+import { orderSchema } from './orders.js';
 
 export const ISSUE_CAUSES = ['MISSING', 'DAMAGED'] as const;
 export const issueCauseSchema = z.enum(ISSUE_CAUSES);
@@ -59,6 +60,13 @@ export const deliveryIssueSchema = z.object({
     .nullable(),
 });
 export type DeliveryIssue = z.infer<typeof deliveryIssueSchema>;
+
+/**
+ * What the manager follows (H37): an order waiting on their decision, or delivered in part with
+ * its credit still to refund at the register.
+ */
+export const issueEntrySchema = z.object({ order: orderSchema, issue: deliveryIssueSchema });
+export type IssueEntry = z.infer<typeof issueEntrySchema>;
 
 /**
  * The part of a line not handed over, at what the customer paid for it — its net less its share

@@ -78,6 +78,12 @@ export const ERROR_LABELS = {
   APPROVAL_NOT_MANAGER: 'Seul un responsable valide une annulation après paiement.',
   APPROVAL_SELF: 'Un autre responsable que vous doit valider cette annulation.',
   REFUND_REFERENCE_REQUIRED: 'Saisissez la référence du remboursement pour ce moyen.',
+  ISSUE_LINE_INVALID:
+    'Chaque quantité non remise doit porter sur une ligne de la commande, sans dépasser la quantité commandée.',
+  ORDER_NOT_IN_ISSUE: 'Cette commande n’attend plus de décision : la liste a été mise à jour.',
+  ISSUE_NOTHING_DELIVERED:
+    'Rien ne serait remis : remettez la commande en file, puis annulez-la à la caisse si besoin.',
+  CREDIT_NOT_PENDING: 'Ce reste a déjà été remboursé, ou il n’y a rien à rembourser.',
   TICKET_LETTER_MISSING:
     'Aucune lettre de ticket n’est attribuée à ce commercial : l’admin doit lui en donner une.',
 } as const;

@@ -1,4 +1,4 @@
-import { formatMga } from '@vente-web/shared';
+import { formatAmount, formatMga, formatQty } from '@vente-web/shared';
 import type { Content, TDocumentDefinitions } from 'pdfmake/interfaces.js';
 
 import type { CreditNoteSnapshot } from '../../services/credit-notes.js';
@@ -40,6 +40,42 @@ function refundBlock(snapshot: CreditNoteSnapshot): Content {
   };
 }
 
+/** A partial credit note (⚠️ H37): each line not handed over, its cause and its credit. */
+function creditedBlock(credited: NonNullable<CreditNoteSnapshot['credited']>): Content {
+  const head = text.creditedColumns.map((label, index) => ({
+    text: label,
+    bold: true,
+    color: INK_2,
+    alignment: index === 0 ? ('left' as const) : ('right' as const),
+  }));
+  return {
+    margin: [0, 16, 0, 0],
+    stack: [
+      { text: text.notHandedOver, bold: true, margin: [0, 0, 0, 4] },
+      {
+        layout: {
+          hLineWidth: (i) => (i === 1 ? 1 : 0),
+          hLineColor: () => RULE,
+          vLineWidth: () => 0,
+        },
+        table: {
+          headerRows: 1,
+          widths: ['*', 90, 70, 90],
+          body: [
+            head,
+            ...credited.map((line) => [
+              { text: line.name },
+              { text: `${formatQty(line.qty)} ${line.unitLabel}`, alignment: 'right' as const },
+              { text: text.causes[line.cause], alignment: 'right' as const },
+              { text: formatAmount(line.amount), alignment: 'right' as const },
+            ]),
+          ],
+        },
+      },
+    ],
+  };
+}
+
 /**
  * The credit note in A4 (RG-FAC-05, RG-ANN-02, H36), made from its frozen content only: the
  * lines credited as on the invoice, their totals, the amount credited with the reason and the
@@ -56,12 +92,13 @@ export function creditNoteDocument(snapshot: CreditNoteSnapshot): TDocumentDefin
       [text.invoice, `${snapshot.invoice.number} (${snapshot.invoice.issuedOn})`],
       [text.ticket, snapshot.order.ticket],
       [text.cashier, snapshot.cashier],
-      [text.approvedBy, snapshot.approvedBy],
+      [snapshot.credited ? text.decidedBy : text.approvedBy, snapshot.approvedBy],
     ],
     customer: snapshot.customer,
     lines: snapshot.lines,
     after: [
       totalsBlock(snapshot.totals, [], text.invoiceTotal),
+      ...(snapshot.credited ? [creditedBlock(snapshot.credited)] : []),
       refundBlock(snapshot),
       { text: text.notice(snapshot.invoice.number), color: INK_2, margin: [0, 12, 0, 0] },
     ],
