@@ -1,5 +1,5 @@
 import { formatAmount, formatTime, sumAmounts, type SessionSummary } from '@vente-web/shared';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { errorMessage } from '../api/error-message.js';
 import { paymentsApi } from '../api/payments.js';
@@ -26,16 +26,25 @@ function State({ session }: { session: SessionSummary }) {
 export function RegisterSessionsPanel() {
   const [sessions, setSessions] = useState<SessionSummary[] | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  // Only the latest request answers: a slow earlier one never brings back an older list.
+  const latest = useRef(0);
   const load = useCallback(() => {
+    const request = ++latest.current;
     paymentsApi.sessions().then(
       (list) => {
+        if (request !== latest.current) return;
         setSessions(list);
         setFailure(null);
       },
-      (error: unknown) => setFailure(errorMessage(error)),
+      (error: unknown) => request === latest.current && setFailure(errorMessage(error)),
     );
   }, []);
-  useEffect(load, [load]);
+  useEffect(() => {
+    load();
+    return () => {
+      latest.current += 1;
+    };
+  }, [load]);
 
   return (
     <section

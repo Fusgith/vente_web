@@ -12,6 +12,7 @@ import { useOrderAtRegister } from '../register/useOrderAtRegister.js';
 import { useNow, useQueue } from '../register/useQueue.js';
 import { useStatusLine } from '../shell/status-line.js';
 import { CounterPanel } from './CounterPanel.js';
+import { DeliveryQueueNotices } from './DeliveryQueueNotices.js';
 import { HandOver } from './HandOver.js';
 
 const text = labels.delivery;
@@ -44,6 +45,9 @@ export function DeliveryWorkspace({ userId }: { userId: string }) {
   const mine = serving.find((item) => item.servedBy?.id === userId) ?? null;
   const elsewhere = serving.filter((item) => item !== mine);
   const atCounter = useOrderAtRegister(mine?.orderId ?? null);
+  // The ticks belong to one hand-over: once the order leaves the counter (absent, released), a
+  // later call starts from none (RG-LIV-03).
+  if (ticked && (mine?.orderId !== ticked.orderId || mine.status !== 'READY')) setTicked(null);
   const lines = mine && ticked?.orderId === mine.orderId ? ticked.lines : new Set<number>();
 
   /** Runs an action, says its outcome; the queue is read again whatever happened. */
@@ -95,6 +99,7 @@ export function DeliveryWorkspace({ userId }: { userId: string }) {
   return (
     <div className="flex flex-1 flex-col gap-4 md:min-h-0">
       <h1 className="sr-only">{labels.workspaces.warehouse.title}</h1>
+      <DeliveryQueueNotices />
       {alert && (
         <p
           role="alert"

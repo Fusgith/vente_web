@@ -111,6 +111,40 @@ describe('realtime connection (T-018)', () => {
   });
 });
 
+describe('delivery: a paid order enters the queue (RG-LIV-01)', () => {
+  it('reads the order again, then says its ticket and customer in the band', async () => {
+    const api = fakeApi({
+      'GET /auth/me': ok(meFor({ user: HERY, activeRole: 'warehouse' })),
+      [`GET /orders/${ORDER_ID}`]: ok(order('PAID')),
+      'GET /queues/delivery': ok({ queue: 'delivery', serving: [], waiting: [] }),
+    });
+    render(<App />);
+    await screen.findByRole('heading', { name: labels.workspaces.warehouse.title });
+    await waitFor(() => expect(open()[0]?.listeners.get('queue.changed')?.size).toBeGreaterThan(0));
+    // Back after an absence: no news.
+    act(() =>
+      fakeRealtime.emit('queue.changed', {
+        queue: 'delivery',
+        orderId: ORDER_ID,
+        change: 'no_show',
+      }),
+    );
+    expect(api.callsTo(`GET /orders/${ORDER_ID}`)).toHaveLength(0);
+
+    act(() =>
+      fakeRealtime.emit('queue.changed', {
+        queue: 'delivery',
+        orderId: ORDER_ID,
+        change: 'entered',
+      }),
+    );
+    const band = within(screen.getByRole('contentinfo')).getByRole('status');
+    await waitFor(() =>
+      expect(band).toHaveTextContent(labels.delivery.newPaid('A15', 'Rasoa Hanta')),
+    );
+  });
+});
+
 describe('register: an order enters the queue (RG-CMD-03)', () => {
   it('reads the order again, then says its ticket and customer in the band', async () => {
     const api = fakeApi({

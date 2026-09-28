@@ -6,7 +6,7 @@ export interface FakeResponse {
   body?: unknown;
 }
 /** `network` makes fetch reject, as when the shop server is unreachable. */
-type Handler = FakeResponse | 'network' | ((body: unknown) => FakeResponse);
+type Handler = FakeResponse | 'network' | ((body: unknown) => FakeResponse | Promise<FakeResponse>);
 
 export interface RecordedCall {
   method: string;
@@ -27,7 +27,7 @@ export function fakeApi(initial: Record<string, Handler>) {
     calls.push({ method, path, body, headers });
     const handler = handlers.get(`${method} ${path}`) ?? apiError(404, 'NOT_FOUND');
     if (handler === 'network') throw new TypeError('Failed to fetch');
-    const response = typeof handler === 'function' ? handler(body) : handler;
+    const response = typeof handler === 'function' ? await handler(body) : handler;
     return new Response(response.status === 204 ? null : JSON.stringify(response.body), {
       status: response.status,
       headers: { 'content-type': 'application/json' },

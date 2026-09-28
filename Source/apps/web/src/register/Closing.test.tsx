@@ -7,7 +7,7 @@ import { RegisterSessionsPanel } from '../manager/RegisterSessionsPanel.js';
 import { RealtimeProvider } from '../realtime/RealtimeProvider.js';
 import { Frame } from '../shell/Frame.js';
 import { StatusLineProvider } from '../shell/StatusLineProvider.js';
-import { fakeApi, HERY, meFor, ok } from '../test/fake-api.js';
+import { fakeApi, HERY, meFor, ok, type FakeResponse } from '../test/fake-api.js';
 import { RegisterWorkspace } from './RegisterWorkspace.js';
 import { OPENED, queueOf, SESSION } from './test-queue.js';
 
@@ -98,6 +98,31 @@ describe('closing the register (RG-CAI-03, H35)', () => {
     fireEvent.click(within(sheet).getByRole('button', { name: text.done }));
     expect(await screen.findByRole('region', { name: labels.register.openTitle })).toBeVisible();
   });
+
+  it('stays open while the close is on its way, then shows the report', async () => {
+    let answer: (response: FakeResponse) => void = () => undefined;
+    mount({
+      ...OPENED,
+      'GET /queues/register': ok(queueOf([])),
+      'GET /register-sessions/current/summary': ok({ summary: summary() }),
+      'POST /register-sessions/current/close': () =>
+        new Promise((resolve) => {
+          answer = resolve;
+        }),
+      'GET /register-sessions/stations': ok({ stations: [] }),
+    });
+    fireEvent.click(await screen.findByRole('button', { name: text.close }));
+    const sheet = await screen.findByRole('dialog', { name: text.closeTitle('Caisse 2') });
+    await within(sheet).findByText('MVola');
+    fireEvent.change(within(sheet).getByLabelText(text.counted), { target: { value: '130 000' } });
+    fireEvent.click(within(sheet).getByRole('button', { name: text.confirm }));
+    await within(sheet).findByRole('button', { name: text.closing });
+    fireEvent.click(within(sheet).getByRole('button', { name: labels.register.close }));
+    expect(sheet).toBeInTheDocument();
+
+    answer(ok(summary({ closedAt: '2026-09-28T15:00:00.000Z', countedCash: '130000.00' })));
+    expect(await within(sheet).findByRole('link', { name: text.report })).toBeVisible();
+  });
 });
 
 describe('the day’s registers for the manager and the owner (RG-CAI-04/05)', () => {
@@ -126,5 +151,24 @@ describe('the day’s registers for the manager and the owner (RG-CAI-04/05)', (
       '/api/v1/register-sessions/0192a4f0-0000-7000-8000-000000000602/report',
     );
     await waitFor(() => expect(screen.getByRole('button', { name: text.refresh })).toBeEnabled());
+  });
+
+  it('keeps the latest list when an earlier answer comes late', async () => {
+    const answers: ((response: FakeResponse) => void)[] = [];
+    fakeApi({
+      'GET /register-sessions': () =>
+        new Promise((resolve) => {
+          answers.push(resolve);
+        }),
+    });
+    render(<RegisterSessionsPanel />);
+    fireEvent.click(await screen.findByRole('button', { name: text.refresh }));
+    await waitFor(() => expect(answers).toHaveLength(2));
+    answers[1]!(ok({ sessions: [summary({ closedAt: '2026-09-28T15:00:00.000Z' })] }));
+    expect(await screen.findByText(text.closedAt('18:00'))).toBeVisible();
+    answers[0]!(ok({ sessions: [summary()] }));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(screen.getByText(text.closedAt('18:00'))).toBeVisible();
+    expect(screen.queryByText(text.open)).toBeNull();
   });
 });

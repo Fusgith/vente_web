@@ -71,7 +71,10 @@ export function CloseRegisterSheet({ session, onClose, onDone }: CloseRegisterSh
     <Sheet
       title={text.closeTitle(session.station.name)}
       closeLabel={labels.register.close}
-      onClose={() => onDone(closed !== null)}
+      // Not while the close is on its way: the register would look open once it is closed.
+      onClose={() => {
+        if (!busy) onDone(closed !== null);
+      }}
       width="lg"
       bodyClassName="flex flex-col gap-4"
       footer={

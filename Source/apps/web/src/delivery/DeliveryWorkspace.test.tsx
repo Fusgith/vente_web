@@ -115,8 +115,17 @@ describe('delivery counter (T-060, RG-LIV-01 à 03)', () => {
         status: 'PAID',
       }),
     });
-    fireEvent.click(await screen.findByRole('button', { name: text.noShow }));
+    fireEvent.click(await screen.findByRole('checkbox', { name: text.handed(1) }));
+    api.on('GET /queues/delivery', deliveryQueue([paid(1)]));
+    fireEvent.click(screen.getByRole('button', { name: text.noShow }));
     await waitFor(() => expect(band()).toHaveTextContent(text.absent('A1', 'Rasoa Hanta')));
     expect(api.callsTo(`POST /orders/${mine.orderId}/delivery/no-show`)).toHaveLength(1);
+
+    // Called again later: nothing ticked from the first time.
+    api.on('GET /queues/delivery', deliveryQueue([], [mine]));
+    api.on('POST /queues/delivery/take-next', ok({ ...orderWithLines(mine, 9), status: 'READY' }));
+    fireEvent.click(await screen.findByRole('button', { name: new RegExp(text.takeNext) }));
+    const first = await screen.findByRole('checkbox', { name: text.handed(1) });
+    expect(first).not.toBeChecked();
   });
 });
