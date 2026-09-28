@@ -2,6 +2,26 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 28/09/2026 — H33 validée, T-060 livraison — agent : Claude Code (Opus 5.5)
+
+**Décision de l'utilisateur** : H33 (facture) validée telle quelle (CDC métier §16.7). `FILES_DIR` ajouté par l'utilisateur à `Source/.env.example` (`6adfdd1`).
+
+**Fait** :
+- CDC (`d2fc586`) : ⚠️ H34 ouverte (modalités de la livraison) ; deux sorties ajoutées au §5.2 : « En préparation → Payée » et « Prête → Payée » (retour en file).
+- API (`fa54b73`), 4 tests d'intégration :
+  - prise en charge de la suivante ou d'un ticket précis, une commande à la fois par magasinier, à son nom ;
+  - « prête » : ticket appelé au comptoir ;
+  - remise ligne par ligne : **sortie de stock** (un mouvement par ligne, en unité de base), stock et réservé diminués, réservation consommée, commande livrée, journal ;
+  - client absent : retour en fin de file, toujours payé ; remise en file par le responsable, à sa place.
+- Écran du comptoir (`16eb23d`), 4 tests : file livraison (attente depuis le paiement, sans montants), « Prendre la suivante », liste de préparation (unité de vente et équivalence en unité de base), « Commande prête », ticket et nom en grand, cases à cocher, « Livrer », « Client absent ».
+- File, tableau et résumé de file communs à la caisse et au comptoir ; libellés de la caisse sortis dans `labels-register.ts`, ceux du comptoir dans `labels-delivery.ts`.
+- Vérifié dans l'application réelle, deux comptoirs : Feno prend A2 et Tahina la voit « Comptoir de Feno Magasinier » ; A2 est appelée, cochée puis livrée. L'eau passe de 180 à 150 en stock et de 48 à 18 réservées (5 packs × 6 bouteilles).
+- Vérifications : `format:check`, `lint`, `typecheck` (0 erreur), `build` et 449 tests verts. Aucune dépendance ajoutée.
+
+**Reste** : anomalies de livraison (T-061) ; bouton « remettre en file » du responsable avec la supervision (T-042) ; nom du comptoir avec l'appairage des postes (T-015) ; clôture de caisse (T-054).
+
+**Questions ouvertes** : H34.
+
 ## 28/09/2026 — H32 validée, T-052 facture — agent : Claude Code (Opus 5.5)
 
 **Décision de l'utilisateur** : H32 (encaissement) validée telle quelle (CDC métier §16.7).

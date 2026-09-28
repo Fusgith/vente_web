@@ -60,6 +60,9 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 | Avoir | `credit_note` | Document annulant tout ou partie d'une facture. |
 | Bon de livraison | `delivery_note` | Document listant la marchandise remise. |
 | Livraison | `delivery` | Remise physique de la marchandise au client (sortie de stock). |
+| Prendre en charge (livraison) | `take` | Le magasinier prend une commande payée à son nom pour la préparer (`PREPARING`). |
+| Prête | `ready` | Commande préparée, ticket appelé au comptoir (`READY`). |
+| Remettre en file | `release` | Le responsable rend à la file une commande en préparation ou prête, pour un autre comptoir. |
 | Anomalie de livraison | `delivery_issue` | Article manquant ou abîmé constaté au moment de la remise. |
 | Retour | `return` | Marchandise rapportée après livraison. |
 | Journal d'audit | `audit_log` | Trace immuable de toute opération sensible. |
