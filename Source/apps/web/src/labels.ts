@@ -2,6 +2,7 @@ import { CURRENCY, DEFAULT_APP_NAME, type Role } from '@vente-web/shared';
 
 import { closingLabels } from './labels-closing.js';
 import { deliveryLabels } from './labels-delivery.js';
+import { refundLabels } from './labels-refund.js';
 import { registerLabels } from './labels-register.js';
 
 /** French UI labels (ADR-0004): no French string hard-coded in logic or components. */
@@ -258,6 +259,9 @@ export const labels = {
 
   /** The delivery counters (T-060, RG-LIV-01 à 03). */
   delivery: deliveryLabels,
+
+  /** Cancelling a paid sale (T-053, RG-ANN-02). */
+  refund: refundLabels,
 
   /** The manager's notices, until the supervision view (T-042). */
   manager: {

@@ -169,9 +169,13 @@ export function amountRow(label: string, amount: string): TableCell[] {
 /**
  * Under the table, in the order of RG-DEV-05, as on the screen: without any discount, the
  * amount due alone. `beforeTotal` goes between the discounts and the amount due (the VAT of
- * an invoice, RG-FAC-03).
+ * an invoice, RG-FAC-03). `totalLabel` names that amount otherwise (a credit note owes nothing).
  */
-export function totalsBlock(totals: DocumentTotals, beforeTotal: TableCell[][] = []): Content {
+export function totalsBlock(
+  totals: DocumentTotals,
+  beforeTotal: TableCell[][] = [],
+  totalLabel: string = text.total,
+): Content {
   const rows: TableCell[][] = [];
   const discounted = !isZero(totals.discountTotal);
   if (discounted) {
@@ -189,7 +193,7 @@ export function totalsBlock(totals: DocumentTotals, beforeTotal: TableCell[][] =
   }
   rows.push(...beforeTotal);
   rows.push([
-    { text: text.total, bold: true, fontSize: 12, margin: [0, 2, 0, 0] },
+    { text: totalLabel, bold: true, fontSize: 12, margin: [0, 2, 0, 0] },
     { text: formatMga(totals.total), bold: true, fontSize: 15, alignment: 'right' },
   ]);
   if (discounted) {

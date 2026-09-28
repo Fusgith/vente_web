@@ -105,6 +105,7 @@ export const CREDIT_NOTE_PDF = {
   ticket: 'Ticket',
   cashier: 'Caissier',
   approvedBy: 'Validé par',
+  invoiceTotal: 'Total de la facture',
   credited: 'Montant de l’avoir',
   reason: 'Motif',
   refund: 'Remboursement',

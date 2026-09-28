@@ -34,6 +34,8 @@ interface ServingPanelProps {
   busy: boolean;
   /** Closing the register, with nobody at it (RG-CAI-03). */
   onCloseRegister: () => void;
+  /** Cancelling a paid sale, refunded from this register (RG-ANN-02). */
+  onRefund: () => void;
   onCallNext: () => void;
   onNoShow: (item: QueueItem) => void;
 }
@@ -51,6 +53,7 @@ export function ServingPanel({
   lastPaid,
   busy,
   onCloseRegister,
+  onRefund,
   onCallNext,
   onNoShow,
 }: ServingPanelProps) {
@@ -124,14 +127,24 @@ export function ServingPanel({
         </div>
       )}
       {register && !mine && (
-        <button
-          type="button"
-          onClick={onCloseRegister}
-          disabled={busy}
-          className={buttonClass('secondary', 'md', 'self-start')}
-        >
-          {labels.closing.close}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onRefund}
+            disabled={busy}
+            className={buttonClass('secondary', 'md')}
+          >
+            {labels.refund.open}
+          </button>
+          <button
+            type="button"
+            onClick={onCloseRegister}
+            disabled={busy}
+            className={buttonClass('secondary', 'md')}
+          >
+            {labels.closing.close}
+          </button>
+        </div>
       )}
       {elsewhere.length > 0 && (
         <div className="flex flex-col gap-2 border-t border-rule pt-3">

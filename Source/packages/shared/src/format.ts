@@ -106,3 +106,15 @@ const TIME = new Intl.DateTimeFormat('fr-FR', {
 export function formatTime(value: string | Date): string {
   return TIME.format(typeof value === 'string' ? new Date(value) : value);
 }
+
+const DATE = new Intl.DateTimeFormat('fr-FR', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric',
+  timeZone: SHOP_TIME_ZONE,
+});
+
+/** `JJ/MM/AAAA` at the shop (RG-FMT-03), whatever the device's own zone. */
+export function formatDate(value: string | Date): string {
+  return DATE.format(typeof value === 'string' ? new Date(value) : value);
+}

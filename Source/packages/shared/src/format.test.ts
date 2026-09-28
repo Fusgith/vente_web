@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   NBSP,
   formatAmount,
+  formatDate,
   formatMga,
   formatQty,
   formatTime,
@@ -100,5 +101,12 @@ describe('formatTime (RG-FMT-03)', () => {
   it('reads the time at the shop, UTC+3', () => {
     expect(formatTime('2026-09-28T05:02:00.000Z')).toBe('08:02');
     expect(formatTime(new Date('2026-09-28T21:30:00.000Z'))).toBe('00:30');
+  });
+});
+
+describe('formatDate (RG-FMT-03)', () => {
+  it('reads the day at the shop, UTC+3', () => {
+    expect(formatDate('2026-09-28T05:02:00.000Z')).toBe('28/09/2026');
+    expect(formatDate(new Date('2026-12-31T21:30:00.000Z'))).toBe('01/01/2027');
   });
 });

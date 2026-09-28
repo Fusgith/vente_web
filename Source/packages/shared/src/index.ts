@@ -1,6 +1,7 @@
 export {
   CURRENCY,
   formatAmount,
+  formatDate,
   formatMga,
   formatQty,
   formatTime,

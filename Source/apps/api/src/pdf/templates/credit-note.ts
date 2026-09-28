@@ -61,7 +61,7 @@ export function creditNoteDocument(snapshot: CreditNoteSnapshot): TDocumentDefin
     customer: snapshot.customer,
     lines: snapshot.lines,
     after: [
-      totalsBlock(snapshot.totals),
+      totalsBlock(snapshot.totals, [], text.invoiceTotal),
       refundBlock(snapshot),
       { text: text.notice(snapshot.invoice.number), color: INK_2, margin: [0, 12, 0, 0] },
     ],

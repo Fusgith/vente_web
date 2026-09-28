@@ -20,6 +20,7 @@ import { OpenRegisterPanel } from './OpenRegisterPanel.js';
 import { OrderControl } from './OrderControl.js';
 import { QueueSummary } from './QueueSummary.js';
 import { QueueTable } from './QueueTable.js';
+import { RefundSheet } from './RefundSheet.js';
 import { RegisterQueueNotices } from './RegisterQueueNotices.js';
 import { ServingPanel, type LastPaid } from './ServingPanel.js';
 import { useOrderAtRegister } from './useOrderAtRegister.js';
@@ -36,7 +37,8 @@ const CLOCK_MS = 30_000;
  * ticket (T-040, RG-FIL-01 à 04). With one: their order checked line by line — lowered, removed,
  * or cancelled with a reason (T-050, RG-CMD-05b, RG-ANN-01) — beside the ticket to announce and
  * the queue in short, then paid (T-051, RG-PAY). Payments need the register opened first, with
- * its cash float (RG-CAI-01/02, H32): until then the queue shows, nobody is called.
+ * its cash float (RG-CAI-01/02, H32): until then the queue shows, nobody is called. A paid sale
+ * not yet delivered is cancelled and refunded from here, with its credit note (RG-ANN-02).
  */
 export function RegisterWorkspace({ userId }: { userId: string }) {
   const { queue, error, refresh } = useQueue('register');
@@ -46,6 +48,7 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
   // The invoice of the last payment, to print, until the next customer is called (RG-FAC-04).
   const [lastPaid, setLastPaid] = useState<LastPaid | null>(null);
   const [closing, setClosing] = useState(false);
+  const [refunding, setRefunding] = useState(false);
   const now = useNow(CLOCK_MS);
 
   const waiting = queue?.waiting ?? [];
@@ -115,6 +118,7 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
       lastPaid={mine ? null : lastPaid}
       busy={busy}
       onCloseRegister={() => setClosing(true)}
+      onRefund={() => setRefunding(true)}
       onCallNext={() => void act(() => queuesApi.callNext(), announced)}
       onNoShow={(item) =>
         void act(
@@ -158,6 +162,21 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
               register.closed();
             }
           }}
+        />
+      )}
+      {refunding && (
+        <RefundSheet
+          onRefunded={(sale, done) =>
+            say(
+              labels.refund.refunded(
+                sale.order.ticket ? ticketLabel(sale.order.ticket) : sale.order.number,
+                sale.order.customer.name,
+                done.creditNote.number,
+              ),
+              'check',
+            )
+          }
+          onClose={() => setRefunding(false)}
         />
       )}
       {alert && (
