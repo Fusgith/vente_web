@@ -51,7 +51,7 @@ function table(
 }
 
 /**
- * The closing report in A4 (RG-CAI-03, ⚠️ H35): who, where, when; what each method took; the
+ * The closing report in A4 (RG-CAI-03, H35): who, where, when; what each method took; the
  * cash expected, counted and the variance with its comment; the invoices of the session.
  */
 export function closingDocument({ legal, summary, invoices }: ClosingReport): TDocumentDefinitions {

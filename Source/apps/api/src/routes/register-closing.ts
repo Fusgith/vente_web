@@ -31,7 +31,7 @@ function fileName(summary: SessionSummary): string {
 const TAKERS: Role[] = ['cashier', 'manager'];
 const READERS: Role[] = ['cashier', 'manager', 'owner'];
 
-/** The register closing (T-054, RG-CAI-03 à 05, ⚠️ H35). */
+/** The register closing (T-054, RG-CAI-03 à 05, H35). */
 export const registerClosingRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     '/register-sessions/current/summary',

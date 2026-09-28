@@ -46,7 +46,7 @@ function mount(handlers: Parameters<typeof fakeApi>[0]) {
   return api;
 }
 
-describe('closing the register (RG-CAI-03, ⚠️ H35)', () => {
+describe('closing the register (RG-CAI-03, H35)', () => {
   it('counts the cash, requires a comment on a variance, then shows the report', async () => {
     const closed = summary({
       closedAt: '2026-09-28T15:00:00.000Z',

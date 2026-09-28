@@ -15,7 +15,7 @@ export const methodTotalSchema = z.object({
 });
 export type MethodTotal = z.infer<typeof methodTotalSchema>;
 
-/** A register session with what it took, open or closed (RG-CAI-03 à 05, ⚠️ H35). */
+/** A register session with what it took, open or closed (RG-CAI-03 à 05, H35). */
 export const sessionSummarySchema = registerSessionSchema.extend({
   cashier: z.object({ id: z.uuid(), fullName: z.string() }),
   closedAt: z.string().nullable(),

@@ -1,4 +1,4 @@
-/** The register closing and the day's sessions (T-054, RG-CAI-03 à 05, ⚠️ H35); `labels.closing`. */
+/** The register closing and the day's sessions (T-054, RG-CAI-03 à 05, H35); `labels.closing`. */
 export const closingLabels = {
   close: 'Clôturer la caisse',
   closeTitle: (register: string) => `Clôturer ${register}`,

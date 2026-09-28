@@ -19,7 +19,7 @@ function State({ session }: { session: SessionSummary }) {
 }
 
 /**
- * The shop day's register sessions for the manager and the owner (RG-CAI-04/05, ⚠️ H35): who
+ * The shop day's register sessions for the manager and the owner (RG-CAI-04/05, H35): who
  * holds which register, what it took, the variance once closed, the report; a session left open
  * from an earlier day stands out as forgotten.
  */

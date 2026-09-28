@@ -20,7 +20,7 @@ import {
   type TestApp,
 } from './helpers.js';
 
-describe.skipIf(!TEST_DATABASE_URL)('register closing (RG-CAI-03 à 05, ⚠️ H35)', () => {
+describe.skipIf(!TEST_DATABASE_URL)('register closing (RG-CAI-03 à 05, H35)', () => {
   let t: TestApp;
   const cookies = { sales: '', soa: '', rina: '', manager: '', owner: '' };
   const ids = { customer: '', nails: '', register: '' };

@@ -48,7 +48,7 @@ async function totalsByMethod(db: AuditTx, sessionId: string): Promise<MethodTot
 }
 
 /**
- * The session with what it took (RG-CAI-03, ⚠️ H35): the drawer should hold the float plus the
+ * The session with what it took (RG-CAI-03, H35): the drawer should hold the float plus the
  * part paid in cash — the change given back is already out of it.
  */
 async function summarize(db: AuditTx, session: StoredSession, now: Date): Promise<SessionSummary> {
@@ -80,7 +80,7 @@ export async function currentSummary(db: Db, userId: string): Promise<SessionSum
 }
 
 /**
- * Closes the caller's own session (RG-CAI-03, ⚠️ H35): nobody left at the register, the cash
+ * Closes the caller's own session (RG-CAI-03, H35): nobody left at the register, the cash
  * counted against the float plus the cash taken, any variance explained. Final and audited;
  * the takings are frozen in `expected_by_method`.
  */

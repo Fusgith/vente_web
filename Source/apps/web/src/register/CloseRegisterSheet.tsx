@@ -28,7 +28,7 @@ interface CloseRegisterSheetProps {
 }
 
 /**
- * Closing the register (RG-CAI-03, ⚠️ H35): what each method took, the cash the drawer should
+ * Closing the register (RG-CAI-03, H35): what each method took, the cash the drawer should
  * hold, the cash counted and the variance live, a comment required when it is not nil. Once
  * closed, the report is at hand.
  */
