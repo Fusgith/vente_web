@@ -140,3 +140,15 @@ export function orderCancelled(order: CalledOrder): Emission[] {
 export function orderExpired(order: CalledOrder): Emission[] {
   return [...queueChanged('register', order.id, 'expired'), statusChanged(order, 'EXPIRED')];
 }
+
+/**
+ * Paid at the register (RG-LIV-01): out of the register queue, last in the delivery queue — the
+ * counters told — and a new state for the manager, the owner and the salesperson.
+ */
+export function orderPaid(order: CalledOrder): Emission[] {
+  return [
+    ...queueChanged('register', order.id, 'paid'),
+    ...queueChanged('delivery', order.id, 'entered'),
+    statusChanged(order, 'PAID'),
+  ];
+}

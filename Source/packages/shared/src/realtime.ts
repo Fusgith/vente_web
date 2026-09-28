@@ -26,6 +26,7 @@ export const realtimePayloadSchemas = {
       'updated',
       'cancelled',
       'expired',
+      'paid',
     ]),
   }),
   /** Any transition of an order (RG-CMD-06). */

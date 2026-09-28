@@ -36,13 +36,13 @@ export const SETTINGS: Record<string, unknown> = {
   'session.lock_minutes.register': 15,
 };
 
-/** Initial payment methods (RG-PAY-01); mobile money, transfer and cheque carry a reference. */
+/** Initial payment methods (RG-PAY-01); mobile money, card, transfer and cheque carry a reference. */
 export const PAYMENT_METHODS = [
   { code: 'CASH', label: 'Espèces', requiresReference: false },
   { code: 'MVOLA', label: 'MVola', requiresReference: true },
   { code: 'ORANGE_MONEY', label: 'Orange Money', requiresReference: true },
   { code: 'AIRTEL_MONEY', label: 'Airtel Money', requiresReference: true },
-  { code: 'CARD', label: 'Carte bancaire', requiresReference: false },
+  { code: 'CARD', label: 'Carte bancaire', requiresReference: true },
   { code: 'TRANSFER', label: 'Virement', requiresReference: true },
   { code: 'CHEQUE', label: 'Chèque', requiresReference: true },
 ] as const;

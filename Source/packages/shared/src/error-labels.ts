@@ -54,6 +54,17 @@ export const ERROR_LABELS = {
     'Un client est déjà à votre caisse : encaissez-le ou déclarez-le absent avant d’en appeler un autre.',
   ORDER_NOT_IN_QUEUE: 'Ce ticket n’attend plus dans la file : la liste a été mise à jour.',
   ORDER_NOT_AT_REGISTER: 'Ce ticket n’est plus à votre caisse : la liste a été mise à jour.',
+  REGISTER_SESSION_REQUIRED: 'Ouvrez votre caisse (fond de caisse) avant d’encaisser.',
+  REGISTER_SESSION_OPEN: 'Votre caisse est déjà ouverte.',
+  REGISTER_STATION_BUSY:
+    'Cette caisse est déjà ouverte par une autre personne : choisissez-en une autre.',
+  PAYMENT_METHOD_INVALID: 'Moyen de paiement inconnu ou désactivé : la liste a été mise à jour.',
+  PAYMENT_REFERENCE_REQUIRED: 'Saisissez la référence de la transaction pour ce moyen de paiement.',
+  PAYMENT_TOTAL_MISMATCH: 'Les montants saisis ne font pas exactement le net à payer.',
+  PAYMENT_CASH_SHORT: 'Le montant reçu en espèces ne couvre pas la part payée en espèces.',
+  PAYMENT_CASH_TWICE: 'Une seule ligne en espèces par paiement.',
+  PAYMENT_CASH_WITHOUT_LINE: 'Un montant reçu en espèces demande une ligne en espèces.',
+  IDEMPOTENCY_KEY_REQUIRED: 'Requête de paiement incomplète : rechargez la page.',
   TICKET_LETTER_MISSING:
     'Aucune lettre de ticket n’est attribuée à ce commercial : l’admin doit lui en donner une.',
 } as const;

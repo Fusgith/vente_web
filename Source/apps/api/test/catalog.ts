@@ -1,4 +1,4 @@
-import { CATEGORIES, PRODUCTS } from '../prisma/seed/data.js';
+import { CATEGORIES, PAYMENT_METHODS, PRODUCTS } from '../prisma/seed/data.js';
 import { seedCatalog } from '../prisma/seed/catalog.js';
 import type { Db } from '../src/db.js';
 import type { OrderStatus } from '../src/generated/prisma/enums.js';
@@ -16,6 +16,20 @@ export async function seedDemoCatalog(db: Db): Promise<{ managerId: string }> {
   });
   await seedCatalog(db, { categories: CATEGORIES, products: PRODUCTS, importedBy: 'responsable' });
   return { managerId: manager.id };
+}
+
+/** The payment methods of the seed (RG-PAY-01), all active; their ids by code. */
+export async function seedPaymentMethods(db: Db): Promise<Record<string, string>> {
+  const ids: Record<string, string> = {};
+  for (const [index, method] of PAYMENT_METHODS.entries()) {
+    const row = await db.paymentMethod.upsert({
+      where: { code: method.code },
+      create: { ...method, sortOrder: index + 1 },
+      update: { ...method, isActive: true, sortOrder: index + 1 },
+    });
+    ids[method.code] = row.id;
+  }
+  return ids;
 }
 
 export async function productId(db: Db, sku: string): Promise<string> {

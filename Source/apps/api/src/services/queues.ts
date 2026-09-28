@@ -95,6 +95,18 @@ async function assertRegisterFree(tx: Prisma.TransactionClient, actor: Actor): P
 }
 
 /**
+ * The register the call shows (« A15 → Caisse 2 », RG-FIL-03): the one the caller opened
+ * (⚠️ H32), else the station of their session.
+ */
+async function registerOf(tx: Prisma.TransactionClient, actor: Actor): Promise<string | null> {
+  const session = await tx.registerSession.findFirst({
+    where: { cashierId: actor.userId, closedAt: null },
+    select: { stationId: true },
+  });
+  return session?.stationId ?? actor.stationId;
+}
+
+/**
  * Calls a ticket to the caller's register (RG-FIL-03): the first waiting one, or `id` when the
  * customer stands in front of the cashier — audited as such. Two registers calling at the same
  * moment never get the same ticket: calls take the queue one after the other, and the call is
@@ -118,7 +130,7 @@ export async function callToRegister(db: Db, actor: Actor, id: string | null): P
         status: 'AT_REGISTER',
         calledAt: new Date(),
         cashierUserId: actor.userId,
-        registerStationId: actor.stationId,
+        registerStationId: await registerOf(tx, actor),
         version: { increment: 1 },
       },
     });

@@ -8,7 +8,8 @@ enum InvoiceStatus {
   @@map("invoice_status")
 }
 
-/// Period opened by a cashier on a register (RG-CAI-*); one open session per cashier (partial index).
+/// Period opened by a cashier on a register (RG-CAI-*); one open session per cashier and per
+/// register (partial indexes).
 model RegisterSession {
   id               String    @id @default(uuid(7)) @db.Uuid
   stationId        String    @map("station_id") @db.Uuid
@@ -37,7 +38,7 @@ model PaymentMethod {
   id                String  @id @default(uuid(7)) @db.Uuid
   code              String  @unique @db.VarChar(32)
   label             String  @db.VarChar(60)
-  /// Mobile money, transfer and cheque require a reference (RG-PAY-03).
+  /// Mobile money, card, transfer and cheque require a reference (RG-PAY-04).
   requiresReference Boolean @default(false) @map("requires_reference")
   isActive          Boolean @default(true) @map("is_active")
   sortOrder         Int     @default(0) @map("sort_order")
@@ -59,6 +60,8 @@ model Payment {
   cashReceived      Decimal  @default(0) @map("cash_received") @db.Decimal(14, 2)
   changeGiven       Decimal  @default(0) @map("change_given") @db.Decimal(14, 2)
   createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Given by the screen: a payment sent twice is recorded once (CDC technique §6).
+  idempotencyKey    String   @unique @map("idempotency_key") @db.Uuid
 
   order           Order           @relation(fields: [orderId], references: [id])
   invoice         Invoice?        @relation(fields: [invoiceId], references: [id])
