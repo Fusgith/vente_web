@@ -92,3 +92,17 @@ export function formatQty(value: number | string): string {
     .replace(/,00$/, '')
     .replace(/(,\d)0$/, '$1');
 }
+
+/** The shop's time zone (RG-FMT-03): UTC+3 all year. */
+export const SHOP_TIME_ZONE = 'Indian/Antananarivo';
+
+const TIME = new Intl.DateTimeFormat('fr-FR', {
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZone: SHOP_TIME_ZONE,
+});
+
+/** `HH:MM` at the shop (RG-FMT-03), whatever the device's own zone. */
+export function formatTime(value: string | Date): string {
+  return TIME.format(typeof value === 'string' ? new Date(value) : value);
+}

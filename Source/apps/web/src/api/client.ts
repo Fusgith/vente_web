@@ -21,6 +21,8 @@ interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   body?: unknown;
   signal?: AbortSignal;
+  /** Extra headers, e.g. `idempotency-key` on a payment. */
+  headers?: Record<string, string>;
 }
 
 /**
@@ -28,7 +30,7 @@ interface RequestOptions {
  * satisfies the API's CSRF check. Resolves with the parsed body (undefined for 204).
  */
 export async function apiRequest(path: string, options: RequestOptions = {}): Promise<unknown> {
-  const headers: Record<string, string> = { accept: 'application/json' };
+  const headers: Record<string, string> = { accept: 'application/json', ...options.headers };
   const init: RequestInit = {
     method: options.method ?? 'GET',
     credentials: 'same-origin',

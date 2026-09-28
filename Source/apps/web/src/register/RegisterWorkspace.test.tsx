@@ -9,13 +9,13 @@ import { StatusLineProvider } from '../shell/StatusLineProvider.js';
 import { apiError, fakeApi, HERY, meFor, ok } from '../test/fake-api.js';
 import { fakeRealtime } from '../test/fake-socket.js';
 import { RegisterWorkspace } from './RegisterWorkspace.js';
-import { atMyRegister, ID, item, orderOf, queueOf } from './test-queue.js';
+import { atMyRegister, ID, item, OPENED, orderOf, queueOf } from './test-queue.js';
 
 const text = labels.register;
 const shown = (value: string) => value.replace(/\s/g, ' ');
 
 function mount(handlers: Parameters<typeof fakeApi>[0]) {
-  const api = fakeApi(handlers);
+  const api = fakeApi({ ...OPENED, ...handlers });
   render(
     <RealtimeProvider me={meFor({ user: HERY, activeRole: 'cashier' })}>
       <StatusLineProvider>
@@ -91,7 +91,7 @@ describe('register screen (T-040, RG-FIL-01 à 04)', () => {
       [`POST /orders/${first.orderId}/no-show`]: ok({ ...orderOf(first), status: 'SUBMITTED' }),
     });
     fireEvent.click(await screen.findByRole('button', { name: text.noShow }));
-    await waitFor(() => expect(band()).toHaveTextContent(text.absent('A1')));
+    await waitFor(() => expect(band()).toHaveTextContent(text.absent('A1', 'Rasoa Hanta')));
     expect(api.callsTo(`POST /orders/${first.orderId}/no-show`)).toHaveLength(1);
   });
 

@@ -1,7 +1,7 @@
 import {
   CASH_METHOD,
   settle,
-  type Order,
+  type PaidOrder,
   type Payment,
   type PaymentInput,
   type PaymentMethod,
@@ -56,11 +56,6 @@ const ISSUE_CODE = {
   CASH_SHORT: 'PAYMENT_CASH_SHORT',
   CASH_WITHOUT_LINE: 'PAYMENT_CASH_WITHOUT_LINE',
 } as const satisfies Record<SettleIssue, string>;
-
-export interface PaidOrder {
-  order: Order;
-  payment: Payment;
-}
 
 /** The lines with their method, each active and carrying the reference it requires (RG-PAY-04). */
 async function checkedLines(tx: Prisma.TransactionClient, lines: PaymentInput['lines']) {

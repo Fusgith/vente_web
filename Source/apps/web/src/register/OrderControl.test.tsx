@@ -9,7 +9,7 @@ import { StatusLineProvider } from '../shell/StatusLineProvider.js';
 import { apiError, fakeApi, HERY, meFor, ok } from '../test/fake-api.js';
 import { fakeRealtime } from '../test/fake-socket.js';
 import { RegisterWorkspace } from './RegisterWorkspace.js';
-import { atMyRegister, item, orderWithLines, queueOf } from './test-queue.js';
+import { atMyRegister, item, OPENED, orderWithLines, queueOf } from './test-queue.js';
 
 const text = labels.register;
 const shown = (value: string) => value.replace(/\s/g, ' ');
@@ -19,6 +19,7 @@ const ORDER = `/orders/${entry.orderId}`;
 
 function mount(handlers: Parameters<typeof fakeApi>[0] = {}) {
   const api = fakeApi({
+    ...OPENED,
     'GET /queues/register': ok(queueOf([item(2)], [entry])),
     [`GET ${ORDER}`]: ok(orderWithLines(entry)),
     ...handlers,
@@ -98,14 +99,14 @@ describe('register: the order checked before payment (T-050, §5.6)', () => {
       [`POST ${ORDER}/cancel`]: ok({ ...orderWithLines(entry, 3), status: 'CANCELLED' }),
     });
     fireEvent.click(await screen.findByRole('button', { name: text.cancelOrder }));
-    const sheet = screen.getByRole('dialog', { name: text.cancelTitle('A1') });
+    const sheet = screen.getByRole('dialog', { name: text.cancelTitle('A1', 'Rasoa Hanta') });
     const confirm = within(sheet).getByRole('button', { name: text.cancelOrder });
     expect(confirm).toBeDisabled();
     fireEvent.change(within(sheet).getByLabelText(text.cancelReason), {
       target: { value: '  Le client renonce ' },
     });
     fireEvent.click(confirm);
-    await waitFor(() => expect(band()).toHaveTextContent(text.cancelled('A1')));
+    await waitFor(() => expect(band()).toHaveTextContent(text.cancelled('A1', 'Rasoa Hanta')));
     expect(api.callsTo(`POST ${ORDER}/cancel`)[0]!.body).toEqual({
       version: 2,
       reason: 'Le client renonce',

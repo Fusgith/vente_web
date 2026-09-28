@@ -8,6 +8,8 @@ import {
 import { API_BASE } from '../api/client.js';
 import {
   CATEGORIES,
+  DEMO_METHODS,
+  DEMO_SESSION,
   DIRECTORY,
   demoOrderAtRegister,
   demoRegisterQueue,
@@ -47,6 +49,10 @@ function answer(url: URL): unknown {
       return { items: FAVORITES.filter((hit) => !categoryId || hit.category?.id === categoryId) };
     case '/products/search':
       return search(url.searchParams.get('q') ?? '', categoryId);
+    case '/register-sessions/current':
+      return { session: DEMO_SESSION };
+    case '/payment-methods':
+      return { methods: DEMO_METHODS };
     case '/queues/register':
       // The screen asked for says whether Soa has a customer at her register.
       return demoRegisterQueue(

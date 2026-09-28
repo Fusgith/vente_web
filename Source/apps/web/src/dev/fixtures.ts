@@ -356,3 +356,27 @@ export function demoOrderAtRegister(): Order {
     expiresAt: null,
   };
 }
+
+/** Soa's register, opened this morning (T-051). */
+export const DEMO_SESSION = {
+  id: '0192a4f0-0000-7000-8000-000000000601',
+  station: { id: '0192a4f0-0000-7000-8000-000000000611', name: 'Caisse 1' },
+  openedAt: '2026-09-28T05:02:00.000Z',
+  openingFloat: '50000.00',
+};
+
+/** The seed's payment methods (RG-PAY-01). */
+export const DEMO_METHODS = [
+  ['CASH', 'Espèces', false],
+  ['MVOLA', 'MVola', true],
+  ['ORANGE_MONEY', 'Orange Money', true],
+  ['AIRTEL_MONEY', 'Airtel Money', true],
+  ['CARD', 'Carte bancaire', true],
+  ['TRANSFER', 'Virement', true],
+  ['CHEQUE', 'Chèque', true],
+].map(([code, label, requiresReference], index) => ({
+  id: `0192a4f0-0000-7000-8000-00000000070${index + 1}`,
+  code: String(code),
+  label: String(label),
+  requiresReference: Boolean(requiresReference),
+}));

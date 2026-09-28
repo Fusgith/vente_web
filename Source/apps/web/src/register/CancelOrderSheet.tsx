@@ -10,13 +10,15 @@ const REASON_MIN = 3;
 
 interface CancelOrderSheetProps {
   ticket: string;
+  /** Named with the ticket (RG-TKT-03). */
+  name: string;
   busy: boolean;
   onCancel: (reason: string) => void;
   onClose: () => void;
 }
 
 /** Cancelling before payment, with its reason (RG-ANN-01): the stock is freed, the ticket closed. */
-export function CancelOrderSheet({ ticket, busy, onCancel, onClose }: CancelOrderSheetProps) {
+export function CancelOrderSheet({ ticket, name, busy, onCancel, onClose }: CancelOrderSheetProps) {
   const id = useId();
   const field = useRef<HTMLTextAreaElement>(null);
   const [reason, setReason] = useState('');
@@ -24,7 +26,7 @@ export function CancelOrderSheet({ ticket, busy, onCancel, onClose }: CancelOrde
 
   return (
     <Sheet
-      title={text.cancelTitle(ticket)}
+      title={text.cancelTitle(ticket, name)}
       closeLabel={text.keepOrder}
       onClose={onClose}
       width="md"

@@ -1,18 +1,28 @@
-import { ticketLabel, type Order, type QueueItem, type QuoteLine } from '@vente-web/shared';
+import {
+  formatMga,
+  ticketLabel,
+  type Order,
+  type PaymentInput,
+  type QueueItem,
+  type QuoteLine,
+} from '@vente-web/shared';
 import { useState } from 'react';
 
 import { ApiError } from '../api/client.js';
 import { errorMessage } from '../api/error-message.js';
 import { ordersApi } from '../api/orders.js';
+import { paymentsApi } from '../api/payments.js';
 import { queuesApi } from '../api/queues.js';
 import { labels } from '../labels.js';
 import { useStatusLine } from '../shell/status-line.js';
+import { OpenRegisterPanel } from './OpenRegisterPanel.js';
 import { OrderControl } from './OrderControl.js';
 import { QueueSummary } from './QueueSummary.js';
 import { QueueTable } from './QueueTable.js';
 import { RegisterQueueNotices } from './RegisterQueueNotices.js';
 import { ServingPanel } from './ServingPanel.js';
 import { useOrderAtRegister } from './useOrderAtRegister.js';
+import { useRegisterSession } from './useRegisterSession.js';
 import { useNow, useRegisterQueue } from './useRegisterQueue.js';
 
 const text = labels.register;
@@ -24,10 +34,12 @@ const CLOCK_MS = 30_000;
  * The cashier's screen. Without a customer: the register queue live, and the call of the next
  * ticket (T-040, RG-FIL-01 à 04). With one: their order checked line by line — lowered, removed,
  * or cancelled with a reason (T-050, RG-CMD-05b, RG-ANN-01) — beside the ticket to announce and
- * the queue in short. The payment comes with T-051.
+ * the queue in short, then paid (T-051, RG-PAY). Payments need the register opened first, with
+ * its cash float (RG-CAI-01/02, ⚠️ H32): until then the queue shows, nobody is called.
  */
 export function RegisterWorkspace({ userId }: { userId: string }) {
   const { queue, error, refresh } = useRegisterQueue();
+  const register = useRegisterSession();
   const { say, sayError } = useStatusLine();
   const [busy, setBusy] = useState(false);
   const now = useNow(CLOCK_MS);
@@ -50,7 +62,7 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
       sayError(errorMessage(failure));
       // Changed meanwhile elsewhere: the screen shows it as it now is.
       if (failure instanceof ApiError && failure.code === 'ORDER_CHANGED' && mine) {
-        atRegister.replace(await ordersApi.get(mine.orderId));
+        ordersApi.get(mine.orderId).then(atRegister.replace, () => undefined);
       }
       return false;
     } finally {
@@ -58,6 +70,24 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
       refresh();
     }
   }
+  const pay = (input: PaymentInput, key: string) => {
+    const order = atRegister.order;
+    if (!order || !mine) return Promise.resolve(false);
+    let change = '0.00';
+    return act(
+      async () => {
+        const paid = await paymentsApi.pay(order.id, input, key);
+        change = paid.payment.changeGiven;
+        return paid.order;
+      },
+      () =>
+        text.paid(
+          ticketLabel(mine.ticket),
+          mine.customer.name,
+          change === '0.00' ? null : formatMga(change),
+        ),
+    );
+  };
   const announced = (order: Order) =>
     order.ticket ? text.called(ticketLabel(order.ticket), order.customer.name) : '';
   const adjust = (line: QuoteLine, qty: string | null) => {
@@ -74,18 +104,23 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
       mine={mine}
       next={waiting[0] ?? null}
       elsewhere={elsewhere}
+      register={register.session}
       busy={busy}
       onCallNext={() => void act(() => queuesApi.callNext(), announced)}
       onNoShow={(item) =>
         void act(
           () => queuesApi.noShow(item.orderId),
-          () => text.absent(ticketLabel(item.ticket)),
+          () => text.absent(ticketLabel(item.ticket), item.customer.name),
         )
       }
     />
   );
 
-  const alert = error ?? atRegister.error;
+  // Nobody is called before the register is opened: the payment would be refused.
+  const toOpen = register.loaded && !register.session;
+  const openPanel = toOpen ? <OpenRegisterPanel onOpened={register.opened} /> : null;
+
+  const alert = error ?? register.error ?? atRegister.error;
   return (
     <div className="flex flex-1 flex-col gap-4 md:min-h-0">
       <h1 className="sr-only">{labels.workspaces.cashier.title}</h1>
@@ -102,7 +137,10 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
         // Portrait: the ticket to announce, the order, then the queue; landscape: the order on
         // the left, the ticket and the queue on the right.
         <div className="flex flex-1 flex-col gap-4 md:min-h-0 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)] lg:grid-rows-[auto_minmax(0,1fr)]">
-          <div className="flex min-w-0 flex-col lg:col-start-2 lg:row-start-1">{servingPanel}</div>
+          <div className="flex min-w-0 flex-col gap-4 lg:col-start-2 lg:row-start-1">
+            {servingPanel}
+            {openPanel}
+          </div>
           <div className="flex min-w-0 flex-col lg:col-start-1 lg:row-span-2 lg:row-start-1">
             {atRegister.order ? (
               <OrderControl
@@ -115,9 +153,10 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
                   if (!order) return Promise.resolve(false);
                   return act(
                     () => ordersApi.cancel(order.id, order.version, reason),
-                    () => text.cancelled(ticketLabel(mine.ticket)),
+                    () => text.cancelled(ticketLabel(mine.ticket), mine.customer.name),
                   );
                 }}
+                onPay={pay}
               />
             ) : (
               <p className="m-auto text-ink-2">{text.loadingOrder}</p>
@@ -132,10 +171,12 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
           <QueueTable
             waiting={waiting}
             now={now}
-            callable={!busy}
+            callable={!busy && !!register.session}
             onCall={(item: QueueItem) => void act(() => queuesApi.call(item.orderId), announced)}
           />
-          <div className="order-first flex min-w-0 flex-col lg:order-none">{servingPanel}</div>
+          <div className="order-first flex min-w-0 flex-col lg:order-none">
+            {openPanel ?? servingPanel}
+          </div>
         </div>
       )}
     </div>

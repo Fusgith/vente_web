@@ -23,7 +23,12 @@ describe('apiRequest', () => {
       apiRequest('/auth/switch-role', { method: 'POST', body: { role: 'cashier' } }),
     ).resolves.toEqual({ done: true });
     expect(api.calls).toEqual([
-      { method: 'POST', path: '/auth/switch-role', body: { role: 'cashier' } },
+      {
+        method: 'POST',
+        path: '/auth/switch-role',
+        body: { role: 'cashier' },
+        headers: { accept: 'application/json', 'content-type': 'application/json' },
+      },
     ]);
     const init = (fetch as unknown as { mock: { calls: [string, RequestInit][] } }).mock
       .calls[0]?.[1];

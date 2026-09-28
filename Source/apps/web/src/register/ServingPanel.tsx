@@ -1,4 +1,10 @@
-import { formatPhone, ticketLabel, type QueueItem } from '@vente-web/shared';
+import {
+  formatPhone,
+  formatTime,
+  ticketLabel,
+  type QueueItem,
+  type RegisterSession,
+} from '@vente-web/shared';
 
 import { labels } from '../labels.js';
 import { buttonClass, sheetClass } from '../ui/button.js';
@@ -13,6 +19,8 @@ interface ServingPanelProps {
   next: QueueItem | null;
   /** Orders at the other registers. */
   elsewhere: QueueItem[];
+  /** The register opened, named under the title (⚠️ H32). */
+  register: RegisterSession | null;
   busy: boolean;
   onCallNext: () => void;
   onNoShow: (item: QueueItem) => void;
@@ -27,6 +35,7 @@ export function ServingPanel({
   mine,
   next,
   elsewhere,
+  register,
   busy,
   onCallNext,
   onNoShow,
@@ -36,9 +45,16 @@ export function ServingPanel({
       aria-labelledby="register-serving"
       className={`${sheetClass} flex min-w-0 flex-col gap-4 p-4`}
     >
-      <h2 id="register-serving" className="type-title">
-        {text.servingTitle}
-      </h2>
+      <header className="flex flex-wrap items-baseline justify-between gap-x-3">
+        <h2 id="register-serving" className="type-title">
+          {text.servingTitle}
+        </h2>
+        {register && (
+          <span className="text-14 text-ink-2">
+            {text.sessionOf(register.station.name, formatTime(register.openedAt))}
+          </span>
+        )}
+      </header>
       {mine ? (
         <div className="flex flex-col items-center gap-1 text-center">
           <p className="text-18 text-ink-2">{text.announce}</p>

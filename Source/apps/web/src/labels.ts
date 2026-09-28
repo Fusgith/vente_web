@@ -278,7 +278,41 @@ export const labels = {
     orderOf: (number: string, salesUser: string) => `Commande ${number} · ${salesUser}`,
     lines: (count: number) => (count === 1 ? '1 ligne' : `${count} lignes`),
     noShow: 'Client absent',
-    paymentComing: 'L’encaissement arrive avec les prochaines étapes du développement.',
+    /** Opening the register (RG-CAI-01, ⚠️ H32). */
+    openTitle: 'Ouvrir la caisse',
+    openHint:
+      'Choisissez votre caisse et comptez le fond de caisse : chaque paiement de la journée y sera rattaché.',
+    registerChoice: 'Caisse',
+    registerBusy: 'déjà ouverte',
+    noRegister: 'Aucune caisse active : l’admin doit en déclarer une.',
+    openingFloat: 'Fond de caisse (MGA)',
+    openRegister: 'Ouvrir la caisse',
+    opening: 'Ouverture…',
+    opened: (register: string) => `${register} ouverte.`,
+    sessionOf: (register: string, time: string) => `${register} · ouverte à ${time}`,
+    /** Payment (RG-PAY-01 à 04). */
+    pay: 'Encaisser',
+    payTitle: (ticket: string, name: string) => `Encaisser ${ticket} — ${name}`,
+    amountDue: 'Net à payer',
+    method: 'Moyen de paiement',
+    lineAmount: 'Montant (MGA)',
+    reference: 'Référence de la transaction (obligatoire)',
+    addMethod: 'Ajouter un moyen de paiement',
+    removeMethod: (label: string) => `Retirer ${label}`,
+    cashReceived: 'Montant reçu en espèces (MGA)',
+    change: 'Rendu',
+    remaining: 'Reste à payer',
+    overpaid: 'Trop saisi',
+    payIssues: {
+      TOTAL_MISMATCH: 'Les montants doivent faire exactement le net à payer.',
+      CASH_SHORT: 'Le montant reçu ne couvre pas la part en espèces.',
+      CASH_TWICE: 'Une seule ligne en espèces.',
+      CASH_WITHOUT_LINE: 'Montant reçu sans ligne en espèces.',
+    },
+    confirmPay: (amount: string) => `Encaisser ${amount}`,
+    paying: 'Encaissement…',
+    paid: (ticket: string, name: string, change: string | null) =>
+      change ? `${ticket} — ${name} payé. Rendu : ${change}.` : `${ticket} — ${name} payé.`,
     /** Control before payment (T-050, §5.6, RG-CMD-05b, RG-ANN-01). */
     orderTitle: (number: string) => `Commande ${number}`,
     loadingOrder: 'Chargement de la commande…',
@@ -296,11 +330,11 @@ export const labels = {
     withinCap: 'dans le plafond',
     byCode: 'code du boss',
     cancelOrder: 'Annuler la commande',
-    cancelTitle: (ticket: string) => `Annuler la commande ${ticket}`,
+    cancelTitle: (ticket: string, name: string) => `Annuler la commande ${ticket} — ${name}`,
     cancelReason: 'Motif de l’annulation (obligatoire)',
     cancelHint: 'Le stock réservé est libéré et le ticket clos. L’annulation est journalisée.',
     keepOrder: 'Revenir',
-    cancelled: (ticket: string) => `Commande ${ticket} annulée.`,
+    cancelled: (ticket: string, name: string) => `Commande ${ticket} — ${name} annulée.`,
     adjusted: (position: number) => `Ligne ${position} modifiée.`,
     removed: (position: number) => `Ligne ${position} supprimée.`,
     waitingShort: 'En attente',
@@ -309,7 +343,7 @@ export const labels = {
     servedBy: (name: string, station: string | null) =>
       station ? `${station} — ${name}` : `Caisse de ${name}`,
     called: (ticket: string, name: string) => `Ticket ${ticket} appelé : ${name}.`,
-    absent: (ticket: string) => `${ticket} absent : remis en fin de file.`,
+    absent: (ticket: string, name: string) => `${ticket} — ${name} absent : remis en fin de file.`,
     /** Wait since the order entered the queue (RG-FIL-05). */
     minutes: (minutes: number) =>
       minutes < 1

@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { NBSP, formatAmount, formatMga, formatQty, formatTyped, roundHalfUp } from './format.js';
+import {
+  NBSP,
+  formatAmount,
+  formatMga,
+  formatQty,
+  formatTime,
+  formatTyped,
+  roundHalfUp,
+} from './format.js';
 
 describe('roundHalfUp — RG-FMT-01 (arrondi au plus proche, demi-supérieur)', () => {
   it('rounds .5 up, exactly, from decimal strings', () => {
@@ -85,5 +93,12 @@ describe('formatTyped — RG-FMT-01 (saisie en cours au pavé)', () => {
     expect(formatTyped('12,')).toBe('12,');
     expect(formatTyped('')).toBe('0');
     expect(formatTyped(',5')).toBe('0,5');
+  });
+});
+
+describe('formatTime (RG-FMT-03)', () => {
+  it('reads the time at the shop, UTC+3', () => {
+    expect(formatTime('2026-09-28T05:02:00.000Z')).toBe('08:02');
+    expect(formatTime(new Date('2026-09-28T21:30:00.000Z'))).toBe('00:30');
   });
 });

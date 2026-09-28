@@ -120,3 +120,16 @@ export function orderWithLines(entry: QueueItem, version = 2): Order {
     total: '114500.00',
   };
 }
+
+/** The register this cashier opened (T-051, ⚠️ H32). */
+export const SESSION = {
+  id: '0192a4f0-0000-7000-8000-000000000601',
+  station: { id: '0192a4f0-0000-7000-8000-000000000611', name: 'Caisse 2' },
+  openedAt: '2026-09-28T05:02:00.000Z',
+  openingFloat: '50000.00',
+};
+
+/** The API answers of an opened register, spread first into a test's handlers. */
+export const OPENED = {
+  'GET /register-sessions/current': { status: 200, body: { session: SESSION } },
+};

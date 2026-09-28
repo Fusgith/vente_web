@@ -3,6 +3,7 @@ import {
   formatQty,
   ticketLabel,
   type Order,
+  type PaymentInput,
   type QuoteLine,
 } from '@vente-web/shared';
 import { useState } from 'react';
@@ -14,6 +15,7 @@ import { AmountHead, TotalsList } from '../ui/DocumentTable.js';
 import { Icon } from '../ui/Icon.js';
 import { CancelOrderSheet } from './CancelOrderSheet.js';
 import { LineAdjustSheet } from './LineAdjustSheet.js';
+import { PaymentSheet } from './PaymentSheet.js';
 
 const text = labels.register;
 const draft = labels.sales.draft;
@@ -31,6 +33,7 @@ interface OrderControlProps {
   onLower: (line: QuoteLine, qty: string) => Promise<boolean>;
   onRemove: (line: QuoteLine) => Promise<boolean>;
   onCancel: (reason: string) => Promise<boolean>;
+  onPay: (input: PaymentInput, key: string) => Promise<boolean>;
 }
 
 /**
@@ -38,11 +41,19 @@ interface OrderControlProps {
  * table (RG-DEV-05) with where each discount comes from, a quantity lowered or a line removed
  * (RG-CMD-05b), or the whole order cancelled with a reason (RG-ANN-01).
  */
-export function OrderControl({ order, busy, onLower, onRemove, onCancel }: OrderControlProps) {
+export function OrderControl({
+  order,
+  busy,
+  onLower,
+  onRemove,
+  onCancel,
+  onPay,
+}: OrderControlProps) {
   // The line open by its sale unit, one per order: a line removed elsewhere renumbers the others,
   // never the article the sheet was opened on; gone itself, the sheet closes.
   const [editing, setEditing] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  const [paying, setPaying] = useState(false);
   const line = order.lines.find((candidate) => candidate.productUnitId === editing) ?? null;
   const ticket = order.ticket ? ticketLabel(order.ticket) : order.number;
   const done = (ok: boolean) => {
@@ -141,10 +152,16 @@ export function OrderControl({ order, busy, onLower, onRemove, onCancel }: Order
         </button>
         <div className="ml-auto flex flex-col items-end gap-1">
           <TotalsList totals={order} />
-          <p className="flex items-center gap-2 text-14 text-ink-2">
-            <Icon name="info" className="size-5 shrink-0" />
-            {text.paymentComing}
-          </p>
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            onClick={() => setPaying(true)}
+            disabled={busy}
+            className={buttonClass('primary', 'lg', 'min-w-56')}
+          >
+            <Icon name="check" className="size-5" />
+            {text.pay}
+          </button>
         </div>
       </div>
       {line && (
@@ -158,9 +175,24 @@ export function OrderControl({ order, busy, onLower, onRemove, onCancel }: Order
           onClose={() => setEditing(null)}
         />
       )}
+      {paying && (
+        <PaymentSheet
+          order={order}
+          ticket={ticket}
+          busy={busy}
+          onPay={(input, key) =>
+            onPay(input, key).then((ok) => {
+              if (ok) setPaying(false);
+              return ok;
+            })
+          }
+          onClose={() => setPaying(false)}
+        />
+      )}
       {cancelling && (
         <CancelOrderSheet
           ticket={ticket}
+          name={order.customer.name}
           busy={busy}
           onCancel={(reason) =>
             void onCancel(reason).then((ok) => {

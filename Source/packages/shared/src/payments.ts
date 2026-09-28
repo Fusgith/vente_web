@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { fromScaled, toScaled } from './decimal.js';
+import { orderSchema } from './orders.js';
 
 /** An amount typed at the register: positive or zero, at most 12 digits and 2 decimals. */
 const AMOUNT_PATTERN = /^\d{1,12}(?:\.\d{1,2})?$/;
@@ -81,6 +82,13 @@ export const paymentSchema = z.object({
   ),
 });
 export type Payment = z.infer<typeof paymentSchema>;
+
+/** Answers of the API, as the screens check them. */
+export const paymentMethodListSchema = z.object({ methods: z.array(paymentMethodSchema) });
+export const currentRegisterSessionSchema = z.object({ session: registerSessionSchema.nullable() });
+export const registerStationListSchema = z.object({ stations: z.array(registerStationSchema) });
+export const paidOrderSchema = z.object({ order: orderSchema, payment: paymentSchema });
+export type PaidOrder = z.infer<typeof paidOrderSchema>;
 
 /** What makes a settlement impossible, first found first. */
 export type SettleIssue = 'CASH_TWICE' | 'TOTAL_MISMATCH' | 'CASH_SHORT' | 'CASH_WITHOUT_LINE';

@@ -1,6 +1,7 @@
 import {
   paymentInputSchema,
   registerSessionOpenSchema,
+  type PaidOrder,
   type PaymentMethod,
   type RegisterSession,
   type RegisterStation,
@@ -11,7 +12,7 @@ import { z } from 'zod';
 
 import { AppError } from '../errors.js';
 import { actorOf, authOf, requireRole } from '../plugins/session.js';
-import { payOrder, paymentMethods, type PaidOrder } from '../services/payments.js';
+import { payOrder, paymentMethods } from '../services/payments.js';
 import { orderPaid } from '../services/realtime-rooms.js';
 import { openSession, openSessionOf, registerStations } from '../services/register-sessions.js';
 

@@ -12,6 +12,7 @@ export interface RecordedCall {
   method: string;
   path: string;
   body: unknown;
+  headers: Record<string, string>;
 }
 
 /** Stubs `fetch` with handlers keyed `METHOD /path` (without the `/api/v1` prefix). */
@@ -22,7 +23,8 @@ export function fakeApi(initial: Record<string, Handler>) {
     const method = init?.method ?? 'GET';
     const path = input.replace(/^\/api\/v1/, '');
     const body = typeof init?.body === 'string' ? (JSON.parse(init.body) as unknown) : undefined;
-    calls.push({ method, path, body });
+    const headers = { ...(init?.headers as Record<string, string> | undefined) };
+    calls.push({ method, path, body, headers });
     const handler = handlers.get(`${method} ${path}`) ?? apiError(404, 'NOT_FOUND');
     if (handler === 'network') throw new TypeError('Failed to fetch');
     const response = typeof handler === 'function' ? handler(body) : handler;
