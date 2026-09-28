@@ -1,3 +1,7 @@
+import { mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
 import type { AccessOrigin, AuthMe, Role } from '@vente-web/shared';
 import type { FastifyInstance, InjectOptions, LightMyRequestResponse } from 'fastify';
 
@@ -13,6 +17,8 @@ import { TEST_DATABASE_URL, createTestDb, resetDb } from './db.js';
 export interface TestApp {
   app: FastifyInstance;
   db: Db;
+  /** Where this app writes its invoices (`FILES_DIR`). */
+  filesDir: string;
   /** Name of the session cookie this app sets (`__Host-` prefixed when secure). */
   cookieName: string;
   /** Warnings and errors the app logged since the last reset, with `captureLogs` only. */
@@ -39,6 +45,8 @@ export async function createTestApp(
     NODE_ENV: 'test',
     DATABASE_URL: TEST_DATABASE_URL ?? '',
     COOKIE_SECURE: 'false',
+    // Issued documents of this app only, thrown away with the machine's temporary files.
+    FILES_DIR: await mkdtemp(path.join(tmpdir(), 'vente-files-')),
     ...envOverrides,
   });
   const logger = captureLogs ? { level: 'warn', stream: sink } : false;
@@ -47,6 +55,7 @@ export async function createTestApp(
   return {
     app,
     db,
+    filesDir: env.FILES_DIR,
     cookieName: sessionCookieName(env.COOKIE_SECURE),
     logs,
     reset: async () => {

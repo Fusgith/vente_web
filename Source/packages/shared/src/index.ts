@@ -15,6 +15,7 @@ export * from './catalog.js';
 export * from './customers.js';
 export { addQuantities, baseQuantity, isQuantity, lineGross, sumAmounts } from './decimal.js';
 export * from './discount.js';
+export * from './invoices.js';
 export * from './orders.js';
 export * from './payments.js';
 export * from './queues.js';

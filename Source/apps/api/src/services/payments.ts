@@ -1,6 +1,7 @@
 import {
   CASH_METHOD,
   settle,
+  sumAmounts,
   type PaidOrder,
   type Payment,
   type PaymentInput,
@@ -13,6 +14,7 @@ import { AppError } from '../errors.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit } from './audit.js';
+import { issueInvoice, readInvoiceSettings } from './invoices.js';
 import { loadOrder } from './orders.js';
 import { nextSequenceValue } from './sequences.js';
 
@@ -26,6 +28,7 @@ export async function paymentMethods(db: Db): Promise<PaymentMethod[]> {
 }
 
 const PAYMENT_INCLUDE = {
+  invoice: { select: { id: true, number: true } },
   lines: {
     orderBy: { id: 'asc' },
     include: { method: { select: { code: true, label: true } } },
@@ -78,7 +81,8 @@ async function checkedLines(tx: Prisma.TransactionClient, lines: PaymentInput['l
  * open register session; the order paid, its reservation firm until delivery (RG-STK-03), last
  * in the delivery queue (RG-LIV-01), audited before → after. The same `key` sent again — a
  * screen that lost the answer — gets the same payment back, never a second one. Immutable once
- * recorded (RG-PAY-06). The numbered invoice comes with T-052.
+ * recorded (RG-PAY-06). Its invoice is issued in the same transaction, numbered without a gap
+ * (RG-FAC-01, H33); the PDF is written once committed.
  */
 export async function payOrder(
   db: Db,
@@ -87,6 +91,7 @@ export async function payOrder(
   { version, lines, cashReceived }: PaymentInput,
   key: string,
 ): Promise<PaidOrder> {
+  const settings = await readInvoiceSettings(db);
   return db.$transaction(async (tx) => {
     // The order row locked: a second tap, or the same key sent again, waits for this one.
     const [order] = await tx.$queryRaw<
@@ -104,7 +109,12 @@ export async function payOrder(
       if (replayed.orderId !== id || replayed.cashierId !== actor.userId) {
         throw new AppError(400, 'BAD_REQUEST');
       }
-      return { order: await loadOrder(tx, id), payment: toPayment(replayed) };
+      if (!replayed.invoice) throw new AppError(409, 'ORDER_CHANGED');
+      return {
+        order: await loadOrder(tx, id),
+        payment: toPayment(replayed),
+        invoice: replayed.invoice,
+      };
     }
 
     const mine = actor.activeRole === 'manager' || order.cashier_user_id === actor.userId;
@@ -124,9 +134,31 @@ export async function payOrder(
     );
     if (settled.issue) throw new AppError(422, ISSUE_CODE[settled.issue]);
 
+    const now = new Date();
+    const cashier = await tx.user.findUniqueOrThrow({
+      where: { id: actor.userId },
+      select: { fullName: true },
+    });
+    // Numbered last, once every check passed: a refused payment never takes a number.
+    const invoice = await issueInvoice(tx, {
+      order: await loadOrder(tx, id),
+      cashier: cashier.fullName,
+      payment: {
+        lines: checked.map((line) => ({
+          method: line.method.label,
+          reference: line.reference,
+          amount: sumAmounts([line.amount]),
+        })),
+        cashReceived: settled.cashReceived,
+        change: settled.change,
+      },
+      settings,
+      at: now,
+    });
     const payment = await tx.payment.create({
       data: {
         orderId: id,
+        invoiceId: invoice.id,
         registerSessionId: session.id,
         cashierId: actor.userId,
         totalDue: order.total,
@@ -143,7 +175,6 @@ export async function payOrder(
       },
       include: PAYMENT_INCLUDE,
     });
-    const now = new Date();
     await tx.order.update({
       where: { id },
       data: {
@@ -170,6 +201,7 @@ export async function payOrder(
       before: { status: 'AT_REGISTER', total: order.total },
       after: {
         status: 'PAID',
+        invoice: invoice.number,
         registerSessionId: session.id,
         lines: result.lines.map((line) => ({
           method: line.method.code,
@@ -180,6 +212,6 @@ export async function payOrder(
         change: result.changeGiven,
       },
     });
-    return { order: await loadOrder(tx, id), payment: result };
+    return { order: await loadOrder(tx, id), payment: result, invoice };
   });
 }
