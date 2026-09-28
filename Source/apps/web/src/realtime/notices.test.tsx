@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import { labels } from '../labels.js';
 import { NoShowNotices } from '../manager/NoShowNotices.js';
-import { CallNotices } from '../sales/CallNotices.js';
+import { OrderNotices } from '../sales/OrderNotices.js';
 import { Frame } from '../shell/Frame.js';
 import { StatusLineProvider } from '../shell/StatusLineProvider.js';
 import { fakeApi, HERY, meFor, ok, RIJA } from '../test/fake-api.js';
@@ -58,13 +58,27 @@ const band = () => within(screen.getByRole('contentinfo')).getByRole('status');
 
 describe('notices from the queue (T-040)', () => {
   it('tells the salesperson their ticket is called, to warn the customer (RG-DSP-05)', async () => {
-    await mount('sales', <CallNotices />);
+    await mount('sales', <OrderNotices />);
     await waitFor(() =>
       expect(fakeRealtime.sockets[0]?.listeners.get('ticket.called')?.size).toBe(1),
     );
     act(() => fakeRealtime.emit('ticket.called', { queue: 'register', orderId: ORDER_ID }));
     await waitFor(() =>
       expect(band()).toHaveTextContent(labels.sales.called('A15', 'Rasoa Hanta')),
+    );
+  });
+
+  it('tells the salesperson their order expired unpaid, its stock freed (RG-CMD-08)', async () => {
+    await mount('sales', <OrderNotices />);
+    await waitFor(() =>
+      expect(fakeRealtime.sockets[0]?.listeners.get('order.status_changed')?.size).toBe(1),
+    );
+    act(() =>
+      fakeRealtime.emit('order.status_changed', { orderId: ORDER_ID, status: 'AT_REGISTER' }),
+    );
+    act(() => fakeRealtime.emit('order.status_changed', { orderId: ORDER_ID, status: 'EXPIRED' }));
+    await waitFor(() =>
+      expect(band()).toHaveTextContent(labels.sales.expired('A15', 'Rasoa Hanta')),
     );
   });
 

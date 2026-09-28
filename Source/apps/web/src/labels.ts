@@ -177,6 +177,9 @@ export const labels = {
     /** Without a public display, the salesperson hears of their ticket being called (RG-DSP-05). */
     called: (ticket: string, name: string) =>
       `Ticket ${ticket} appelé à la caisse : prévenez ${name}.`,
+    /** An order unpaid at the day end (RG-CMD-08): reactivated from the salesperson's list (T-035). */
+    expired: (ticket: string, name: string) =>
+      `Commande ${ticket} de ${name} expirée : non payée à la fin de la journée, son stock est libéré.`,
 
     /** The order just validated: its ticket, big, with the customer's name (RG-CMD-05, RG-TKT-03). */
     order: {
