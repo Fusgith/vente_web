@@ -87,6 +87,9 @@ export async function reserveStock(
  * The reservations of an order brought to what its lines now ask (RG-STK-01): a product whose
  * lines were lowered frees the difference, one left without any line frees it all. Nothing is
  * ever added here — only the salesperson validates more (RG-CMD-05b).
+ *
+ * The stock rows are updated in product order, as `reserveStock` locks them: a cancellation
+ * crossing a validation on the same products waits for it instead of deadlocking.
  */
 export async function shrinkReservations(
   tx: Prisma.TransactionClient,
@@ -94,7 +97,10 @@ export async function shrinkReservations(
   lines: readonly StockDemandLine[],
 ): Promise<void> {
   const asked = new Map(demandByProduct(lines).map((product) => [product.productId, product]));
-  const active = await tx.reservation.findMany({ where: { orderId, status: 'ACTIVE' } });
+  const active = await tx.reservation.findMany({
+    where: { orderId, status: 'ACTIVE' },
+    orderBy: { productId: 'asc' },
+  });
   for (const reservation of active) {
     const now = asked.get(reservation.productId)?.baseQty ?? '0.00';
     const freed = reservation.qty.minus(now);
