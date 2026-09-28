@@ -14,6 +14,7 @@ describe('GET /healthz', () => {
     app = await buildApp({
       env: loadEnv({ NODE_ENV: 'test', DATABASE_URL }),
       fastify: { logger: false },
+      expiry: { sweepMs: 0 },
     });
     await app.ready();
   });

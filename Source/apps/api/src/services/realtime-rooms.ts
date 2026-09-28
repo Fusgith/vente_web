@@ -135,3 +135,8 @@ export function orderAdjusted(orderId: string): Emission[] {
 export function orderCancelled(order: CalledOrder): Emission[] {
   return [...queueChanged('register', order.id, 'cancelled'), statusChanged(order, 'CANCELLED')];
 }
+
+/** Past its day end unpaid (RG-CMD-08): out of the register queue, its salesperson told. */
+export function orderExpired(order: CalledOrder): Emission[] {
+  return [...queueChanged('register', order.id, 'expired'), statusChanged(order, 'EXPIRED')];
+}

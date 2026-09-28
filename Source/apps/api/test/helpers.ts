@@ -42,7 +42,7 @@ export async function createTestApp(
     ...envOverrides,
   });
   const logger = captureLogs ? { level: 'warn', stream: sink } : false;
-  const app = await buildApp({ env, db, fastify: { logger } });
+  const app = await buildApp({ env, db, fastify: { logger }, expiry: { sweepMs: 0 } });
   await app.ready();
   return {
     app,
