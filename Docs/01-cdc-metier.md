@@ -1,6 +1,6 @@
 # Cahier des charges MÉTIER — Vente Web
 
-Version 0.8 — 28/09/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16), **corrections du 23/09/2026** (§16.3), **décisions du 25/09/2026** (§16.4, dont H22), **décisions du 26/09/2026** (§16.5 : H14 à H28) ; ADR 0001–0006 acceptés , **décision du 27/09/2026** (§16.6 : H29), **décisions du 28/09/2026** (§16.7 : H30, H31, perte de la priorité) ; point à confirmer : H32 (encaissement, T-051).
+Version 0.8 — 28/09/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16), **corrections du 23/09/2026** (§16.3), **décisions du 25/09/2026** (§16.4, dont H22), **décisions du 26/09/2026** (§16.5 : H14 à H28) ; ADR 0001–0006 acceptés , **décision du 27/09/2026** (§16.6 : H29), **décisions du 28/09/2026** (§16.7 : H30 à H32, perte de la priorité) ; point à confirmer : H33 (facture, T-052).
 
 Nouveautés v0.8 : contrôle à la caisse validé (H30, RG-CMD-05b) ; **un client absent perd sa priorité**, de même qu'une commande prioritaire placée en dernier par le responsable (RG-FIL-02, RG-FIL-04).
 
@@ -304,7 +304,7 @@ Principe *(décisions H4, H5, H13)* : les remises sont **paramétrées d'avance*
 
 ### 6.4 Paiements
 
-- *(Modalités de RG-PAY et de l'ouverture de caisse : ⚠️ HYPOTHÈSE H32.)*
+- *(Modalités de RG-PAY et de l'ouverture de caisse : décision H32, 28/09/2026.)*
 - **RG-PAY-01** Les moyens de paiement forment une liste paramétrable (libellé, actif, référence obligatoire, ordre). Valeurs initiales : **Espèces, MVola, Orange Money, Airtel Money, Carte bancaire, Virement, Chèque**.
 - **RG-PAY-02** Paiement **mixte** : plusieurs lignes de paiement ; la somme doit être exactement égale au total dû (après rendu monnaie sur la partie espèces).
 - **RG-PAY-03** Espèces : montant reçu saisi ; rendu = reçu − dû sur la partie espèces ; enregistré et imprimé sur la facture.
@@ -315,6 +315,7 @@ Principe *(décisions H4, H5, H13)* : les remises sont **paramétrées d'avance*
 
 ### 6.5 Factures, avoirs, TVA
 
+- *(Modalités de RG-FAC-01 à 04 : ⚠️ HYPOTHÈSE H33.)*
 - **RG-FAC-01** Numéro de facture **séquentiel par année, sans trou** : `F-AAAA-nnnnnn` (préfixe paramétrable). Attribué au moment exact du paiement complet, dans la même opération indivisible. Jamais réutilisé, jamais modifié.
 - **RG-FAC-02** Contenu figé : mentions légales du magasin, numéro, date/heure, ticket, commercial, caissier, **client (nom, téléphone)**, lignes en tableau selon RG-DEV-05 (N°, désignation avec le code, quantité, unité de vente — et équivalence en unité de base si différente —, prix unitaire, remise en % et montant, montant net), totaux selon RG-DEV-05 (total brut, remises sur les lignes, sous-total, remise sur le total éventuelle, total des remises avec le code de remise éventuel), [HT / TVA / TTC si TVA active], net à payer, lignes de paiement (moyen, référence, montant), reçu et rendu, pied de page paramétrable.
 - **RG-FAC-03** TVA : paramètres `vat_enabled` (défaut **non**), `vat_rate` (défaut 20 %), `prices_include_vat` (défaut oui). Si désactivée : aucune ligne TVA, mention paramétrable (ex. « TVA non applicable »).
@@ -417,6 +418,7 @@ Accessible à distance sur téléphone et PC, actualisé en temps réel. *(Déci
 | `store.legal` | — | Raison sociale, adresse, téléphone, NIF, STAT, RCS, logo, pied de page |
 | `currency` | MGA | Devise (fixe) |
 | `vat_enabled` / `vat_rate` / `prices_include_vat` | non / 20 % / oui | TVA optionnelle |
+| `vat_notice` | (vide) | Mention imprimée sur la facture quand la TVA est désactivée, ex. « TVA non applicable » (RG-FAC-03, H33) |
 | `cash_rounding` | aucun | Arrondi espèces (RG-FMT-04) |
 | `invoice_prefix` / `credit_note_prefix` / `quote_prefix` | F / AV / D | Préfixes de numérotation |
 | `day_end_time` | 23:59 | Fin de journée : expiration des réservations (RG-STK-02) et des codes de remise (RG-REM-04) (décision H16) |
@@ -474,11 +476,11 @@ Les ADR 0001 à 0004 ont été **acceptés** par l'utilisateur le 21/09/2026.
 
 ### 16.2 Points nouveaux à confirmer
 
-H14 à H28 tranchés le 26/09 (§16.5), H29 le 27/09 (§16.6), H30 et H31 le 28/09 (§16.7). Un nouveau point s'inscrit ici, marqué ⚠️ HYPOTHÈSE dans la règle concernée.
+H14 à H28 tranchés le 26/09 (§16.5), H29 le 27/09 (§16.6), H30 à H32 le 28/09 (§16.7). Un nouveau point s'inscrit ici, marqué ⚠️ HYPOTHÈSE dans la règle concernée.
 
 | # | Hypothèse | Règle | Alternative |
 |---|---|---|---|
-| H32 | **Encaissement** (T-051) : la **session de caisse** s'ouvre dès T-051 (RG-CAI-01/02, RG-PAY-07) : le caissier choisit sa caisse parmi les caisses actives et saisit le fond de caisse ; une caisse n'a qu'une session ouverte, un caissier aussi ; le responsable qui encaisse ouvre lui aussi la sienne ; la clôture vient avec T-054. Un appel fait depuis une caisse ouverte affiche son nom (« A15 → Caisse 2 »). Le **paiement** porte sur la commande appelée à la caisse, par le caissier qui l'a appelée ou le responsable : une ou plusieurs lignes (moyen, montant, référence) dont la somme est **exactement** le net à payer ; une seule ligne en espèces, montant reçu au moins égal à sa part, rendu = reçu − part ; référence obligatoire selon le moyen (carte bancaire comprise, RG-PAY-04), 80 caractères au plus. Au paiement : commande payée, réservation ferme, entrée en file livraison, journal avant → après ; une répétition réseau du même paiement rend le même résultat. La **facture numérotée** vient avec T-052 ; l'arrondi espèces (RG-FMT-04) avec elle ; le blocage tant qu'une demande au boss est en attente avec T-033 | RG-PAY-01 à 07, RG-CAI-01/02, RG-STK-03, RG-LIV-01 | Session ouverte avec T-054 seulement ; le responsable n'encaisse pas |
+| H33 | **Facture** (T-052) : numéro `<préfixe>-AAAA-nnnnnn` (paramètre `invoice_prefix`, défaut `F`), l'année étant celle du magasin au moment du paiement, compteur par année pris dans la transaction même du paiement : un paiement refusé ou interrompu ne consomme aucun numéro. Le **contenu est figé** à l'émission (RG-FAC-02) et le PDF écrit dans `files/invoices/<année>/<numéro>.pdf` aussitôt après ; si l'écriture échoue, le fichier est produit à la première demande **depuis ce contenu figé**, jamais avec les paramètres du moment. La facture s'ouvre depuis la caisse juste après le paiement ; caissier et responsable peuvent la rouvrir. **TVA active** : le net à payer est ventilé en HT, TVA et TTC, les prix étant TTC (`prices_include_vat` = oui) ; des prix hors taxes ne sont pas encore pris en charge. **TVA inactive** : aucune ligne de TVA ; la mention du paramètre `vat_notice` (vide par défaut, ex. « TVA non applicable ») s'imprime si elle est remplie. L'**arrondi espèces** (RG-FMT-04, `cash_rounding`) reste à faire (T-056) ; le code de remise du boss s'y ajoutera avec T-034 | RG-FAC-01 à 04, RG-FAC-07, RG-FMT-04 | Numéro attribué à l'impression ; PDF refait à chaque ouverture |
 
 
 ### 16.3 Corrections de l'utilisateur du 23/09/2026
@@ -531,12 +533,13 @@ Toutes les hypothèses ouvertes ont été tranchées ; les règles citées ont �
 
 ### 16.7 Décisions de l'utilisateur du 28/09/2026
 
-H30 et H31 en réponse à la v0.7 ; C7 à la relecture du code de T-018 à T-050.
+H30, H31 et H32 en réponse aux questions posées ; C7 à la relecture du code de T-018 à T-050.
 
 | # | Hypothèse ou constat | Décision de l'utilisateur | Règles impactées |
 |---|---|---|---|
 | H30 | **Contrôle à la caisse** (T-050) : les modifications se font sur la commande appelée à la caisse (client présent), par le caissier qui l'a appelée ou le responsable ; jamais d'ajout ni de hausse, et la dernière ligne ne se supprime pas (c'est une annulation). Une **quantité baissée** garde le taux de remise de sa ligne (la remise suit la quantité) ; une ligne inchangée garde sa remise au centime ; la **remise sur le total** saisie en % garde son %, saisie en montant elle garde son montant, **ramenée au maximum permis** (marge restante, RG-REM-06) si les lignes restantes ne la couvrent plus. Une ligne supprimée sort de la commande, les numéros se suivent à nouveau ; le journal garde l'avant/après. **Annulation** : motif en texte libre, obligatoire (3 caractères au moins) ; le commercial annule ses propres commandes, en file comme à la caisse | **OK** | RG-CMD-05b, RG-ANN-01, RG-REM-06 |
 | H31 | **Expiration et réactivation** (T-022, T-035) : le serveur vérifie toutes les 30 s, et à son démarrage, les commandes échues ; seule une commande **en file** (`SUBMITTED`) expire. Un client **à la caisse** à la fin de la journée reste au caissier (il l'encaisse ou l'annule) ; déclaré absent ensuite, sa commande expire aussitôt. Le commercial en est averti sur sa tablette s'il est connecté ; sinon il la retrouve dans sa liste (T-035). **Réactivation** (T-035) : par le commercial pour ses commandes, ou par le responsable (la commande reste au commercial) ; mêmes contrôles qu'une validation (stock, prix, plafonds, H28) : si un prix a changé depuis, la réactivation est refusée et la commande redevient un **devis** au nouveau prix, même numéro, à revoir avec le client avant de valider de nouveau | **OK** | RG-CMD-08, RG-STK-02, RG-CMD-06 |
+| H32 | **Encaissement** (T-051) : la **session de caisse** s'ouvre dès T-051 (RG-CAI-01/02, RG-PAY-07) : le caissier choisit sa caisse parmi les caisses actives et saisit le fond de caisse ; une caisse n'a qu'une session ouverte, un caissier aussi ; le responsable qui encaisse ouvre lui aussi la sienne ; la clôture vient avec T-054. Un appel fait depuis une caisse ouverte affiche son nom (« A15 → Caisse 2 »). Le **paiement** porte sur la commande appelée à la caisse, par le caissier qui l'a appelée ou le responsable : une ou plusieurs lignes (moyen, montant, référence) dont la somme est **exactement** le net à payer ; une seule ligne en espèces, montant reçu au moins égal à sa part, rendu = reçu − part ; référence obligatoire selon le moyen (carte bancaire comprise, RG-PAY-04), 80 caractères au plus. Au paiement : commande payée, réservation ferme, entrée en file livraison, journal avant → après ; une répétition réseau du même paiement rend le même résultat. La **facture numérotée** vient avec T-052 ; l'arrondi espèces (RG-FMT-04) avec elle ; le blocage tant qu'une demande au boss est en attente avec T-033 | **OK** | RG-PAY-01 à 07, RG-CAI-01/02, RG-STK-03, RG-LIV-01 |
 | C7 | Une commande prioritaire déclarée absente revenait en fin de file **en gardant sa priorité** : au marquage prioritaire suivant, elle repassait en tête avec les autres prioritaires, sans trace au journal | Un client **absent perd sa priorité** ; de même pour une commande prioritaire que le responsable **place en dernier**. Le journal garde la priorité avant → après | RG-FIL-02, RG-FIL-04 |
 
 ## Annexe A — Modèle Excel d'import des articles
