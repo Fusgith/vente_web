@@ -13,7 +13,13 @@ import { AppError } from '../errors.js';
 import { actorOf, authOf, requireRole } from '../plugins/session.js';
 import { adjustOrder, cancelOrder } from '../services/order-changes.js';
 import { loadOrder, submitOrder } from '../services/orders.js';
-import { orderAdjusted, orderCancelled, orderSubmitted } from '../services/realtime-rooms.js';
+import {
+  orderAdjusted,
+  orderCancelled,
+  orderSubmitted,
+  stockLow,
+} from '../services/realtime-rooms.js';
+import { stockAlerts } from '../services/stock.js';
 
 const paramsSchema = z.object({ id: z.uuid() });
 
@@ -57,6 +63,12 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
       const order = await submitOrder(app.db, actorOf(authOf(request)), id, body);
       // Committed: the cashiers see the order enter their queue (RG-CMD-03).
       app.realtime.publish(orderSubmitted({ id: order.id, salesUserId: order.salesUser.id }));
+      // Reserved: a product now at or under its threshold is told to the manager (RG-STK-07).
+      const low = await stockAlerts(
+        app.db,
+        order.lines.map((line) => line.productId),
+      );
+      app.realtime.publish(stockLow(low.map((alert) => alert.productId)));
       return order;
     },
   );

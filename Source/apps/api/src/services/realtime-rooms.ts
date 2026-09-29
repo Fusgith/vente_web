@@ -202,6 +202,13 @@ export function orderPartlyRefunded(order: CalledOrder): Emission[] {
   return [statusChanged(order, 'DELIVERED')];
 }
 
+/** Available stock at or under the threshold (RG-STK-07): the manager and the owner told. */
+export function stockLow(productIds: readonly string[]): Emission[] {
+  return productIds.map((productId) =>
+    emission([room.role('manager'), room.role('owner')], 'stock.alert', { productId }),
+  );
+}
+
 /** Cancelled after payment, refunded (RG-ANN-02): out of the delivery queue. */
 export function orderRefunded(order: CalledOrder): Emission[] {
   return [...queueChanged('delivery', order.id, 'cancelled'), statusChanged(order, 'REFUNDED')];

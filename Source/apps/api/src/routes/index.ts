@@ -12,6 +12,7 @@ import { paymentRoutes } from './payments.js';
 import { queueRoutes } from './queues.js';
 import { quoteRoutes } from './quotes.js';
 import { registerClosingRoutes } from './register-closing.js';
+import { stockRoutes } from './stock.js';
 import { supervisionRoutes } from './supervision.js';
 import { userRoutes } from './users.js';
 
@@ -30,4 +31,5 @@ export const apiRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) 
   await app.register(registerClosingRoutes);
   await app.register(creditNoteRoutes, { env });
   await app.register(supervisionRoutes);
+  await app.register(stockRoutes);
 };

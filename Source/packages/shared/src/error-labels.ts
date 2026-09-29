@@ -43,6 +43,9 @@ export const ERROR_LABELS = {
     'Un prix a changé depuis l’enregistrement du devis : vérifiez-le avec le client, puis validez.',
   STOCK_UNAVAILABLE:
     'Stock insuffisant pour valider la commande : réduisez les quantités signalées.',
+  ADJUSTMENT_TOO_LARGE:
+    'Sortie trop grande : elle dépasse le stock disponible, les commandes validées gardent le leur.',
+  ADJUSTMENT_REASON_UNKNOWN: 'Choisissez un motif de la liste.',
   QUEUE_EMPTY: 'Aucun client en attente dans cette file.',
   ORDER_CHANGED:
     'Cette commande a été modifiée entre-temps : elle vient d’être rechargée, recommencez.',

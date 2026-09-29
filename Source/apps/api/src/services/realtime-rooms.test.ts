@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { orderSubmitted, roomsOf } from './realtime-rooms.js';
+import { orderSubmitted, roomsOf, stockLow } from './realtime-rooms.js';
 
 const USER = '0192a4f0-0000-7000-8000-000000000501';
 const STATION = '0192a4f0-0000-7000-8000-000000000601';
@@ -42,5 +42,13 @@ describe('realtime rooms (CDC technique §6.1)', () => {
         payload: { orderId, status: 'SUBMITTED' },
       },
     ]);
+  });
+
+  it('tells the manager and the owner of each product under its threshold (RG-STK-07)', () => {
+    const productId = '0192a4f0-0000-7000-8000-000000000301';
+    expect(stockLow([productId])).toEqual([
+      { rooms: ['role:manager', 'role:owner'], event: 'stock.alert', payload: { productId } },
+    ]);
+    expect(stockLow([])).toEqual([]);
   });
 });

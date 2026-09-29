@@ -39,6 +39,8 @@ export const realtimePayloadSchemas = {
   'ticket.called': z.object({ queue: queueNameSchema, orderId: z.uuid() }),
   /** A customer absent when called, back in the queue; the manager hears from the 2nd time (RG-FIL-04). */
   'order.no_show': z.object({ orderId: z.uuid(), noShowCount: z.int().positive() }),
+  /** A product's available stock at or under its alert threshold (RG-STK-07). */
+  'stock.alert': z.object({ productId: z.uuid() }),
 };
 
 export type RealtimeEvent = keyof typeof realtimePayloadSchemas;
