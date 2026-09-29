@@ -25,5 +25,6 @@ export * from './queues.js';
 export * from './quotes.js';
 export * from './realtime.js';
 export * from './register-sessions.js';
+export * from './supervision.js';
 export { ROLE_LABELS } from './role-labels.js';
 export { ERROR_LABELS, isErrorCode, type ApiErrorBody, type ErrorCode } from './error-labels.js';

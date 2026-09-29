@@ -12,6 +12,7 @@ import { paymentRoutes } from './payments.js';
 import { queueRoutes } from './queues.js';
 import { quoteRoutes } from './quotes.js';
 import { registerClosingRoutes } from './register-closing.js';
+import { supervisionRoutes } from './supervision.js';
 import { userRoutes } from './users.js';
 
 /** Everything under `/api/v1` (CDC technique section 6); `/healthz` stays at the root. */
@@ -28,4 +29,5 @@ export const apiRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) 
   await app.register(deliveryRoutes);
   await app.register(registerClosingRoutes);
   await app.register(creditNoteRoutes, { env });
+  await app.register(supervisionRoutes);
 };
