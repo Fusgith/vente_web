@@ -2,6 +2,19 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 29/09/2026 — Remarques du boss tranchées (pas de code) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Réponses de l'utilisateur consignées au CDC métier, §16.9 : H43 reformulée (le client reste identifié individuellement, il est seulement classé dans une catégorie : « Divers », « Régulier », « Gros contrat »…) ; H44 reportée (gestion du crédit en V1.1) ; H45 à H48 validées.
+- Règles réécrites : RG-USR-03 (identifiant saisi), RG-DEV-04 (catégorie, date du dernier achat), RG-DEV-06 (rangée « À proposer »), RG-STK-02 et RG-CMD-08 (durée de réservation générale et par client).
+- Backlog : T-029b, T-022b, T-037, T-038, T-017c en MVP, « À faire » ; T-029c en V1.1.
+
+**Reste** : ⚠️ H49, les modalités restantes (liste des catégories et qui les attribue, qui marque les articles à promouvoir, validation du responsable à la caisse sans liste des noms) ; reprise du code avec T-034b après la réinitialisation hebdomadaire.
+
+**Décisions** : celles de l'utilisateur ci-dessus ; aucune dépendance.
+
+**Questions** : valider H38 à H42 et H49.
+
 ## 29/09/2026 — Remarques du boss consignées (pas de code) — agent : Claude Code (Opus 5.5)
 
 **Fait** :
