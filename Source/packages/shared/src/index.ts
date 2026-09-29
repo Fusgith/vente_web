@@ -17,6 +17,7 @@ export * from './credit-notes.js';
 export * from './customers.js';
 export { addQuantities, baseQuantity, isQuantity, lineGross, sumAmounts } from './decimal.js';
 export * from './delivery-issues.js';
+export * from './discount-caps.js';
 export * from './discount.js';
 export * from './invoices.js';
 export * from './orders.js';
