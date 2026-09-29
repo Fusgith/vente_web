@@ -99,7 +99,7 @@ async function find() {
   return sheet;
 }
 
-describe('cancelling a paid sale at the register (RG-ANN-02, ⚠️ H36)', () => {
+describe('cancelling a paid sale at the register (RG-ANN-02, H36)', () => {
   it('finds it by invoice, asks the manager’s PIN, then gives the credit note', async () => {
     const api = mount({
       [LOOKUP]: ok(sale('PAID')),
@@ -214,7 +214,7 @@ describe('cancelling a paid sale at the register (RG-ANN-02, ⚠️ H36)', () =>
   });
 });
 
-describe('refunding what a partial delivery left (RG-LIV-04, ⚠️ H37)', () => {
+describe('refunding what a partial delivery left (RG-LIV-04, H37)', () => {
   it('refunds the rest the manager decided, without reason nor PIN', async () => {
     const ISSUE = '0192a4f0-0000-7000-8000-000000000961';
     const PARTIAL = `POST /orders/${entry.orderId}/partial-refund`;

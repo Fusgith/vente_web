@@ -2,7 +2,7 @@ import type { IssueCause } from '@vente-web/shared';
 
 const CAUSES: Record<IssueCause, string> = { MISSING: 'Manquant', DAMAGED: 'Abîmé' };
 
-/** Delivery issues and what they leave to refund (T-061, RG-LIV-04, ⚠️ H37); `labels.issues`. */
+/** Delivery issues and what they leave to refund (T-061, RG-LIV-04, H37); `labels.issues`. */
 export const issueLabels = {
   causes: CAUSES,
   /** At the counter: the warehouse user reports. */
@@ -22,7 +22,7 @@ export const issueLabels = {
   close: 'Fermer',
   reported: (ticket: string, name: string) =>
     `${ticket} — ${name} : anomalie signalée au responsable. Vous pouvez prendre la suivante.`,
-  /** The manager's list (⚠️ H37). */
+  /** The manager's list (H37). */
   panelTitle: 'Anomalies de livraison',
   refresh: 'Actualiser',
   none: 'Aucune anomalie en attente.',

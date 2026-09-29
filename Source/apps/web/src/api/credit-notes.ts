@@ -9,7 +9,7 @@ import {
 
 import { API_BASE, apiRequest, parseResponse } from './client.js';
 
-/** Cancelling a paid sale: its refund and credit note (T-053, RG-ANN-02, ⚠️ H36). */
+/** Cancelling a paid sale: its refund and credit note (T-053, RG-ANN-02, H36). */
 export const creditNotesApi = {
   /** The sale behind an invoice number, as the customer shows it. */
   async lookup(number: string): Promise<InvoiceLookup> {
@@ -22,7 +22,7 @@ export const creditNotesApi = {
     return parseResponse(refundedOrderSchema, data);
   },
 
-  /** What a partial delivery left (⚠️ H37): the manager decided, no PIN here. */
+  /** What a partial delivery left (H37): the manager decided, no PIN here. */
   async partialRefund(orderId: string, input: PartialRefund): Promise<RefundedOrder> {
     const data = await apiRequest(`/orders/${orderId}/partial-refund`, {
       method: 'POST',

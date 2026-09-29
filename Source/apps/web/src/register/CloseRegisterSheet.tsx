@@ -30,7 +30,7 @@ interface CloseRegisterSheetProps {
 /**
  * Closing the register (RG-CAI-03, H35): what each method took, the cash the drawer should
  * hold, the cash counted and the variance live, a comment required when it is not nil. Once
- * closed, the report is at hand. Refunds paid back from it are listed (⚠️ H36).
+ * closed, the report is at hand. Refunds paid back from it are listed (H36).
  */
 export function CloseRegisterSheet({ session, onClose, onDone }: CloseRegisterSheetProps) {
   const countedId = useId();

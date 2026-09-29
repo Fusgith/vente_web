@@ -92,7 +92,7 @@ function Issue({
 }
 
 /**
- * The manager's delivery issues (RG-LIV-04, ⚠️ H37): each order waiting on a decision — back
+ * The manager's delivery issues (RG-LIV-04, H37): each order waiting on a decision — back
  * in the queue at its place, or delivered in part; doing nothing lets it wait, its goods kept —
  * then the credits still to refund at the register. Told live of each new one.
  */

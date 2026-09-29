@@ -134,7 +134,7 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
           {labels.shell.workspaceComing}
         </p>
       </section>
-      {/* RG-LIV-04 (⚠️ H37): the manager decides on each delivery issue. */}
+      {/* RG-LIV-04 (H37): the manager decides on each delivery issue. */}
       {role === 'manager' && <DeliveryIssuesPanel />}
       {/* RG-CAI-04/05: the day's registers, until the dashboard (T-070) and supervision (T-042). */}
       {(role === 'manager' || role === 'owner') && <RegisterSessionsPanel />}

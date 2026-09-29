@@ -1,4 +1,4 @@
--- T-061 delivery issues and partial credit (RG-LIV-04, RG-ANN-03, ⚠️ H37): what a warehouse user
+-- T-061 delivery issues and partial credit (RG-LIV-04, RG-ANN-03, H37): what a warehouse user
 -- could not hand over, why, and the manager's decision; the credit frozen at the partial delivery.
 CREATE TYPE "issue_cause" AS ENUM ('MISSING', 'DAMAGED');
 CREATE TYPE "issue_resolution" AS ENUM ('REQUEUED', 'PARTLY_DELIVERED');

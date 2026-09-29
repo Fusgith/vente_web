@@ -38,7 +38,7 @@ export const ORDER_TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatu
   // Back in the delivery queue: reassigned by the manager, or absent when called (H34).
   PREPARING: ['READY', 'ISSUE', 'PAID'],
   READY: ['DELIVERED', 'ISSUE', 'PAID'],
-  // The manager's decision (⚠️ H37): back in the queue at its place, or delivered in part.
+  // The manager's decision (H37): back in the queue at its place, or delivered in part.
   ISSUE: ['PAID', 'DELIVERED'],
   DELIVERED: [],
   EXPIRED: ['SUBMITTED'],

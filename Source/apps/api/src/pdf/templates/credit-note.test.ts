@@ -65,7 +65,7 @@ function texts(node: unknown): string[] {
   return [];
 }
 
-describe('credit note PDF (RG-FAC-05, ⚠️ H36)', () => {
+describe('credit note PDF (RG-FAC-05, H36)', () => {
   it('prints the invoice it credits, who validated it, why, and how it was refunded', () => {
     const all = texts(creditNoteDocument(SNAPSHOT).content).map((value) =>
       value.replace(/\s/g, ' '),

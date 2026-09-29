@@ -21,7 +21,7 @@ export const deliveriesApi = {
   /** Every line ticked, by position, over the version read (RG-LIV-03). */
   deliver: (orderId: string, version: number, delivered: number[]) =>
     post(`/orders/${orderId}/delivery/deliver`, { version, delivered }),
-  /** A line missing or damaged (RG-LIV-04, ⚠️ H37): the manager decides. */
+  /** A line missing or damaged (RG-LIV-04, H37): the manager decides. */
   reportIssue: (orderId: string, report: DeliveryIssueReport) =>
     post(`/orders/${orderId}/delivery/issue`, report),
   /** The manager's list: issues to decide, then credits still to refund. */

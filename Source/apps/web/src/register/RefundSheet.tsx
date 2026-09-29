@@ -44,7 +44,7 @@ interface RefundSheetProps {
   onClose: () => void;
 }
 
-/** What a partial delivery left to refund, while no credit note covers it yet (⚠️ H37). */
+/** What a partial delivery left to refund, while no credit note covers it yet (H37). */
 function pendingCredit(sale: InvoiceLookup) {
   const { issue } = sale;
   return issue?.credit && !issue.credit.creditNote
@@ -61,10 +61,10 @@ function defaultMethod(sale: InvoiceLookup, methods: PaymentMethod[]): string {
 }
 
 /**
- * Cancelling a paid sale before delivery (RG-ANN-02, ⚠️ H36): found by the number of its
+ * Cancelling a paid sale before delivery (RG-ANN-02, H36): found by the number of its
  * invoice, cancelled with a reason and refunded whole by one method from this register, on the
  * manager's name, picked from the list, and PIN typed on the spot. The credit note, numbered, is then at hand.
- * Delivered in part (⚠️ H37): what is left is refunded by one method, the manager having decided.
+ * Delivered in part (H37): what is left is refunded by one method, the manager having decided.
  */
 export function RefundSheet({ userId, onRefunded, onClose }: RefundSheetProps) {
   const id = useId();

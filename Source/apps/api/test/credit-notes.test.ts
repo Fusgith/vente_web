@@ -25,7 +25,7 @@ import {
   type TestApp,
 } from './helpers.js';
 
-describe.skipIf(!TEST_DATABASE_URL)('refund after payment, credit note (RG-ANN-02, ⚠️ H36)', () => {
+describe.skipIf(!TEST_DATABASE_URL)('refund after payment, credit note (RG-ANN-02, H36)', () => {
   let t: TestApp;
   const cookies = { sales: '', soa: '', warehouse: '' };
   const ids = { customer: '', nails: '', nailsUnit: '', manager: '' };

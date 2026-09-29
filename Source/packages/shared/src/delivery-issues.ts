@@ -1,5 +1,5 @@
 /**
- * Delivery issues (RG-LIV-04, RG-ANN-03, ⚠️ H37): what a warehouse user could not hand over, why,
+ * Delivery issues (RG-LIV-04, RG-ANN-03, H37): what a warehouse user could not hand over, why,
  * and what the customer gets back when the manager has the rest delivered — each line at what
  * the customer paid for it, never more than the invoice.
  */

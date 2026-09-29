@@ -213,7 +213,7 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
           userId={userId}
           onRefunded={(sale, done) =>
             say(
-              // Delivered in part, the rest refunded; otherwise cancelled (⚠️ H36, H37).
+              // Delivered in part, the rest refunded; otherwise cancelled (H36, H37).
               (done.order.status === 'DELIVERED'
                 ? labels.issues.refundedPartly
                 : labels.refund.refunded)(

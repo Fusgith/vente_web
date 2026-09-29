@@ -50,7 +50,7 @@ async function mount(handlers: Parameters<typeof fakeApi>[0]) {
 const panel = () => screen.getByRole('region', { name: text.panelTitle });
 const band = () => within(screen.getByRole('contentinfo')).getByRole('status');
 
-describe('delivery issues, the manager’s decision (RG-LIV-04, ⚠️ H37)', () => {
+describe('delivery issues, the manager’s decision (RG-LIV-04, H37)', () => {
   it('is told of a new issue, then has the rest delivered, its credit left to refund', async () => {
     const api = await mount({ [LIST]: ok([]) });
     expect(await within(panel()).findByText(text.none)).toBeVisible();

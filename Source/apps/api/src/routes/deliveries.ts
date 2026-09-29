@@ -118,7 +118,7 @@ export const deliveryRoutes: FastifyPluginAsync = async (app) => {
     },
   );
 
-  // A line missing or damaged (RG-LIV-04, ⚠️ H37): the manager decides.
+  // A line missing or damaged (RG-LIV-04, H37): the manager decides.
   app.post(
     '/orders/:id/delivery/issue',
     { preHandler: requireRole(...COUNTER) },

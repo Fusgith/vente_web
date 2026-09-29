@@ -187,12 +187,12 @@ export function orderDelivered(order: CalledOrder): Emission[] {
   return [...queueChanged('delivery', order.id, 'delivered'), statusChanged(order, 'DELIVERED')];
 }
 
-/** Reported at the counter (RG-LIV-04): off the counter, the manager told (⚠️ H37). */
+/** Reported at the counter (RG-LIV-04): off the counter, the manager told (H37). */
 export function orderIssue(order: CalledOrder): Emission[] {
   return [...queueChanged('delivery', order.id, 'issue'), statusChanged(order, 'ISSUE')];
 }
 
-/** The manager's decision: back in the delivery queue at its place (⚠️ H37). */
+/** The manager's decision: back in the delivery queue at its place (H37). */
 export function orderRequeued(order: CalledOrder): Emission[] {
   return [...queueChanged('delivery', order.id, 'requeued'), statusChanged(order, 'PAID')];
 }

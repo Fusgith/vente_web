@@ -8,7 +8,7 @@ export const closingLabels = {
   total: 'Total',
   none: 'Aucun paiement dans cette session.',
   openingFloat: 'Fond de caisse',
-  /** Refunds paid back from this register, by method (RG-ANN-02, ⚠️ H36). */
+  /** Refunds paid back from this register, by method (RG-ANN-02, H36). */
   refunded: (method: string, count: number) =>
     `Remboursé — ${method} (${count} avoir${count > 1 ? 's' : ''})`,
   cashExpected: 'Espèces attendues dans le tiroir',

@@ -35,7 +35,7 @@ interface IssueSheetProps {
 const typed = (value: string) => value.trim().replace(',', '.');
 
 /**
- * A line missing or damaged (RG-LIV-04, ⚠️ H37): for each line touched, the quantity that
+ * A line missing or damaged (RG-LIV-04, H37): for each line touched, the quantity that
  * cannot be handed over — in its sale unit, at most what was ordered — and why, with a comment
  * if need be. The manager decides; the counter is free at once for the next order.
  */

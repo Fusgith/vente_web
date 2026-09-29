@@ -21,7 +21,7 @@ const lookupQuery = z.object({ number: z.string().trim().min(1).max(32) });
 /** Annexe B « Annulation après paiement (avoir) »: the cashier, the manager validating (H36). */
 const TAKERS: Role[] = ['cashier', 'manager'];
 
-/** Refunds after payment and their credit notes (T-053, RG-ANN-02, RG-FAC-05, ⚠️ H36). */
+/** Refunds after payment and their credit notes (T-053, RG-ANN-02, RG-FAC-05, H36). */
 export const creditNoteRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) => {
   app.get(
     '/invoices/lookup',
@@ -52,7 +52,7 @@ export const creditNoteRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { 
     },
   );
 
-  // What a partial delivery left (⚠️ H37): frozen by the manager's decision, no PIN here.
+  // What a partial delivery left (H37): frozen by the manager's decision, no PIN here.
   app.post(
     '/orders/:id/partial-refund',
     { preHandler: requireRole(...TAKERS) },

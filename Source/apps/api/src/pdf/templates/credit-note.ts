@@ -40,7 +40,7 @@ function refundBlock(snapshot: CreditNoteSnapshot): Content {
   };
 }
 
-/** A partial credit note (⚠️ H37): each line not handed over, its cause and its credit. */
+/** A partial credit note (H37): each line not handed over, its cause and its credit. */
 function creditedBlock(credited: NonNullable<CreditNoteSnapshot['credited']>): Content {
   const head = text.creditedColumns.map((label, index) => ({
     text: label,

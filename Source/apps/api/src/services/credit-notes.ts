@@ -30,7 +30,7 @@ import { shopDate, shopYear } from './shop-time.js';
 import { readStoreLegal } from './store-legal.js';
 import { releaseReservations } from './stock-reservation.js';
 
-/** Everything a credit note prints, frozen when issued (RG-FAC-05, ⚠️ H36). */
+/** Everything a credit note prints, frozen when issued (RG-FAC-05, H36). */
 export const creditNoteSnapshotSchema = z.object({
   number: z.string(),
   issuedOn: z.string(),
@@ -46,7 +46,7 @@ export const creditNoteSnapshotSchema = z.object({
   refund: z.object({ method: z.string(), reference: z.string().nullable(), amount: z.string() }),
   cashier: z.string(),
   approvedBy: z.string(),
-  /** A partial credit note's lines (⚠️ H37): what was not handed over, why, and its credit. */
+  /** A partial credit note's lines (H37): what was not handed over, why, and its credit. */
   credited: z
     .array(
       z.object({
@@ -69,7 +69,7 @@ const LOOKUP_INCLUDE = {
 } satisfies Prisma.InvoiceInclude;
 
 /**
- * A sale found by its invoice number, as the customer shows it (⚠️ H36): trimmed, any case.
+ * A sale found by its invoice number, as the customer shows it (H36): trimmed, any case.
  * The order, how it was paid, to cancel it, and the credit notes already issued on it.
  */
 export async function lookupInvoice(db: Db, number: string): Promise<InvoiceLookup> {
@@ -97,7 +97,7 @@ export async function creditNoteContext(db: Db, actor: Actor) {
   return { prefix, legal, cashier: cashier.fullName };
 }
 
-/** The refund's one method: active, its reference given when it asks one (⚠️ H36). */
+/** The refund's one method: active, its reference given when it asks one (H36). */
 export async function refundMethod(tx: Prisma.TransactionClient, refund: OrderRefund['refund']) {
   const method = await tx.paymentMethod.findUnique({ where: { id: refund.methodId } });
   if (!method?.isActive) throw new AppError(409, 'PAYMENT_METHOD_INVALID');
@@ -120,7 +120,7 @@ export async function nextCreditNote(tx: Prisma.TransactionClient, prefix: unkno
 }
 
 /**
- * Cancels a paid order before delivery (RG-ANN-02, ⚠️ H36): the manager's PIN checked first;
+ * Cancels a paid order before delivery (RG-ANN-02, H36): the manager's PIN checked first;
  * then, all or nothing, a credit note numbered without a gap for the whole invoice, its refund
  * paid back from the caller's open register, the reservation freed, the order REFUNDED, the
  * invoice CREDITED — never changed otherwise (RG-ANN-05) — and the audit trail.

@@ -1,7 +1,7 @@
 const AT_COUNTER =
   'La marchandise est au comptoir de livraison : le responsable doit d’abord la remettre en file.';
 
-/** Cancelling a paid sale, refund and credit note (T-053, RG-ANN-02, ⚠️ H36); `labels.refund`. */
+/** Cancelling a paid sale, refund and credit note (T-053, RG-ANN-02, H36); `labels.refund`. */
 export const refundLabels = {
   open: 'Annuler ou rembourser une vente',
   title: 'Annuler ou rembourser une vente',

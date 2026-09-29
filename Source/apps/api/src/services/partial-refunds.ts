@@ -23,7 +23,7 @@ import { lockOpenSession } from './register-sessions.js';
 import { shopDate } from './shop-time.js';
 
 /**
- * Refunds what a partial delivery left (RG-ANN-03, ⚠️ H37), once: the amount the manager's
+ * Refunds what a partial delivery left (RG-ANN-03, H37), once: the amount the manager's
  * decision froze, in one method, from the caller's open register. In the same operation, a
  * partial credit note on the same gap-free counter as the whole one — the lines not handed over,
  * their causes and credits, the manager who decided — and the invoice « partially credited »,

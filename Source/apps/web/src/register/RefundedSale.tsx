@@ -12,7 +12,7 @@ const text = labels.refund;
 
 /**
  * The sale found by its invoice number: who, when, how it was paid, what goes back — the whole
- * total, or, delivered in part, what the manager's decision left and why (⚠️ H37).
+ * total, or, delivered in part, what the manager's decision left and why (H37).
  */
 export function RefundedSale({ sale }: { sale: InvoiceLookup }) {
   const { order, invoice, payment, issue } = sale;

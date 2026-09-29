@@ -9,20 +9,20 @@ import { paymentSchema } from './payments.js';
 export const creditNoteRefSchema = z.object({ id: z.uuid(), number: z.string() });
 export type CreditNoteRef = z.infer<typeof creditNoteRefSchema>;
 
-/** A sale found by the number of its invoice, as the customer shows it (⚠️ H36). */
+/** A sale found by the number of its invoice, as the customer shows it (H36). */
 export const invoiceLookupSchema = z.object({
   invoice: z.object({ id: z.uuid(), number: z.string(), issuedAt: z.string() }),
   order: orderSchema,
   payment: paymentSchema,
   /** Its credit notes, oldest first: reprinted from here, even when the refund reply was lost. */
   creditNotes: z.array(creditNoteRefSchema),
-  /** The partial delivery and its credit (⚠️ H37): refunded here once; null when none. */
+  /** The partial delivery and its credit (H37): refunded here once; null when none. */
   issue: deliveryIssueSchema.nullable(),
 });
 export type InvoiceLookup = z.infer<typeof invoiceLookupSchema>;
 
 /**
- * Cancelling a paid order before delivery (RG-ANN-02, ⚠️ H36): the reason, the one refund
+ * Cancelling a paid order before delivery (RG-ANN-02, H36): the reason, the one refund
  * method, and the manager's validation on the spot — their name and PIN.
  */
 export const orderRefundSchema = z.object({
@@ -51,7 +51,7 @@ export const refundedOrderSchema = z.object({
 export type RefundedOrder = z.infer<typeof refundedOrderSchema>;
 
 /**
- * Refunding what a partial delivery left (RG-ANN-03, ⚠️ H37): the amount frozen by the manager's
+ * Refunding what a partial delivery left (RG-ANN-03, H37): the amount frozen by the manager's
  * decision, so no reason and no PIN — only the one refund method.
  */
 export const partialRefundSchema = z.object({

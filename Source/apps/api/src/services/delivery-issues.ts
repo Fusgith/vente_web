@@ -55,7 +55,7 @@ export function toIssue(issue: StoredIssue): DeliveryIssue {
   };
 }
 
-/** The partial delivery of an order and its credit, refunded or not (⚠️ H37). */
+/** The partial delivery of an order and its credit, refunded or not (H37). */
 export async function partialDelivery(db: AuditTx, orderId: string): Promise<DeliveryIssue | null> {
   const issue = await db.deliveryIssue.findFirst({
     where: { orderId, resolution: 'PARTLY_DELIVERED' },
@@ -80,7 +80,7 @@ export async function listIssues(db: Db): Promise<IssueEntry[]> {
 }
 
 /**
- * Reported at the counter (RG-LIV-04, ⚠️ H37): for each line touched, the quantity not handed
+ * Reported at the counter (RG-LIV-04, H37): for each line touched, the quantity not handed
  * over — in its sale unit, at most what was ordered — and its cause. The order waits on the
  * manager in ISSUE, its reservation firm; the counter is free for the next one.
  */
@@ -159,7 +159,7 @@ async function openIssue(tx: Prisma.TransactionClient, orderId: string, version:
 }
 
 /**
- * The goods are there (⚠️ H37): back in the delivery queue at its place — its rank and its
+ * The goods are there (H37): back in the delivery queue at its place — its rank and its
  * priority kept — for a warehouse user to take it again as any paid order.
  */
 export async function requeueIssue(
@@ -192,7 +192,7 @@ export async function requeueIssue(
 }
 
 /**
- * Delivered in part (RG-LIV-04, RG-ANN-03, ⚠️ H37): the stock goes out for what was handed over
+ * Delivered in part (RG-LIV-04, RG-ANN-03, H37): the stock goes out for what was handed over
  * only — one movement per line, in base unit, the stock rows locked in product order — the rest
  * of the reservation freed, the order delivered, and what the customer gets back frozen: each
  * line at what was paid for it × not handed over ÷ ordered, never more than the invoice. The

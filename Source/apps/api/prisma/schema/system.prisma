@@ -72,7 +72,7 @@ enum IssueResolution {
   @@map("issue_resolution")
 }
 
-/// What a warehouse user could not hand over, and the manager's decision (RG-LIV-04, ⚠️ H37).
+/// What a warehouse user could not hand over, and the manager's decision (RG-LIV-04, H37).
 /// One open issue per order at most (partial unique index in the migration).
 model DeliveryIssue {
   id           String           @id @default(uuid(7)) @db.Uuid
