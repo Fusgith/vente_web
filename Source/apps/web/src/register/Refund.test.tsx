@@ -213,3 +213,48 @@ describe('cancelling a paid sale at the register (RG-ANN-02, ⚠️ H36)', () =>
     );
   });
 });
+
+describe('refunding what a partial delivery left (RG-LIV-04, ⚠️ H37)', () => {
+  it('refunds the rest the manager decided, without reason nor PIN', async () => {
+    const ISSUE = '0192a4f0-0000-7000-8000-000000000961';
+    const PARTIAL = `POST /orders/${entry.orderId}/partial-refund`;
+    const delivered = (creditNote: { id: string; number: string } | null): InvoiceLookup => ({
+      ...sale('DELIVERED'),
+      issue: {
+        id: ISSUE,
+        reportedBy: 'Hery Rabe',
+        reportedAt: '2026-09-29T07:30:00.000Z',
+        note: null,
+        lines: [{ position: 1, qty: '1', cause: 'MISSING' }],
+        credit: { amount: '23750.00', decidedBy: 'Rakoto Responsable', creditNote },
+      },
+    });
+    const api = mount({
+      [LOOKUP]: ok(delivered(null)),
+      [PARTIAL]: ok({
+        order: delivered(null).order,
+        creditNote: { id: CREDIT_NOTE, number: 'AV-2026-000002' },
+      }),
+    });
+    const sheet = await find();
+    const amount = formatMga('23750.00');
+    expect(sheet).toHaveTextContent(labels.issues.partialTitle('Rakoto Responsable'));
+    expect(sheet).toHaveTextContent(labels.issues.partialAmount);
+    expect(within(sheet).queryByLabelText(text.reason)).not.toBeInTheDocument();
+    expect(within(sheet).queryByLabelText(text.pin)).not.toBeInTheDocument();
+    expect(within(sheet).queryByRole('status')).not.toBeInTheDocument();
+
+    fireEvent.click(
+      within(sheet).getByRole('button', { name: labels.issues.confirmPartial(amount) }),
+    );
+    await within(sheet).findByRole('link', { name: text.openCreditNote });
+    expect(api.callsTo(PARTIAL)[0]!.body).toEqual({
+      issueId: ISSUE,
+      refund: { methodId: CASH, reference: null },
+    });
+    const band = within(screen.getByRole('contentinfo')).getByRole('status');
+    expect(band).toHaveTextContent(
+      labels.issues.refundedPartly('A1', 'Rasoa Hanta', 'AV-2026-000002'),
+    );
+  });
+});

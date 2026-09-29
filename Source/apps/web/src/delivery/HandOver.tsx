@@ -15,12 +15,14 @@ interface HandOverProps {
   busy: boolean;
   onReady: () => void;
   onDeliver: () => void;
+  /** A line missing or damaged: reported to the manager (RG-LIV-04). */
+  onIssue: () => void;
 }
 
 /**
  * The order at the counter (RG-LIV-02/03): what to fetch, in the sale unit and its base unit
  * equivalence (RG-ART-04); once called, each line ticked as the customer receives it, and only
- * all of them make a delivery — a missing one is an issue (T-061).
+ * all of them make a delivery — a line missing or damaged is reported as an issue (T-061).
  */
 export function HandOver({
   order,
@@ -30,6 +32,7 @@ export function HandOver({
   busy,
   onReady,
   onDeliver,
+  onIssue,
 }: HandOverProps) {
   const left = ticked ? order.lines.filter((line) => !ticked.has(line.position)).length : 0;
   return (
@@ -89,6 +92,15 @@ export function HandOver({
         })}
       </ul>
       <div className="flex shrink-0 flex-wrap items-center justify-end gap-x-6 gap-y-2 border-t-2 border-ink px-4 py-3">
+        <button
+          type="button"
+          onClick={onIssue}
+          disabled={busy}
+          className={buttonClass('secondary', 'lg', 'mr-auto')}
+        >
+          <Icon name="alert" className="size-5" />
+          {labels.issues.report}
+        </button>
         {ticked ? (
           <>
             <p className="text-ink-2" aria-live="polite">

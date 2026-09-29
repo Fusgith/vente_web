@@ -3,6 +3,7 @@ import {
   refundedOrderSchema,
   type InvoiceLookup,
   type OrderRefund,
+  type PartialRefund,
   type RefundedOrder,
 } from '@vente-web/shared';
 
@@ -18,6 +19,15 @@ export const creditNotesApi = {
 
   async refund(orderId: string, input: OrderRefund): Promise<RefundedOrder> {
     const data = await apiRequest(`/orders/${orderId}/refund`, { method: 'POST', body: input });
+    return parseResponse(refundedOrderSchema, data);
+  },
+
+  /** What a partial delivery left (⚠️ H37): the manager decided, no PIN here. */
+  async partialRefund(orderId: string, input: PartialRefund): Promise<RefundedOrder> {
+    const data = await apiRequest(`/orders/${orderId}/partial-refund`, {
+      method: 'POST',
+      body: input,
+    });
     return parseResponse(refundedOrderSchema, data);
   },
 

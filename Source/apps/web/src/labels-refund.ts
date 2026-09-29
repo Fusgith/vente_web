@@ -3,8 +3,8 @@ const AT_COUNTER =
 
 /** Cancelling a paid sale, refund and credit note (T-053, RG-ANN-02, ⚠️ H36); `labels.refund`. */
 export const refundLabels = {
-  open: 'Annuler une vente payée',
-  title: 'Annuler une vente payée',
+  open: 'Annuler ou rembourser une vente',
+  title: 'Annuler ou rembourser une vente',
   close: 'Fermer',
   invoiceNumber: 'Numéro de la facture',
   find: 'Rechercher',

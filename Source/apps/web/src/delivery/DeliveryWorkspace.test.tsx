@@ -128,4 +128,44 @@ describe('delivery counter (T-060, RG-LIV-01 à 03)', () => {
     const first = await screen.findByRole('checkbox', { name: text.handed(1) });
     expect(first).not.toBeChecked();
   });
+
+  it('reports a line missing to the manager, then the counter is free (RG-LIV-04, H37)', async () => {
+    const mine = paid(1, 'READY');
+    const api = mount({
+      'GET /queues/delivery': deliveryQueue([], [mine]),
+      [`GET /orders/${mine.orderId}`]: ok({ ...orderWithLines(mine, 6), status: 'READY' }),
+      [`POST /orders/${mine.orderId}/delivery/issue`]: ok({
+        ...orderWithLines(mine, 7),
+        status: 'ISSUE',
+      }),
+    });
+    fireEvent.click(await screen.findByRole('button', { name: labels.issues.report }));
+    const sheet = await screen.findByRole('dialog');
+    const send = within(sheet).getByRole('button', { name: labels.issues.send });
+    expect(send).toBeDisabled();
+    const qty = within(sheet).getByRole('textbox', { name: labels.issues.notHandedOverOf(2) });
+    fireEvent.change(qty, { target: { value: '5' } });
+    expect(within(sheet).getByRole('alert')).toHaveTextContent(labels.issues.tooMany);
+    expect(send).toBeDisabled();
+    fireEvent.change(qty, { target: { value: '1,5' } });
+    fireEvent.change(within(sheet).getByRole('combobox', { name: labels.issues.causeOf(2) }), {
+      target: { value: 'DAMAGED' },
+    });
+    fireEvent.change(within(sheet).getByRole('textbox', { name: labels.issues.note }), {
+      target: { value: 'Sac percé' },
+    });
+    api.on('GET /queues/delivery', deliveryQueue([]));
+    fireEvent.click(send);
+
+    await waitFor(() =>
+      expect(band()).toHaveTextContent(labels.issues.reported('A1', 'Rasoa Hanta')),
+    );
+    expect(api.callsTo(`POST /orders/${mine.orderId}/delivery/issue`)[0]!.body).toEqual({
+      version: 6,
+      lines: [{ position: 2, qty: '1.5', cause: 'DAMAGED' }],
+      note: 'Sac percé',
+    });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(await screen.findByRole('button', { name: new RegExp(text.takeNext) })).toBeVisible();
+  });
 });

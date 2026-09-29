@@ -27,7 +27,12 @@ const REASON_MIN = 3;
 const PIN = /^\d{4,6}$/;
 
 /** Refusals after which the sale is looked up again. */
-const REFRESH_ON = new Set(['ORDER_CHANGED', 'ORDER_NOT_REFUNDABLE', 'NETWORK_ERROR']);
+const REFRESH_ON = new Set([
+  'ORDER_CHANGED',
+  'ORDER_NOT_REFUNDABLE',
+  'CREDIT_NOT_PENDING',
+  'NETWORK_ERROR',
+]);
 
 type Manager = AuthUserDirectory['users'][number];
 
@@ -37,6 +42,14 @@ interface RefundSheetProps {
   /** Once cancelled and refunded: the sale and its credit note, for the status line. */
   onRefunded: (sale: InvoiceLookup, done: RefundedOrder) => void;
   onClose: () => void;
+}
+
+/** What a partial delivery left to refund, while no credit note covers it yet (⚠️ H37). */
+function pendingCredit(sale: InvoiceLookup) {
+  const { issue } = sale;
+  return issue?.credit && !issue.credit.creditNote
+    ? { issueId: issue.id, amount: issue.credit.amount }
+    : null;
 }
 
 /** The method the customer paid with, when a single one; cash otherwise. */
@@ -51,6 +64,7 @@ function defaultMethod(sale: InvoiceLookup, methods: PaymentMethod[]): string {
  * Cancelling a paid sale before delivery (RG-ANN-02, ⚠️ H36): found by the number of its
  * invoice, cancelled with a reason and refunded whole by one method from this register, on the
  * manager's name, picked from the list, and PIN typed on the spot. The credit note, numbered, is then at hand.
+ * Delivered in part (⚠️ H37): what is left is refunded by one method, the manager having decided.
  */
 export function RefundSheet({ userId, onRefunded, onClose }: RefundSheetProps) {
   const id = useId();
@@ -110,26 +124,31 @@ export function RefundSheet({ userId, onRefunded, onClose }: RefundSheetProps) {
   const chosenId = methodId || (sale ? defaultMethod(sale, methods) : '');
   const method = methods.find((item) => item.id === chosenId) ?? null;
   const refundable = sale?.order.status === 'PAID';
-  const ready =
-    refundable &&
-    !busy &&
-    method !== null &&
-    (!method.requiresReference || reference.trim() !== '') &&
-    reason.trim().length >= REASON_MIN &&
-    username !== '' &&
-    PIN.test(pin);
+  const partial = sale ? pendingCredit(sale) : null;
+  const refunded =
+    !busy && method !== null && (!method.requiresReference || reference.trim() !== '');
+  const ready = partial
+    ? refunded
+    : refundable &&
+      refunded &&
+      reason.trim().length >= REASON_MIN &&
+      username !== '' &&
+      PIN.test(pin);
 
   const confirm = () => {
     if (!ready || !sale || !method) return;
     setBusy(true);
     setFailure(null);
-    creditNotesApi
-      .refund(sale.order.id, {
-        version: sale.order.version,
-        reason: reason.trim(),
-        refund: { methodId: method.id, reference: reference.trim() || null },
-        approval: { username, pin },
-      })
+    const refund = { methodId: method.id, reference: reference.trim() || null };
+    (partial
+      ? creditNotesApi.partialRefund(sale.order.id, { issueId: partial.issueId, refund })
+      : creditNotesApi.refund(sale.order.id, {
+          version: sale.order.version,
+          reason: reason.trim(),
+          refund,
+          approval: { username, pin },
+        })
+    )
       .then(
         (refunded) => {
           setDone(refunded);
@@ -149,7 +168,7 @@ export function RefundSheet({ userId, onRefunded, onClose }: RefundSheetProps) {
       .finally(() => setBusy(false));
   };
 
-  const amount = sale ? formatMga(sale.order.total) : '';
+  const amount = sale ? formatMga(partial?.amount ?? sale.order.total) : '';
   return (
     <Sheet
       title={text.title}
@@ -178,6 +197,15 @@ export function RefundSheet({ userId, onRefunded, onClose }: RefundSheetProps) {
               {text.finish}
             </button>
           </div>
+        ) : partial ? (
+          <button
+            type="button"
+            onClick={confirm}
+            disabled={!ready}
+            className={buttonClass('primary', 'lg', 'w-full')}
+          >
+            {busy ? text.refunding : labels.issues.confirmPartial(amount)}
+          </button>
         ) : refundable ? (
           <button
             type="button"
@@ -230,7 +258,7 @@ export function RefundSheet({ userId, onRefunded, onClose }: RefundSheetProps) {
         </p>
       )}
       {sale && <RefundedSale sale={sale} />}
-      {sale && !refundable && !done && (
+      {sale && !refundable && !partial && !done && (
         <p role="status" className="rounded-control bg-cotton p-3 font-semibold">
           {text.notRefundable(sale.order.status)}
         </p>
@@ -269,69 +297,73 @@ export function RefundSheet({ userId, onRefunded, onClose }: RefundSheetProps) {
             rows={2}
             className="-mt-2 rounded-control border border-rule-strong bg-white p-3 text-18 text-ink"
           />
-          <div className="flex flex-wrap gap-3">
-            <label htmlFor={`${id}-method`} className="flex w-48 flex-col gap-1">
-              <span className="font-semibold">{text.method}</span>
-              <select
-                id={`${id}-method`}
-                value={chosenId}
-                onChange={(event) => setMethodId(event.target.value)}
-                className={FIELD}
-              >
-                {methods.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {method?.requiresReference && (
-              <label htmlFor={`${id}-reference`} className="flex min-w-0 flex-1 flex-col gap-1">
-                <span className="font-semibold">{text.reference}</span>
-                <input
-                  id={`${id}-reference`}
-                  autoComplete="off"
-                  maxLength={80}
-                  value={reference}
-                  onChange={(event) => setReference(event.target.value)}
-                  className={FIELD}
-                />
-              </label>
-            )}
-          </div>
-          <fieldset className="flex flex-wrap gap-3 rounded-control bg-cotton p-3">
-            <legend className="float-left mb-1 w-full font-semibold">{text.approval}</legend>
-            <label htmlFor={`${id}-manager`} className="flex min-w-0 flex-1 flex-col gap-1">
-              <span className="text-14 text-ink-2">{text.manager}</span>
-              <select
-                id={`${id}-manager`}
-                value={username}
-                onChange={(event) => setUsername(event.target.value)}
-                className={FIELD}
-              >
-                {managers.length !== 1 && <option value="">{text.pickManager}</option>}
-                {managers.map((user) => (
-                  <option key={user.id} value={user.username}>
-                    {user.fullName}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label htmlFor={`${id}-pin`} className="flex w-40 flex-col gap-1">
-              <span className="text-14 text-ink-2">{text.pin}</span>
+        </>
+      )}
+      {(refundable || partial) && !done && (
+        <div className="flex flex-wrap gap-3">
+          <label htmlFor={`${id}-method`} className="flex w-48 flex-col gap-1">
+            <span className="font-semibold">{text.method}</span>
+            <select
+              id={`${id}-method`}
+              value={chosenId}
+              onChange={(event) => setMethodId(event.target.value)}
+              className={FIELD}
+            >
+              {methods.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {method?.requiresReference && (
+            <label htmlFor={`${id}-reference`} className="flex min-w-0 flex-1 flex-col gap-1">
+              <span className="font-semibold">{text.reference}</span>
               <input
-                id={`${id}-pin`}
-                type="password"
-                inputMode="numeric"
+                id={`${id}-reference`}
                 autoComplete="off"
-                maxLength={6}
-                value={pin}
-                onChange={(event) => setPin(event.target.value.replace(/\D/g, ''))}
-                className={`${FIELD} figures tracking-[0.3em]`}
+                maxLength={80}
+                value={reference}
+                onChange={(event) => setReference(event.target.value)}
+                className={FIELD}
               />
             </label>
-          </fieldset>
-        </>
+          )}
+        </div>
+      )}
+      {refundable && !done && (
+        <fieldset className="flex flex-wrap gap-3 rounded-control bg-cotton p-3">
+          <legend className="float-left mb-1 w-full font-semibold">{text.approval}</legend>
+          <label htmlFor={`${id}-manager`} className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="text-14 text-ink-2">{text.manager}</span>
+            <select
+              id={`${id}-manager`}
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              className={FIELD}
+            >
+              {managers.length !== 1 && <option value="">{text.pickManager}</option>}
+              {managers.map((user) => (
+                <option key={user.id} value={user.username}>
+                  {user.fullName}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label htmlFor={`${id}-pin`} className="flex w-40 flex-col gap-1">
+            <span className="text-14 text-ink-2">{text.pin}</span>
+            <input
+              id={`${id}-pin`}
+              type="password"
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={6}
+              value={pin}
+              onChange={(event) => setPin(event.target.value.replace(/\D/g, ''))}
+              className={`${FIELD} figures tracking-[0.3em]`}
+            />
+          </label>
+        </fieldset>
       )}
     </Sheet>
   );

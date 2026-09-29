@@ -2,6 +2,7 @@ import { CURRENCY, DEFAULT_APP_NAME, type Role } from '@vente-web/shared';
 
 import { closingLabels } from './labels-closing.js';
 import { deliveryLabels } from './labels-delivery.js';
+import { issueLabels } from './labels-issues.js';
 import { refundLabels } from './labels-refund.js';
 import { registerLabels } from './labels-register.js';
 
@@ -262,6 +263,9 @@ export const labels = {
 
   /** Cancelling a paid sale (T-053, RG-ANN-02). */
   refund: refundLabels,
+
+  /** Delivery issues and partial credit (T-061, RG-LIV-04, RG-ANN-03). */
+  issues: issueLabels,
 
   /** The manager's notices, until the supervision view (T-042). */
   manager: {

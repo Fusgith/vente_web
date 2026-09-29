@@ -8,6 +8,7 @@ import { useIdleLock } from '../auth/useIdleLock.js';
 import { DeliveryWorkspace } from '../delivery/DeliveryWorkspace.js';
 import { labels } from '../labels.js';
 import { RealtimeProvider } from '../realtime/RealtimeProvider.js';
+import { DeliveryIssuesPanel } from '../manager/DeliveryIssuesPanel.js';
 import { NoShowNotices } from '../manager/NoShowNotices.js';
 import { RegisterSessionsPanel } from '../manager/RegisterSessionsPanel.js';
 import { RegisterWorkspace } from '../register/RegisterWorkspace.js';
@@ -133,6 +134,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
           {labels.shell.workspaceComing}
         </p>
       </section>
+      {/* RG-LIV-04 (⚠️ H37): the manager decides on each delivery issue. */}
+      {role === 'manager' && <DeliveryIssuesPanel />}
       {/* RG-CAI-04/05: the day's registers, until the dashboard (T-070) and supervision (T-042). */}
       {(role === 'manager' || role === 'owner') && <RegisterSessionsPanel />}
     </div>

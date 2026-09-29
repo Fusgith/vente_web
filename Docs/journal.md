@@ -2,6 +2,30 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 29/09/2026 — Reprise en local après la session cloud, T-061 anomalies de livraison et avoir partiel — agent : Claude Code (Opus 5.5)
+
+**Demande de l'utilisateur** : vérifier le travail de la session cloud, corriger sans compte-rendu, puis continuer ; plafond d'usage hebdomadaire relevé à 80 %.
+
+**Fait** :
+- Relecture du travail cloud, corrections :
+  - `a3960c2` (API) : rang conservé au réordonnancement, expiration traitée commande par commande, lectures et écritures de PDF plus sûres ;
+  - `c435eb7` (écran) : fiche de clôture maintenue jusqu'à la clôture, coches remises à zéro à chaque remise, comptoirs prévenus des commandes payées.
+- T-061, API (`94bd051`, `94df321`), 3 tests d'intégration :
+  - le magasinier signale, par ligne, la quantité non remise et sa cause (manquant, abîmé), commentaire facultatif ; la commande passe « anomalie », le comptoir est libre ;
+  - le responsable remet en file (à sa place) ou fait livrer partiellement : sortie de stock du seul livré, réservation du reste libérée, reste à rembourser figé (règle H37) ;
+  - à la caisse, avoir partiel sur le compteur `AV-` sans trou, un seul moyen, facture « partiellement créditée », effet sur la clôture ; PDF.
+- T-061, écrans, 4 tests :
+  - comptoir : bouton « Signaler une anomalie », fiche par ligne (quantité, cause, commentaire), quantité supérieure à la commande refusée ;
+  - responsable : panneau « Anomalies de livraison », prévenu en direct, « Remettre en file » ou « Livrer partiellement », reste à rembourser affiché ;
+  - caisse : « Annuler ou rembourser une vente » ; une vente livrée partiellement montre la décision, les lignes non remises et le reste ; ni motif ni PIN (le responsable a déjà décidé), bouton « Rembourser … ».
+- Vérifications : `format:check`, `lint`, `typecheck` (0 erreur) et 495 tests verts. Aucune dépendance ajoutée.
+
+**Reste** : correction du stock manquant ou abîmé par ajustement motivé (T-023) ; bouton de remise en file d'une commande en livraison avec la supervision (T-042).
+
+**Décisions** : le panneau des anomalies vit dans l'espace du responsable (pas encore d'écran de supervision, T-042).
+
+**Questions ouvertes** : H36, H37.
+
 ## 28/09/2026 — H35 validée, T-053 annulation après paiement et avoir — agent : Claude Code (Opus 5.5)
 
 **Décisions de l'utilisateur** : H35 (clôture de caisse) validée telle quelle (CDC métier §16.7) ; T-053 avant T-061 (les avoirs d'abord).

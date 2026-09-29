@@ -14,6 +14,7 @@ import { useStatusLine } from '../shell/status-line.js';
 import { CounterPanel } from './CounterPanel.js';
 import { DeliveryQueueNotices } from './DeliveryQueueNotices.js';
 import { HandOver } from './HandOver.js';
+import { IssueSheet } from './IssueSheet.js';
 
 const text = labels.delivery;
 
@@ -38,6 +39,7 @@ export function DeliveryWorkspace({ userId }: { userId: string }) {
   const { say, sayError } = useStatusLine();
   const [busy, setBusy] = useState(false);
   const [ticked, setTicked] = useState<{ orderId: string; lines: Set<number> } | null>(null);
+  const [reporting, setReporting] = useState<string | null>(null);
   const now = useNow(CLOCK_MS);
 
   const waiting = queue?.waiting ?? [];
@@ -125,6 +127,7 @@ export function DeliveryWorkspace({ userId }: { userId: string }) {
                     (order) => text.called(...named(order)),
                   )
                 }
+                onIssue={() => setReporting(mine.orderId)}
                 onDeliver={() => {
                   const order = atCounter.order;
                   if (!order) return;
@@ -136,6 +139,18 @@ export function DeliveryWorkspace({ userId }: { userId: string }) {
               />
             ) : (
               <p className="m-auto text-ink-2">{text.loadingOrder}</p>
+            )}
+            {atCounter.order && reporting === atCounter.order.id && (
+              <IssueSheet
+                order={atCounter.order}
+                ticket={ticketLabel(mine.ticket)}
+                onClose={() => setReporting(null)}
+                onReported={(order) => {
+                  setReporting(null);
+                  say(labels.issues.reported(...named(order)), 'check');
+                  refresh();
+                }}
+              />
             )}
           </div>
           <div className="min-w-0 lg:col-start-2 lg:row-start-2">

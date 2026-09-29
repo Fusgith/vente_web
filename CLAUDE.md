@@ -11,7 +11,7 @@ livraison par plusieurs magasiniers, appel des clients par numéro ou verbal, bo
 ## ✅ Statut : DÉVELOPPEMENT — GO donné le 21/09/2026 (`Docs/journal.md`)
 - Le code vit sous `Source/` ; on avance **une tâche du backlog à la fois** (`T-nnn`), directement sur `main` : pas de branche ni de PR (l'utilisateur travaille seul avec l'agent, 23/09/2026).
 - Les CDC restent la référence : une règle `RG-*` qui change se modifie d'abord dans `Docs/01-cdc-metier.md`.
-- H14–H28 tranchées le 26/09/2026, H29 le 27/09/2026, H30 à H35 le 28/09/2026 (CDC métier §16.5 à §16.7) ; ouverte : H36 (annulation après paiement et avoir, §16.2). Un nouveau doute s'inscrit ⚠️ HYPOTHÈSE au CDC concerné et se code selon sa formulation écrite.
+- H14–H28 tranchées le 26/09/2026, H29 le 27/09/2026, H30 à H35 le 28/09/2026 (CDC métier §16.5 à §16.7) ; ouvertes : H36 (annulation après paiement et avoir) et H37 (anomalie de livraison et avoir partiel), §16.2. Un nouveau doute s'inscrit ⚠️ HYPOTHÈSE au CDC concerné et se code selon sa formulation écrite.
 
 ## Langues
 - Documentation, interface utilisateur, messages, journal : **français**.

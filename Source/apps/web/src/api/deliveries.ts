@@ -1,4 +1,10 @@
-import { orderSchema, type Order } from '@vente-web/shared';
+import {
+  issueEntrySchema,
+  orderSchema,
+  type DeliveryIssueReport,
+  type IssueEntry,
+  type Order,
+} from '@vente-web/shared';
 
 import { apiRequest, parseResponse } from './client.js';
 
@@ -15,4 +21,15 @@ export const deliveriesApi = {
   /** Every line ticked, by position, over the version read (RG-LIV-03). */
   deliver: (orderId: string, version: number, delivered: number[]) =>
     post(`/orders/${orderId}/delivery/deliver`, { version, delivered }),
+  /** A line missing or damaged (RG-LIV-04, ⚠️ H37): the manager decides. */
+  reportIssue: (orderId: string, report: DeliveryIssueReport) =>
+    post(`/orders/${orderId}/delivery/issue`, report),
+  /** The manager's list: issues to decide, then credits still to refund. */
+  async issues(): Promise<IssueEntry[]> {
+    return parseResponse(issueEntrySchema.array(), await apiRequest('/deliveries/issues'));
+  },
+  requeue: (orderId: string, version: number) =>
+    post(`/orders/${orderId}/issue/requeue`, { version }),
+  deliverPartly: (orderId: string, version: number) =>
+    post(`/orders/${orderId}/issue/deliver-partly`, { version }),
 };
