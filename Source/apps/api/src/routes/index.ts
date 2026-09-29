@@ -7,6 +7,7 @@ import { catalogRoutes } from './catalog.js';
 import { creditNoteRoutes } from './credit-notes.js';
 import { customerRoutes } from './customers.js';
 import { discountCapRoutes } from './discount-caps.js';
+import { discountCodeRoutes } from './discount-codes.js';
 import { deliveryRoutes } from './deliveries.js';
 import { orderRoutes } from './orders.js';
 import { paymentRoutes } from './payments.js';
@@ -34,4 +35,5 @@ export const apiRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) 
   await app.register(supervisionRoutes);
   await app.register(stockRoutes);
   await app.register(discountCapRoutes);
+  await app.register(discountCodeRoutes);
 };

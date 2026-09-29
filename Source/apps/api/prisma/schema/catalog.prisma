@@ -40,12 +40,13 @@ model Product {
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  category     Category?       @relation(fields: [categoryId], references: [id])
+  category     Category?          @relation(fields: [categoryId], references: [id])
   units        ProductUnit[]
   stock        ProductStock?
   movements    StockMovement[]
   reservations Reservation[]
   orderLines   OrderLine[]
+  codeItems    DiscountCodeItem[]
 
   @@index([categoryId])
   @@index([name])

@@ -38,6 +38,8 @@ export const ERROR_LABELS = {
   QUOTE_DISCOUNT_BEYOND_CAP:
     'Une remise dépasse son plafond : corrigez-la, ou demandez un code au boss.',
   QUOTE_CHANGED: 'Ce devis a été modifié entre-temps : rouvrez-le avant de l’enregistrer.',
+  DISCOUNT_CODE_NOT_ACTIVE: 'Ce code n’est plus actif : il a été utilisé, révoqué, ou il a expiré.',
+  DISCOUNT_CODE_PRODUCT_UNAVAILABLE: 'Un article du code n’est plus en vente : retirez-le du code.',
   QUOTE_NOT_DRAFT: 'Ce devis est déjà devenu une commande : il ne se modifie plus.',
   ORDER_PRICE_CHANGED:
     'Un prix a changé depuis l’enregistrement du devis : vérifiez-le avec le client, puis validez.',

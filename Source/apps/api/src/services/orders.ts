@@ -29,7 +29,8 @@ export async function loadOrder(db: AuditTx, id: string): Promise<Order> {
   return toOrder(order);
 }
 
-async function dayEndTime(db: Db): Promise<string> {
+/** The shop day end (`day_end_time`): orders and discount codes expire at it. */
+export async function dayEndTime(db: Db): Promise<string> {
   const value = await readSetting(db, 'day_end_time');
   return typeof value === 'string' && CLOCK_TIME.test(value) ? value : DEFAULT_DAY_END;
 }

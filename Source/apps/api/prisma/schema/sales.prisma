@@ -228,9 +228,9 @@ model DiscountRequest {
 /// pct or amount — H22 decided 25/09, RG-REM-06).
 model DiscountCode {
   id            String             @id @default(uuid(7)) @db.Uuid
+  /// Readable characters grouped by 4 (`R7K4-29QP`), H41.
   code          String             @unique @db.VarChar(16)
-  pct           Decimal?           @db.Decimal(5, 2)
-  amount        Decimal?           @db.Decimal(14, 2)
+  /// The order, or the customer when issued before it: one of them at least (CHECK).
   orderId       String?            @map("order_id") @db.Uuid
   customerId    String?            @map("customer_id") @db.Uuid
   requestId     String?            @unique @map("request_id") @db.Uuid
@@ -242,15 +242,33 @@ model DiscountCode {
   usedOnOrderId String?            @map("used_on_order_id") @db.Uuid
   revokedAt     DateTime?          @map("revoked_at") @db.Timestamptz(6)
 
-  order       Order?           @relation("DiscountCodeOrder", fields: [orderId], references: [id])
-  customer    Customer?        @relation(fields: [customerId], references: [id])
-  request     DiscountRequest? @relation(fields: [requestId], references: [id])
-  issuedBy    User             @relation(fields: [issuedById], references: [id])
-  usedOnOrder Order?           @relation("DiscountCodeUsedOn", fields: [usedOnOrderId], references: [id])
+  order       Order?             @relation("DiscountCodeOrder", fields: [orderId], references: [id])
+  customer    Customer?          @relation(fields: [customerId], references: [id])
+  request     DiscountRequest?   @relation(fields: [requestId], references: [id])
+  issuedBy    User               @relation(fields: [issuedById], references: [id])
+  usedOnOrder Order?             @relation("DiscountCodeUsedOn", fields: [usedOnOrderId], references: [id])
   /// Orders whose total this code discounts (RG-REM-06).
-  orderTotals Order[]          @relation("OrderDiscountCode")
+  orderTotals Order[]            @relation("OrderDiscountCode")
   orderLines  OrderLine[]
+  items       DiscountCodeItem[]
 
   @@index([status, expiresAt])
   @@map("discount_codes")
+}
+
+/// What a code grants (T-034, decision H22, H41): on a product — all its sale units — or, product
+/// null, on the order total; a rate or an amount (CHECK). A product once per code, the total once
+/// (partial unique indexes in the migration).
+model DiscountCodeItem {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  codeId    String   @map("code_id") @db.Uuid
+  productId String?  @map("product_id") @db.Uuid
+  pct       Decimal? @db.Decimal(5, 2)
+  amount    Decimal? @db.Decimal(14, 2)
+
+  code    DiscountCode @relation(fields: [codeId], references: [id])
+  product Product?     @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([productId])
+  @@map("discount_code_items")
 }
