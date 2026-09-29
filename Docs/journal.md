@@ -2,6 +2,23 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 29/09/2026 — T-034 codes de remise émis par le boss — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Base : les remises d'un code passent dans `discount_code_items` (un article, ou le total ; un pourcentage ou un montant) ; `discount_codes` garde le client, la commande, l'état et les dates, avec des contraintes sur UTILISÉ et RÉVOQUÉ.
+- API, 3 tests d'intégration :
+  - émission pour un client : code lisible (groupes de 4, sans 0, O, 1, I, L), valable jusqu'à la fin de la journée, journalisé ;
+  - refus : aucune remise, deux fois le même article, article retiré de la vente, client inactif ;
+  - révocation une seule fois, expiration par le balayage existant (audit système), liste vide le jour suivant.
+- Écran du boss, 2 tests : chercher le client, ajouter des articles et/ou le total avec % ou montant, émettre ; le code à transmettre s'affiche en grand ; tableau « Codes du jour » avec l'état et « Révoquer ».
+- Vérifications : format:check, lint, typecheck (0 erreur), suite complète : 523 tests verts.
+
+**Reste** : T-034b (saisie du code sur un devis ou à la caisse, application au-delà des plafonds, usage unique, mention sur la facture) ; T-033 (demandes de remise, le code qui y répond).
+
+**Décisions** : aucune dépendance ajoutée. ⚠️ H41 inscrite (§16.2) : le code vise un client, chaque remise porte sur un article ou sur le total, en % ou en montant ; un montant sur un article à plusieurs lignes se répartit au prorata de leur brut (T-034b).
+
+**Questions** : valider H38, H39, H40 et H41.
+
 ## 29/09/2026 — T-024 plafonds de remise fixés par le boss — agent : Claude Code (Opus 5.5)
 
 **Fait** :

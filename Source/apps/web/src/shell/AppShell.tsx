@@ -13,6 +13,7 @@ import { RegisterSessionsPanel } from '../manager/RegisterSessionsPanel.js';
 import { StockPanel } from '../manager/StockPanel.js';
 import { SupervisionWorkspace } from '../manager/SupervisionWorkspace.js';
 import { DiscountCapsPanel } from '../owner/DiscountCapsPanel.js';
+import { DiscountCodesPanel } from '../owner/DiscountCodesPanel.js';
 import { RegisterWorkspace } from '../register/RegisterWorkspace.js';
 import { SalesWorkspace } from '../sales/SalesWorkspace.js';
 import { buttonClass, sheetClass } from '../ui/button.js';
@@ -154,6 +155,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
       {role === 'owner' && <RegisterSessionsPanel />}
       {/* RG-REM-01 (H15): the owner sets the discount caps. */}
       {role === 'owner' && <DiscountCapsPanel editable />}
+      {/* RG-REM-04 (H41): the owner issues and revokes the discount codes. */}
+      {role === 'owner' && <DiscountCodesPanel />}
     </div>
   );
 }
