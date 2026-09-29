@@ -2,6 +2,19 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 29/09/2026 — Remarques du boss consignées (pas de code) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Six remarques du boss, transmises par l'utilisateur, inscrites ⚠️ H43 à H48 au CDC métier (§16.2) avec une proposition et une alternative : client divers, conditions du client et vente à crédit, durée de réservation générale et par client, articles à promouvoir, historique des achats du client, connexion sans la liste des utilisateurs.
+- Backlog : T-029b, T-029c, T-022b, T-037, T-038, T-017c, statut « À trancher », lot à confirmer.
+- « Chaque profil n'a droit qu'à sa propre interface » : déjà en place (annexe B, RG-USR-02) ; un utilisateur à plusieurs rôles choisit son rôle et ne voit que cet espace.
+
+**Reste** : la décision du boss sur H43 à H48, et leur lot (MVP ou V1.1) ; reprise du code avec T-034b (champ de saisie sur la tablette) quand la limite hebdomadaire sera réinitialisée.
+
+**Décisions** : aucune ; la vente à crédit (H44), absente des CDC, est proposée en V1.1.
+
+**Questions** : valider H38 à H48.
+
 ## 29/09/2026 — T-034b code de remise saisi sur un devis (API) — agent : Claude Code (Opus 5.5)
 
 **Fait** :
