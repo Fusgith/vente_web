@@ -1,19 +1,17 @@
 import {
-  computeQuote,
   ticketLabel,
   type DiscountEntry,
   type Order,
   type OrderPriceChanged,
   type OrderSubmit,
-  type QuoteBeyondCap,
 } from '@vente-web/shared';
 
 import type { Db } from '../db.js';
 import { AppError } from '../errors.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit, type AuditSnapshot, type AuditTx } from './audit.js';
-import { findOrder, toOrder, type StoredOrder } from './order-view.js';
-import { assertActiveCustomer, priceLines, type PricedLine } from './quotes.js';
+import { findOrder, grantsOf, toOrder, usedCode, type StoredOrder } from './order-view.js';
+import { assertActiveCustomer, priceLines, totalsWithinCaps, type PricedLine } from './quotes.js';
 import { nextSequenceValue } from './sequences.js';
 import { readSetting } from './settings.js';
 import { CLOCK_TIME, nextShopTime, shopDateValue } from './shop-time.js';
@@ -56,7 +54,7 @@ async function salesOwner(
 }
 
 /** A saved discount as the amount it came to: what the caps are checked against again. */
-function asAmount(amount: { toFixed(decimals: number): string }): DiscountEntry | null {
+export function asAmount(amount: { toFixed(decimals: number): string }): DiscountEntry | null {
   const value = amount.toFixed(2);
   return value === '0.00' ? null : { kind: 'amount', value };
 }
@@ -65,7 +63,8 @@ function asAmount(amount: { toFixed(decimals: number): string }): DiscountEntry 
  * The saved lines at the prices in force now and the caps resolved now. A price changed since
  * the quote was saved is refused: the customer agreed on the saved one, the tablet saves the
  * quote again at the new price for the salesperson to check with them (H28). A cap lowered
- * since is checked like on saving (RG-REM-01/02); no owner's code can widen it yet (T-034).
+ * since is checked like on saving (RG-REM-01/02), a discount granted by the owner's code attached
+ * against its grant (RG-REM-04).
  */
 async function priceAgain(db: Db, order: StoredOrder) {
   const priced = await priceLines(
@@ -82,23 +81,12 @@ async function priceAgain(db: Db, order: StoredOrder) {
   if (changed.length > 0) {
     throw new AppError(409, 'ORDER_PRICE_CHANGED', { lines: changed } satisfies OrderPriceChanged);
   }
-  const totals = computeQuote({
-    lines: priced.map((line) => ({
-      quantity: line.entry.qty,
-      unitPrice: line.unitPrice,
-      capPct: line.capPct,
-      discount: line.entry.discount,
-    })),
-    orderDiscount: asAmount(order.orderDiscountAmount),
-  });
-  if (!totals.withinLimits) {
-    throw new AppError(422, 'QUOTE_DISCOUNT_BEYOND_CAP', {
-      lines: order.lines.flatMap((line, index) =>
-        totals.lines[index]?.withinLimit ? [] : [line.position],
-      ),
-      order: !totals.orderWithinLimit,
-    } satisfies QuoteBeyondCap);
-  }
+  // Positions run from 1 on a saved quote: a refusal names them as on saving.
+  const totals = totalsWithinCaps(
+    priced,
+    asAmount(order.orderDiscountAmount),
+    grantsOf(usedCode(order)),
+  );
   return { priced, totals };
 }
 

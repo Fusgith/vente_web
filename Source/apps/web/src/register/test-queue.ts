@@ -50,6 +50,7 @@ export function orderOf(entry: QueueItem): Order {
     orderDiscountPct: null,
     orderDiscount: zero,
     discountTotal: zero,
+    discountCode: null,
     total: entry.total,
     createdAt: entry.submittedAt,
     updatedAt: entry.submittedAt,

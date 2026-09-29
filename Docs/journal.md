@@ -2,6 +2,22 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 29/09/2026 — T-034b code de remise saisi sur un devis (API) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Moteur de remise (paquet partagé) : une remise accordée par un code remplace le plafond de la ligne ou du total couverts ; un montant sur un article en plusieurs lignes se répartit au prorata de leur brut ; 2 tests ajoutés.
+- API `POST /quotes/{id}/discount-code`, 2 tests d'intégration :
+  - le code saisi (casse, tiret indifférents) applique ses remises au-delà des plafonds, passe UTILISÉ, reste sur le devis ; réenregistré, le devis peut aller jusqu'à la remise accordée, pas au-delà ; la validation passe ;
+  - refus : code inconnu, d'un autre client, déjà utilisé, ne couvrant rien du devis ; un second code sur le même devis.
+- Les baisses de la caisse gardent les remises du code ; un devis avec un code ne change plus de client.
+- Vérifications : format:check, lint, typecheck (0 erreur), suite complète : 527 tests verts.
+
+**Reste** : T-034b, le champ de saisie du code sur la tablette ; T-034c (saisie à la caisse, mention sur la facture) ; T-033 (demandes de remise).
+
+**Décisions** : aucune dépendance ajoutée. ⚠️ H42 inscrite (§16.2) : un seul code par commande, UTILISÉ dès sa saisie sur le devis ; sa remise remplace le plafond des lignes et du total couverts ; un code qui ne couvre rien est refusé. T-034b est scindée : la caisse et la facture passent en T-034c.
+
+**Questions** : valider H38 à H42.
+
 ## 29/09/2026 — T-034 codes de remise émis par le boss — agent : Claude Code (Opus 5.5)
 
 **Fait** :

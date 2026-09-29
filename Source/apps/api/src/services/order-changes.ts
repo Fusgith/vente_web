@@ -2,6 +2,7 @@ import {
   baseQuantity,
   canTransition,
   computeQuote,
+  grantsFor,
   type DiscountEntry,
   type Order,
   type OrderAdjust,
@@ -13,7 +14,7 @@ import type { Db } from '../db.js';
 import { AppError } from '../errors.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit, type AuditSnapshot } from './audit.js';
-import { findOrder, toOrder, type StoredOrder } from './order-view.js';
+import { findOrder, grantsOf, toOrder, usedCode, type StoredOrder } from './order-view.js';
 import { releaseReservations, shrinkReservations } from './stock-reservation.js';
 
 type StoredLine = StoredOrder['lines'][number];
@@ -81,14 +82,23 @@ const amount = (value: string): DiscountEntry | null =>
  * keeps its discount to the cent; a lowered one keeps its rate, the discount following the
  * quantity. The order discount keeps its rate when typed as one, its amount otherwise — brought
  * down to the headroom when the remaining lines no longer cover it. Caps are the ones frozen
- * on the lines at validation (RG-CMD-04).
+ * on the lines at validation (RG-CMD-04), or the owner's code used on the order (RG-REM-04).
  */
 function recompute(order: StoredOrder, kept: KeptLine[]) {
+  const granted = grantsFor(
+    grantsOf(usedCode(order)),
+    kept.map(({ line, lowered }) => ({
+      productId: line.productId,
+      quantity: lowered ?? line.qty.toFixed(),
+      unitPrice: line.unitPrice.toFixed(2),
+    })),
+  );
   const input = (orderDiscount: DiscountEntry | null): QuoteInput => ({
-    lines: kept.map(({ line, lowered }) => ({
+    lines: kept.map(({ line, lowered }, index) => ({
       quantity: lowered ?? line.qty.toFixed(),
       unitPrice: line.unitPrice.toFixed(2),
       capPct: line.maxDiscountPct.toFixed(),
+      granted: granted.lines[index] ?? null,
       discount:
         lowered === null
           ? amount(line.discountAmount.toFixed(2))
@@ -97,6 +107,7 @@ function recompute(order: StoredOrder, kept: KeptLine[]) {
             : { kind: 'pct', value: line.discountPct.toFixed(2) },
     })),
     orderDiscount,
+    orderGranted: granted.order,
   });
   const typed: DiscountEntry | null = order.orderDiscountPct
     ? { kind: 'pct', value: order.orderDiscountPct.toFixed(2) }

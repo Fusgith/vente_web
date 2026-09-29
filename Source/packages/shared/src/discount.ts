@@ -101,6 +101,61 @@ function splitProRata(total: bigint, weights: readonly bigint[]): bigint[] {
   return parts.map((part) => part.share);
 }
 
+/** What an owner's code grants (RG-REM-04, H41): on a product — all its sale units — or, null, on the total. */
+export interface CodeGrant {
+  productId: string | null;
+  discount: DiscountEntry;
+}
+
+/** The grants of a code laid on the lines of a quote, and on its total. */
+export interface GrantedDiscounts {
+  lines: (DiscountEntry | null)[];
+  order: DiscountEntry | null;
+}
+
+/**
+ * An owner's code over the lines of a quote (RG-REM-04, H41): a rate on a product holds for each
+ * of its lines; an amount on a product sold in several lines (several sale units) is split over
+ * them pro rata of their gross, to the cent. A line whose product the code does not name gets
+ * nothing; the total's grant goes to the order discount.
+ */
+export function grantsFor(
+  grants: readonly CodeGrant[],
+  lines: readonly { productId: string; quantity: string; unitPrice: string }[],
+): GrantedDiscounts {
+  const granted: (DiscountEntry | null)[] = lines.map(() => null);
+  for (const grant of grants) {
+    if (grant.productId === null) continue;
+    const covered = lines.flatMap((line, index) =>
+      line.productId === grant.productId ? [index] : [],
+    );
+    if (grant.discount.kind === 'pct') {
+      for (const index of covered) granted[index] = grant.discount;
+      continue;
+    }
+    const grosses = covered.map((index) => {
+      const line = lines[index];
+      return line ? toScaled(lineGross(line.quantity, line.unitPrice), 2) : 0n;
+    });
+    const shares = splitProRata(toScaled(grant.discount.value, 2), grosses);
+    covered.forEach((index, at) => {
+      granted[index] = { kind: 'amount', value: money(shares[at] ?? 0n) };
+    });
+  }
+  return {
+    lines: granted,
+    order: grants.find((grant) => grant.productId === null)?.discount ?? null,
+  };
+}
+
+/** A grant applied on `base`: an amount beyond it comes down to it, never below zero. */
+export function grantOn(grant: DiscountEntry, base: string): DiscountEntry {
+  const cents = toScaled(base, 2);
+  return grant.kind === 'amount' && toScaled(grant.value, 2) > cents
+    ? { kind: 'amount', value: money(cents) }
+    : grant;
+}
+
 export interface QuoteLineInput {
   /** In the sale unit. */
   quantity: string;

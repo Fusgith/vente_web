@@ -32,6 +32,7 @@ function order(status: Order['status']): Order {
     orderDiscountPct: null,
     orderDiscount: zero,
     discountTotal: zero,
+    discountCode: null,
     total: zero,
     createdAt: '2026-09-26T07:00:00.000Z',
     updatedAt: '2026-09-26T07:05:00.000Z',

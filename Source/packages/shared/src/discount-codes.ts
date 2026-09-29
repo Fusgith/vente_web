@@ -23,6 +23,13 @@ export function groupDiscountCode(raw: string): string {
   return (raw.match(/.{1,4}/g) ?? []).join('-');
 }
 
+/** A code typed on a quote (T-034b): as the customer read it, with the version of the quote read. */
+export const discountCodeAttachSchema = z.object({
+  code: z.string().trim().min(1).max(32),
+  version: z.int().positive(),
+});
+export type DiscountCodeAttach = z.infer<typeof discountCodeAttachSchema>;
+
 /** A grant is never nothing: a rate or an amount above 0. */
 const grantSchema = discountEntrySchema.refine((entry) => /[1-9]/.test(entry.value));
 

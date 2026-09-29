@@ -39,6 +39,10 @@ export const ERROR_LABELS = {
     'Une remise dépasse son plafond : corrigez-la, ou demandez un code au boss.',
   QUOTE_CHANGED: 'Ce devis a été modifié entre-temps : rouvrez-le avant de l’enregistrer.',
   DISCOUNT_CODE_NOT_ACTIVE: 'Ce code n’est plus actif : il a été utilisé, révoqué, ou il a expiré.',
+  DISCOUNT_CODE_UNKNOWN: 'Ce code de remise n’existe pas : vérifiez sa saisie.',
+  DISCOUNT_CODE_OTHER_CUSTOMER: 'Ce code de remise a été émis pour un autre client.',
+  DISCOUNT_CODE_NOTHING_COVERED: 'Ce code de remise ne couvre aucun article de ce devis.',
+  QUOTE_HAS_CODE: 'Un code de remise est déjà rattaché à ce devis.',
   DISCOUNT_CODE_PRODUCT_UNAVAILABLE: 'Un article du code n’est plus en vente : retirez-le du code.',
   QUOTE_NOT_DRAFT: 'Ce devis est déjà devenu une commande : il ne se modifie plus.',
   ORDER_PRICE_CHANGED:

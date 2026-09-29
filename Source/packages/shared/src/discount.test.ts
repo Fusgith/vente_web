@@ -6,6 +6,7 @@ import {
   discountAmount,
   discountEntrySchema,
   discountRate,
+  grantsFor,
   type DiscountEntry,
   type QuoteLineInput,
 } from './discount.js';
@@ -212,5 +213,44 @@ describe('computeQuote: order discount (RG-REM-06, H23)', () => {
         expect(Number(l.orderDiscountShare)).toBeGreaterThanOrEqual(0);
       }
     }
+  });
+});
+
+describe('grantsFor — an owner’s code over the lines (RG-REM-04, H41)', () => {
+  const SOAP = 'soap';
+  const RICE = 'rice';
+  const lines = [
+    { productId: SOAP, quantity: '2', unitPrice: '4500' },
+    { productId: RICE, quantity: '1', unitPrice: '150000' },
+    { productId: SOAP, quantity: '1', unitPrice: '25000' },
+  ];
+
+  it('holds a rate for every line of the product, and gives the total its grant', () => {
+    expect(
+      grantsFor(
+        [
+          { productId: SOAP, discount: { kind: 'pct', value: '12' } },
+          { productId: null, discount: { kind: 'amount', value: '5000' } },
+        ],
+        lines,
+      ),
+    ).toEqual({
+      lines: [{ kind: 'pct', value: '12' }, null, { kind: 'pct', value: '12' }],
+      order: { kind: 'amount', value: '5000' },
+    });
+  });
+
+  it('splits an amount over the lines of the product pro rata of their gross, to the cent', () => {
+    // Gross 9 000 and 25 000: 1 000 → 264.70… and 735.29…, the cent left to the largest rest.
+    const { lines: granted, order } = grantsFor(
+      [{ productId: SOAP, discount: { kind: 'amount', value: '1000' } }],
+      lines,
+    );
+    expect(granted).toEqual([
+      { kind: 'amount', value: '264.71' },
+      null,
+      { kind: 'amount', value: '735.29' },
+    ]);
+    expect(order).toBeNull();
   });
 });

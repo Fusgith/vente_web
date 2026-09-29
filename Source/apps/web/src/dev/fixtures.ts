@@ -348,6 +348,7 @@ export function demoOrderAtRegister(): Order {
     orderDiscountPct: null,
     orderDiscount: totals.orderDiscount,
     discountTotal: totals.discountTotal,
+    discountCode: null,
     total: totals.total,
     createdAt: rasoa.submittedAt,
     updatedAt: rasoa.submittedAt,

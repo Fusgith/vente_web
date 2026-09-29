@@ -31,6 +31,7 @@ const order = {
   orderDiscountPct: null,
   orderDiscount: '0.00',
   discountTotal: '0.00',
+  discountCode: null,
   total: '0.00',
   createdAt: '2026-09-26T07:00:00.000Z',
   updatedAt: '2026-09-26T07:05:00.000Z',

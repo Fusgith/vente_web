@@ -60,6 +60,7 @@ function sampleQuote(): Quote {
     orderDiscountPct: null,
     orderDiscount: '2000.00',
     discountTotal: '4500.00',
+    discountCode: null,
     total: '65000.00',
     createdAt: '2026-09-26T09:00:00.000Z',
     updatedAt: '2026-09-26T09:00:00.000Z',

@@ -1,8 +1,15 @@
-import { quoteSaveSchema, quoteUpdateSchema, type Quote, type Role } from '@vente-web/shared';
+import {
+  discountCodeAttachSchema,
+  quoteSaveSchema,
+  quoteUpdateSchema,
+  type Quote,
+  type Role,
+} from '@vente-web/shared';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
 import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { attachDiscountCode } from '../services/quote-codes.js';
 import { quotePdf } from '../services/quote-pdf.js';
 import { createQuote, loadQuote, updateQuote } from '../services/quotes.js';
 
@@ -49,6 +56,17 @@ export const quoteRoutes: FastifyPluginAsync = async (app) => {
       const { id } = paramsSchema.parse(request.params);
       const body = quoteUpdateSchema.parse(request.body);
       return updateQuote(app.db, actorOf(authOf(request)), id, body);
+    },
+  );
+
+  // The owner's code typed on the tablet (RG-REM-04, H42): used at once on this quote.
+  app.post(
+    '/quotes/:id/discount-code',
+    { preHandler: requireRole(...EDITORS) },
+    async (request): Promise<Quote> => {
+      const { id } = paramsSchema.parse(request.params);
+      const body = discountCodeAttachSchema.parse(request.body);
+      return attachDiscountCode(app.db, actorOf(authOf(request)), id, body);
     },
   );
 };

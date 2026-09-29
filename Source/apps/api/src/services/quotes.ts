@@ -1,6 +1,8 @@
 import {
   baseQuantity,
   computeQuote,
+  grantsFor,
+  type CodeGrant,
   quoteNumber,
   type DiscountEntry,
   type Quote,
@@ -18,7 +20,7 @@ import type { Prisma } from '../generated/prisma/client.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit, type AuditSnapshot, type AuditTx } from './audit.js';
 import { findCustomer } from './customers.js';
-import { findOrder, toQuote } from './order-view.js';
+import { CODE_SELECT, findOrder, grantsOf, toQuote } from './order-view.js';
 import { defaultDiscountCap, inForceAt, unitCap } from './product-hits.js';
 import { nextSequenceValue } from './sequences.js';
 import { readSetting } from './settings.js';
@@ -113,16 +115,38 @@ export async function priceLines(
   return priced;
 }
 
-/** The engine's totals, every discount within its cap: no code of the owner yet (T-034). */
-function totalsWithinCaps(lines: PricedLine[], orderDiscount: DiscountEntry | null): QuoteTotals {
+/** What the owner's code grants each priced line, and the total (RG-REM-04, H41). */
+export function grantsOn(lines: readonly PricedLine[], grants: readonly CodeGrant[]) {
+  return grantsFor(
+    grants,
+    lines.map((line) => ({
+      productId: line.productId,
+      quantity: line.entry.qty,
+      unitPrice: line.unitPrice,
+    })),
+  );
+}
+
+/**
+ * The engine's totals, every discount within its cap — or within what the owner's code attached
+ * grants on it, which replaces the cap (RG-REM-04/06).
+ */
+export function totalsWithinCaps(
+  lines: readonly PricedLine[],
+  orderDiscount: DiscountEntry | null,
+  grants: readonly CodeGrant[] = [],
+): QuoteTotals {
+  const granted = grantsOn(lines, grants);
   const totals = computeQuote({
-    lines: lines.map((line) => ({
+    lines: lines.map((line, index) => ({
       quantity: line.entry.qty,
       unitPrice: line.unitPrice,
       capPct: line.capPct,
       discount: line.entry.discount,
+      granted: granted.lines[index] ?? null,
     })),
     orderDiscount,
+    orderGranted: granted.order,
   });
   if (!totals.withinLimits) {
     throw new AppError(422, 'QUOTE_DISCOUNT_BEYOND_CAP', {
@@ -133,8 +157,10 @@ function totalsWithinCaps(lines: PricedLine[], orderDiscount: DiscountEntry | nu
   return totals;
 }
 
-function orderAmounts(totals: QuoteTotals) {
+/** The order's amounts; the code is named where its grant was used (RG-REM-07). */
+export function orderAmounts(totals: QuoteTotals, codeId: string | null = null) {
   return {
+    orderDiscountCodeId: totals.orderDiscountSource === 'CODE' ? codeId : null,
     subtotal: totals.subtotal,
     orderDiscountPct: totals.orderDiscountPct,
     orderDiscountAmount: totals.orderDiscount,
@@ -144,7 +170,7 @@ function orderAmounts(totals: QuoteTotals) {
   };
 }
 
-function lineRows(lines: PricedLine[], totals: QuoteTotals) {
+export function lineRows(lines: PricedLine[], totals: QuoteTotals, codeId: string | null = null) {
   return lines.flatMap((line, index) => {
     const computed = totals.lines[index];
     if (!computed) return [];
@@ -164,6 +190,7 @@ function lineRows(lines: PricedLine[], totals: QuoteTotals) {
         discountPct: computed.discountPct,
         discountAmount: computed.discount,
         discountSource: computed.source,
+        discountCodeId: computed.source === 'CODE' ? codeId : null,
         lineTotal: computed.net,
         orderDiscountShare: computed.orderDiscountShare,
       },
@@ -172,7 +199,7 @@ function lineRows(lines: PricedLine[], totals: QuoteTotals) {
 }
 
 /** What the audit keeps of a quote: enough to see every discount given (RG-AUD-01). */
-function snapshot(quote: Quote): AuditSnapshot {
+export function snapshot(quote: Quote): AuditSnapshot {
   return {
     number: quote.number,
     customerId: quote.customer.id,
@@ -251,18 +278,32 @@ export async function updateQuote(
   if (current.version !== input.version) throw new AppError(409, 'QUOTE_CHANGED');
   await assertActiveCustomer(db, input.customerId);
   const lines = await priceLines(db, input.lines);
-  const totals = totalsWithinCaps(lines, input.orderDiscount);
+  // The code attached stays with the quote: its grants still bound the discounts typed (T-034b).
+  const code = await db.discountCode.findFirst({
+    where: { usedOnOrderId: id },
+    select: { ...CODE_SELECT, customerId: true },
+  });
+  // A code issued for a customer does not follow the quote to another one (RG-REM-04).
+  if (code?.customerId && code.customerId !== input.customerId) {
+    throw new AppError(409, 'DISCOUNT_CODE_OTHER_CUSTOMER');
+  }
+  const codeId = code?.id ?? null;
+  const totals = totalsWithinCaps(lines, input.orderDiscount, grantsOf(code));
   return db.$transaction(async (tx) => {
     const before = await loadQuote(tx, id);
     // Guarded on the version read and on DRAFT: a save or a validation committed meanwhile wins.
     const { count } = await tx.order.updateMany({
       where: { id, status: 'DRAFT', version: input.version },
-      data: { customerId: input.customerId, ...orderAmounts(totals), version: { increment: 1 } },
+      data: {
+        customerId: input.customerId,
+        ...orderAmounts(totals, codeId),
+        version: { increment: 1 },
+      },
     });
     if (count === 0) throw new AppError(409, 'QUOTE_CHANGED');
     await tx.orderLine.deleteMany({ where: { orderId: id } });
     await tx.orderLine.createMany({
-      data: lineRows(lines, totals).map((row) => ({ ...row, orderId: id })),
+      data: lineRows(lines, totals, codeId).map((row) => ({ ...row, orderId: id })),
     });
     const quote = await loadQuote(tx, id);
     await recordAudit(tx, {

@@ -63,6 +63,13 @@ export const quoteLineSchema = z.object({
 });
 export type QuoteLine = z.infer<typeof quoteLineSchema>;
 
+/** The owner's code attached to a quote (RG-REM-04, T-034b): what it grants replaces the caps. */
+export const quoteCodeSchema = z.object({
+  code: z.string(),
+  items: z.array(z.object({ productId: z.uuid().nullable(), discount: discountEntrySchema })),
+});
+export type QuoteCode = z.infer<typeof quoteCodeSchema>;
+
 export const quoteSchema = z.object({
   id: z.uuid(),
   /** `D-2026-000123` (RG-DEV-02). */
@@ -78,6 +85,8 @@ export const quoteSchema = z.object({
   orderDiscountPct: decimalString.nullable(),
   orderDiscount: decimalString,
   discountTotal: decimalString,
+  /** The owner's code attached, printed on the invoice (RG-REM-07). */
+  discountCode: quoteCodeSchema.nullable(),
   total: decimalString,
   createdAt: z.iso.datetime({ offset: true }),
   updatedAt: z.iso.datetime({ offset: true }),
