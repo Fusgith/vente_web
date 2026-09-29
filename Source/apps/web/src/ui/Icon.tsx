@@ -23,6 +23,8 @@ const PATHS = {
     </>
   ),
   check: <path d="M5 12.5 9.5 17 19 7" />,
+  /** A handle to drag a row by. */
+  grip: <path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01" strokeWidth={3} />,
   chevron: <path d="m6 9 6 6 6-6" />,
   lock: (
     <>

@@ -3,7 +3,9 @@ import {
   queueSchema,
   type Order,
   type Queue,
+  type QueueMove,
   type QueueName,
+  type QueuePriority,
 } from '@vente-web/shared';
 
 import { apiRequest, parseResponse } from './client.js';
@@ -28,5 +30,15 @@ export const queuesApi = {
   async noShow(orderId: string): Promise<Order> {
     const data = await apiRequest(`/orders/${orderId}/no-show`, { method: 'POST' });
     return parseResponse(orderSchema, data);
+  },
+
+  /** The manager moves an order before another one, or last (RG-FIL-02). */
+  async reorder(queue: QueueName, move: QueueMove): Promise<void> {
+    await apiRequest(`/queues/${queue}/reorder`, { method: 'POST', body: move });
+  },
+
+  /** Marked priority, behind the other priorities; unmarked, it keeps its place (RG-FIL-02). */
+  async priority(queue: QueueName, change: QueuePriority): Promise<void> {
+    await apiRequest(`/queues/${queue}/priority`, { method: 'POST', body: change });
   },
 };

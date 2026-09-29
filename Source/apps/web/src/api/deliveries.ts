@@ -18,6 +18,8 @@ export const deliveriesApi = {
   take: (orderId: string) => post(`/orders/${orderId}/delivery/take`),
   ready: (orderId: string) => post(`/orders/${orderId}/delivery/ready`),
   noShow: (orderId: string) => post(`/orders/${orderId}/delivery/no-show`),
+  /** The manager gives an order held at a counter back to the queue, at its place. */
+  release: (orderId: string) => post(`/orders/${orderId}/delivery/release`),
   /** Every line ticked, by position, over the version read (RG-LIV-03). */
   deliver: (orderId: string, version: number, delivered: number[]) =>
     post(`/orders/${orderId}/delivery/deliver`, { version, delivered }),

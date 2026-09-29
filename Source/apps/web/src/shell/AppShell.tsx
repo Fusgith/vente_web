@@ -9,8 +9,8 @@ import { DeliveryWorkspace } from '../delivery/DeliveryWorkspace.js';
 import { labels } from '../labels.js';
 import { RealtimeProvider } from '../realtime/RealtimeProvider.js';
 import { DeliveryIssuesPanel } from '../manager/DeliveryIssuesPanel.js';
-import { NoShowNotices } from '../manager/NoShowNotices.js';
 import { RegisterSessionsPanel } from '../manager/RegisterSessionsPanel.js';
+import { SupervisionWorkspace } from '../manager/SupervisionWorkspace.js';
 import { RegisterWorkspace } from '../register/RegisterWorkspace.js';
 import { SalesWorkspace } from '../sales/SalesWorkspace.js';
 import { buttonClass, sheetClass } from '../ui/button.js';
@@ -122,11 +122,21 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
   if (role === 'sales') return <SalesWorkspace />;
   if (role === 'cashier') return <RegisterWorkspace userId={userId} />;
   if (role === 'warehouse') return <DeliveryWorkspace userId={userId} />;
+  if (role === 'manager') {
+    return (
+      <div className="flex flex-col pb-8">
+        <SupervisionWorkspace />
+        {/* RG-LIV-04 (H37): the manager decides on each delivery issue. */}
+        <DeliveryIssuesPanel />
+        {/* RG-CAI-04/05: the day's registers. */}
+        <RegisterSessionsPanel />
+      </div>
+    );
+  }
   const workspace = labels.workspaces[role];
   return (
     <div className="flex flex-col">
       <section className={`${sheetClass} mx-auto mt-8 flex w-full max-w-2xl flex-col gap-3 p-8`}>
-        {role === 'manager' && <NoShowNotices />}
         <h1 className="type-title">{workspace.title}</h1>
         <p className="text-18 text-ink">{workspace.summary}</p>
         <p className="mt-3 flex items-center gap-3 border-t border-rule pt-5 text-ink-2">
@@ -134,10 +144,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
           {labels.shell.workspaceComing}
         </p>
       </section>
-      {/* RG-LIV-04 (H37): the manager decides on each delivery issue. */}
-      {role === 'manager' && <DeliveryIssuesPanel />}
-      {/* RG-CAI-04/05: the day's registers, until the dashboard (T-070) and supervision (T-042). */}
-      {(role === 'manager' || role === 'owner') && <RegisterSessionsPanel />}
+      {/* RG-CAI-04/05: the day's registers, until the dashboard (T-070). */}
+      {role === 'owner' && <RegisterSessionsPanel />}
     </div>
   );
 }

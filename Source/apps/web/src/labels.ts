@@ -5,6 +5,7 @@ import { deliveryLabels } from './labels-delivery.js';
 import { issueLabels } from './labels-issues.js';
 import { refundLabels } from './labels-refund.js';
 import { registerLabels } from './labels-register.js';
+import { supervisionLabels } from './labels-supervision.js';
 
 /** French UI labels (ADR-0004): no French string hard-coded in logic or components. */
 export const labels = {
@@ -266,8 +267,9 @@ export const labels = {
 
   /** Delivery issues and partial credit (T-061, RG-LIV-04, RG-ANN-03). */
   issues: issueLabels,
+  supervision: supervisionLabels,
 
-  /** The manager's notices, until the supervision view (T-042). */
+  /** The manager's notices, in the bottom band. */
   manager: {
     noShows: (ticket: string, name: string, count: number) =>
       `Client absent ${count} fois : ${ticket} — ${name}.`,

@@ -2,6 +2,26 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 29/09/2026 — H36 et H37 validées, T-042 supervision du responsable — agent : Claude Code (Opus 5.5)
+
+**Décisions de l'utilisateur** : H36 et H37 validées telles quelles (CDC métier §16.8) ; poursuivre jusqu'à 80 % de l'usage hebdomadaire.
+
+**Fait** :
+- CDC (`1df52fb`) : H36 et H37 inscrites comme décisions, marques ⚠️ retirées du code et des CDC.
+- T-042, API, 2 tests d'intégration : `GET /supervision/today` (responsable, boss) — attentes moyennes du jour en caisse et en livraison, commandes en cours, payé non livré (nombre et montant).
+- T-042, écran du responsable, 9 tests :
+  - bandeau des indicateurs du jour, relu à chaque changement de file ou de commande et chaque minute ;
+  - files caisse et livraison en direct : qui est servi, par qui, où, depuis quand ; puis rang, ticket, client, commercial, montant, attente ;
+  - glisser-déposer par une poignée (événements pointeur, donc au doigt sur tablette), flèches haut et bas au clavier ; bouton « Prioritaire » ;
+  - annulation d'une commande en file caisse avec son motif ; « Remettre en file » d'une commande tenue à un comptoir.
+- Vérifications : `format:check`, `lint`, `typecheck` (0 erreur) et 506 tests verts. Aucune dépendance ajoutée : le glisser-déposer est écrit à la main (le glisser-déposer HTML ne marche pas au doigt).
+
+**Reste** : état des remises dans la supervision avec les demandes de remise (T-033) ; correction du stock manquant ou abîmé (T-023).
+
+**Décisions** : le motif facultatif d'un déplacement (RG-FIL-02) n'est pas demandé à l'écran, pour ne pas freiner le glisser-déposer ; le journal d'audit trace quand même qui, quand, avant → après.
+
+**Questions ouvertes** : ⚠️ H38, définition des indicateurs du jour (CDC métier §16.2).
+
 ## 29/09/2026 — Reprise en local après la session cloud, T-061 anomalies de livraison et avoir partiel — agent : Claude Code (Opus 5.5)
 
 **Demande de l'utilisateur** : vérifier le travail de la session cloud, corriger sans compte-rendu, puis continuer ; plafond d'usage hebdomadaire relevé à 80 %.

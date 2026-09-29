@@ -40,6 +40,14 @@ describe('signed-in shell', () => {
       'POST /auth/switch-role': apiError(403, 'AUTH_ROLE_REMOTE_FORBIDDEN'),
       'GET /register-sessions': ok({ sessions: [] }),
       'GET /deliveries/issues': ok([]),
+      'GET /queues/register': ok({ queue: 'register', serving: [], waiting: [] }),
+      'GET /queues/delivery': ok({ queue: 'delivery', serving: [], waiting: [] }),
+      'GET /supervision/today': ok({
+        registerWait: null,
+        deliveryWait: null,
+        inProgress: 0,
+        paidUndelivered: { count: 0, total: '0.00' },
+      }),
     });
     render(<App />);
 
