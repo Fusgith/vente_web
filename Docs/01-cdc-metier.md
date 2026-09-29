@@ -1,6 +1,6 @@
 # Cahier des charges MÉTIER — Vente Web
 
-Version 0.9 — 29/09/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16), **corrections du 23/09/2026** (§16.3), **décisions du 25/09/2026** (§16.4, dont H22), **décisions du 26/09/2026** (§16.5 : H14 à H28) ; ADR 0001–0006 acceptés , **décision du 27/09/2026** (§16.6 : H29), **décisions du 28/09/2026** (§16.7 : H30 à H35, perte de la priorité), **décisions du 29/09/2026** (§16.8 : H36, H37) ; **à confirmer : H38** (§16.2, indicateurs de la supervision).
+Version 0.9 — 29/09/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16), **corrections du 23/09/2026** (§16.3), **décisions du 25/09/2026** (§16.4, dont H22), **décisions du 26/09/2026** (§16.5 : H14 à H28) ; ADR 0001–0006 acceptés , **décision du 27/09/2026** (§16.6 : H29), **décisions du 28/09/2026** (§16.7 : H30 à H35, perte de la priorité), **décisions du 29/09/2026** (§16.8 : H36, H37) ; **à confirmer : H38 et H39** (§16.2, indicateurs de la supervision, ajustements de stock).
 
 Nouveautés v0.8 : contrôle à la caisse validé (H30, RG-CMD-05b) ; **un client absent perd sa priorité**, de même qu'une commande prioritaire placée en dernier par le responsable (RG-FIL-02, RG-FIL-04).
 
@@ -279,8 +279,8 @@ Voir RG-FAC. La facture est produite en PDF, imprimable en A4 et, en option, en 
 - **RG-STK-02** La validation d'une commande crée une réservation par ligne, **sans limite de durée dans la journée** : elle expire à la **fin de la journée** (paramètre `day_end_time`, défaut 23:59 heure d'Antananarivo, décision H16). À l'échéance : RG-CMD-08. *(Décision H3.)*
 - **RG-STK-03** Le paiement rend la réservation **ferme** (sans échéance) jusqu'à la livraison.
 - **RG-STK-04** La sortie de stock est enregistrée **à la livraison**, pas au paiement. Conséquence : « payé non livré » = stock encore en réserve mais non disponible à la vente. *(Décision H6.)*
-- **RG-STK-05** Ajustement manuel : responsable uniquement, motif obligatoire parmi une liste paramétrable (casse, vol, erreur d'import, inventaire…) + commentaire libre ; journalisé. Jamais de modification directe d'une quantité.
-- **RG-STK-06** Le stock théorique ne peut pas devenir négatif. Une sortie qui le rendrait négatif est refusée avec message.
+- **RG-STK-05** Ajustement manuel : responsable uniquement, motif obligatoire parmi une liste paramétrable (casse, vol, erreur d'import, inventaire…) + commentaire libre ; journalisé. Jamais de modification directe d'une quantité. ⚠️ HYPOTHÈSE H39 : saisie dans une unité de vente, commentaire facultatif (§16.2).
+- **RG-STK-06** Le stock théorique ne peut pas devenir négatif. Une sortie qui le rendrait négatif est refusée avec message. ⚠️ HYPOTHÈSE H39 : un ajustement ne sort jamais plus que le disponible (§16.2).
 - **RG-STK-07** Alerte (responsable, boss) quand `disponible ≤ seuil d'alerte` de l'article.
 
 ### 6.2 Remises
@@ -480,10 +480,11 @@ Les ADR 0001 à 0004 ont été **acceptés** par l'utilisateur le 21/09/2026.
 
 ### 16.2 Points nouveaux à confirmer
 
-H14 à H28 tranchés le 26/09 (§16.5), H29 le 27/09 (§16.6), H30 à H35 le 28/09 (§16.7), H36 et H37 le 29/09 (§16.8). En attente : H38. Un nouveau point s'inscrit ici, marqué ⚠️ HYPOTHÈSE dans la règle concernée.
+H14 à H28 tranchés le 26/09 (§16.5), H29 le 27/09 (§16.6), H30 à H35 le 28/09 (§16.7), H36 et H37 le 29/09 (§16.8). En attente : H38, H39. Un nouveau point s'inscrit ici, marqué ⚠️ HYPOTHÈSE dans la règle concernée.
 
 | # | Hypothèse | Règle | Alternative |
 |---|---|---|---|
+| H39 | **Ajustement de stock** (T-023) : le responsable saisit le sens (**retirer** ou **ajouter**), la quantité dans **l'une des unités de vente** de l'article (convertie en unité de base), un motif de la liste `adjustment_reasons` et un **commentaire facultatif**. Une sortie ne peut dépasser le **disponible** (théorique − réservé) : la marchandise des commandes validées leur reste acquise ; pour sortir davantage, le responsable annule ou réduit d'abord les commandes concernées. L'admin peut aussi ajuster (annexe B, « assisté »). L'alerte de seuil est envoyée au responsable et au boss quand un ajustement ou la validation d'une commande laisse l'article à son seuil ou en dessous ; un seuil vide ou nul ne déclenche jamais d'alerte. | RG-STK-05 à 07, annexe B | Commentaire obligatoire ; sortie possible jusqu'au théorique, les commandes réservées passant alors en anomalie |
 | H38 | Indicateurs du jour de la supervision, en minutes entières : **attente moyenne en caisse** = de la validation à l'appel en caisse, sur les commandes appelées depuis le début de la journée du magasin (un client absent puis rappelé compte une fois, toute son attente) ; **attente moyenne en livraison** = du paiement à la première prise en charge à un comptoir, sur les commandes prises en charge pour la première fois aujourd'hui ; **commandes en cours** = validées, ni livrées ni closes (en file ou en caisse, payées, en préparation, prêtes, en anomalie), à l'instant ; **payé non livré** = nombre et montant des commandes payées pas encore remises, anomalies comprises, à l'instant. | RG-DSP-04 | Attente mesurée jusqu'au paiement ou jusqu'à la remise ; moyennes sur plusieurs jours |
 
 ### 16.3 Corrections de l'utilisateur du 23/09/2026

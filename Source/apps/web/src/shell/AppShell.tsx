@@ -10,6 +10,7 @@ import { labels } from '../labels.js';
 import { RealtimeProvider } from '../realtime/RealtimeProvider.js';
 import { DeliveryIssuesPanel } from '../manager/DeliveryIssuesPanel.js';
 import { RegisterSessionsPanel } from '../manager/RegisterSessionsPanel.js';
+import { StockPanel } from '../manager/StockPanel.js';
 import { SupervisionWorkspace } from '../manager/SupervisionWorkspace.js';
 import { RegisterWorkspace } from '../register/RegisterWorkspace.js';
 import { SalesWorkspace } from '../sales/SalesWorkspace.js';
@@ -130,6 +131,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         <DeliveryIssuesPanel />
         {/* RG-CAI-04/05: the day's registers. */}
         <RegisterSessionsPanel />
+        {/* RG-STK-05 à 07: the products under their threshold, adjustments with a reason. */}
+        <StockPanel />
       </div>
     );
   }

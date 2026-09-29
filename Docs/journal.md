@@ -2,6 +2,23 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 29/09/2026 — T-023 ajustements de stock et alertes de seuil — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- API, 3 tests d'intégration :
+  - `GET /products/{id}/stock` : où en est le stock, les unités de vente, les motifs ;
+  - `POST /products/{id}/stock/adjustments` : un mouvement `ADJUSTMENT` en unité de base, la ligne de stock verrouillée, l'audit avant → après avec motif et commentaire ; sortie refusée au-delà du disponible ;
+  - `GET /stock/alerts` et l'événement `stock.alert`, envoyé après un ajustement ou une validation de commande.
+- Écran du responsable, 3 tests : articles sous leur seuil (annoncés dès qu'un nouveau apparaît), recherche d'un autre article par code ou désignation, fiche d'ajustement (retirer ou ajouter, quantité, unité, motif, commentaire).
+- Correction en route : `upsert` sur `product_stock` échouait sur la contrainte `CHECK` (Postgres la vérifie sur la ligne candidate à l'insertion) ; la ligne existante est désormais modifiée, sinon créée.
+- Vérifications : `format:check`, `lint`, `typecheck` (0 erreur), suite complète : 513 tests verts. Aucune dépendance ajoutée.
+
+**Reste** : alertes de seuil dans le tableau de bord du boss (avec son écran) ; écran de l'admin pour les ajustements assistés.
+
+**Décisions** : le commentaire libre est rangé dans l'audit, pas dans `stock_movements` (aucun changement de schéma).
+
+**Questions ouvertes** : ⚠️ H39, ajustement en unité de vente, commentaire facultatif, sortie plafonnée au disponible (CDC métier §16.2) ; ⚠️ H38 toujours ouverte.
+
 ## 29/09/2026 — H36 et H37 validées, T-042 supervision du responsable — agent : Claude Code (Opus 5.5)
 
 **Décisions de l'utilisateur** : H36 et H37 validées telles quelles (CDC métier §16.8) ; poursuivre jusqu'à 80 % de l'usage hebdomadaire.
