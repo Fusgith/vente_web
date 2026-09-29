@@ -12,6 +12,7 @@ import { DeliveryIssuesPanel } from '../manager/DeliveryIssuesPanel.js';
 import { RegisterSessionsPanel } from '../manager/RegisterSessionsPanel.js';
 import { StockPanel } from '../manager/StockPanel.js';
 import { SupervisionWorkspace } from '../manager/SupervisionWorkspace.js';
+import { DiscountCapsPanel } from '../owner/DiscountCapsPanel.js';
 import { RegisterWorkspace } from '../register/RegisterWorkspace.js';
 import { SalesWorkspace } from '../sales/SalesWorkspace.js';
 import { buttonClass, sheetClass } from '../ui/button.js';
@@ -133,6 +134,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         <RegisterSessionsPanel />
         {/* RG-STK-05 à 07: the products under their threshold, adjustments with a reason. */}
         <StockPanel />
+        {/* RG-REM-01 (H15): the caps the owner set, read-only. */}
+        <DiscountCapsPanel editable={false} />
       </div>
     );
   }
@@ -149,6 +152,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
       </section>
       {/* RG-CAI-04/05: the day's registers, until the dashboard (T-070). */}
       {role === 'owner' && <RegisterSessionsPanel />}
+      {/* RG-REM-01 (H15): the owner sets the discount caps. */}
+      {role === 'owner' && <DiscountCapsPanel editable />}
     </div>
   );
 }

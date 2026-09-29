@@ -41,6 +41,7 @@ describe('signed-in shell', () => {
       'GET /register-sessions': ok({ sessions: [] }),
       'GET /deliveries/issues': ok([]),
       'GET /stock/alerts': ok({ items: [] }),
+      'GET /discount-caps': ok({ defaultPct: '0.00', categories: [] }),
       'GET /queues/register': ok({ queue: 'register', serving: [], waiting: [] }),
       'GET /queues/delivery': ok({ queue: 'delivery', serving: [], waiting: [] }),
       'GET /supervision/today': ok({

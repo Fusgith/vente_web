@@ -2,6 +2,21 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 29/09/2026 — T-024 plafonds de remise fixés par le boss — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- API, 2 tests d'intégration :
+  - lecture des plafonds : général, par catégorie, et par article avec le plafond appliqué à chaque unité de vente ;
+  - modification par le boss seul (plafond général, catégorie, article, unité de vente), journalisée avant → après ; un champ vidé retire le plafond propre ; refus au-delà de 100 %.
+- Écran du boss, 3 tests : plafond général, tableau des catégories, recherche d'un article puis ses unités (plafond propre, plafond appliqué). Le responsable voit le même écran sans pouvoir modifier.
+- Constat vérifié dans le code : un devis recalcule prix et plafonds à chaque enregistrement ; seule la commande validée fige ses plafonds.
+
+**Reste** : rien pour T-024 ; au-delà des plafonds, la remise passe par un code du boss (T-034).
+
+**Décisions** : aucune dépendance ajoutée. ⚠️ H40 inscrite (§16.2) : le boss fixe aussi le plafond général ; un devis prend le nouveau plafond à son prochain enregistrement ; pas d'avis en direct aux commerciaux.
+
+**Questions** : valider H38, H39 et H40.
+
 ## 29/09/2026 — T-023 ajustements de stock et alertes de seuil — agent : Claude Code (Opus 5.5)
 
 **Fait** :

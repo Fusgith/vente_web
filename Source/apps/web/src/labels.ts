@@ -1,5 +1,6 @@
 import { CURRENCY, DEFAULT_APP_NAME, type Role } from '@vente-web/shared';
 
+import { capsLabels } from './labels-caps.js';
 import { closingLabels } from './labels-closing.js';
 import { deliveryLabels } from './labels-delivery.js';
 import { issueLabels } from './labels-issues.js';
@@ -270,6 +271,7 @@ export const labels = {
   issues: issueLabels,
   supervision: supervisionLabels,
   stock: stockLabels,
+  caps: capsLabels,
 
   /** The manager's notices, in the bottom band. */
   manager: {
