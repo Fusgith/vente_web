@@ -51,6 +51,8 @@ export const INVOICE_PDF = {
   ticket: 'Ticket',
   order: 'Commande',
   cashier: 'Caissier',
+  /** RG-REM-07. */
+  discountCode: 'Code de remise',
   /** RG-FAC-03, VAT-inclusive prices. */
   vatBase: 'Total HT',
   vat: (rate: string) => `TVA ${rate} %`,

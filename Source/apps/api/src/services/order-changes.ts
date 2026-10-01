@@ -2,12 +2,17 @@ import {
   baseQuantity,
   canTransition,
   computeQuote,
+  grantOn,
   grantsFor,
+  lineGross,
+  type CodeGrant,
+  type DiscountCodeAttach,
   type DiscountEntry,
   type Order,
   type OrderAdjust,
   type OrderCancel,
   type QuoteInput,
+  type QuoteTotals,
 } from '@vente-web/shared';
 
 import type { Db } from '../db.js';
@@ -15,6 +20,8 @@ import { AppError } from '../errors.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit, type AuditSnapshot } from './audit.js';
 import { findOrder, grantsOf, toOrder, usedCode, type StoredOrder } from './order-view.js';
+import { usableCode, useCode } from './quote-codes.js';
+import { orderAmounts } from './quotes.js';
 import { releaseReservations, shrinkReservations } from './stock-reservation.js';
 
 type StoredLine = StoredOrder['lines'][number];
@@ -77,6 +84,22 @@ function keptLines(order: StoredOrder, changes: OrderAdjust['changes']): KeptLin
 const amount = (value: string): DiscountEntry | null =>
   value === '0.00' ? null : { kind: 'amount', value };
 
+/** The order discount as typed: its rate when typed as one, its amount otherwise. */
+const typedOrderDiscount = (order: StoredOrder): DiscountEntry | null =>
+  order.orderDiscountPct
+    ? { kind: 'pct', value: order.orderDiscountPct.toFixed(2) }
+    : amount(order.orderDiscountAmount.toFixed(2));
+
+/** Totals with the order discount kept, brought down to the headroom once it no longer fits. */
+function withinHeadroom(
+  input: (orderDiscount: DiscountEntry | null) => QuoteInput,
+  typed: DiscountEntry | null,
+): QuoteTotals {
+  const totals = computeQuote(input(typed));
+  if (totals.orderWithinLimit) return totals;
+  return computeQuote(input(amount(totals.maxOrderDiscount)));
+}
+
 /**
  * Totals once lines are lowered or removed (RG-DEV-05, RG-REM-06, H30): a line left as it was
  * keeps its discount to the cent; a lowered one keeps its rate, the discount following the
@@ -109,12 +132,7 @@ function recompute(order: StoredOrder, kept: KeptLine[]) {
     orderDiscount,
     orderGranted: granted.order,
   });
-  const typed: DiscountEntry | null = order.orderDiscountPct
-    ? { kind: 'pct', value: order.orderDiscountPct.toFixed(2) }
-    : amount(order.orderDiscountAmount.toFixed(2));
-  const totals = computeQuote(input(typed));
-  if (totals.orderWithinLimit) return totals;
-  return computeQuote(input(amount(totals.maxOrderDiscount)));
+  return withinHeadroom(input, typedOrderDiscount(order));
 }
 
 /**
@@ -140,14 +158,7 @@ export async function adjustOrder(
   return db.$transaction(async (tx) => {
     const { count } = await tx.order.updateMany({
       where: { id, status: 'AT_REGISTER', version },
-      data: {
-        subtotal: totals.subtotal,
-        orderDiscountAmount: totals.orderDiscount,
-        orderDiscountPct: totals.orderDiscountPct,
-        discountTotal: totals.discountTotal,
-        total: totals.total,
-        version: { increment: 1 },
-      },
+      data: { ...orderAmounts(totals, usedCode(order)?.id ?? null), version: { increment: 1 } },
     });
     if (count === 0) throw new AppError(409, 'ORDER_CHANGED');
     const keptIds = new Set(kept.map(({ line }) => line.id));
@@ -183,6 +194,106 @@ export async function adjustOrder(
         baseQty: baseQuantity(lowered ?? line.qty.toFixed(), line.factor.toFixed()),
       })),
     );
+    const after = await findOrder(tx, id);
+    if (!after) throw new AppError(404, 'NOT_FOUND');
+    const result = toOrder(after);
+    await recordAudit(tx, {
+      ...by(actor),
+      action: 'order.adjusted',
+      entityType: 'order',
+      entityId: id,
+      before: snapshot(toOrder(order)),
+      after: snapshot(result),
+    });
+    return result;
+  });
+}
+
+/**
+ * Totals with the owner's code typed at the register (H42), on the prices and caps frozen at
+ * validation (RG-CMD-04): a line it covers takes its grant — an amount beyond its gross comes down
+ * to it —, the others keep theirs to the cent; the total takes the code's grant when covered,
+ * else keeps its own, brought down to the headroom the grants leave.
+ */
+function withCode(order: StoredOrder, grants: readonly CodeGrant[]) {
+  const granted = grantsFor(
+    grants,
+    order.lines.map((line) => ({
+      productId: line.productId,
+      quantity: line.qty.toFixed(),
+      unitPrice: line.unitPrice.toFixed(2),
+    })),
+  );
+  if (granted.order === null && granted.lines.every((grant) => grant === null)) {
+    throw new AppError(422, 'DISCOUNT_CODE_NOTHING_COVERED');
+  }
+  const input = (orderDiscount: DiscountEntry | null): QuoteInput => ({
+    lines: order.lines.map((line, index) => {
+      const quantity = line.qty.toFixed();
+      const unitPrice = line.unitPrice.toFixed(2);
+      const grant = granted.lines[index] ?? null;
+      return {
+        quantity,
+        unitPrice,
+        capPct: line.maxDiscountPct.toFixed(),
+        granted: grant,
+        discount: grant
+          ? grantOn(grant, lineGross(quantity, unitPrice))
+          : amount(line.discountAmount.toFixed(2)),
+      };
+    }),
+    orderDiscount,
+    orderGranted: granted.order,
+  });
+  if (!granted.order) return { granted, totals: withinHeadroom(input, typedOrderDiscount(order)) };
+  const { subtotal } = computeQuote(input(null));
+  return { granted, totals: computeQuote(input(grantOn(granted.order, subtotal))) };
+}
+
+/**
+ * The owner's code typed at the register, before payment (RG-CMD-05b, RG-REM-04, H42): checked
+ * as on the tablet — one code per order — and used at once. The lines and total it covers take
+ * its grants; the change is audited before → after. Quantities stay: the stock is untouched.
+ */
+export async function attachOrderCode(
+  db: Db,
+  actor: Actor,
+  id: string,
+  { code: typed, version }: DiscountCodeAttach,
+  now = new Date(),
+): Promise<Order> {
+  const order = await atMyRegister(db, actor, id, version);
+  if (usedCode(order)) throw new AppError(409, 'ORDER_HAS_CODE');
+  const code = await usableCode(db, typed, order, now);
+  const { granted, totals } = withCode(order, grantsOf(code));
+
+  return db.$transaction(async (tx) => {
+    await useCode(tx, actor, code.id, id, now);
+    const { count } = await tx.order.updateMany({
+      where: { id, status: 'AT_REGISTER', version },
+      data: { ...orderAmounts(totals, code.id), version: { increment: 1 } },
+    });
+    if (count === 0) throw new AppError(409, 'ORDER_CHANGED');
+    for (const [index, line] of order.lines.entries()) {
+      const computed = totals.lines[index];
+      if (!computed) continue;
+      await tx.orderLine.update({
+        where: { id: line.id },
+        data: {
+          // A line the code does not cover keeps its discount as validated, its rate included.
+          ...(granted.lines[index]
+            ? {
+                discountPct: computed.discountPct,
+                discountAmount: computed.discount,
+                discountSource: computed.source,
+                discountCodeId: code.id,
+                lineTotal: computed.net,
+              }
+            : {}),
+          orderDiscountShare: computed.orderDiscountShare,
+        },
+      });
+    }
     const after = await findOrder(tx, id);
     if (!after) throw new AppError(404, 'NOT_FOUND');
     const result = toOrder(after);

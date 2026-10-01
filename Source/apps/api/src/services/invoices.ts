@@ -53,6 +53,8 @@ export const invoiceSnapshotSchema = z.object({
     discountTotal: z.string(),
     total: z.string(),
   }),
+  /** The owner's code used on the order (RG-REM-07); absent from invoices issued before it. */
+  discountCode: z.string().nullable().default(null),
   vat: z.object({ rate: z.string(), base: z.string(), vat: z.string() }).nullable(),
   vatNotice: z.string(),
   payment: z.object({
@@ -136,6 +138,7 @@ export async function issueInvoice(
       discountTotal: order.discountTotal,
       total: order.total,
     },
+    discountCode: order.discountCode?.code ?? null,
     vat: settings.vatRate
       ? { rate: settings.vatRate, ...pickVat(order.total, settings.vatRate) }
       : null,

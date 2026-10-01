@@ -2,6 +2,22 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 01/10/2026 — T-034c code du boss saisi à la caisse, nommé sur la facture — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- API `POST /orders/{id}/discount-code` (caissier qui a appelé la commande, ou responsable) : le code applique ses remises sur les prix et plafonds figés ; les lignes non couvertes gardent leur remise validée ; un total non couvert est ramené à la marge restante ; un seul code par commande ; UTILISÉ et journalisé dans la même transaction.
+- Contrôles du code mis en commun entre devis et commande (`usableCode`, `useCode`).
+- Facture : l'instantané garde le code ; le PDF affiche « Code de remise » dans l'en-tête (RG-REM-07). Une facture plus ancienne, sans ce champ, se lit toujours.
+- Caisse : bouton « Code du boss » à côté de « Annuler la commande » ; une étiquette le remplace une fois le code appliqué ; une réponse perdue sur le Wi-Fi est retrouvée en relisant la commande, ou quand le même code est saisi à nouveau.
+- Revue (2 relecteurs) : la saisie répétée après une réponse perdue est corrigée ; la commande amenée à 0,00 MGA, qui ne s'encaisse pas (déjà possible depuis T-034b), est inscrite ⚠️ H50.
+- Tests : API 3 + PDF 1, caisse 7 ; format:check, lint, typecheck (0 erreur), suite complète : 558 tests verts, puis 1 test de caisse ajouté après la revue (559).
+
+**Reste** : T-034d (commande à 0,00 MGA, ⚠️ H50) ; T-033 (demandes de remise) ; T-035 (devis et commandes du commercial).
+
+**Décisions** : aucune dépendance ajoutée. ⚠️ H42 complétée (§16.2) : saisie à la caisse et mention sur la facture. Le PDF du devis ne nomme pas le code : RG-REM-07 ne le demande que sur la facture. Les baisses de la caisse enregistrent désormais aussi l'origine de la remise sur le total (code ou plafond). ⚠️ H50 inscrite (§16.2) : une commande à 0,00 MGA s'encaisse sans moyen de paiement.
+
+**Questions** : valider H38 à H42, H49 et H50.
+
 ## 01/10/2026 — T-034b code du boss saisi sur la tablette — agent : Claude Code (Opus 5.5)
 
 **Fait** :

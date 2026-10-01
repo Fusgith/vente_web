@@ -23,6 +23,15 @@ export const ordersApi = {
     return parseResponse(orderSchema, data);
   },
 
+  /** The owner's code typed at the register before payment, over the version read (H42). */
+  async attachCode(id: string, code: string, version: number): Promise<Order> {
+    const data = await apiRequest(`/orders/${id}/discount-code`, {
+      method: 'POST',
+      body: { code, version },
+    });
+    return parseResponse(orderSchema, data);
+  },
+
   /** Before payment, with its reason (RG-ANN-01). */
   async cancel(id: string, version: number, reason: string): Promise<Order> {
     const data = await apiRequest(`/orders/${id}/cancel`, {

@@ -1,5 +1,6 @@
 import {
   formatMga,
+  normalizeDiscountCode,
   ticketLabel,
   type Order,
   type PaymentInput,
@@ -15,6 +16,7 @@ import { paymentsApi } from '../api/payments.js';
 import { queuesApi } from '../api/queues.js';
 import { labels } from '../labels.js';
 import { useStatusLine } from '../shell/status-line.js';
+import { isZero } from '../ui/document-table.js';
 import { CloseRegisterSheet } from './CloseRegisterSheet.js';
 import { OpenRegisterPanel } from './OpenRegisterPanel.js';
 import { OrderControl } from './OrderControl.js';
@@ -40,6 +42,21 @@ interface LostPayment {
 
 /** How often the waits shown move on. */
 const CLOCK_MS = 30_000;
+
+/** The order read again carries this very code, put on over `sent`: the answer was lost. */
+const attachedMeanwhile = (order: Order, typed: string, sent: Order) =>
+  !!order.discountCode &&
+  order.version === sent.version + 1 &&
+  normalizeDiscountCode(order.discountCode.code) === normalizeDiscountCode(typed);
+
+/** The total's discount, which the code does not cover, brought down to the headroom (H42). */
+function broughtDown(sent: Order, order: Order): boolean {
+  const covered = order.discountCode?.items.some((item) => item.productId === null) ?? false;
+  if (covered || isZero(sent.orderDiscount)) return false;
+  return sent.orderDiscountPct !== null
+    ? order.orderDiscountPct !== sent.orderDiscountPct
+    : order.orderDiscount !== sent.orderDiscount;
+}
 
 /**
  * The cashier's screen. Without a customer: the register queue live, and the call of the next
@@ -153,6 +170,52 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
     );
   };
 
+  /** The code on the order: the screen shows what it grants; the band says so. */
+  const codeAttached = (order: Order, sent: Order) => {
+    atRegister.replace(order);
+    const code = order.discountCode?.code ?? '';
+    say(
+      broughtDown(sent, order)
+        ? text.codeAttachedLowered(code, formatMga(order.orderDiscount))
+        : text.codeAttached(code),
+      'check',
+    );
+  };
+  /**
+   * The owner's code typed before payment (RG-CMD-05b, H42): null once attached, else why it was
+   * refused, for the sheet. The answer lost on the Wi-Fi (or a second try after it) may hide a
+   * code that went on: the order read again tells; changed meanwhile, the screen shows it anew.
+   */
+  async function attachCode(typed: string): Promise<string | null> {
+    const sent = atRegister.order;
+    if (!sent) return labels.errors.UNEXPECTED_RESPONSE;
+    // Typed again after a lost answer, the code already shown on the order read since: it is on.
+    const on = sent.discountCode?.code;
+    if (on && normalizeDiscountCode(on) === normalizeDiscountCode(typed)) {
+      say(text.codeAttached(on), 'check');
+      return null;
+    }
+    setBusy(true);
+    try {
+      codeAttached(await ordersApi.attachCode(sent.id, typed, sent.version), sent);
+      return null;
+    } catch (failure) {
+      const lost =
+        failure instanceof ApiError &&
+        (failure.code === 'NETWORK_ERROR' || failure.code === 'ORDER_CHANGED');
+      const again = lost ? await ordersApi.get(sent.id).catch(() => null) : null;
+      if (again && attachedMeanwhile(again, typed, sent)) {
+        codeAttached(again, sent);
+        return null;
+      }
+      if (again?.status === 'AT_REGISTER') atRegister.replace(again);
+      return errorMessage(failure);
+    } finally {
+      setBusy(false);
+      refresh();
+    }
+  }
+
   const servingPanel = (
     <ServingPanel
       mine={mine}
@@ -259,6 +322,7 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
                   );
                 }}
                 onPay={pay}
+                onAttachCode={attachCode}
               />
             ) : (
               <p className="m-auto text-ink-2">{text.loadingOrder}</p>

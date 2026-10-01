@@ -6,13 +6,14 @@ import {
   type PaymentInput,
   type QuoteLine,
 } from '@vente-web/shared';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { labels } from '../labels.js';
 import { buttonClass, sheetClass, tagClass } from '../ui/button.js';
 import { CELL, HEAD, isZero } from '../ui/document-table.js';
 import { AmountHead, TotalsList } from '../ui/DocumentTable.js';
 import { Icon } from '../ui/Icon.js';
+import { DiscountCodeSheet } from '../sales/DiscountCodeSheet.js';
 import { CancelOrderSheet } from './CancelOrderSheet.js';
 import { LineAdjustSheet } from './LineAdjustSheet.js';
 import { PaymentSheet } from './PaymentSheet.js';
@@ -34,12 +35,16 @@ interface OrderControlProps {
   onRemove: (line: QuoteLine) => Promise<boolean>;
   onCancel: (reason: string) => Promise<boolean>;
   onPay: (input: PaymentInput, key: string) => Promise<boolean>;
+  /** The owner's code typed in its sheet: null once attached, else why it was refused. */
+  onAttachCode: (code: string) => Promise<string | null>;
 }
 
 /**
  * The order at the register, checked with the customer before payment (§5.6): its lines as a
  * table (RG-DEV-05) with where each discount comes from, a quantity lowered or a line removed
- * (RG-CMD-05b), or the whole order cancelled with a reason (RG-ANN-01).
+ * (RG-CMD-05b), or the whole order cancelled with a reason (RG-ANN-01). The owner's code, typed
+ * here before payment, grants its discounts beyond the caps (RG-CMD-05b, H42); once attached, its
+ * tag takes the button's place.
  */
 export function OrderControl({
   order,
@@ -48,12 +53,25 @@ export function OrderControl({
   onRemove,
   onCancel,
   onPay,
+  onAttachCode,
 }: OrderControlProps) {
   // The line open by its sale unit, one per order: a line removed elsewhere renumbers the others,
   // never the article the sheet was opened on; gone itself, the sheet closes.
   const [editing, setEditing] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [paying, setPaying] = useState(false);
+  const [coding, setCoding] = useState(false);
+  const tag = useRef<HTMLSpanElement>(null);
+  const shownCode = useRef(order.discountCode?.code ?? null);
+  // The code attached, its button gives way to the tag: the focus, left on nothing as the sheet
+  // closes, goes to the tag, so a screen reader says the code is on.
+  useEffect(() => {
+    const code = order.discountCode?.code ?? null;
+    if (coding || code === shownCode.current) return;
+    shownCode.current = code;
+    const lost = !document.activeElement || document.activeElement === document.body;
+    if (code && lost) tag.current?.focus();
+  }, [order.discountCode, coding]);
   const line = order.lines.find((candidate) => candidate.productUnitId === editing) ?? null;
   const ticket = order.ticket ? ticketLabel(order.ticket) : order.number;
   const done = (ok: boolean) => {
@@ -142,14 +160,37 @@ export function OrderControl({
         </table>
       </div>
       <div className="flex shrink-0 flex-wrap items-end gap-x-6 gap-y-2 border-t-2 border-ink px-4 py-2">
-        <button
-          type="button"
-          onClick={() => setCancelling(true)}
-          disabled={busy}
-          className={buttonClass('destructive', 'md', 'shrink-0')}
-        >
-          {text.cancelOrder}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          {order.discountCode ? (
+            <span
+              ref={tag}
+              tabIndex={-1}
+              className="inline-flex min-h-12 items-center gap-2 rounded-control border border-indigo bg-indigo-soft px-4 font-semibold text-ink figures"
+            >
+              <Icon name="key" className="size-5 text-indigo" />
+              {labels.sales.code.tag(order.discountCode.code)}
+            </span>
+          ) : (
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => setCoding(true)}
+              disabled={busy}
+              className={buttonClass('secondary', 'md', 'shrink-0')}
+            >
+              <Icon name="key" className="size-5" />
+              {labels.sales.code.open}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setCancelling(true)}
+            disabled={busy}
+            className={buttonClass('destructive', 'md', 'shrink-0')}
+          >
+            {text.cancelOrder}
+          </button>
+        </div>
         <div className="ml-auto flex flex-col items-end gap-1">
           <TotalsList totals={order} />
           <button
@@ -187,6 +228,13 @@ export function OrderControl({
             })
           }
           onClose={() => setPaying(false)}
+        />
+      )}
+      {coding && (
+        <DiscountCodeSheet
+          hint={text.codeHint}
+          onAttach={onAttachCode}
+          onClose={() => setCoding(false)}
         />
       )}
       {cancelling && (

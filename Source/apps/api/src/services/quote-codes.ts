@@ -15,7 +15,7 @@ import type { Db } from '../db.js';
 import { AppError } from '../errors.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { by, type Actor } from './actor.js';
-import { recordAudit } from './audit.js';
+import { recordAudit, type AuditTx } from './audit.js';
 import { CODE_SELECT, findOrder, grantsOf, usedCode } from './order-view.js';
 import { asAmount } from './orders.js';
 import {
@@ -41,6 +41,56 @@ async function draftToCode(db: Db, actor: Actor, id: string, version: number) {
   // One code per order (H42): its grants stay with it until the invoice.
   if (usedCode(order)) throw new AppError(409, 'QUOTE_HAS_CODE');
   return order;
+}
+
+/**
+ * The owner's code typed, as it may go on this order (RG-REM-04, H41, H42): known, active and
+ * not expired, issued for this very order or for its customer.
+ */
+export async function usableCode(
+  db: Db,
+  typed: string,
+  order: { id: string; customerId: string },
+  now: Date,
+) {
+  const code = await db.discountCode.findUnique({
+    where: { code: groupDiscountCode(normalizeDiscountCode(typed)) },
+    select: { ...CODE_SELECT, status: true, expiresAt: true, orderId: true, customerId: true },
+  });
+  if (!code) throw new AppError(422, 'DISCOUNT_CODE_UNKNOWN');
+  if (code.status !== 'ACTIVE' || code.expiresAt <= now) {
+    throw new AppError(409, 'DISCOUNT_CODE_NOT_ACTIVE');
+  }
+  if (code.orderId ? code.orderId !== order.id : code.customerId !== order.customerId) {
+    throw new AppError(409, 'DISCOUNT_CODE_OTHER_CUSTOMER');
+  }
+  return code;
+}
+
+/**
+ * The code used on the order, inside its transaction (RG-REM-05): single use — of two orders
+ * typing the same code, the first one takes it. Audited.
+ */
+export async function useCode(
+  tx: AuditTx,
+  actor: Actor,
+  codeId: string,
+  orderId: string,
+  now: Date,
+): Promise<void> {
+  const used = await tx.discountCode.updateMany({
+    where: { id: codeId, status: 'ACTIVE', expiresAt: { gt: now } },
+    data: { status: 'USED', usedAt: now, usedOnOrderId: orderId },
+  });
+  if (used.count === 0) throw new AppError(409, 'DISCOUNT_CODE_NOT_ACTIVE');
+  await recordAudit(tx, {
+    ...by(actor),
+    action: 'discount_code.used',
+    entityType: 'discount_code',
+    entityId: codeId,
+    before: { status: 'ACTIVE' },
+    after: { status: 'USED', orderId },
+  });
 }
 
 /**
@@ -73,18 +123,7 @@ export async function attachDiscountCode(
   now = new Date(),
 ): Promise<Quote> {
   const order = await draftToCode(db, actor, id, version);
-  const code = await db.discountCode.findUnique({
-    where: { code: groupDiscountCode(normalizeDiscountCode(typed)) },
-    select: { ...CODE_SELECT, status: true, expiresAt: true, orderId: true, customerId: true },
-  });
-  if (!code) throw new AppError(422, 'DISCOUNT_CODE_UNKNOWN');
-  if (code.status !== 'ACTIVE' || code.expiresAt <= now) {
-    throw new AppError(409, 'DISCOUNT_CODE_NOT_ACTIVE');
-  }
-  if (code.orderId ? code.orderId !== id : code.customerId !== order.customerId) {
-    throw new AppError(409, 'DISCOUNT_CODE_OTHER_CUSTOMER');
-  }
-
+  const code = await usableCode(db, typed, order, now);
   const grants = grantsOf(code);
   const priced = await priceLines(
     db,
@@ -124,12 +163,7 @@ export async function attachDiscountCode(
 
   return db.$transaction(async (tx) => {
     const before = await loadQuote(tx, id);
-    // Single use (RG-REM-05): of two quotes typing the same code, the first one takes it.
-    const used = await tx.discountCode.updateMany({
-      where: { id: code.id, status: 'ACTIVE', expiresAt: { gt: now } },
-      data: { status: 'USED', usedAt: now, usedOnOrderId: id },
-    });
-    if (used.count === 0) throw new AppError(409, 'DISCOUNT_CODE_NOT_ACTIVE');
+    await useCode(tx, actor, code.id, id, now);
     const { count } = await tx.order.updateMany({
       where: { id, status: 'DRAFT', version },
       data: { ...orderAmounts(totals, code.id), version: { increment: 1 } },
@@ -140,14 +174,6 @@ export async function attachDiscountCode(
       data: lineRows(applied, totals, code.id).map((row) => ({ ...row, orderId: id })),
     });
     const quote = await loadQuote(tx, id);
-    await recordAudit(tx, {
-      ...by(actor),
-      action: 'discount_code.used',
-      entityType: 'discount_code',
-      entityId: code.id,
-      before: { status: 'ACTIVE' },
-      after: { status: 'USED', orderId: id },
-    });
     await recordAudit(tx, {
       ...by(actor),
       action: 'quote.updated',

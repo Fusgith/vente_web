@@ -54,6 +54,7 @@ function snapshot(overrides: Partial<InvoiceSnapshot> = {}): InvoiceSnapshot {
       discountTotal: '0.00',
       total: '65000.00',
     },
+    discountCode: null,
     vat: null,
     vatNotice: '',
     payment: {
@@ -108,6 +109,14 @@ describe('invoice PDF (RG-FAC-02, H33)', () => {
     expect(at('Net à payer')).toBeGreaterThan(at('10 833,33 MGA'));
     const notice = texts(invoiceDocument(snapshot({ vatNotice: 'TVA non applicable' })).content);
     expect(notice).toContain('TVA non applicable');
+  });
+
+  it('names the owner’s code under which discounts went beyond the caps (RG-REM-07)', () => {
+    const header = (doc: ReturnType<typeof invoiceDocument>) =>
+      texts((doc.content as unknown[])[0]);
+    expect(header(invoiceDocument(snapshot()))).not.toContain('Code de remise');
+    const coded = header(invoiceDocument(snapshot({ discountCode: 'R7K4-29QP' })));
+    expect(coded).toEqual(expect.arrayContaining(['Code de remise', 'R7K4-29QP']));
   });
 
   it('renders to a PDF', async () => {

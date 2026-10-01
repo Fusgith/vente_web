@@ -81,6 +81,14 @@ export const registerLabels = {
   close: 'Fermer',
   withinCap: 'dans le plafond',
   byCode: 'code du boss',
+  /** The owner's code typed before payment (T-034c, RG-CMD-05b, H42). */
+  codeHint:
+    'Le code donné par le boss, comme R7K4-29QP. Il ne sert qu’une fois : appliqué, il reste sur cette commande.',
+  codeAttached: (code: string) =>
+    `Code ${code} appliqué : les remises du boss sont sur la commande.`,
+  /** The total it does not cover lost headroom to the grants: the API brought it down (H42). */
+  codeAttachedLowered: (code: string, amount: string) =>
+    `Code ${code} appliqué. La remise sur le total, qu’il ne couvre pas, passe à ${amount} : les lignes ont moins de marge.`,
   cancelOrder: 'Annuler la commande',
   cancelTitle: (ticket: string, name: string) => `Annuler la commande ${ticket} — ${name}`,
   cancelReason: 'Motif de l’annulation (obligatoire)',

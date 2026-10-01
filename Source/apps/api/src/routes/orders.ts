@@ -1,4 +1,5 @@
 import {
+  discountCodeAttachSchema,
   orderAdjustSchema,
   orderCancelSchema,
   orderSubmitSchema,
@@ -11,7 +12,7 @@ import { z } from 'zod';
 
 import { AppError } from '../errors.js';
 import { actorOf, authOf, requireRole } from '../plugins/session.js';
-import { adjustOrder, cancelOrder } from '../services/order-changes.js';
+import { adjustOrder, attachOrderCode, cancelOrder } from '../services/order-changes.js';
 import { loadOrder, submitOrder } from '../services/orders.js';
 import {
   orderAdjusted,
@@ -81,6 +82,19 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
       const { id } = paramsSchema.parse(request.params);
       const body = orderAdjustSchema.parse(request.body);
       const order = await adjustOrder(app.db, actorOf(authOf(request)), id, body);
+      app.realtime.publish(orderAdjusted(id));
+      return order;
+    },
+  );
+
+  // The owner's code typed at the register before payment (RG-CMD-05b, RG-REM-04, H42).
+  app.post(
+    '/orders/:id/discount-code',
+    { preHandler: requireRole('cashier', 'manager') },
+    async (request): Promise<Order> => {
+      const { id } = paramsSchema.parse(request.params);
+      const body = discountCodeAttachSchema.parse(request.body);
+      const order = await attachOrderCode(app.db, actorOf(authOf(request)), id, body);
       app.realtime.publish(orderAdjusted(id));
       return order;
     },
