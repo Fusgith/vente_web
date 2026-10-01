@@ -137,6 +137,16 @@ describe('register: the order checked before payment (T-050, §5.6)', () => {
     expect(sheet).not.toHaveTextContent('SAV-001');
   });
 
+  it('keeps a paying article: a change leaving the order at 0,00 MGA is refused (H50)', async () => {
+    mount({ [`POST ${ORDER}/adjust`]: apiError(422, 'ORDER_TOTAL_ZERO') });
+    fireEvent.click(await screen.findByRole('button', { name: text.modifyLine(2) }));
+    fireEvent.click(screen.getByRole('button', { name: text.removeLine }));
+    await waitFor(() =>
+      expect(bandAlert()).toHaveTextContent(shown(ERROR_LABELS.ORDER_TOTAL_ZERO)),
+    );
+    expect(screen.getAllByRole('row')).toHaveLength(3);
+  });
+
   it('reloads the order changed meanwhile elsewhere', async () => {
     const api = mount({ [`POST ${ORDER}/adjust`]: apiError(409, 'ORDER_CHANGED') });
     fireEvent.click(await screen.findByRole('button', { name: text.modifyLine(2) }));

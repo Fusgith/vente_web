@@ -2,6 +2,24 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 01/10/2026 — T-034d commande jamais gratuite (H50) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- H50 tranchée par l'utilisateur : la proposition (encaisser une commande à 0,00 MGA sans moyen de paiement) est refusée ; l'alternative est retenue. CDC métier §16.10, RG-PAY-02 et RG-REM-04 mises à jour.
+- API : refus 422 avant toute écriture.
+  - Un code qui amènerait le total à 0,00 MGA, sur le devis comme à la caisse : `DISCOUNT_CODE_FREE_ORDER`. Le code reste actif, inutilisé.
+  - La validation d'un devis à 0,00 MGA et une baisse ou une suppression de ligne à la caisse qui y mènerait : `ORDER_TOTAL_ZERO`.
+  - Un devis enregistré à 0,00 MGA reste permis : c'est un brouillon.
+- Tablette : « Valider » à 0,00 MGA est refusé tout de suite, sans rien envoyer. Caisse et feuille du code : le refus de l'API s'affiche avec son libellé.
+- Revue (2 relecteurs) : l'en-tête du CDC métier cite H50 ; le libellé du refus parle du total, plus seulement des articles.
+- Tests : API 2, tablette 1, caisse 2 ; format:check, lint, typecheck (0 erreur), suite complète : 564 tests verts.
+
+**Reste** : T-033 (demandes de remise) ; T-035 (devis et commandes du commercial).
+
+**Décisions** : aucune dépendance ajoutée. H50 refusée (§16.10) : une commande n'est jamais gratuite.
+
+**Questions** : valider H38 à H42 et H49.
+
 ## 01/10/2026 — T-034c code du boss saisi à la caisse, nommé sur la facture — agent : Claude Code (Opus 5.5)
 
 **Fait** :

@@ -109,6 +109,16 @@ describe('register: the owner’s code typed before payment (T-034c, RG-CMD-05b,
     expect(screen.getByRole('button', { name: code.open })).toBeVisible();
   });
 
+  it('keeps the code active when it would make the order free (H50)', async () => {
+    mount({ [ATTACH]: apiError(422, 'DISCOUNT_CODE_FREE_ORDER') });
+    const sheet = await typeCode('R7K4-29QP');
+
+    expect(await within(sheet).findByRole('alert')).toHaveTextContent(
+      shown(ERROR_LABELS.DISCOUNT_CODE_FREE_ORDER),
+    );
+    expect(screen.queryByText(code.tag('R7K4-29QP'))).toBeNull();
+  });
+
   it('finds the code on when its answer was lost on the Wi-Fi', async () => {
     const api = mount({ [ATTACH]: 'network' });
     await screen.findByRole('button', { name: code.open });

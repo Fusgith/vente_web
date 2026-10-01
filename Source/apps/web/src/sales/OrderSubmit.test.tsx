@@ -176,6 +176,32 @@ describe('quote screen: validating the order (T-032, RG-CMD-03/05)', () => {
     expect(screen.getByText(`${text.savedAs(NUMBER)}, ${text.changed}`)).toBeVisible();
   });
 
+  it('never validates an order at 0,00 MGA: nothing is sent (H50)', () => {
+    const soap = [
+      { type: 'add', hit: SAVON, unitId: PAQUET!.id, qty: '2' },
+      { type: 'select', key: null },
+      { type: 'setCustomer', customer: CUSTOMER },
+    ].reduce((state, action) => draftReducer(state, action as never), emptyDraft);
+    // The owner's code gave the soap away, all of it: the only line.
+    const free = draftReducer(soap, {
+      type: 'codeAttached',
+      quote: {
+        ...savedQuote(soap, NUMBER, 2),
+        discountCode: {
+          code: 'R7K4-29QP',
+          items: [{ productId: SAVON.id, discount: { kind: 'pct', value: '100' } }],
+        },
+      },
+      sent: soap,
+    });
+    expect(computeQuote(quoteInput(free)).total).toBe('0.00');
+    const api = mount({}, free);
+    fireEvent.click(submitButton());
+
+    expect(bandAlert()).toHaveTextContent(shown(ERROR_LABELS.ORDER_TOTAL_ZERO));
+    expect(api.calls.filter((call) => call.method !== 'GET')).toHaveLength(0);
+  });
+
   it('asks for the customer before anything is sent', () => {
     const api = mount({}, { ...ready, customer: null });
     fireEvent.click(submitButton());

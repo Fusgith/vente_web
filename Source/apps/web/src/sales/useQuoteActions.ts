@@ -147,9 +147,14 @@ export function useQuoteActions(draft: DraftState, dispatch: Dispatch<DraftActio
 
   const submit = () =>
     run('submit', async () => {
+      const shown = computeQuote(quoteInput(draft)).total;
+      // An order is never free (RG-PAY-02, H50): the API would refuse it, nothing is sent.
+      if (shown === '0.00') {
+        sayError(ERROR_LABELS.ORDER_TOTAL_ZERO);
+        return;
+      }
       let target = draft.saved;
       if (!target || unsavedChanges(draft)) {
-        const shown = computeQuote(quoteInput(draft)).total;
         const quote = await persist(text.customerFirstOrder);
         if (!quote) return;
         if (quote.total !== shown) {

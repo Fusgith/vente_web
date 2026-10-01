@@ -11,7 +11,13 @@ import { AppError } from '../errors.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit, type AuditSnapshot, type AuditTx } from './audit.js';
 import { findOrder, grantsOf, toOrder, usedCode, type StoredOrder } from './order-view.js';
-import { assertActiveCustomer, priceLines, totalsWithinCaps, type PricedLine } from './quotes.js';
+import {
+  assertActiveCustomer,
+  assertNotFree,
+  priceLines,
+  totalsWithinCaps,
+  type PricedLine,
+} from './quotes.js';
 import { nextSequenceValue } from './sequences.js';
 import { readSetting } from './settings.js';
 import { CLOCK_TIME, nextShopTime, shopDateValue } from './shop-time.js';
@@ -87,6 +93,8 @@ async function priceAgain(db: Db, order: StoredOrder) {
     asAmount(order.orderDiscountAmount),
     grantsOf(usedCode(order)),
   );
+  // A quote saved at 0,00 MGA stays a draft: it never becomes an order (H50).
+  assertNotFree(totals);
   return { priced, totals };
 }
 

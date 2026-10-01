@@ -262,5 +262,44 @@ describe.skipIf(!TEST_DATABASE_URL)(
       );
       expect(await t.db.discountCode.count({ where: { status: 'USED' } })).toBe(1);
     });
+
+    it('never makes an order free: such a code, or a line removed, refused (H50)', async () => {
+      const order = await atRegister(null, null, null);
+      // The whole total given away: refused, the code left active for another try.
+      const all = await issued([{ productId: null, discount: { kind: 'pct', value: '100' } }]);
+      const free = await attach(order, all.code);
+      expect(free.statusCode, free.body).toBe(422);
+      expect(free.json()).toMatchObject({ code: 'DISCOUNT_CODE_FREE_ORDER' });
+      const unused = await t.db.discountCode.findUniqueOrThrow({ where: { id: all.id } });
+      expect(unused).toMatchObject({ status: 'ACTIVE', usedOnOrderId: null });
+
+      // The soap given away, the nails paid: the code goes on.
+      const soap = await issued([
+        { productId: products.soap, discount: { kind: 'pct', value: '100' } },
+      ]);
+      const attached = await attach(order, soap.code);
+      expect(attached.statusCode, attached.body).toBe(200);
+      const coded = orderSchema.parse(attached.json());
+      expect(coded).toMatchObject({ version: order.version + 1, total: '19500.00' });
+
+      // The nails, all that is paid, cannot go: the order would be free.
+      const adjust = (qty: string | null) =>
+        post(`/orders/${order.id}/adjust`, cookies.cashier, {
+          version: coded.version,
+          changes: [{ position: 2, qty }],
+        });
+      const removed = await adjust(null);
+      expect(removed.statusCode, removed.body).toBe(422);
+      expect(removed.json()).toMatchObject({ code: 'ORDER_TOTAL_ZERO' });
+      const kept = await t.db.order.findUniqueOrThrow({
+        where: { id: order.id },
+        include: { lines: true },
+      });
+      expect([kept.version, kept.lines.length]).toEqual([coded.version, 2]);
+      // Lowered, still paid: it goes through.
+      const lowered = await adjust('1');
+      expect(lowered.statusCode, lowered.body).toBe(200);
+      expect(orderSchema.parse(lowered.json())).toMatchObject({ total: '6500.00' });
+    });
   },
 );

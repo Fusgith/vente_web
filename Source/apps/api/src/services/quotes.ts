@@ -157,6 +157,17 @@ export function totalsWithinCaps(
   return totals;
 }
 
+/**
+ * An order is never free (RG-PAY-02, H50): totals brought to 0,00 MGA are refused — by a code,
+ * a validation or a change at the register —, `reason` telling which.
+ */
+export function assertNotFree(
+  totals: QuoteTotals,
+  reason: 'ORDER_TOTAL_ZERO' | 'DISCOUNT_CODE_FREE_ORDER' = 'ORDER_TOTAL_ZERO',
+): void {
+  if (totals.total === '0.00') throw new AppError(422, reason);
+}
+
 /** The order's amounts; the code is named where its grant was used (RG-REM-07). */
 export function orderAmounts(totals: QuoteTotals, codeId: string | null = null) {
   return {

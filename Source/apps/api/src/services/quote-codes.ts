@@ -19,6 +19,7 @@ import { recordAudit, type AuditTx } from './audit.js';
 import { CODE_SELECT, findOrder, grantsOf, usedCode } from './order-view.js';
 import { asAmount } from './orders.js';
 import {
+  assertNotFree,
   grantsOn,
   lineRows,
   loadQuote,
@@ -160,6 +161,8 @@ export async function attachDiscountCode(
     ? grantOn(granted.order, totalsWithinCaps(applied, null, grants).subtotal)
     : keptOrderDiscount(applied, saved, grants);
   const totals = totalsWithinCaps(applied, orderDiscount, grants);
+  // Refused before it is used: the code stays active for another try (H50).
+  assertNotFree(totals, 'DISCOUNT_CODE_FREE_ORDER');
 
   return db.$transaction(async (tx) => {
     const before = await loadQuote(tx, id);

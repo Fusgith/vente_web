@@ -42,6 +42,8 @@ export const ERROR_LABELS = {
   DISCOUNT_CODE_UNKNOWN: 'Ce code de remise n’existe pas : vérifiez sa saisie.',
   DISCOUNT_CODE_OTHER_CUSTOMER: 'Ce code de remise a été émis pour un autre client.',
   DISCOUNT_CODE_NOTHING_COVERED: 'Ce code de remise ne couvre aucun de ces articles, ni le total.',
+  DISCOUNT_CODE_FREE_ORDER:
+    'Ce code mettrait le total à 0,00\u00a0MGA : une commande n’est jamais gratuite. Il reste actif ; le boss peut en émettre un autre.',
   QUOTE_HAS_CODE: 'Un code de remise est déjà rattaché à ce devis.',
   ORDER_HAS_CODE: 'Un code de remise est déjà rattaché à cette commande : un seul par commande.',
   DISCOUNT_CODE_PRODUCT_UNAVAILABLE: 'Un article du code n’est plus en vente : retirez-le du code.',
@@ -59,6 +61,8 @@ export const ERROR_LABELS = {
   ORDER_NOT_ADJUSTABLE:
     'Une quantité ne peut que baisser à la caisse : un ajout passe par le commercial.',
   ORDER_LAST_LINE: 'C’est la dernière ligne : annulez la commande plutôt que de la supprimer.',
+  ORDER_TOTAL_ZERO:
+    'Le total serait de 0,00\u00a0MGA : une commande n’est jamais gratuite, il doit rester un montant à payer.',
   ORDER_NOT_CANCELLABLE: 'Cette commande ne s’annule plus ici : elle est payée, livrée ou close.',
   REGISTER_BUSY:
     'Un client est déjà à votre caisse : encaissez-le ou déclarez-le absent avant d’en appeler un autre.',

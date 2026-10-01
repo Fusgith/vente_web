@@ -21,7 +21,7 @@ import { by, type Actor } from './actor.js';
 import { recordAudit, type AuditSnapshot } from './audit.js';
 import { findOrder, grantsOf, toOrder, usedCode, type StoredOrder } from './order-view.js';
 import { usableCode, useCode } from './quote-codes.js';
-import { orderAmounts } from './quotes.js';
+import { assertNotFree, orderAmounts } from './quotes.js';
 import { releaseReservations, shrinkReservations } from './stock-reservation.js';
 
 type StoredLine = StoredOrder['lines'][number];
@@ -148,6 +148,8 @@ export async function adjustOrder(
   const order = await atMyRegister(db, actor, id, version);
   const kept = keptLines(order, changes);
   const totals = recompute(order, kept);
+  // The lines left all given away by the owner's code: the order would be free (H50).
+  assertNotFree(totals);
   const rows = kept.map(({ line, lowered }, index) => ({
     line,
     lowered,
@@ -266,6 +268,8 @@ export async function attachOrderCode(
   if (usedCode(order)) throw new AppError(409, 'ORDER_HAS_CODE');
   const code = await usableCode(db, typed, order, now);
   const { granted, totals } = withCode(order, grantsOf(code));
+  // Refused before it is used: the code stays active for another try (H50).
+  assertNotFree(totals, 'DISCOUNT_CODE_FREE_ORDER');
 
   return db.$transaction(async (tx) => {
     await useCode(tx, actor, code.id, id, now);

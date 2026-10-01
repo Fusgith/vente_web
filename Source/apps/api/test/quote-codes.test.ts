@@ -234,5 +234,44 @@ describe.skipIf(!TEST_DATABASE_URL)(
       const stored = await t.db.discountCode.findUniqueOrThrow({ where: { id: code.id } });
       expect(stored.status).toBe('ACTIVE');
     });
+
+    it('never makes an order free: such a code refused, a quote at 0,00 never validated (H50)', async () => {
+      const quote = await quoted();
+      // The whole total given away: refused, the code left active for another try.
+      const all = await issued([{ productId: null, discount: { kind: 'pct', value: '100' } }]);
+      const free = await attach(quote.id, all.code, 1);
+      expect(free.statusCode, free.body).toBe(422);
+      expect(free.json()).toMatchObject({ code: 'DISCOUNT_CODE_FREE_ORDER' });
+      const unused = await t.db.discountCode.findUniqueOrThrow({ where: { id: all.id } });
+      expect(unused).toMatchObject({ status: 'ACTIVE', usedOnOrderId: null });
+      expect((await t.db.order.findUniqueOrThrow({ where: { id: quote.id } })).version).toBe(1);
+
+      // The soap given away, the nails paid: the code goes on.
+      const soap = await issued([
+        { productId: products.soap, discount: { kind: 'pct', value: '100' } },
+      ]);
+      expect((await attach(quote.id, soap.code, 1)).statusCode).toBe(200);
+      // The nails removed, the draft saves at 0,00 — but never becomes an order.
+      const saved = await request(t.app, 'PUT', `/api/v1/quotes/${quote.id}`, {
+        cookie: sales,
+        body: {
+          ...draft(),
+          lines: [{ ...draft().lines[0], discount: { kind: 'pct', value: '100' } }],
+          orderDiscount: null,
+          version: 2,
+        },
+      });
+      expect(saved.statusCode, saved.body).toBe(200);
+      expect(quoteSchema.parse(saved.json())).toMatchObject({ total: '0.00' });
+      const submitted = await request(t.app, 'POST', `/api/v1/orders/${quote.id}/submit`, {
+        cookie: sales,
+        body: { version: 3 },
+      });
+      expect(submitted.statusCode, submitted.body).toBe(422);
+      expect(submitted.json()).toMatchObject({ code: 'ORDER_TOTAL_ZERO' });
+      const stored = await t.db.order.findUniqueOrThrow({ where: { id: quote.id } });
+      expect([stored.status, stored.ticketSeq, stored.version]).toEqual(['DRAFT', null, 3]);
+      expect(await t.db.reservation.count()).toBe(0);
+    });
   },
 );
