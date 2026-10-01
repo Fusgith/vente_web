@@ -2,6 +2,25 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 01/10/2026 — H38 à H42 et H49 validées — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- L'utilisateur valide les propositions telles qu'écrites :
+  - H38 : indicateurs de la supervision ;
+  - H39 : ajustements de stock ;
+  - H40 : plafonds de remise ;
+  - H41 : codes de remise ;
+  - H42 : saisie du code sur un devis ou à la caisse ;
+  - H49 : modalités des remarques du boss — catégories de client tenues par l'admin, articles à promouvoir marqués par le boss seul, validation du responsable à la caisse par son identifiant.
+- CDC métier : les six lignes passent du §16.2 au §16.10. Les règles RG-DEV-04, RG-DEV-06, RG-STK-05/06, RG-REM-01/04 et RG-DSP-04 citent la décision au lieu de l'hypothèse ; en-tête et §16.9 à jour.
+- CDC technique, backlog, CLAUDE.md et commentaires du code : les marqueurs ⚠️ de ces hypothèses sont retirés. Aucun changement de comportement : le code suivait déjà ces propositions.
+
+**Reste** : T-033 (demandes de remise) ; T-035 (devis et commandes du commercial) ; T-029b, T-037, T-017c suivent H49.
+
+**Décisions** : H38 à H42 et H49 validées (§16.10). Plus aucune hypothèse ouverte.
+
+**Questions** : aucune.
+
 ## 01/10/2026 — T-034d commande jamais gratuite (H50) — agent : Claude Code (Opus 5.5)
 
 **Fait** :

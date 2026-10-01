@@ -17,7 +17,7 @@ import {
 
 const MINUTE = 60_000;
 
-describe.skipIf(!TEST_DATABASE_URL)('the manager’s day at a glance (RG-DSP-04, ⚠️ H38)', () => {
+describe.skipIf(!TEST_DATABASE_URL)('the manager’s day at a glance (RG-DSP-04, H38)', () => {
   let t: TestApp;
   const cookies = { sales: '', cashier: '', warehouse: '', manager: '' };
   let customer = '';

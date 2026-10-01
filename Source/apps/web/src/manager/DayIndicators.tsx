@@ -28,7 +28,7 @@ const minutes = (value: number | null) =>
   );
 
 /**
- * The day at a glance (RG-DSP-04, ⚠️ H38): the average waits at the register and at the
+ * The day at a glance (RG-DSP-04, H38): the average waits at the register and at the
  * counters, the orders under way, those paid and not yet delivered. Read again whenever a queue
  * or an order changes, and every minute.
  */

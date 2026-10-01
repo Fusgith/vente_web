@@ -60,7 +60,7 @@ export async function loadProductStock(db: Db, productId: string): Promise<Produ
 /**
  * A manual adjustment (RG-STK-05): one ADJUSTMENT movement in base unit, the stock row moved in
  * the same transaction, the audit trail before → after — never a quantity written over. Goods
- * out never exceed the available stock (RG-STK-06; the goods of validated orders, ⚠️ H39).
+ * out never exceed the available stock (RG-STK-06; the goods of validated orders, H39).
  * Returns the new state, and whether the product now sits at or under its threshold.
  */
 export async function adjustStock(

@@ -41,7 +41,7 @@ function refusal(error: unknown, baseUnit: string): string {
 /**
  * A manual adjustment by the manager (RG-STK-05): goods out or in, in any of the product's units,
  * with a reason from the list and a free comment; the stock as it stands shown above, in base
- * unit (RG-STK-01). The API refuses more out than is available (RG-STK-06, ⚠️ H39).
+ * unit (RG-STK-01). The API refuses more out than is available (RG-STK-06, H39).
  */
 export function AdjustStockSheet({
   product,

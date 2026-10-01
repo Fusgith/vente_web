@@ -55,7 +55,7 @@ export type StockAlerts = z.infer<typeof stockAlertsSchema>;
 
 /**
  * Details of ADJUSTMENT_TOO_LARGE: at most the available stock goes out, so that the stock
- * never turns negative (RG-STK-06) and the goods of validated orders stay theirs (⚠️ H39).
+ * never turns negative (RG-STK-06) and the goods of validated orders stay theirs (H39).
  */
 export interface AdjustmentTooLarge {
   available: string;

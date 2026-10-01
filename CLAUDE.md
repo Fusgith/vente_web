@@ -11,7 +11,7 @@ livraison par plusieurs magasiniers, appel des clients par numéro ou verbal, bo
 ## ✅ Statut : DÉVELOPPEMENT — GO donné le 21/09/2026 (`Docs/journal.md`)
 - Le code vit sous `Source/` ; on avance **une tâche du backlog à la fois** (`T-nnn`), directement sur `main` : pas de branche ni de PR (l'utilisateur travaille seul avec l'agent, 23/09/2026).
 - Les CDC restent la référence : une règle `RG-*` qui change se modifie d'abord dans `Docs/01-cdc-metier.md`.
-- H14–H28 tranchées le 26/09/2026, H29 le 27/09/2026, H30 à H35 le 28/09/2026, H36 et H37 puis H43 à H48 (remarques du boss) le 29/09/2026, H50 (commande jamais à 0,00 MGA) le 01/10/2026 (CDC métier §16.5 à §16.10) ; ouvertes : H38 (indicateurs de la supervision), H39 (ajustements de stock), H40 (plafonds de remise), H41 (codes de remise), H42 (code saisi sur un devis ou à la caisse) et H49 (modalités des remarques du boss), §16.2. Un nouveau doute s'inscrit ⚠️ HYPOTHÈSE au CDC concerné et se code selon sa formulation écrite.
+- H14–H28 tranchées le 26/09/2026, H29 le 27/09/2026, H30 à H35 le 28/09/2026, H36 et H37 puis H43 à H48 (remarques du boss) le 29/09/2026, H38 à H42, H49 et H50 (commande jamais à 0,00 MGA) le 01/10/2026 (CDC métier §16.5 à §16.10) ; aucune hypothèse ouverte (§16.2). Un nouveau doute s'inscrit ⚠️ HYPOTHÈSE au CDC concerné et se code selon sa formulation écrite.
 
 ## Langues
 - Documentation, interface utilisateur, messages, journal : **français**.

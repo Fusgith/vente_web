@@ -15,7 +15,7 @@ function averageMinutes(waits: readonly number[]): number | null {
 }
 
 /**
- * The manager's day at a glance (RG-DSP-04, ⚠️ H38). The register wait runs from validation to
+ * The manager's day at a glance (RG-DSP-04, H38). The register wait runs from validation to
  * the call, over the orders called since the shop's day began (a customer absent then called
  * again counts once, their whole wait); the delivery wait from payment to the first counter
  * taking the order, over the orders first taken today. The counts are those of right now.
