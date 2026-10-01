@@ -14,9 +14,11 @@ import { buttonClass, sheetClass, tagClass } from '../ui/button.js';
 import { CELL, HEAD, isZero } from '../ui/document-table.js';
 import { AmountHead, TotalsList } from '../ui/DocumentTable.js';
 import { Icon } from '../ui/Icon.js';
+import { DiscountCodeSheet } from './DiscountCodeSheet.js';
 import { quoteInput } from './discount-entry.js';
 import { unsavedChanges, type DraftState } from './draft.js';
 import { OrderDiscountSheet } from './OrderDiscountSheet.js';
+import type { QuoteBusy } from './useQuoteActions.js';
 
 interface DraftTableProps {
   draft: DraftState;
@@ -24,8 +26,10 @@ interface DraftTableProps {
   onOrderDiscount: (discount: DiscountEntry | null) => void;
   onSave: () => void;
   onSubmit: () => void;
-  /** A save or a validation under way: both buttons wait. */
-  busy: 'save' | 'submit' | null;
+  /** The owner's code typed in its sheet: null once attached, else why it was refused. */
+  onAttachCode: (code: string) => Promise<string | null>;
+  /** A save, a validation or a code under way: the buttons wait. */
+  busy: QuoteBusy;
   /** The customer's picker, at the end of the header. */
   customer?: ReactNode;
 }
@@ -70,6 +74,7 @@ export function DraftTable({
   onOrderDiscount,
   onSave,
   onSubmit,
+  onAttachCode,
   busy,
   customer,
 }: DraftTableProps) {
@@ -186,7 +191,13 @@ export function DraftTable({
                             <span className="block font-semibold">
                               {text.minus(formatAmount(totals.discount))}
                             </span>
-                            <span className="block text-14 text-ink-2">
+                            <span className="flex items-center justify-end gap-1 text-14 text-ink-2">
+                              {totals.source === 'CODE' && (
+                                <>
+                                  <Icon name="key" className="size-4 text-indigo" />
+                                  <span className="sr-only">{labels.sales.code.onLine}</span>
+                                </>
+                              )}
                               {text.pct(formatQty(totals.discountPct))}
                             </span>
                           </>
@@ -207,6 +218,7 @@ export function DraftTable({
             onOrderDiscount={onOrderDiscount}
             onSave={onSave}
             onSubmit={onSubmit}
+            onAttachCode={onAttachCode}
             busy={busy}
           />
         </>
@@ -221,7 +233,8 @@ interface TotalsProps {
   onOrderDiscount: (discount: DiscountEntry | null) => void;
   onSave: () => void;
   onSubmit: () => void;
-  busy: 'save' | 'submit' | null;
+  onAttachCode: (code: string) => Promise<string | null>;
+  busy: QuoteBusy;
 }
 
 function saveLabel(draft: DraftState, busy: TotalsProps['busy']): string {
@@ -232,22 +245,66 @@ function saveLabel(draft: DraftState, busy: TotalsProps['busy']): string {
 /**
  * Under the table, the totals (RG-DEV-05). The order discount is typed from here; under the
  * amount due, the quote is saved — once saved and unchanged, its PDF opened instead, the PDF
- * being always the quote as saved — and validated into an order, the last step (T-032).
+ * being always the quote as saved — and validated into an order, the last step (T-032). The
+ * owner's code is typed from here too (T-034b); once attached, its tag takes the button's place.
  */
-function Totals({ quote, draft, onOrderDiscount, onSave, onSubmit, busy }: TotalsProps) {
-  const [open, setOpen] = useState(false);
+function Totals({
+  quote,
+  draft,
+  onOrderDiscount,
+  onSave,
+  onSubmit,
+  onAttachCode,
+  busy,
+}: TotalsProps) {
+  const [open, setOpen] = useState<'order' | 'code' | null>(null);
   const upToDate = !!draft.saved && !unsavedChanges(draft);
+  const close = () => setOpen(null);
+  const tag = useRef<HTMLSpanElement>(null);
+  const shownCode = useRef(draft.code?.code ?? null);
+  // The code attached, its button gives way to the tag: the focus, left on nothing as the sheet
+  // closes, goes to the tag, so a screen reader says the code is on.
+  useEffect(() => {
+    const code = draft.code?.code ?? null;
+    if (open !== null || code === shownCode.current) return;
+    shownCode.current = code;
+    const lost = !document.activeElement || document.activeElement === document.body;
+    if (code && lost) tag.current?.focus();
+  }, [draft.code, open]);
   return (
     <div className="flex shrink-0 flex-wrap items-end gap-x-6 gap-y-2 border-t-2 border-ink px-4 py-2">
-      <button
-        type="button"
-        aria-haspopup="dialog"
-        onClick={() => setOpen(true)}
-        className={buttonClass('secondary', 'md', 'shrink-0')}
-      >
-        <Icon name="percent" className="size-5" />
-        {labels.sales.discount.order}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          onClick={() => setOpen('order')}
+          className={buttonClass('secondary', 'md', 'shrink-0')}
+        >
+          <Icon name="percent" className="size-5" />
+          {labels.sales.discount.order}
+        </button>
+        {draft.code ? (
+          <span
+            ref={tag}
+            tabIndex={-1}
+            className="inline-flex min-h-12 items-center gap-2 rounded-control border border-indigo bg-indigo-soft px-4 font-semibold text-ink figures"
+          >
+            <Icon name="key" className="size-5 text-indigo" />
+            {labels.sales.code.tag(draft.code.code)}
+          </span>
+        ) : (
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            onClick={() => setOpen('code')}
+            disabled={busy !== null}
+            className={buttonClass('secondary', 'md', 'shrink-0')}
+          >
+            <Icon name="key" className="size-5" />
+            {labels.sales.code.open}
+          </button>
+        )}
+      </div>
       {/* The amount due, and under it the save: the last step, at the right hand's reach. */}
       <div className="ml-auto flex flex-col items-end gap-2">
         <TotalsList totals={quote} orderDiscountWrong={!quote.orderWithinLimit} />
@@ -290,13 +347,10 @@ function Totals({ quote, draft, onOrderDiscount, onSave, onSubmit, busy }: Total
           {labels.sales.discount.orderTooHigh(formatMga(quote.maxOrderDiscount))}
         </p>
       )}
-      {open && (
-        <OrderDiscountSheet
-          draft={draft}
-          onApply={onOrderDiscount}
-          onClose={() => setOpen(false)}
-        />
+      {open === 'order' && (
+        <OrderDiscountSheet draft={draft} onApply={onOrderDiscount} onClose={close} />
       )}
+      {open === 'code' && <DiscountCodeSheet onAttach={onAttachCode} onClose={close} />}
     </div>
   );
 }

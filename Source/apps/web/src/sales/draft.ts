@@ -1,11 +1,16 @@
 import {
   addQuantities,
+  discountAmount,
+  grantOn,
+  grantsFor,
+  lineGross,
   type Customer,
   type DiscountEntry,
   type Order,
   type ProductHit,
   type ProductUnitHit,
   type Quote,
+  type QuoteCode,
   type QuoteSave,
   type StockShortage,
 } from '@vente-web/shared';
@@ -48,6 +53,11 @@ export interface DraftState {
   orderDiscount: DiscountEntry | null;
   orderGranted?: DiscountEntry | null;
   saved?: SavedQuote | null;
+  /**
+   * The owner's code attached to the saved quote (RG-REM-04, H42): one per quote, for good; what it
+   * grants replaces the caps of the lines and of the total it covers.
+   */
+  code?: QuoteCode | null;
   /** Products short of stock when validation was refused (RG-CMD-02), until their lines change. */
   shortages?: StockShortage[];
   /** The sheet of those shortages, open when they arrive. */
@@ -67,6 +77,11 @@ export type DraftAction =
   | { type: 'setCustomer'; customer: DraftCustomer | null }
   /** `body`: the `saveSignature` of what was sent, lines typed meanwhile staying unsaved. */
   | { type: 'saved'; quote: Quote; body: string }
+  /**
+   * The quote as the API returned it with the owner's code attached (T-034b); `sent`: the screen
+   * as it was sent, lines typed meanwhile staying unsaved.
+   */
+  | { type: 'codeAttached'; quote: Quote; sent: DraftState }
   | { type: 'short'; shortages: StockShortage[] }
   | { type: 'closeShortages' }
   | { type: 'submitted'; order: Order }
@@ -179,6 +194,111 @@ function applySaved(state: DraftState, quote: Quote, body: string): DraftState {
   return { ...state, lines, saved: { id, number, version, body } };
 }
 
+const amountOf = (value: string): DiscountEntry | null =>
+  /[1-9]/.test(value) ? { kind: 'amount', value } : null;
+
+const sameDiscount = (a: DiscountEntry | null, b: DiscountEntry | null) =>
+  a?.kind === b?.kind && a?.value === b?.value;
+
+/** The discount a grant gives a line: an amount brought down to its gross, none once nothing. */
+export function grantedDiscount(
+  grant: DiscountEntry,
+  qty: string,
+  price: string,
+): DiscountEntry | null {
+  const discount = grantOn(grant, lineGross(qty, price));
+  return discount.kind === 'amount' ? amountOf(discount.value) : discount;
+}
+
+/** A line still at what the code grants it: its discount follows its share (H41). */
+export const followsGrant = (line: DraftLine) =>
+  !!line.granted &&
+  sameDiscount(line.discount, grantedDiscount(line.granted, line.qty, line.unit.price));
+
+/**
+ * The total the code does not cover kept its discount — unless the grants beyond the caps left it
+ * less headroom and the API brought it down to that headroom, as an amount (H42).
+ */
+export function orderBroughtDown(draft: DraftState, quote: Quote): boolean {
+  const covered = quote.discountCode?.items.some((item) => item.productId === null) ?? false;
+  return (
+    !covered &&
+    !!draft.orderDiscount &&
+    discountAmount(draft.orderDiscount, quote.subtotal) !== quote.orderDiscount
+  );
+}
+
+/**
+ * The quote with the owner's code, as the API applied it (H42): each line of a product the code
+ * covers takes its grant — a rate as granted, an amount as the API split it and brought it down
+ * to the line's gross — and the total too if covered; the other lines keep their discount.
+ */
+function applyCode(state: DraftState, quote: Quote): DraftState {
+  const code = quote.discountCode;
+  if (!code) return state;
+  const grants = new Map(code.items.map((item) => [item.productId, item.discount]));
+  const stored = new Map(quote.lines.map((line) => [line.productUnitId, line]));
+  const lines = state.lines.map((line) => {
+    const grant = grants.get(line.product.id);
+    const saved = stored.get(line.unit.id);
+    if (!grant || !saved) return line;
+    return { ...line, discount: grant.kind === 'pct' ? grant : amountOf(saved.discountAmount) };
+  });
+  const orderGrant = grants.get(null);
+  const orderDiscount = orderGrant
+    ? orderGrant.kind === 'pct'
+      ? orderGrant
+      : amountOf(quote.orderDiscount)
+    : orderBroughtDown(state, quote)
+      ? amountOf(quote.orderDiscount)
+      : state.orderDiscount;
+  return { ...state, lines, orderDiscount, code };
+}
+
+function lineGrants(code: QuoteCode | null | undefined, lines: readonly DraftLine[]) {
+  return grantsFor(
+    code?.items ?? [],
+    lines.map((line) => ({
+      productId: line.product.id,
+      quantity: line.qty,
+      unitPrice: line.unit.price,
+    })),
+  );
+}
+
+/**
+ * What the code would grant a line at another quantity, the other lines as they are: the pad's
+ * maximum while the quantity is typed (H41).
+ */
+export function grantedAt(draft: DraftState, key: string, qty: string): DiscountEntry | null {
+  const index = draft.lines.findIndex((line) => line.key === key);
+  if (!draft.code || index < 0) return null;
+  const lines = draft.lines.map((line) => (line.key === key ? { ...line, qty } : line));
+  return lineGrants(draft.code, lines).lines[index] ?? null;
+}
+
+/**
+ * What the owner's code grants each line and the total, laid as the API lays it (H41): an amount
+ * on a product sold in several units is split pro rata of their gross. A line still at its share
+ * follows it as the lines change, and a new line of a covered product starts with it: the screen
+ * never keeps a share the quantities no longer give.
+ */
+function withGrants(prev: DraftState, next: DraftState): DraftState {
+  const granted = lineGrants(next.code, next.lines);
+  const before = new Map(prev.lines.map((line) => [line.key, line]));
+  const lines = next.lines.map((line, index) => {
+    const grant = granted.lines[index] ?? null;
+    const was = before.get(line.key);
+    const follows = was
+      ? followsGrant(was) && sameDiscount(line.discount, was.discount)
+      : line.discount === null;
+    const discount =
+      grant && follows ? grantedDiscount(grant, line.qty, line.unit.price) : line.discount;
+    return { ...line, granted: grant, discount };
+  });
+  return { ...next, lines, orderGranted: granted.order };
+}
+
 /**
  * The shortages with the stock available now on the lines of their products: the pad then shows
  * what is really left in each unit (RG-STK-01).
@@ -207,7 +327,11 @@ function productTouched(state: DraftState, action: DraftAction): string | null {
 }
 
 export function draftReducer(state: DraftState, action: DraftAction): DraftState {
-  const next = reduce(state, action);
+  const reduced = reduce(state, action);
+  const next =
+    reduced.code && (reduced.lines !== state.lines || reduced.code !== state.code)
+      ? withGrants(state, reduced)
+      : reduced;
   const touched = productTouched(state, action);
   if (!touched || !next.shortages?.some((shortage) => shortage.productId === touched)) return next;
   const shortages = next.shortages.filter((shortage) => shortage.productId !== touched);
@@ -248,6 +372,11 @@ function reduce(state: DraftState, action: DraftAction): DraftState {
       return { ...state, customer: action.customer };
     case 'saved':
       return applySaved(state, action.quote, action.body);
+    case 'codeAttached': {
+      // Saved as sent: what was typed meanwhile is still to save.
+      const body = saveSignature(applyCode(action.sent, action.quote));
+      return applySaved(applyCode(state, action.quote), action.quote, body);
+    }
     case 'short':
       return short(state, action.shortages);
     case 'closeShortages':

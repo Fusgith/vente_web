@@ -20,8 +20,9 @@ interface OrderDiscountSheetProps {
 
 /**
  * The discount on the total (RG-REM-06), on the subtotal, in % or in MGA. Without a code it is
- * bounded by the headroom the lines leave under their caps (H23), shown in MGA before anything
- * is typed (RG-REM-02); the amount due follows each key.
+ * bounded by the headroom the lines leave under their caps (H23) — or, the owner's code covering
+ * the total, by what it grants (H42) — shown in MGA before anything is typed (RG-REM-02); the
+ * amount due follows each key.
  */
 export function OrderDiscountSheet({ draft, onApply, onClose }: OrderDiscountSheetProps) {
   const measure = (orderDiscount: DiscountEntry | null) =>
@@ -66,8 +67,24 @@ export function OrderDiscountSheet({ draft, onApply, onClose }: OrderDiscountShe
           <KindToggle typing={typing} onActivate={() => undefined} disabled={locked} />
         </div>
         <FieldMessage
-          hint={closed ? text.noOrderRoom : text.maxOrder(max)}
-          alert={typing.refused ? text.beyondOrder(max) : null}
+          hint={
+            draft.orderGranted
+              ? text.maxGranted(max)
+              : closed
+                ? draft.code
+                  ? text.noOrderRoomCoded
+                  : text.noOrderRoom
+                : text.maxOrder(max)
+          }
+          alert={
+            typing.refused
+              ? draft.orderGranted
+                ? text.beyondGranted(max)
+                : draft.code
+                  ? text.beyondOrderCoded(max)
+                  : text.beyondOrder(max)
+              : null
+          }
         />
         {draft.orderDiscount && (
           <button

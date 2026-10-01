@@ -3,6 +3,7 @@ import {
   ERROR_LABELS,
   formatMga,
   formatQty,
+  normalizeDiscountCode,
   ticketLabel,
   type Quote,
   type StockShortage,
@@ -17,21 +18,43 @@ import { labels } from '../labels.js';
 import { useStatusLine } from '../shell/status-line.js';
 import { quoteInput } from './discount-entry.js';
 import {
+  orderBroughtDown,
   saveBody,
   saveSignature,
   unsavedChanges,
   type DraftAction,
   type DraftState,
+  type SavedQuote,
 } from './draft.js';
 
 const text = labels.sales.draft;
+const codeText = labels.sales.code;
 
 /** The API's refusal, with the lines it names so they can be found in the table. */
-function refusal(error: unknown): string {
+function refusal(error: unknown, message = errorMessage(error)): string {
   const lines = linesConcerned(error);
-  const message = errorMessage(error);
   return lines.length > 0 ? `${message} ${text.linesConcerned(lines.join(', '))}` : message;
 }
+
+const codeMessages: Partial<Record<string, string>> = {
+  QUOTE_DISCOUNT_BEYOND_CAP: codeText.beyondCap,
+  ORDER_PRICE_CHANGED: codeText.priceChanged,
+};
+
+/** A refusal while the code goes on, told for that step. */
+function codeRefusal(error: unknown): string {
+  const message = error instanceof ApiError ? codeMessages[error.code] : undefined;
+  return refusal(error, message);
+}
+
+/** The quote the code goes on: its id and the version read. */
+type QuoteRef = Pick<SavedQuote, 'id' | 'version'>;
+
+/** The quote read again carries this very code, just put on over `target`: the answer was lost. */
+const attachedMeanwhile = (quote: Quote, typed: string, target: QuoteRef) =>
+  !!quote.discountCode &&
+  quote.version === target.version + 1 &&
+  normalizeDiscountCode(quote.discountCode.code) === normalizeDiscountCode(typed);
 
 /** RG-CMD-02: « SAV-001 : 432 disponibles, 433 demandés (pièce) », one product after another. */
 function shortageMessage(shortages: StockShortage[]): string {
@@ -46,7 +69,8 @@ function shortageMessage(shortages: StockShortage[]): string {
   return `${labels.sales.stock.title} — ${detail.join(' ; ')}.`;
 }
 
-type Busy = 'save' | 'submit' | null;
+/** A save, a validation or the owner's code under way: the buttons wait. */
+export type QuoteBusy = 'save' | 'submit' | 'code' | null;
 
 /**
  * Saves the quote (T-030) and validates it into an order (T-032). The screen checks first what
@@ -57,22 +81,27 @@ type Busy = 'save' | 'submit' | null;
  * from the screen, the validation stops there: the customer agrees to the new amount due before
  * anything is reserved (H28). A price changed after the save is refused by the API; the quote
  * is then saved again at the new price, for the same check.
+ *
+ * The owner's code (T-034b, H42) goes on a saved quote: the screen is saved first if it changed,
+ * then the API attaches the code and applies what it grants.
  */
 export function useQuoteActions(draft: DraftState, dispatch: Dispatch<DraftAction>) {
   const { say, sayError } = useStatusLine();
-  const [busy, setBusy] = useState<Busy>(null);
+  const [busy, setBusy] = useState<QuoteBusy>(null);
 
-  /** The quote as on screen, created or saved over the version read; null when refused (said). */
-  async function persist(customerFirst: string): Promise<Quote | null> {
+  /** Why the screen cannot be saved, before the API refuses it; null when it can. */
+  function unsaveable(
+    customerFirst: string,
+    beyondCap: string = ERROR_LABELS.QUOTE_DISCOUNT_BEYOND_CAP,
+  ): string | null {
+    if (!draft.customer) return customerFirst;
+    return computeQuote(quoteInput(draft)).withinLimits ? null : beyondCap;
+  }
+
+  /** The quote as on screen, created or saved over the version read; null without a customer. */
+  async function store(): Promise<Quote | null> {
     const body = saveBody(draft);
-    if (!body) {
-      sayError(customerFirst);
-      return null;
-    }
-    if (!computeQuote(quoteInput(draft)).withinLimits) {
-      sayError(ERROR_LABELS.QUOTE_DISCOUNT_BEYOND_CAP);
-      return null;
-    }
+    if (!body) return null;
     const { saved } = draft;
     const quote = saved
       ? await quotesApi.update(saved.id, body, saved.version)
@@ -81,7 +110,17 @@ export function useQuoteActions(draft: DraftState, dispatch: Dispatch<DraftActio
     return quote;
   }
 
-  async function run(kind: Exclude<Busy, null>, action: () => Promise<void>) {
+  /** The quote as on screen, saved; null when refused (said). */
+  async function persist(customerFirst: string): Promise<Quote | null> {
+    const refused = unsaveable(customerFirst);
+    if (refused) {
+      sayError(refused);
+      return null;
+    }
+    return store();
+  }
+
+  async function run(kind: Exclude<QuoteBusy, null>, action: () => Promise<void>) {
     setBusy(kind);
     try {
       await action();
@@ -99,12 +138,11 @@ export function useQuoteActions(draft: DraftState, dispatch: Dispatch<DraftActio
     });
 
   /** The quote saved again over `version`, at the prices in force now. */
-  async function reprice(id: string, version: number, error: ApiError) {
+  async function reprice(id: string, version: number) {
     const body = saveBody(draft);
     if (!body) return;
     const quote = await quotesApi.update(id, body, version);
     dispatch({ type: 'saved', quote, body: saveSignature(draft) });
-    sayError(refusal(error));
   }
 
   const submit = () =>
@@ -131,12 +169,71 @@ export function useQuoteActions(draft: DraftState, dispatch: Dispatch<DraftActio
           dispatch({ type: 'short', shortages });
           sayError(shortageMessage(shortages));
         } else if (error instanceof ApiError && error.code === 'ORDER_PRICE_CHANGED') {
-          await reprice(target.id, target.version, error);
+          await reprice(target.id, target.version);
+          sayError(refusal(error));
         } else {
           throw error;
         }
       }
     });
 
-  return { save, submit, busy };
+  /** The code on the quote: the screen takes what it grants; the band says so. */
+  function attached(quote: Quote) {
+    dispatch({ type: 'codeAttached', quote, sent: draft });
+    if (!quote.discountCode) return;
+    const { code } = quote.discountCode;
+    say(
+      orderBroughtDown(draft, quote)
+        ? codeText.attachedLowered(code, formatMga(quote.orderDiscount))
+        : codeText.attached(code),
+      'check',
+    );
+  }
+
+  /**
+   * A refusal of the code, for the sheet. The answer lost on the Wi-Fi (or a second try after it)
+   * may hide a code that went on: the quote read again tells. A price changed since the save: the
+   * quote is saved again at the new price, for the customer to agree first, as on validating.
+   */
+  async function attachRefused(error: unknown, typed: string, target: QuoteRef | null) {
+    if (!(error instanceof ApiError) || !target) return codeRefusal(error);
+    try {
+      if (error.code === 'NETWORK_ERROR' || error.code === 'QUOTE_CHANGED') {
+        const quote = await quotesApi.get(target.id);
+        if (attachedMeanwhile(quote, typed, target)) {
+          attached(quote);
+          return null;
+        }
+      }
+      if (error.code === 'ORDER_PRICE_CHANGED') await reprice(target.id, target.version);
+    } catch (again) {
+      // Still no answer, or the save at the new price refused: the first refusal stays.
+      if (error.code === 'ORDER_PRICE_CHANGED') return codeRefusal(again);
+    }
+    return codeRefusal(error);
+  }
+
+  /**
+   * The owner's code typed in its sheet: null once attached (the band says so), else why it was
+   * refused, for the sheet to show under the field.
+   */
+  async function attachCode(typed: string): Promise<string | null> {
+    const changed = !draft.saved || unsavedChanges(draft);
+    const refused = changed ? unsaveable(codeText.customerFirst, codeText.beyondCap) : null;
+    if (refused) return refused;
+    setBusy('code');
+    let target: QuoteRef | null = draft.saved ?? null;
+    try {
+      if (changed) target = await store();
+      if (!target) return codeText.customerFirst;
+      attached(await quotesApi.attachCode(target.id, typed, target.version));
+      return null;
+    } catch (error) {
+      return await attachRefused(error, typed, target);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  return { save, submit, attachCode, busy };
 }

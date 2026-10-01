@@ -80,13 +80,15 @@ function useCustomerSearch(term: string): CustomerSearch {
 interface CustomerPickerProps {
   value: DraftCustomer | null;
   onChange: (customer: DraftCustomer) => void;
+  /** The owner's code is attached: the quote keeps its customer (H42). */
+  locked?: boolean;
 }
 
 /**
  * The quote's customer (RG-DEV-04): found by phone or name in the directory, or created on the
  * spot. A known phone is never duplicated: the API offers the existing record instead.
  */
-export function CustomerPicker({ value, onChange }: CustomerPickerProps) {
+export function CustomerPicker({ value, onChange, locked = false }: CustomerPickerProps) {
   const [open, setOpen] = useState(false);
   const { say } = useStatusLine();
   const pick = (customer: DraftCustomer) => {
@@ -100,11 +102,18 @@ export function CustomerPicker({ value, onChange }: CustomerPickerProps) {
       <button
         type="button"
         aria-haspopup="dialog"
-        aria-label={value ? text.change(value.name) : undefined}
+        aria-label={
+          value
+            ? locked
+              ? labels.sales.code.customerLocked(value.name)
+              : text.change(value.name)
+            : undefined
+        }
+        disabled={locked}
         onClick={() => setOpen(true)}
         className={buttonClass(value ? 'secondary' : 'primary', 'md', 'max-w-full min-w-0')}
       >
-        <Icon name="user" className="size-5 shrink-0" />
+        <Icon name={locked ? 'lock' : 'user'} className="size-5 shrink-0" />
         {value ? (
           <span className="min-w-0 truncate">
             <span className="font-bold">{value.name}</span>{' '}

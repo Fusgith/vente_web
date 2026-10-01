@@ -2,6 +2,26 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 01/10/2026 — T-034b code du boss saisi sur la tablette — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Tablette : bouton « Code du boss » sous le tableau ; la feuille de saisie enregistre d'abord le devis s'il a changé, puis rattache le code ; une étiquette remplace le bouton, le client ne change plus ; les lignes couvertes portent une clé.
+- Remises accordées recalculées sur la tablette comme l'API (`grantsFor`) : une ligne encore à sa part suit cette part quand les quantités changent ; une remise saisie à part est gardée ; le pavé et la feuille du total affichent le maximum accordé, ou disent que le code ne couvre pas la ligne ou le total.
+- Corrections de la revue (API et tablette) :
+  - le total non couvert dont la marge diminue est ramené à la marge restante, et la bande le dit ;
+  - un prix changé depuis l'enregistrement est refusé à la saisie du code : le devis passe au nouveau prix, à vérifier avec le client ;
+  - une réponse perdue sur le Wi-Fi : le devis relu dit si le code est passé ;
+  - ce qui a été saisi pendant l'envoi reste à enregistrer ;
+  - un refus arrivé après la fermeture de la feuille va dans la bande ; le focus passe sur l'étiquette du code.
+- Tests : API 4, brouillon 25, écran du code 11 ; format:check, lint, typecheck (0 erreur), suite complète : 548 tests verts.
+- Reprise après le plantage du PC : aucun travail perdu.
+
+**Reste** : T-034c (saisie du code à la caisse avant paiement, mention sur la facture) ; T-033 (demandes de remise).
+
+**Décisions** : aucune dépendance ajoutée. ⚠️ H42 complétée (§16.2) : total ramené à la marge restante, prix changé vérifié avant la saisie du code, remise au-delà du plafond ramenée avant, part qui suit les quantités.
+
+**Questions** : valider H38 à H42 et H49.
+
 ## 29/09/2026 — Remarques du boss tranchées (pas de code) — agent : Claude Code (Opus 5.5)
 
 **Fait** :

@@ -50,6 +50,13 @@ const PATHS = {
       <path d="M5 20a7 7 0 0 1 14 0" />
     </>
   ),
+  /** The owner's discount code. */
+  key: (
+    <>
+      <circle cx="8" cy="15" r="4" />
+      <path d="m11 12 9-9M17 6l2.5 2.5M14.5 8.5 16.5 10.5" />
+    </>
+  ),
   percent: (
     <>
       <path d="M18.5 5.5 5.5 18.5" />

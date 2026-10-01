@@ -13,7 +13,7 @@ import { Icon } from '../ui/Icon.js';
 import { EraseKey, Key, Keypad } from '../ui/Keypad.js';
 import { measureLine } from './discount-entry.js';
 import { DiscountEntryField, EntryField, FieldMessage, KindToggle } from './DiscountInput.js';
-import type { DraftLine } from './draft.js';
+import { followsGrant, grantedDiscount, type DraftLine } from './draft.js';
 import { entryToQuantity, nextEntry, type PadKey } from './pad-entry.js';
 import { useDiscountTyping } from './useDiscountTyping.js';
 
@@ -25,6 +25,10 @@ interface QuantityPadProps {
   onUnit: (unitId: string) => void;
   onRemove: () => void;
   onClose: () => void;
+  /** What the owner's code grants the line at the quantity typed: its share follows it (H41). */
+  grantAt?: (qty: string) => DiscountEntry | null;
+  /** A code is on the quote: a line it does not cover says so, rather than asking for one. */
+  coded?: boolean;
 }
 
 /**
@@ -42,6 +46,8 @@ export function QuantityPad({
   onUnit,
   onRemove,
   onClose,
+  grantAt,
+  coded = false,
 }: QuantityPadProps) {
   const [entry, setEntry] = useState<string | null>(null);
   const [invalid, setInvalid] = useState(false);
@@ -51,13 +57,33 @@ export function QuantityPad({
 
   // The cap applies to the gross of the quantity being typed (RG-REM-06).
   const pendingQty = (entry === null ? line.qty : entryToQuantity(entry)) ?? line.qty;
+  // The owner's code covers the line: what it grants at that quantity replaces the cap (H42), and
+  // a discount still at its share follows it.
+  const granted = grantAt ? grantAt(pendingQty) : (line.granted ?? null);
+  const sized = { ...line, granted };
+  const current =
+    granted && followsGrant(line)
+      ? grantedDiscount(granted, pendingQty, line.unit.price)
+      : line.discount;
   const discount = useDiscountTyping(
-    line.discount,
-    (candidate) => measureLine(line, pendingQty, candidate).withinLimit,
+    current,
+    (candidate) => measureLine(sized, pendingQty, candidate).withinLimit,
   );
-  const measured = measureLine(line, pendingQty, discount.value);
+  const measured = measureLine(sized, pendingQty, discount.value);
   const closed = measured.maxDiscount === '0.00';
   const max = [formatQty(line.capPct), formatMga(measured.maxDiscount)] as const;
+  const hint = granted
+    ? text.maxGranted(max[1])
+    : closed
+      ? coded
+        ? text.noLineDiscountCoded
+        : text.noLineDiscount
+      : text.maxLine(...max);
+  const beyond = granted
+    ? text.beyondGranted(max[1])
+    : coded
+      ? text.beyondLineCoded(...max)
+      : text.beyondLine(...max);
 
   const press = (key: PadKey) => {
     if (field === 'discount') return discount.press(key);
@@ -72,7 +98,7 @@ export function QuantityPad({
       return setInvalid(true);
     }
     // Fewer items, a smaller maximum: an amount typed before may no longer fit.
-    if (!measureLine(line, qty, discount.value).withinLimit) {
+    if (!measureLine(sized, qty, discount.value).withinLimit) {
       setField('discount');
       return discount.refuse();
     }
@@ -157,8 +183,8 @@ export function QuantityPad({
               disabled={closed && discount.value === null}
             />
             <FieldMessage
-              hint={closed ? text.noLineDiscount : text.maxLine(...max)}
-              alert={invalid ? pad.invalid : discount.refused ? text.beyondLine(...max) : null}
+              hint={hint}
+              alert={invalid ? pad.invalid : discount.refused ? beyond : null}
             />
             <KindToggle
               typing={discount}

@@ -4,7 +4,7 @@ import { labels } from '../labels.js';
 import { OrderNotices } from './OrderNotices.js';
 import { CustomerPicker } from './CustomerPicker.js';
 import { DraftTable } from './DraftTable.js';
-import { draftReducer, emptyDraft, type DraftState } from './draft.js';
+import { draftReducer, emptyDraft, grantedAt, type DraftState } from './draft.js';
 import { OrderTicketSheet } from './OrderTicketSheet.js';
 import { ProductSearch } from './ProductSearch.js';
 import { QuantityPad } from './QuantityPad.js';
@@ -25,7 +25,7 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
   const [draft, dispatch] = useReducer(draftReducer, initialDraft);
   const position = draft.lines.findIndex((line) => line.key === draft.selected);
   const selected = draft.lines[position];
-  const { save, submit, busy } = useQuoteActions(draft, dispatch);
+  const { save, submit, attachCode, busy } = useQuoteActions(draft, dispatch);
 
   return (
     <div className="flex flex-1 flex-col gap-4 md:min-h-0 lg:grid lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)] 2xl:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
@@ -38,9 +38,12 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
         pad={
           selected && (
             <QuantityPad
-              key={selected.key}
+              // The owner's code attached: the pad starts again from its grants.
+              key={`${selected.key}:${draft.code?.code ?? ''}`}
               line={selected}
               position={position + 1}
+              grantAt={(qty) => grantedAt(draft, selected.key, qty)}
+              coded={!!draft.code}
               onConfirm={(qty, discount) => {
                 dispatch({ type: 'setQty', key: selected.key, qty });
                 dispatch({ type: 'setDiscount', key: selected.key, discount });
@@ -58,11 +61,13 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
         onOrderDiscount={(discount) => dispatch({ type: 'setOrderDiscount', discount })}
         onSave={() => void save()}
         onSubmit={() => void submit()}
+        onAttachCode={attachCode}
         busy={busy}
         customer={
           <CustomerPicker
             value={draft.customer}
             onChange={(customer) => dispatch({ type: 'setCustomer', customer })}
+            locked={!!draft.code}
           />
         }
       />

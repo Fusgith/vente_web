@@ -175,5 +175,64 @@ describe.skipIf(!TEST_DATABASE_URL)(
       expect(again.json()).toMatchObject({ code: 'QUOTE_HAS_CODE' });
       expect(await t.db.discountCode.count({ where: { status: 'USED' } })).toBe(1);
     });
+
+    it('brings a total discount the grants leave no room for down to the headroom left', async () => {
+      // No discount on the soap: its 2 500 of headroom, with the nails' 2 925, carry 5 000 off.
+      const created = await request(t.app, 'POST', '/api/v1/quotes', {
+        cookie: sales,
+        body: {
+          ...draft(),
+          lines: [{ ...draft().lines[0], discount: null }, draft().lines[1]],
+          orderDiscount: { kind: 'amount', value: '5000' },
+        },
+      });
+      expect(created.statusCode, created.body).toBe(201);
+      const quote = quoteSchema.parse(created.json());
+      const code = await issued([
+        { productId: products.soap, discount: { kind: 'pct', value: '12' } },
+      ]);
+
+      const reply = await attach(quote.id, code.code, 1);
+
+      // 12 % on the soap uses its headroom: only the nails' 2 925 is left for the total.
+      expect(reply.statusCode, reply.body).toBe(200);
+      expect(quoteSchema.parse(reply.json())).toMatchObject({
+        subtotal: '63500.00',
+        orderDiscount: '2925.00',
+        orderDiscountPct: null,
+        total: '60575.00',
+      });
+    });
+
+    it('refuses a price changed since the save, the code staying unused', async () => {
+      const quote = await quoted();
+      const code = await issued();
+      const now = new Date();
+      await t.db.$transaction(async (tx) => {
+        await tx.productPrice.updateMany({
+          where: { productUnitId: units.nails, effectiveTo: null },
+          data: { effectiveTo: now },
+        });
+        const { setById } = await tx.productPrice.findFirstOrThrow({
+          where: { productUnitId: units.nails },
+        });
+        await tx.productPrice.create({
+          data: {
+            productUnitId: units.nails,
+            price: '7000',
+            effectiveFrom: now,
+            source: 'MANUAL',
+            setById,
+          },
+        });
+      });
+
+      const reply = await attach(quote.id, code.code, 1);
+
+      expect(reply.statusCode, reply.body).toBe(409);
+      expect(reply.json()).toMatchObject({ code: 'ORDER_PRICE_CHANGED', details: { lines: [2] } });
+      const stored = await t.db.discountCode.findUniqueOrThrow({ where: { id: code.id } });
+      expect(stored.status).toBe('ACTIVE');
+    });
   },
 );

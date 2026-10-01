@@ -1,15 +1,19 @@
 import {
+  discountAmount,
   grantOn,
   groupDiscountCode,
   lineGross,
   normalizeDiscountCode,
+  type CodeGrant,
   type DiscountCodeAttach,
   type DiscountEntry,
+  type OrderPriceChanged,
   type Quote,
 } from '@vente-web/shared';
 
 import type { Db } from '../db.js';
 import { AppError } from '../errors.js';
+import { Prisma } from '../generated/prisma/client.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit } from './audit.js';
 import { CODE_SELECT, findOrder, grantsOf, usedCode } from './order-view.js';
@@ -22,6 +26,7 @@ import {
   priceLines,
   snapshot,
   totalsWithinCaps,
+  type PricedLine,
 } from './quotes.js';
 
 /** The quote the code goes on: a draft of this salesperson (or any for the manager), unchanged. */
@@ -36,6 +41,23 @@ async function draftToCode(db: Db, actor: Actor, id: string, version: number) {
   // One code per order (H42): its grants stay with it until the invoice.
   if (usedCode(order)) throw new AppError(409, 'QUOTE_HAS_CODE');
   return order;
+}
+
+/**
+ * The saved discount on a total the code does not cover. The grants beyond the caps leave the
+ * lines less headroom (H23): a discount that no longer fits comes down to the headroom left, as
+ * an amount, and the tablet shows it (H42).
+ */
+function keptOrderDiscount(
+  applied: readonly PricedLine[],
+  saved: DiscountEntry | null,
+  grants: readonly CodeGrant[],
+): DiscountEntry | null {
+  if (!saved) return null;
+  const { subtotal, maxOrderDiscount } = totalsWithinCaps(applied, null, grants);
+  const room = new Prisma.Decimal(maxOrderDiscount);
+  if (room.gte(discountAmount(saved, subtotal))) return saved;
+  return room.isZero() ? null : { kind: 'amount', value: maxOrderDiscount };
 }
 
 /**
@@ -72,6 +94,14 @@ export async function attachDiscountCode(
       discount: asAmount(line.discountAmount),
     })),
   );
+  // A price changed since the save: the salesperson checks it with the customer first, as on
+  // validating (RG-CMD-04) — the grants would otherwise go on prices the screen does not show.
+  const changed = order.lines.flatMap((line, index) =>
+    priced[index]?.unitPrice === line.unitPrice.toFixed(2) ? [] : [line.position],
+  );
+  if (changed.length > 0) {
+    throw new AppError(409, 'ORDER_PRICE_CHANGED', { lines: changed } satisfies OrderPriceChanged);
+  }
   const granted = grantsOn(priced, grants);
   if (granted.order === null && granted.lines.every((grant) => grant === null)) {
     throw new AppError(422, 'DISCOUNT_CODE_NOTHING_COVERED');
@@ -89,7 +119,7 @@ export async function attachDiscountCode(
     : asAmount(order.orderDiscountAmount);
   const orderDiscount = granted.order
     ? grantOn(granted.order, totalsWithinCaps(applied, null, grants).subtotal)
-    : saved;
+    : keptOrderDiscount(applied, saved, grants);
   const totals = totalsWithinCaps(applied, orderDiscount, grants);
 
   return db.$transaction(async (tx) => {
