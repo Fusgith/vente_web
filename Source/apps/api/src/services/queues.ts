@@ -31,6 +31,7 @@ const ITEM_INCLUDE = {
       station: { select: { id: true, name: true } },
     },
   },
+  discountRequests: { where: { status: 'PENDING' }, select: { id: true }, take: 1 },
 } satisfies Prisma.OrderInclude;
 
 type StoredItem = Prisma.OrderGetPayload<{ include: typeof ITEM_INCLUDE }>;
@@ -50,6 +51,7 @@ function toItem(queue: QueueName, order: StoredItem): QueueItem[] {
       total: order.total.toFixed(2),
       priority: order.priority > 0,
       noShowCount: order.noShowCount,
+      discountPending: order.discountRequests.length > 0,
       submittedAt: submittedAt.toISOString(),
       paidAt: order.paidAt?.toISOString() ?? null,
       ...served(queue, order),
@@ -138,12 +140,38 @@ async function registerOf(tx: Prisma.TransactionClient, actor: Actor): Promise<s
   return session?.stationId ?? actor.stationId;
 }
 
+/** How many orders a call passes over for a request made while it waited: a bound, never met. */
+const RACES = 10;
+
+/**
+ * The first order waiting, past those awaiting the owner (⚠️ H52). A request made while the
+ * statement waited on the order's lock is not in its snapshot: checked again once the order is
+ * held — no request lands on it any more —, the next one is taken instead.
+ */
+async function firstWaiting(tx: Prisma.TransactionClient, now: Date): Promise<string> {
+  for (let race = 0; race < RACES; race++) {
+    const [first] = await tx.$queryRaw<{ id: string }[]>`
+      SELECT "id" FROM "orders"
+       WHERE "status" = 'SUBMITTED' AND ("expires_at" IS NULL OR "expires_at" > ${now})
+         AND NOT EXISTS (SELECT 1 FROM "discount_requests" r
+                          WHERE r."order_id" = "orders"."id" AND r."status" = 'PENDING')
+       ORDER BY "queue_rank", "id" LIMIT 1 FOR UPDATE`;
+    if (!first) break;
+    const pending = await tx.discountRequest.count({
+      where: { orderId: first.id, status: 'PENDING' },
+    });
+    if (pending === 0) return first.id;
+  }
+  throw new AppError(409, 'QUEUE_EMPTY');
+}
+
 /**
  * Calls a ticket to the caller's register (RG-FIL-03): the first waiting one, or `id` when the
  * customer stands in front of the cashier — audited as such. Two registers calling at the same
  * moment never get the same ticket: calls take the queue one after the other, and the call is
  * guarded on the order still waiting. An order past its day end is never called, even before the
- * sweep expires it (RG-CMD-08).
+ * sweep expires it (RG-CMD-08); one awaiting the owner's answer is passed over, keeping its place —
+ * called by its ticket, it comes all the same (⚠️ H52).
  */
 export async function callToRegister(db: Db, actor: Actor, id: string | null): Promise<Order> {
   return db.$transaction(async (tx) => {
@@ -151,14 +179,7 @@ export async function callToRegister(db: Db, actor: Actor, id: string | null): P
     await lockQueue(tx, 'register');
     const now = new Date();
     let orderId = id;
-    if (orderId === null) {
-      const [first] = await tx.$queryRaw<{ id: string }[]>`
-        SELECT "id" FROM "orders"
-         WHERE "status" = 'SUBMITTED' AND ("expires_at" IS NULL OR "expires_at" > ${now})
-         ORDER BY "queue_rank", "id" LIMIT 1 FOR UPDATE`;
-      if (!first) throw new AppError(409, 'QUEUE_EMPTY');
-      orderId = first.id;
-    }
+    orderId ??= await firstWaiting(tx, now);
     const { count } = await tx.order.updateMany({
       where: {
         id: orderId,

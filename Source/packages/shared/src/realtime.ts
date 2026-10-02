@@ -5,6 +5,7 @@
  */
 import { z } from 'zod';
 
+import { discountRequestStatusSchema } from './discount-requests.js';
 import { orderStatusSchema } from './orders.js';
 
 export const REALTIME_PATH = '/socket.io';
@@ -41,6 +42,14 @@ export const realtimePayloadSchemas = {
   'order.no_show': z.object({ orderId: z.uuid(), noShowCount: z.int().positive() }),
   /** A product's available stock at or under its alert threshold (RG-STK-07). */
   'stock.alert': z.object({ productId: z.uuid() }),
+  /** An exceptional discount asked of the owner (RG-REM-03, RG-DSH-05). */
+  'discount.request_created': z.object({ requestId: z.uuid(), orderId: z.uuid() }),
+  /** A request granted or rejected by the owner, withdrawn, or expired (⚠️ H53, H54). */
+  'discount.request_decided': z.object({
+    requestId: z.uuid(),
+    orderId: z.uuid(),
+    status: discountRequestStatusSchema.exclude(['PENDING']),
+  }),
 };
 
 export type RealtimeEvent = keyof typeof realtimePayloadSchemas;

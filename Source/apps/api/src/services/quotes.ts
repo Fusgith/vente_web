@@ -163,7 +163,10 @@ export function totalsWithinCaps(
  */
 export function assertNotFree(
   totals: QuoteTotals,
-  reason: 'ORDER_TOTAL_ZERO' | 'DISCOUNT_CODE_FREE_ORDER' = 'ORDER_TOTAL_ZERO',
+  reason:
+    | 'ORDER_TOTAL_ZERO'
+    | 'DISCOUNT_CODE_FREE_ORDER'
+    | 'DISCOUNT_REQUEST_FREE_ORDER' = 'ORDER_TOTAL_ZERO',
 ): void {
   if (totals.total === '0.00') throw new AppError(422, reason);
 }
@@ -279,7 +282,13 @@ export async function updateQuote(
 ): Promise<Quote> {
   const current = await db.order.findUnique({
     where: { id },
-    select: { status: true, salesUserId: true, version: true },
+    select: {
+      status: true,
+      salesUserId: true,
+      customerId: true,
+      version: true,
+      _count: { select: { discountRequests: { where: { status: 'PENDING' } } } },
+    },
   });
   if (!current) throw new AppError(404, 'NOT_FOUND');
   if (current.status !== 'DRAFT') throw new AppError(409, 'QUOTE_NOT_DRAFT');
@@ -287,6 +296,11 @@ export async function updateQuote(
     throw new AppError(403, 'AUTH_FORBIDDEN');
   }
   if (current.version !== input.version) throw new AppError(409, 'QUOTE_CHANGED');
+  // The owner decides for this customer: the request stays with them (⚠️ H52). A request made
+  // meanwhile moved the version on: the guarded save below refuses.
+  if (current.customerId !== input.customerId && current._count.discountRequests > 0) {
+    throw new AppError(409, 'DISCOUNT_REQUEST_PENDING');
+  }
   await assertActiveCustomer(db, input.customerId);
   const lines = await priceLines(db, input.lines);
   // The code attached stays with the quote: its grants still bound the discounts typed (T-034b).

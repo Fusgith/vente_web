@@ -18,8 +18,16 @@ import {
 import type { Db } from '../db.js';
 import { AppError } from '../errors.js';
 import { by, type Actor } from './actor.js';
-import { recordAudit, type AuditSnapshot } from './audit.js';
-import { findOrder, grantsOf, toOrder, usedCode, type StoredOrder } from './order-view.js';
+import { recordAudit, type AuditSnapshot, type AuditTx } from './audit.js';
+import { withdrawWithOrder } from './discount-requests.js';
+import {
+  findOrder,
+  grantsOf,
+  pendingRequest,
+  toOrder,
+  usedCode,
+  type StoredOrder,
+} from './order-view.js';
 import { usableCode, useCode } from './quote-codes.js';
 import { assertNotFree, orderAmounts } from './quotes.js';
 import { releaseReservations, shrinkReservations } from './stock-reservation.js';
@@ -27,7 +35,7 @@ import { releaseReservations, shrinkReservations } from './stock-reservation.js'
 type StoredLine = StoredOrder['lines'][number];
 
 /** What the audit keeps of an order's lines and totals (RG-AUD-01). */
-function snapshot(order: Order): AuditSnapshot {
+export function snapshot(order: Order): AuditSnapshot {
   return {
     status: order.status,
     lines: order.lines.map((line) => ({
@@ -215,9 +223,16 @@ export async function adjustOrder(
  * Totals with the owner's code typed at the register (H42), on the prices and caps frozen at
  * validation (RG-CMD-04): a line it covers takes its grant — an amount beyond its gross comes down
  * to it —, the others keep theirs to the cent; the total takes the code's grant when covered,
- * else keeps its own, brought down to the headroom the grants leave.
+ * else keeps its own, brought down to the headroom the grants leave. The owner's grant on a request
+ * goes on the same way, a quote's saved prices included (⚠️ H53).
  */
-function withCode(order: StoredOrder, grants: readonly CodeGrant[]) {
+export function withCode(
+  order: StoredOrder,
+  grants: readonly CodeGrant[],
+  nothing:
+    | 'DISCOUNT_CODE_NOTHING_COVERED'
+    | 'DISCOUNT_REQUEST_NOTHING_COVERED' = 'DISCOUNT_CODE_NOTHING_COVERED',
+) {
   const granted = grantsFor(
     grants,
     order.lines.map((line) => ({
@@ -227,7 +242,7 @@ function withCode(order: StoredOrder, grants: readonly CodeGrant[]) {
     })),
   );
   if (granted.order === null && granted.lines.every((grant) => grant === null)) {
-    throw new AppError(422, 'DISCOUNT_CODE_NOTHING_COVERED');
+    throw new AppError(422, nothing);
   }
   const input = (orderDiscount: DiscountEntry | null): QuoteInput => ({
     lines: order.lines.map((line, index) => {
@@ -253,6 +268,44 @@ function withCode(order: StoredOrder, grants: readonly CodeGrant[]) {
 }
 
 /**
+ * The code's grants written on the order as read, guarded on its state and version: the lines it
+ * covers take them, the others keep their discount as saved, their rate included.
+ */
+export async function writeGrants(
+  tx: AuditTx,
+  order: StoredOrder,
+  { granted, totals }: ReturnType<typeof withCode>,
+  codeId: string,
+): Promise<void> {
+  const { count } = await tx.order.updateMany({
+    where: { id: order.id, status: order.status, version: order.version },
+    data: { ...orderAmounts(totals, codeId), version: { increment: 1 } },
+  });
+  if (count === 0) {
+    throw new AppError(409, order.status === 'DRAFT' ? 'QUOTE_CHANGED' : 'ORDER_CHANGED');
+  }
+  for (const [index, line] of order.lines.entries()) {
+    const computed = totals.lines[index];
+    if (!computed) continue;
+    await tx.orderLine.update({
+      where: { id: line.id },
+      data: {
+        ...(granted.lines[index]
+          ? {
+              discountPct: computed.discountPct,
+              discountAmount: computed.discount,
+              discountSource: computed.source,
+              discountCodeId: codeId,
+              lineTotal: computed.net,
+            }
+          : {}),
+        orderDiscountShare: computed.orderDiscountShare,
+      },
+    });
+  }
+}
+
+/**
  * The owner's code typed at the register, before payment (RG-CMD-05b, RG-REM-04, H42): checked
  * as on the tablet — one code per order — and used at once. The lines and total it covers take
  * its grants; the change is audited before → after. Quantities stay: the stock is untouched.
@@ -266,38 +319,16 @@ export async function attachOrderCode(
 ): Promise<Order> {
   const order = await atMyRegister(db, actor, id, version);
   if (usedCode(order)) throw new AppError(409, 'ORDER_HAS_CODE');
+  // The owner's answer brings its own code (⚠️ H52, H53).
+  if (pendingRequest(order)) throw new AppError(409, 'DISCOUNT_REQUEST_PENDING');
   const code = await usableCode(db, typed, order, now);
-  const { granted, totals } = withCode(order, grantsOf(code));
+  const applied = withCode(order, grantsOf(code));
   // Refused before it is used: the code stays active for another try (H50).
-  assertNotFree(totals, 'DISCOUNT_CODE_FREE_ORDER');
+  assertNotFree(applied.totals, 'DISCOUNT_CODE_FREE_ORDER');
 
   return db.$transaction(async (tx) => {
     await useCode(tx, actor, code.id, id, now);
-    const { count } = await tx.order.updateMany({
-      where: { id, status: 'AT_REGISTER', version },
-      data: { ...orderAmounts(totals, code.id), version: { increment: 1 } },
-    });
-    if (count === 0) throw new AppError(409, 'ORDER_CHANGED');
-    for (const [index, line] of order.lines.entries()) {
-      const computed = totals.lines[index];
-      if (!computed) continue;
-      await tx.orderLine.update({
-        where: { id: line.id },
-        data: {
-          // A line the code does not cover keeps its discount as validated, its rate included.
-          ...(granted.lines[index]
-            ? {
-                discountPct: computed.discountPct,
-                discountAmount: computed.discount,
-                discountSource: computed.source,
-                discountCodeId: code.id,
-                lineTotal: computed.net,
-              }
-            : {}),
-          orderDiscountShare: computed.orderDiscountShare,
-        },
-      });
-    }
+    await writeGrants(tx, order, applied, code.id);
     const after = await findOrder(tx, id);
     if (!after) throw new AppError(404, 'NOT_FOUND');
     const result = toOrder(after);
@@ -315,14 +346,15 @@ export async function attachOrderCode(
 
 /**
  * Cancels an order before payment (RG-ANN-01), with its reason: the salesperson their own, the
- * cashier or the manager any. Its reservations are freed and its ticket closed with it.
+ * cashier or the manager any. Its reservations are freed and its ticket closed with it; a request
+ * awaiting the owner is withdrawn (⚠️ H54), its id returned for its followers.
  */
 export async function cancelOrder(
   db: Db,
   actor: Actor,
   id: string,
   { version, reason }: OrderCancel,
-): Promise<Order> {
+): Promise<{ order: Order; withdrawn: string | null }> {
   const order = await findOrder(db, id);
   if (!order) throw new AppError(404, 'NOT_FOUND');
   if (actor.activeRole === 'sales' && order.salesUserId !== actor.userId) {
@@ -345,6 +377,7 @@ export async function cancelOrder(
     });
     if (count === 0) throw new AppError(409, 'ORDER_CHANGED');
     await releaseReservations(tx, id);
+    const withdrawn = await withdrawWithOrder(tx, actor, id, new Date());
     const after = await findOrder(tx, id);
     if (!after) throw new AppError(404, 'NOT_FOUND');
     await recordAudit(tx, {
@@ -356,6 +389,6 @@ export async function cancelOrder(
       after: { status: 'CANCELLED' },
       reason,
     });
-    return toOrder(after);
+    return { order: toOrder(after), withdrawn };
   });
 }

@@ -70,6 +70,7 @@ model User {
   ordersAsCashier     Order[]           @relation("OrderCashierUser")
   discountRequests    DiscountRequest[] @relation("DiscountRequestedBy")
   discountDecisions   DiscountRequest[] @relation("DiscountDecidedBy")
+  discountWithdrawals DiscountRequest[] @relation("DiscountWithdrawnBy")
   discountCodes       DiscountCode[]
   registerSessions    RegisterSession[] @relation("RegisterCashier")
   registerApprovals   RegisterSession[] @relation("RegisterValidatedBy")

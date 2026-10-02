@@ -29,6 +29,8 @@ enum DiscountRequestStatus {
   PENDING
   GRANTED
   REJECTED
+  WITHDRAWN
+  EXPIRED
 
   @@map("discount_request_status")
 }
@@ -177,49 +179,69 @@ model OrderLine {
   orderDiscountShare Decimal        @default(0) @map("order_discount_share") @db.Decimal(14, 2)
   deliveredQty       Decimal        @default(0) @map("delivered_qty") @db.Decimal(12, 2)
 
-  order            Order               @relation(fields: [orderId], references: [id])
-  product          Product             @relation(fields: [productId], references: [id])
-  productUnit      ProductUnit         @relation(fields: [productUnitId], references: [id])
-  productPrice     ProductPrice?       @relation(fields: [productPriceId], references: [id])
-  discountCode     DiscountCode?       @relation(fields: [discountCodeId], references: [id])
-  discountRequests DiscountRequest[]
-  issueLines       DeliveryIssueLine[]
+  order        Order               @relation(fields: [orderId], references: [id])
+  product      Product             @relation(fields: [productId], references: [id])
+  productUnit  ProductUnit         @relation(fields: [productUnitId], references: [id])
+  productPrice ProductPrice?       @relation(fields: [productPriceId], references: [id])
+  discountCode DiscountCode?       @relation(fields: [discountCodeId], references: [id])
+  issueLines   DeliveryIssueLine[]
 
   @@index([orderId])
   @@index([productId])
   @@map("order_lines")
 }
 
-/// Request to exceed the cap; only the owner decides (RG-REM-03). One PENDING per order (partial index).
+/// Request to exceed the cap; only the owner decides (RG-REM-03, ⚠️ H51 to H54). One PENDING per
+/// order (partial index); decided ⇔ `decided_at`, withdrawn ⇔ `withdrawn_at` (CHECKs).
 model DiscountRequest {
-  id              String                @id @default(uuid(7)) @db.Uuid
-  orderId         String                @map("order_id") @db.Uuid
-  /// Legacy single-line target. Decided 25/09 (H22): a request covers several lines, each
-  /// with its own pct or amount, and/or the order total (RG-REM-06) — T-033 moves this to
-  /// a `discount_request_items` table.
-  lineId          String?               @map("line_id") @db.Uuid
-  customerId      String?               @map("customer_id") @db.Uuid
-  requestedPct    Decimal?              @map("requested_pct") @db.Decimal(5, 2)
-  requestedAmount Decimal?              @map("requested_amount") @db.Decimal(14, 2)
-  reason          String
-  status          DiscountRequestStatus @default(PENDING)
-  requestedById   String                @map("requested_by") @db.Uuid
-  decidedById     String?               @map("decided_by") @db.Uuid
-  decidedPct      Decimal?              @map("decided_pct") @db.Decimal(5, 2)
-  decidedAt       DateTime?             @map("decided_at") @db.Timestamptz(6)
-  createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  id            String                @id @default(uuid(7)) @db.Uuid
+  orderId       String                @map("order_id") @db.Uuid
+  customerId    String?               @map("customer_id") @db.Uuid
+  /// One of the `discount_reasons` setting (H51).
+  reason        String
+  note          String?
+  status        DiscountRequestStatus @default(PENDING)
+  requestedById String                @map("requested_by") @db.Uuid
+  decidedById   String?               @map("decided_by") @db.Uuid
+  decidedAt     DateTime?             @map("decided_at") @db.Timestamptz(6)
+  withdrawnById String?               @map("withdrawn_by") @db.Uuid
+  withdrawnAt   DateTime?             @map("withdrawn_at") @db.Timestamptz(6)
+  /// The next end of the shop day (`day_end_time`), like a code (RG-REM-05, H54).
+  expiresAt     DateTime              @map("expires_at") @db.Timestamptz(6)
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  order       Order         @relation(fields: [orderId], references: [id])
-  line        OrderLine?    @relation(fields: [lineId], references: [id])
-  customer    Customer?     @relation(fields: [customerId], references: [id])
-  requestedBy User          @relation("DiscountRequestedBy", fields: [requestedById], references: [id])
-  decidedBy   User?         @relation("DiscountDecidedBy", fields: [decidedById], references: [id])
+  order       Order                 @relation(fields: [orderId], references: [id])
+  customer    Customer?             @relation(fields: [customerId], references: [id])
+  requestedBy User                  @relation("DiscountRequestedBy", fields: [requestedById], references: [id])
+  decidedBy   User?                 @relation("DiscountDecidedBy", fields: [decidedById], references: [id])
+  withdrawnBy User?                 @relation("DiscountWithdrawnBy", fields: [withdrawnById], references: [id])
   /// Code issued when granted (discount_codes.request_id).
   code        DiscountCode?
+  items       DiscountRequestItem[]
 
   @@index([status, createdAt])
   @@index([orderId])
   @@map("discount_requests")
+}
+
+/// What a request asks, and what the owner granted (decision H22, ⚠️ H51, H53): on a product — all
+/// its sale units — or, product null, on the order total; a rate or an amount asked (CHECK), at
+/// most one granted, null when not. A product once per request, the total once (partial unique
+/// indexes in the migration).
+model DiscountRequestItem {
+  id              String   @id @default(uuid(7)) @db.Uuid
+  requestId       String   @map("request_id") @db.Uuid
+  productId       String?  @map("product_id") @db.Uuid
+  requestedPct    Decimal? @map("requested_pct") @db.Decimal(5, 2)
+  requestedAmount Decimal? @map("requested_amount") @db.Decimal(14, 2)
+  decidedPct      Decimal? @map("decided_pct") @db.Decimal(5, 2)
+  decidedAmount   Decimal? @map("decided_amount") @db.Decimal(14, 2)
+
+  request DiscountRequest @relation(fields: [requestId], references: [id])
+  product Product?        @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([productId])
+  @@map("discount_request_items")
 }
 
 /// One-time code issued by the owner (RG-REM-04/05/07); single use enforced by

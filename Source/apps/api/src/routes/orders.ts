@@ -15,6 +15,7 @@ import { actorOf, authOf, requireRole } from '../plugins/session.js';
 import { adjustOrder, attachOrderCode, cancelOrder } from '../services/order-changes.js';
 import { loadOrder, submitOrder } from '../services/orders.js';
 import {
+  discountDecided,
   orderAdjusted,
   orderCancelled,
   orderSubmitted,
@@ -107,8 +108,14 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
     async (request): Promise<Order> => {
       const { id } = paramsSchema.parse(request.params);
       const body = orderCancelSchema.parse(request.body);
-      const order = await cancelOrder(app.db, actorOf(authOf(request)), id, body);
-      app.realtime.publish(orderCancelled({ id, salesUserId: order.salesUser.id }));
+      const { order, withdrawn } = await cancelOrder(app.db, actorOf(authOf(request)), id, body);
+      const salesUserId = order.salesUser.id;
+      app.realtime.publish([
+        ...orderCancelled({ id, salesUserId }),
+        ...(withdrawn
+          ? discountDecided(withdrawn, { id, salesUserId, status: order.status }, 'WITHDRAWN')
+          : []),
+      ]);
       return order;
     },
   );

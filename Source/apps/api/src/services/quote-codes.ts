@@ -16,7 +16,7 @@ import { AppError } from '../errors.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit, type AuditTx } from './audit.js';
-import { CODE_SELECT, findOrder, grantsOf, usedCode } from './order-view.js';
+import { CODE_SELECT, findOrder, grantsOf, pendingRequest, usedCode } from './order-view.js';
 import { asAmount } from './orders.js';
 import {
   assertNotFree,
@@ -41,6 +41,8 @@ async function draftToCode(db: Db, actor: Actor, id: string, version: number) {
   if (order.version !== version) throw new AppError(409, 'QUOTE_CHANGED');
   // One code per order (H42): its grants stay with it until the invoice.
   if (usedCode(order)) throw new AppError(409, 'QUOTE_HAS_CODE');
+  // The owner's answer brings its own code (⚠️ H52, H53).
+  if (pendingRequest(order)) throw new AppError(409, 'DISCOUNT_REQUEST_PENDING');
   return order;
 }
 

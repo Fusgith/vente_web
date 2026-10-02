@@ -30,8 +30,8 @@ export const discountCodeAttachSchema = z.object({
 });
 export type DiscountCodeAttach = z.infer<typeof discountCodeAttachSchema>;
 
-/** A grant is never nothing: a rate or an amount above 0. */
-const grantSchema = discountEntrySchema.refine((entry) => /[1-9]/.test(entry.value));
+/** A grant is never nothing: a rate or an amount above 0 — and neither is a request (T-033). */
+export const grantSchema = discountEntrySchema.refine((entry) => /[1-9]/.test(entry.value));
 
 export const discountCodeItemInputSchema = z.object({
   /** Null: the order total. */

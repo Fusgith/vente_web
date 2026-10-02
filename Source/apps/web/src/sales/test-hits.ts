@@ -129,6 +129,7 @@ export function savedQuote(
     orderDiscount: zero,
     discountTotal: zero,
     discountCode: null,
+    discountRequest: null,
     total: zero,
     createdAt: '2026-09-26T07:00:00.000Z',
     updatedAt: '2026-09-26T07:00:00.000Z',

@@ -9,6 +9,8 @@ export const SWEEP_MS = 30_000;
 export interface ExpiredOrder {
   id: string;
   salesUserId: string;
+  /** Its request still awaiting the owner, closed with it (⚠️ H54). */
+  requestId?: string;
 }
 
 /** At most this many orders per sweep: the next one, 30 s later, takes the rest. */
@@ -60,6 +62,24 @@ async function expireOne(db: Db, id: string, now: Date): Promise<ExpiredOrder | 
       before: { status: 'SUBMITTED', expiresAt: row.expires_at.toISOString() },
       after: { status: 'EXPIRED' },
     });
-    return { id, salesUserId: row.sales_user_id };
+    // Its request goes with it, though made for a later day end (set aside after this one, ⚠️
+    // H54): closed now — never before it was made, the check of the table holds.
+    const [request] = await tx.$queryRaw<{ id: string }[]>`
+        UPDATE "discount_requests"
+           SET "status" = 'EXPIRED',
+               "expires_at" = LEAST("expires_at",
+                 GREATEST(${now}::timestamptz, "created_at" + INTERVAL '1 millisecond'))
+         WHERE "order_id" = ${id}::uuid AND "status" = 'PENDING'
+        RETURNING "id"`;
+    if (!request) return { id, salesUserId: row.sales_user_id };
+    await recordAudit(tx, {
+      action: 'discount_request.expired',
+      entityType: 'discount_request',
+      entityId: request.id,
+      before: { status: 'PENDING' },
+      after: { status: 'EXPIRED', orderId: id },
+      reason: 'order_expired',
+    });
+    return { id, salesUserId: row.sales_user_id, requestId: request.id };
   });
 }

@@ -19,6 +19,8 @@ export { addQuantities, baseQuantity, isQuantity, lineGross, sumAmounts } from '
 export * from './delivery-issues.js';
 export * from './discount-caps.js';
 export * from './discount-codes.js';
+export * from './discount-request-list.js';
+export * from './discount-requests.js';
 export * from './discount.js';
 export * from './invoices.js';
 export * from './orders.js';

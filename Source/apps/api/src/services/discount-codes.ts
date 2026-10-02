@@ -24,7 +24,7 @@ const DEFAULT_LENGTH = 8;
 const MIN_LENGTH = 6;
 const MAX_LENGTH = 12;
 /** A code drawn again when it happens to exist already: at most this many draws. */
-const DRAWS = 5;
+export const DRAWS = 5;
 
 const select = {
   id: true,
@@ -70,7 +70,7 @@ function toView(row: StoredCode): DiscountCode {
 }
 
 /** A code of `length` characters from the unambiguous alphabet (H41), grouped by 4. */
-function drawCode(length: number): string {
+export function drawCode(length: number): string {
   let raw = '';
   for (let i = 0; i < length; i++) {
     raw += DISCOUNT_CODE_ALPHABET.charAt(randomInt(DISCOUNT_CODE_ALPHABET.length));
@@ -78,12 +78,12 @@ function drawCode(length: number): string {
   return groupDiscountCode(raw);
 }
 
-async function codeLength(db: Db): Promise<number> {
+export async function codeLength(db: Db): Promise<number> {
   const length = await readPositiveIntSetting(db, 'discount_code.length', DEFAULT_LENGTH);
   return Math.min(MAX_LENGTH, Math.max(MIN_LENGTH, length));
 }
 
-const stored = (entry: DiscountEntry) =>
+export const stored = (entry: DiscountEntry) =>
   entry.kind === 'pct' ? { pct: entry.value } : { amount: entry.value };
 
 const isTaken = (error: unknown) =>

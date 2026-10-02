@@ -2,6 +2,29 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 02/10/2026 — T-033 demandes de remise exceptionnelle (API) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Base : tables `discount_requests` (motif, note, statut, qui, quand, échéance) et `discount_request_items` (article ou total, demandé en % ou en montant, accordé ou non) ; contraintes CHECK sur les dates et les statuts.
+- API :
+  - `POST /discount-requests` depuis un devis ou une commande en file (commercial, caissier, responsable), motif pris dans le paramètre `discount_reasons` ;
+  - `GET /discount-requests` (boss, responsable) : en attente, la plus ancienne d'abord, et closes depuis le début de la journée ;
+  - accord du boss élément par élément : un code émis pour la commande et utilisé aussitôt, comme à la saisie ; refus ; retrait (demandeur, caissier qui tient la commande, responsable) ;
+  - `POST /orders/{id}/set-aside` : le caissier remet la commande en file, à sa place, pendant que le boss décide.
+- Pendant l'attente : paiement, saisie d'un code et changement de client refusés ; « Appeler le suivant » saute la commande ; la file affiche `discountPending`. L'annulation retire la demande ; le balayage l'expire à la fin de journée. Tout est journalisé ; avis en temps réel au boss, au responsable, au commercial et à la file caisse.
+- Revue (2 relecteurs puis vérification) : 4 défauts corrigés :
+  - la commande expirée en file laissait sa demande en attente : le balayage la clôt avec elle ;
+  - « Appeler le suivant » pouvait prendre une commande dont la demande venait d'être faite : nouvelle lecture une fois la commande verrouillée ;
+  - la liste du jour coupait à 100 avant de trier : elle trie sur la clôture, puis coupe ;
+  - une demande échue mais pas encore balayée bloquait encore le paiement et se retirait.
+- Tests : API 17 (demandes, accords, courses et fins de journée) ; format:check, lint, typecheck (0 erreur), suite complète : 581 tests verts.
+
+**Reste** : T-033b (tablette), T-033c (écran du boss), T-033d (caisse et supervision), T-033e (notification push) ; T-035 (devis et commandes du commercial).
+
+**Décisions** : aucune dépendance ajoutée. ⚠️ H51 à H54 inscrites (CDC métier §16.2) et codées selon leur formulation : qui demande et avec quel motif (H51), ce qui est bloqué pendant l'attente et la remise en file à la caisse (H52), l'accord élément par élément (H53), le retrait, l'expiration et le suivi par le boss (H54).
+
+**Questions** : valider H51 à H54.
+
 ## 01/10/2026 — H38 à H42 et H49 validées — agent : Claude Code (Opus 5.5)
 
 **Fait** :

@@ -119,6 +119,7 @@ function orderedDraft(): DraftState {
     orderDiscount: totals.orderDiscount,
     discountTotal: totals.discountTotal,
     discountCode: null,
+    discountRequest: null,
     total: totals.total,
     createdAt: '2026-09-26T07:00:00.000Z',
     updatedAt: '2026-09-26T07:05:00.000Z',

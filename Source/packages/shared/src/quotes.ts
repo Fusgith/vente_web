@@ -6,6 +6,7 @@
 import { z } from 'zod';
 
 import { isQuantity } from './decimal.js';
+import { discountRequestSummarySchema } from './discount-requests.js';
 import { discountEntrySchema } from './discount.js';
 
 /** A technical bound on the request, far beyond a counter sale; not a business rule. */
@@ -87,6 +88,8 @@ export const quoteSchema = z.object({
   discountTotal: decimalString,
   /** The owner's code attached, printed on the invoice (RG-REM-07). */
   discountCode: quoteCodeSchema.nullable(),
+  /** Its latest request to the owner, pending or closed (RG-REM-03, ⚠️ H54). */
+  discountRequest: discountRequestSummarySchema.nullable(),
   total: decimalString,
   createdAt: z.iso.datetime({ offset: true }),
   updatedAt: z.iso.datetime({ offset: true }),

@@ -30,6 +30,8 @@ export const queueItemSchema = z.object({
   /** Marked by the manager: served before the others, in their own order (RG-FIL-02). */
   priority: z.boolean(),
   noShowCount: z.int().nonnegative(),
+  /** A discount request awaits the owner: not paid, skipped by « call next » (⚠️ H52, RG-DSP-04). */
+  discountPending: z.boolean(),
   /** Entry in the queue: the wait shown runs from it (RG-FIL-05). */
   submittedAt: z.iso.datetime({ offset: true }),
   calledAt: z.iso.datetime({ offset: true }).nullable(),

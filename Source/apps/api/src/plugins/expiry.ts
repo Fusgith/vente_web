@@ -1,8 +1,9 @@
 import fp from 'fastify-plugin';
 
 import { expireDiscountCodes } from '../services/discount-codes.js';
+import { expireDiscountRequests } from '../services/discount-requests.js';
 import { expireOrders, SWEEP_MS, type ExpiredOrder } from '../services/expiry.js';
-import { orderExpired } from '../services/realtime-rooms.js';
+import { discountDecided, orderExpired } from '../services/realtime-rooms.js';
 
 export interface Expiry {
   /** One sweep now: the orders it expired, their followers told once it committed. */
@@ -16,10 +17,11 @@ declare module 'fastify' {
 }
 
 /**
- * The internal task that expires the orders past their day end (RG-CMD-08) and the discount codes
- * (RG-REM-04), every `sweepMs` and once at start — orders left from a day the server was off
- * expire at once. No separate service (CDC technique §5); `sweepMs: 0` leaves the sweeps to the
- * caller (tests).
+ * The internal task that expires the orders past their day end (RG-CMD-08) — with the request
+ * each still awaits —, the discount codes (RG-REM-04) and the requests the owner has not answered
+ * (⚠️ H54), every `sweepMs` and once at start: orders left from a day the server was off expire
+ * at once. No separate service (CDC technique §5); `sweepMs: 0` leaves the sweeps to the caller
+ * (tests).
  */
 export const expiryPlugin = fp<{ sweepMs?: number }>(
   async (app, { sweepMs = SWEEP_MS }) => {
@@ -28,13 +30,27 @@ export const expiryPlugin = fp<{ sweepMs?: number }>(
       const expired = await expireOrders(app.db, (orderId, error) =>
         app.log.error({ err: error, orderId }, 'order expiry failed'),
       );
-      app.realtime.publish(expired.flatMap(orderExpired));
+      app.realtime.publish(
+        expired.flatMap((order) => [
+          ...orderExpired(order),
+          ...(order.requestId
+            ? discountDecided(order.requestId, { ...order, status: 'EXPIRED' }, 'EXPIRED')
+            : []),
+        ]),
+      );
       if (expired.length > 0) app.log.info({ count: expired.length }, 'orders expired');
       const codes = await expireDiscountCodes(app.db).catch((error: unknown) => {
         app.log.error({ err: error }, 'discount code expiry failed');
         return 0;
       });
       if (codes > 0) app.log.info({ count: codes }, 'discount codes expired');
+      const requests = await expireDiscountRequests(app.db).catch((error: unknown) => {
+        app.log.error({ err: error }, 'discount request expiry failed');
+        return [];
+      });
+      app.realtime.publish(
+        requests.flatMap(({ requestId, order }) => discountDecided(requestId, order, 'EXPIRED')),
+      );
       return expired;
     }
     // One sweep at a time: a slow one is joined, never doubled.

@@ -46,6 +46,18 @@ export const ERROR_LABELS = {
     'Ce code mettrait le total à 0,00\u00a0MGA : une commande n’est jamais gratuite. Il reste actif ; le boss peut en émettre un autre.',
   QUOTE_HAS_CODE: 'Un code de remise est déjà rattaché à ce devis.',
   ORDER_HAS_CODE: 'Un code de remise est déjà rattaché à cette commande : un seul par commande.',
+  DISCOUNT_REQUEST_PENDING:
+    'Une demande de remise attend la réponse du boss : attendez sa décision, ou retirez la demande avec l’accord du client.',
+  DISCOUNT_REQUEST_NOT_PENDING:
+    'Cette demande de remise n’attend plus de réponse : elle a été accordée, refusée, retirée, ou elle a expiré.',
+  DISCOUNT_REQUEST_NOT_ALLOWED:
+    'Demande impossible ici : le commercial la fait sur son devis ou sa commande en file, le caissier sur la commande à sa caisse.',
+  DISCOUNT_REQUEST_PRODUCT_INVALID: 'Un article de la demande ne figure pas sur la commande.',
+  DISCOUNT_REASON_UNKNOWN: 'Choisissez un motif de la liste.',
+  DISCOUNT_REQUEST_NOTHING_COVERED:
+    'Cet accord ne couvre plus aucun article de la commande, ni le total : elle a changé depuis la demande.',
+  DISCOUNT_REQUEST_FREE_ORDER:
+    'Cet accord mettrait le total à 0,00\u00a0MGA : une commande n’est jamais gratuite. La demande reste en attente.',
   DISCOUNT_CODE_PRODUCT_UNAVAILABLE: 'Un article du code n’est plus en vente : retirez-le du code.',
   QUOTE_NOT_DRAFT: 'Ce devis est déjà devenu une commande : il ne se modifie plus.',
   ORDER_PRICE_CHANGED:
