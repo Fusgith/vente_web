@@ -129,8 +129,8 @@ export async function payOrder(
     const mine = actor.activeRole === 'manager' || order.cashier_user_id === actor.userId;
     if (order.status !== 'AT_REGISTER' || !mine) throw new AppError(409, 'ORDER_NOT_AT_REGISTER');
     if (order.version !== version) throw new AppError(409, 'ORDER_CHANGED');
-    // Not paid while the owner may still answer (⚠️ H52); a request takes the same lock. Past its
-    // day end, not yet swept, it holds the order no more: paid within the caps (⚠️ H54).
+    // Not paid while the owner may still answer (H52); a request takes the same lock. Past its
+    // day end, not yet swept, it holds the order no more: paid within the caps (H54).
     const pending = await tx.discountRequest.count({
       where: { orderId: id, status: 'PENDING', expiresAt: { gt: new Date() } },
     });

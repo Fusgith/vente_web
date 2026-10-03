@@ -1,5 +1,5 @@
 /**
- * The requests as the owner reads them (RG-DSH-05, ⚠️ H54), with their order whole: what the
+ * The requests as the owner reads them (RG-DSH-05, H54), with their order whole: what the
  * owner decides on. Apart from `discount-requests.ts`, which the quote embeds.
  */
 import { z } from 'zod';

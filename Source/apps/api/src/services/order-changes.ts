@@ -224,7 +224,7 @@ export async function adjustOrder(
  * validation (RG-CMD-04): a line it covers takes its grant — an amount beyond its gross comes down
  * to it —, the others keep theirs to the cent; the total takes the code's grant when covered,
  * else keeps its own, brought down to the headroom the grants leave. The owner's grant on a request
- * goes on the same way, a quote's saved prices included (⚠️ H53).
+ * goes on the same way, a quote's saved prices included (H53).
  */
 export function withCode(
   order: StoredOrder,
@@ -319,7 +319,7 @@ export async function attachOrderCode(
 ): Promise<Order> {
   const order = await atMyRegister(db, actor, id, version);
   if (usedCode(order)) throw new AppError(409, 'ORDER_HAS_CODE');
-  // The owner's answer brings its own code (⚠️ H52, H53).
+  // The owner's answer brings its own code (H52, H53).
   if (pendingRequest(order)) throw new AppError(409, 'DISCOUNT_REQUEST_PENDING');
   const code = await usableCode(db, typed, order, now);
   const applied = withCode(order, grantsOf(code));
@@ -347,7 +347,7 @@ export async function attachOrderCode(
 /**
  * Cancels an order before payment (RG-ANN-01), with its reason: the salesperson their own, the
  * cashier or the manager any. Its reservations are freed and its ticket closed with it; a request
- * awaiting the owner is withdrawn (⚠️ H54), its id returned for its followers.
+ * awaiting the owner is withdrawn (H54), its id returned for its followers.
  */
 export async function cancelOrder(
   db: Db,

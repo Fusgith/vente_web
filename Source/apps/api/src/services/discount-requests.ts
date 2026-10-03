@@ -26,7 +26,7 @@ import { dayEndTime, loadOrder } from './orders.js';
 import { readSetting } from './settings.js';
 import { nextShopTime, shopDayStart } from './shop-time.js';
 
-/** The seed's list, while the admin has not set `discount_reasons` (⚠️ H51). */
+/** The seed's list, while the admin has not set `discount_reasons` (H51). */
 const DEFAULT_REASONS = ['Client fidèle', 'Achat en volume', 'Article abîmé', 'Geste commercial'];
 
 export async function discountReasons(db: Db): Promise<string[]> {
@@ -70,12 +70,12 @@ export async function findRequest(db: AuditTx, id: string): Promise<DiscountRequ
   return toView(await db.discountRequest.findUniqueOrThrow({ where: { id }, select: VIEW_SELECT }));
 }
 
-/** Where a request may be made, and by whom (⚠️ H51). */
+/** Where a request may be made, and by whom (H51). */
 const OPEN_STATUSES: ReadonlySet<OrderStatus> = new Set(['DRAFT', 'SUBMITTED', 'AT_REGISTER']);
 
 /**
  * The salesperson on their own quote or order in the queue, the cashier on the order at their
- * register, the manager on any of them (⚠️ H51).
+ * register, the manager on any of them (H51).
  */
 function assertMayAsk(actor: Actor, order: StoredOrder): void {
   const { status } = order;
@@ -94,10 +94,10 @@ const asked = (entry: DiscountEntry) =>
   entry.kind === 'pct' ? { requestedPct: entry.value } : { requestedAmount: entry.value };
 
 /**
- * An exceptional discount asked of the owner (RG-REM-03, ⚠️ H51): products of the order — all
+ * An exceptional discount asked of the owner (RG-REM-03, H51): products of the order — all
  * their sale units — and/or its total, with a reason of the list. One request at a time, none
  * once a code is used; it expires at the next day end. The order's version moves on: a payment
- * or a code typed meanwhile is refused (⚠️ H52).
+ * or a code typed meanwhile is refused (H52).
  */
 export async function createDiscountRequest(
   db: Db,
@@ -171,7 +171,7 @@ async function notPending(db: AuditTx, id: string): Promise<AppError> {
     : new AppError(404, 'NOT_FOUND');
 }
 
-/** The owner says no (RG-REM-03, ⚠️ H53): the order is paid at its discounts within the caps. */
+/** The owner says no (RG-REM-03, H53): the order is paid at its discounts within the caps. */
 export async function rejectDiscountRequest(
   db: Db,
   actor: Actor,
@@ -198,7 +198,7 @@ export async function rejectDiscountRequest(
 }
 
 /**
- * The request withdrawn (RG-REM-05, ⚠️ H54): by who made it, by the cashier holding the order —
+ * The request withdrawn (RG-REM-05, H54): by who made it, by the cashier holding the order —
  * with the customer's agreement —, or by the manager. The order is paid within the caps.
  */
 export async function withdrawDiscountRequest(
@@ -243,7 +243,7 @@ export async function withdrawDiscountRequest(
   });
 }
 
-/** The order cancelled, its pending request goes with it (⚠️ H54); its id, if any. */
+/** The order cancelled, its pending request goes with it (H54); its id, if any. */
 export async function withdrawWithOrder(
   tx: AuditTx,
   actor: Actor,
@@ -279,7 +279,7 @@ export interface ExpiredRequest {
 }
 
 /**
- * Expires the requests still pending at their day end (⚠️ H54), audited as the system's doing;
+ * Expires the requests still pending at their day end (H54), audited as the system's doing;
  * run with the orders' sweep.
  */
 export async function expireDiscountRequests(db: Db, now = new Date()): Promise<ExpiredRequest[]> {
@@ -310,7 +310,7 @@ export async function expireDiscountRequests(db: Db, now = new Date()): Promise<
 }
 
 /**
- * What the owner reads (RG-DSH-05, ⚠️ H54): the requests pending, oldest first, and those closed
+ * What the owner reads (RG-DSH-05, H54): the requests pending, oldest first, and those closed
  * this shop day, the latest closed first. The manager reads them too (RG-DSH-06).
  */
 export async function listDiscountRequests(db: Db, now = new Date()): Promise<DiscountRequestList> {
@@ -342,7 +342,7 @@ export async function listDiscountRequests(db: Db, now = new Date()): Promise<Di
 }
 
 /**
- * The cashier sets aside the order at their register while the owner decides (⚠️ H52): back among
+ * The cashier sets aside the order at their register while the owner decides (H52): back among
  * those waiting, at its place, priority and absences kept — the register calls the next one.
  */
 export async function setAside(db: Db, actor: Actor, id: string, now = new Date()): Promise<Order> {

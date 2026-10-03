@@ -7,7 +7,7 @@ import { discountScene, type DiscountScene } from './discount-scene.js';
 import { createTestApp, type TestApp } from './helpers.js';
 
 describe.skipIf(!TEST_DATABASE_URL)(
-  'exceptional discount requests at their edges: races, day ends (⚠️ H52, H54)',
+  'exceptional discount requests at their edges: races, day ends (H52, H54)',
   () => {
     let t: TestApp;
     let s: DiscountScene;

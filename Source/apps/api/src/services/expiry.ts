@@ -9,7 +9,7 @@ export const SWEEP_MS = 30_000;
 export interface ExpiredOrder {
   id: string;
   salesUserId: string;
-  /** Its request still awaiting the owner, closed with it (⚠️ H54). */
+  /** Its request still awaiting the owner, closed with it (H54). */
   requestId?: string;
 }
 
@@ -62,8 +62,8 @@ async function expireOne(db: Db, id: string, now: Date): Promise<ExpiredOrder | 
       before: { status: 'SUBMITTED', expiresAt: row.expires_at.toISOString() },
       after: { status: 'EXPIRED' },
     });
-    // Its request goes with it, though made for a later day end (set aside after this one, ⚠️
-    // H54): closed now — never before it was made, the check of the table holds.
+    // Its request goes with it, though made for a later day end (set aside after this one, H54):
+    // closed now — never before it was made, the check of the table holds.
     const [request] = await tx.$queryRaw<{ id: string }[]>`
         UPDATE "discount_requests"
            SET "status" = 'EXPIRED',

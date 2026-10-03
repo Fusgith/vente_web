@@ -209,14 +209,14 @@ export function stockLow(productIds: readonly string[]): Emission[] {
   );
 }
 
-/** Waiting or at a register: the register queue shows its request mark (⚠️ H54, RG-DSP-04). */
+/** Waiting or at a register: the register queue shows its request mark (H54, RG-DSP-04). */
 const IN_REGISTER_QUEUE: ReadonlySet<OrderStatus> = new Set(['SUBMITTED', 'AT_REGISTER']);
 
 interface RequestedOrder extends CalledOrder {
   status: OrderStatus;
 }
 
-/** A discount asked of the owner (RG-REM-03, ⚠️ H51): the owner and the manager told. */
+/** A discount asked of the owner (RG-REM-03, H51): the owner and the manager told. */
 export function discountRequested(requestId: string, order: RequestedOrder): Emission[] {
   return [
     emission([room.role('owner'), room.role('manager')], 'discount.request_created', {
@@ -230,7 +230,7 @@ export function discountRequested(requestId: string, order: RequestedOrder): Emi
 type Closed = RealtimeEvents['discount.request_decided']['status'];
 
 /**
- * A request granted, rejected, withdrawn or expired (⚠️ H53, H54): the owner, the manager, the
+ * A request granted, rejected, withdrawn or expired (H53, H54): the owner, the manager, the
  * salesperson, and the registers when the order is in their queue.
  */
 export function discountDecided(
@@ -254,7 +254,7 @@ export function discountDecided(
   ];
 }
 
-/** Set aside while the owner decides: back among those waiting, at its place (⚠️ H52). */
+/** Set aside while the owner decides: back among those waiting, at its place (H52). */
 export function orderSetAside(order: CalledOrder): Emission[] {
   return [...queueChanged('register', order.id, 'released'), statusChanged(order, 'SUBMITTED')];
 }

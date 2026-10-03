@@ -29,7 +29,7 @@ export function grantsOf(code: StoredCode | null): CodeGrant[] {
   }));
 }
 
-/** A request to the owner and what it asks (RG-REM-03, ⚠️ H51). */
+/** A request to the owner and what it asks (RG-REM-03, H51). */
 export const REQUEST_SELECT = {
   id: true,
   status: true,
@@ -100,7 +100,7 @@ export const ORDER_INCLUDE = {
   },
   // Single use: one code at most is used on an order (T-034b).
   codesUsedHere: { select: CODE_SELECT, take: 1 },
-  // Its latest request to the owner, pending or closed (⚠️ H54).
+  // Its latest request to the owner, pending or closed (H54).
   discountRequests: {
     select: REQUEST_SELECT,
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
@@ -113,7 +113,7 @@ export type StoredOrder = Prisma.OrderGetPayload<{ include: typeof ORDER_INCLUDE
 /** The owner's code used on this order, if any (RG-REM-04). */
 export const usedCode = (order: StoredOrder): StoredCode | null => order.codesUsedHere[0] ?? null;
 
-/** A request awaits the owner on this order: not paid until then (⚠️ H52). */
+/** A request awaits the owner on this order: not paid until then (H52). */
 export const pendingRequest = (order: StoredOrder): boolean =>
   order.discountRequests[0]?.status === 'PENDING';
 

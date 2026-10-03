@@ -14,7 +14,7 @@ import { discountScene, type DiscountScene } from './discount-scene.js';
 import { auditActions, createTestApp, request, type TestApp } from './helpers.js';
 
 describe.skipIf(!TEST_DATABASE_URL)(
-  'exceptional discounts asked of the owner (RG-REM-03/05, ⚠️ H51, H52, H54)',
+  'exceptional discounts asked of the owner (RG-REM-03/05, H51, H52, H54)',
   () => {
     let t: TestApp;
     let s: DiscountScene;
@@ -127,7 +127,7 @@ describe.skipIf(!TEST_DATABASE_URL)(
       expect(await t.db.discountRequest.count()).toBe(1);
     });
 
-    it('keeps the quote from a code or another customer while the owner decides (⚠️ H52)', async () => {
+    it('keeps the quote from a code or another customer while the owner decides (H52)', async () => {
       const quote = await s.quote();
       const pending = await s.asked(quote, [[s.products.soap, 'pct', '20']]);
       const code = await s.post('/discount-codes', s.cookies.owner, {

@@ -296,7 +296,7 @@ export async function updateQuote(
     throw new AppError(403, 'AUTH_FORBIDDEN');
   }
   if (current.version !== input.version) throw new AppError(409, 'QUOTE_CHANGED');
-  // The owner decides for this customer: the request stays with them (⚠️ H52). A request made
+  // The owner decides for this customer: the request stays with them (H52). A request made
   // meanwhile moved the version on: the guarded save below refuses.
   if (current.customerId !== input.customerId && current._count.discountRequests > 0) {
     throw new AppError(409, 'DISCOUNT_REQUEST_PENDING');

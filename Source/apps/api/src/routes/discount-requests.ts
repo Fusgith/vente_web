@@ -22,7 +22,7 @@ import {
 import { discountDecided, discountRequested, orderSetAside } from '../services/realtime-rooms.js';
 
 const params = z.object({ id: z.uuid() });
-/** Annexe B « demander une remise exceptionnelle » (⚠️ H51): who sells and who cashes. */
+/** Annexe B « demander une remise exceptionnelle » (H51): who sells and who cashes. */
 const askers = { preHandler: requireRole('sales', 'cashier', 'manager') };
 /** Annexe B « accorder une remise exceptionnelle »: the owner alone (RG-REM-03). */
 const owner = { preHandler: requireRole('owner') };
@@ -34,7 +34,7 @@ const followed = (order: Order) => ({
   status: order.status,
 });
 
-/** Exceptional discount requests (T-033, RG-REM-03/05, ⚠️ H51 to H54). */
+/** Exceptional discount requests (T-033, RG-REM-03/05, H51 to H54). */
 export const discountRequestRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     '/discount-requests/reasons',
@@ -82,7 +82,7 @@ export const discountRequestRoutes: FastifyPluginAsync = async (app) => {
     return order;
   });
 
-  // Annexe B « File caisse : appeler / absent »: set aside while the owner decides (⚠️ H52).
+  // Annexe B « File caisse : appeler / absent »: set aside while the owner decides (H52).
   app.post(
     '/orders/:id/set-aside',
     { preHandler: requireRole('cashier', 'manager') },

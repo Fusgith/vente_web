@@ -66,7 +66,7 @@ async function insertCode(
 }
 
 /**
- * The owner grants a request item by item (RG-REM-03/05, ⚠️ H53): as asked, otherwise, or not at
+ * The owner grants a request item by item (RG-REM-03/05, H53): as asked, otherwise, or not at
  * all — one item at least. The grants become a code issued for this order and used on it at once
  * (H17), applied as a code typed at the register (H42) on the saved prices, beyond the caps. A
  * grant that covers nothing left on the order, or that would make it free (H50), is refused and the

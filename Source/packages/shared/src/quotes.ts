@@ -88,7 +88,7 @@ export const quoteSchema = z.object({
   discountTotal: decimalString,
   /** The owner's code attached, printed on the invoice (RG-REM-07). */
   discountCode: quoteCodeSchema.nullable(),
-  /** Its latest request to the owner, pending or closed (RG-REM-03, ⚠️ H54). */
+  /** Its latest request to the owner, pending or closed (RG-REM-03, H54). */
   discountRequest: discountRequestSummarySchema.nullable(),
   total: decimalString,
   createdAt: z.iso.datetime({ offset: true }),

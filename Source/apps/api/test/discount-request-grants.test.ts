@@ -8,7 +8,7 @@ import { discountScene, type DiscountScene } from './discount-scene.js';
 import { auditActions, createTestApp, request, type TestApp } from './helpers.js';
 
 describe.skipIf(!TEST_DATABASE_URL)(
-  'the owner grants a discount request item by item (RG-REM-03, ⚠️ H53)',
+  'the owner grants a discount request item by item (RG-REM-03, H53)',
   () => {
     let t: TestApp;
     let s: DiscountScene;

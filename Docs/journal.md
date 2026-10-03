@@ -2,6 +2,24 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 03/10/2026 — H51 à H54 validées — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- L'utilisateur valide les hypothèses des demandes de remise exceptionnelle telles qu'écrites :
+  - H51 : qui demande (commercial, caissier, responsable), sur quoi, motif pris dans la liste ;
+  - H52 : ce qui est bloqué pendant l'attente, la commande remise en file à la caisse ;
+  - H53 : décision du boss élément par élément, l'accord devient un code rattaché aussitôt ;
+  - H54 : retrait, expiration en fin de journée, suivi par le boss.
+- CDC métier (v0.12) : les quatre lignes passent du §16.2 au nouveau §16.11. Les règles RG-CMD-07, RG-FIL-03, RG-REM-03/04/05, RG-DSP-04 et RG-DSH-05 citent la décision au lieu de l'hypothèse ; en-tête et §16.2 à jour.
+- CDC technique, backlog, CLAUDE.md, commentaires du code et intitulés des tests : les marqueurs ⚠️ de ces hypothèses sont retirés (la migration déjà appliquée garde le sien : on ne la modifie pas). Aucun changement de comportement : l'API de T-033 suivait déjà ces hypothèses.
+- format:check, lint et typecheck verts.
+
+**Reste** : T-033b (tablette), T-033c (écran du boss), T-033d (caisse et supervision), T-033e (notification push) ; T-035 (devis et commandes du commercial).
+
+**Décisions** : H51 à H54 validées (§16.11). Plus aucune hypothèse ouverte.
+
+**Questions** : aucune.
+
 ## 02/10/2026 — T-033 demandes de remise exceptionnelle (API) — agent : Claude Code (Opus 5.5)
 
 **Fait** :

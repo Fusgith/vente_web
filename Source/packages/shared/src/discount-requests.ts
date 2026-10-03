@@ -1,5 +1,5 @@
 /**
- * Exceptional discount requests (RG-REM-03/05, decision H22, ⚠️ H51 to H54): beyond the caps, one
+ * Exceptional discount requests (RG-REM-03/05, decisions H22, H51 to H54): beyond the caps, one
  * asks the owner a rate or an amount on products — all their sale units — and/or the order total.
  * The owner grants item by item, which issues a code attached to the order at once (H17), or
  * rejects; until then the order is not paid.
@@ -33,7 +33,7 @@ export const discountRequestItemInputSchema = z.object({
 export type DiscountRequestItemInput = z.infer<typeof discountRequestItemInputSchema>;
 
 /**
- * A request on a quote or an order, with the version read (⚠️ H51): products of its lines and/or
+ * A request on a quote or an order, with the version read (H51): products of its lines and/or
  * its total, each once; the reason is one of `discount_reasons`, the note optional.
  */
 export const discountRequestCreateSchema = z.object({
@@ -50,7 +50,7 @@ export const discountRequestCreateSchema = z.object({
 export type DiscountRequestCreate = z.infer<typeof discountRequestCreateSchema>;
 
 /**
- * The owner's answer (⚠️ H53): every item of the request once, granted — as asked or otherwise —
+ * The owner's answer (H53): every item of the request once, granted — as asked or otherwise —
  * or not (`discount: null`); one at least is granted, else the owner rejects.
  */
 export const discountRequestGrantSchema = z.object({
@@ -83,13 +83,13 @@ export const discountRequestSummarySchema = z.object({
   items: z.array(discountRequestItemSchema),
   requestedBy: person,
   createdAt: instant,
-  /** The next end of the shop day: still pending then, it expires (⚠️ H54). */
+  /** The next end of the shop day: still pending then, it expires (H54). */
   expiresAt: instant,
   /** Decided, withdrawn or expired. */
   closedAt: instant.nullable(),
 });
 export type DiscountRequestSummary = z.infer<typeof discountRequestSummarySchema>;
 
-/** The reasons offered (setting `discount_reasons`, ⚠️ H51). */
+/** The reasons offered (setting `discount_reasons`, H51). */
 export const discountReasonsSchema = z.object({ reasons: z.array(z.string()) });
 export type DiscountReasons = z.infer<typeof discountReasonsSchema>;

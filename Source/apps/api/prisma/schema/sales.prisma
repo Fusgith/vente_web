@@ -191,7 +191,7 @@ model OrderLine {
   @@map("order_lines")
 }
 
-/// Request to exceed the cap; only the owner decides (RG-REM-03, ⚠️ H51 to H54). One PENDING per
+/// Request to exceed the cap; only the owner decides (RG-REM-03, H51 to H54). One PENDING per
 /// order (partial index); decided ⇔ `decided_at`, withdrawn ⇔ `withdrawn_at` (CHECKs).
 model DiscountRequest {
   id            String                @id @default(uuid(7)) @db.Uuid
@@ -224,7 +224,7 @@ model DiscountRequest {
   @@map("discount_requests")
 }
 
-/// What a request asks, and what the owner granted (decision H22, ⚠️ H51, H53): on a product — all
+/// What a request asks, and what the owner granted (decisions H22, H51, H53): on a product — all
 /// its sale units — or, product null, on the order total; a rate or an amount asked (CHECK), at
 /// most one granted, null when not. A product once per request, the total once (partial unique
 /// indexes in the migration).

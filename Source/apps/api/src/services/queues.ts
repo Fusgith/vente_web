@@ -144,7 +144,7 @@ async function registerOf(tx: Prisma.TransactionClient, actor: Actor): Promise<s
 const RACES = 10;
 
 /**
- * The first order waiting, past those awaiting the owner (⚠️ H52). A request made while the
+ * The first order waiting, past those awaiting the owner (H52). A request made while the
  * statement waited on the order's lock is not in its snapshot: checked again once the order is
  * held — no request lands on it any more —, the next one is taken instead.
  */
@@ -171,7 +171,7 @@ async function firstWaiting(tx: Prisma.TransactionClient, now: Date): Promise<st
  * moment never get the same ticket: calls take the queue one after the other, and the call is
  * guarded on the order still waiting. An order past its day end is never called, even before the
  * sweep expires it (RG-CMD-08); one awaiting the owner's answer is passed over, keeping its place —
- * called by its ticket, it comes all the same (⚠️ H52).
+ * called by its ticket, it comes all the same (H52).
  */
 export async function callToRegister(db: Db, actor: Actor, id: string | null): Promise<Order> {
   return db.$transaction(async (tx) => {

@@ -44,7 +44,7 @@ export const realtimePayloadSchemas = {
   'stock.alert': z.object({ productId: z.uuid() }),
   /** An exceptional discount asked of the owner (RG-REM-03, RG-DSH-05). */
   'discount.request_created': z.object({ requestId: z.uuid(), orderId: z.uuid() }),
-  /** A request granted or rejected by the owner, withdrawn, or expired (⚠️ H53, H54). */
+  /** A request granted or rejected by the owner, withdrawn, or expired (H53, H54). */
   'discount.request_decided': z.object({
     requestId: z.uuid(),
     orderId: z.uuid(),
