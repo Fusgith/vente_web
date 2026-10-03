@@ -1,5 +1,5 @@
 import { formatPhone, type Customer, type DiscountCode } from '@vente-web/shared';
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { labels } from '../labels.js';
@@ -150,5 +150,30 @@ describe('DiscountCodesPanel — the owner’s codes (T-034, RG-REM-04, H41)', (
     await waitFor(() => expect(band().textContent).toBe(text.revoked('K7QM-3XWP')));
     expect(panel().getByText(text.status.REVOKED)).toBeInTheDocument();
     expect(panel().queryByRole('button', { name: text.revokeOf('K7QM-3XWP') })).toBeNull();
+  });
+
+  it('lists the code a request granted gives, the refusals left aside (H53)', async () => {
+    let granted = false;
+    const api = await mount({ [LIST]: () => ok({ items: granted ? [code('ACTIVE')] : [] }) });
+    expect(await panel().findByText(text.empty)).toBeVisible();
+    await waitFor(() =>
+      expect(fakeRealtime.sockets[0]?.listeners.get('discount.request_decided')?.size).toBe(1),
+    );
+    const reads = api.callsTo(LIST).length;
+    const decided = (status: 'GRANTED' | 'REJECTED') =>
+      act(() =>
+        fakeRealtime.emit('discount.request_decided', {
+          requestId: '0192a4f0-0000-7000-8000-000000000601',
+          orderId: '0192a4f0-0000-7000-8000-000000000402',
+          status,
+        }),
+      );
+
+    decided('REJECTED');
+    expect(api.callsTo(LIST)).toHaveLength(reads);
+    granted = true;
+    decided('GRANTED');
+
+    expect(await panel().findByText('K7QM-3XWP')).toBeVisible();
   });
 });

@@ -7,6 +7,7 @@ import { deliveryLabels } from './labels-delivery.js';
 import { issueLabels } from './labels-issues.js';
 import { refundLabels } from './labels-refund.js';
 import { registerLabels } from './labels-register.js';
+import { requestsLabels } from './labels-requests.js';
 import { stockLabels } from './labels-stock.js';
 import { supervisionLabels } from './labels-supervision.js';
 
@@ -314,6 +315,7 @@ export const labels = {
   stock: stockLabels,
   caps: capsLabels,
   codes: codesLabels,
+  requests: requestsLabels,
 
   /** The manager's notices, in the bottom band. */
   manager: {

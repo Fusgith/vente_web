@@ -5,12 +5,14 @@ import {
   formatQty,
   normalizeDiscountCode,
   ticketLabel,
+  type DiscountRequestCreate,
   type Quote,
   type StockShortage,
 } from '@vente-web/shared';
 import { useState, type Dispatch } from 'react';
 
 import { ApiError } from '../api/client.js';
+import { discountRequestsApi, requestPending } from '../api/discount-requests.js';
 import { errorMessage } from '../api/error-message.js';
 import { ordersApi, stockShortages } from '../api/orders.js';
 import { linesConcerned, quotesApi } from '../api/quotes.js';
@@ -29,6 +31,13 @@ import {
 
 const text = labels.sales.draft;
 const codeText = labels.sales.code;
+const requestText = labels.requests;
+
+/** What the request sheet sends: the quote it goes on is the one saved (T-033b). */
+export type RequestInput = Omit<DiscountRequestCreate, 'orderId' | 'version'>;
+
+/** An answer the request may have been lost behind, or a request made meanwhile (H51). */
+const REQUEST_UNSURE = new Set(['NETWORK_ERROR', 'QUOTE_CHANGED', 'DISCOUNT_REQUEST_PENDING']);
 
 /** The API's refusal, with the lines it names so they can be found in the table. */
 function refusal(error: unknown, message = errorMessage(error)): string {
@@ -70,7 +79,7 @@ function shortageMessage(shortages: StockShortage[]): string {
 }
 
 /** A save, a validation or the owner's code under way: the buttons wait. */
-export type QuoteBusy = 'save' | 'submit' | 'code' | null;
+export type QuoteBusy = 'save' | 'submit' | 'code' | 'request' | null;
 
 /**
  * Saves the quote (T-030) and validates it into an order (T-032). The screen checks first what
@@ -83,7 +92,8 @@ export type QuoteBusy = 'save' | 'submit' | 'code' | null;
  * is then saved again at the new price, for the same check.
  *
  * The owner's code (T-034b, H42) goes on a saved quote: the screen is saved first if it changed,
- * then the API attaches the code and applies what it grants.
+ * then the API attaches the code and applies what it grants. A request to the owner (T-033b, H51)
+ * goes the same way; while it waits, it may be withdrawn with the customer's agreement (H54).
  */
 export function useQuoteActions(draft: DraftState, dispatch: Dispatch<DraftAction>) {
   const { say, sayError } = useStatusLine();
@@ -240,5 +250,67 @@ export function useQuoteActions(draft: DraftState, dispatch: Dispatch<DraftActio
     }
   }
 
-  return { save, submit, attachCode, busy };
+  /**
+   * A refusal of the request, for the sheet. The answer lost on the Wi-Fi may hide a request that
+   * went through, and a request made meanwhile holds the quote: the quote read again tells.
+   */
+  async function askRefused(error: unknown, target: QuoteRef | null): Promise<string | null> {
+    if (error instanceof ApiError && target && REQUEST_UNSURE.has(error.code)) {
+      const quote = await quotesApi.get(target.id).catch(() => null);
+      if (quote && requestPending(quote.discountRequest)) {
+        dispatch({ type: 'requestChanged', quote });
+        if (error.code === 'NETWORK_ERROR') {
+          say(requestText.sent, 'check');
+          return null;
+        }
+      }
+    }
+    return refusal(error);
+  }
+
+  /**
+   * The request from its sheet (H51): the screen saved first if it changed, so that the owner
+   * decides on the quote as shown. Null once sent (the band says so), else why it was refused.
+   */
+  async function ask(request: RequestInput): Promise<string | null> {
+    const changed = !draft.saved || unsavedChanges(draft);
+    const refused = changed ? unsaveable(requestText.customerFirst, requestText.beyondCap) : null;
+    if (refused) return refused;
+    setBusy('request');
+    let target: QuoteRef | null = draft.saved ?? null;
+    try {
+      if (changed) target = await store();
+      if (!target) return requestText.customerFirst;
+      const quote = await discountRequestsApi.create({
+        orderId: target.id,
+        version: target.version,
+        ...request,
+      });
+      dispatch({ type: 'requestChanged', quote });
+      say(requestText.sent, 'check');
+      return null;
+    } catch (error) {
+      return await askRefused(error, target);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  /** The request withdrawn with the customer's agreement (H54): the caps hold again. */
+  const withdraw = () =>
+    run('request', async () => {
+      const { request, saved } = draft;
+      if (!request || !saved) return;
+      try {
+        dispatch({ type: 'requestChanged', quote: await discountRequestsApi.withdraw(request.id) });
+        say(requestText.withdrawn, 'check');
+      } catch (error) {
+        // Decided meanwhile: the screen shows the answer, the band why nothing was withdrawn.
+        const quote = await quotesApi.get(saved.id).catch(() => null);
+        if (quote) dispatch({ type: 'requestChanged', quote });
+        throw error;
+      }
+    });
+
+  return { save, submit, attachCode, ask, withdraw, busy };
 }

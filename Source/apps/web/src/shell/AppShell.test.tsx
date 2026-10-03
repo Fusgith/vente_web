@@ -42,6 +42,7 @@ describe('signed-in shell', () => {
       'GET /deliveries/issues': ok([]),
       'GET /stock/alerts': ok({ items: [] }),
       'GET /discount-caps': ok({ defaultPct: '0.00', categories: [] }),
+      'GET /discount-requests': ok({ pending: [], recent: [] }),
       'GET /queues/register': ok({ queue: 'register', serving: [], waiting: [] }),
       'GET /queues/delivery': ok({ queue: 'delivery', serving: [], waiting: [] }),
       'GET /supervision/today': ok({
@@ -62,6 +63,26 @@ describe('signed-in shell', () => {
       expect(screen.getByRole('alert')).toHaveTextContent(ERROR_LABELS.AUTH_ROLE_REMOTE_FORBIDDEN),
     );
     expect(screen.getByRole('heading', { name: labels.workspaces.manager.title })).toBeVisible();
+  });
+
+  it('opens the owner’s screen on its title, the requests to answer right under it', async () => {
+    fakeApi({
+      'GET /auth/me': ok(meFor({ user: { ...RIJA, roles: ['owner'] }, activeRole: 'owner' })),
+      'GET /discount-requests': ok({ pending: [], recent: [] }),
+      'GET /register-sessions': ok({ sessions: [] }),
+      'GET /discount-caps': ok({ defaultPct: '0.00', categories: [] }),
+      'GET /discount-codes': ok({ items: [] }),
+    });
+    render(<App />);
+
+    const title = await screen.findByRole('heading', {
+      level: 1,
+      name: labels.workspaces.owner.title,
+    });
+    // A screen reader meets the page's title before the panels' own.
+    const [first, second] = screen.getAllByRole('heading');
+    expect(first).toBe(title);
+    expect(second).toHaveTextContent(labels.requests.board.title);
   });
 
   it('returns to the login screen with the reason when the session is gone', async () => {

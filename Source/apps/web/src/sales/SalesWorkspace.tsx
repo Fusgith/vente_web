@@ -1,5 +1,6 @@
 import { useReducer } from 'react';
 
+import { requestPending } from '../api/discount-requests.js';
 import { labels } from '../labels.js';
 import { OrderNotices } from './OrderNotices.js';
 import { CustomerPicker } from './CustomerPicker.js';
@@ -10,6 +11,7 @@ import { ProductSearch } from './ProductSearch.js';
 import { QuantityPad } from './QuantityPad.js';
 import { StockShortageSheet } from './StockShortageSheet.js';
 import { useQuoteActions } from './useQuoteActions.js';
+import { useRequestDecisions } from './useRequestDecisions.js';
 
 interface SalesWorkspaceProps {
   /** Lines to start from: a quote taken up again (T-030), or the design gallery's demo. */
@@ -25,7 +27,8 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
   const [draft, dispatch] = useReducer(draftReducer, initialDraft);
   const position = draft.lines.findIndex((line) => line.key === draft.selected);
   const selected = draft.lines[position];
-  const { save, submit, attachCode, busy } = useQuoteActions(draft, dispatch);
+  const { save, submit, attachCode, ask, withdraw, busy } = useQuoteActions(draft, dispatch);
+  useRequestDecisions(draft, dispatch);
 
   return (
     <div className="flex flex-1 flex-col gap-4 md:min-h-0 lg:grid lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)] 2xl:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
@@ -62,12 +65,14 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
         onSave={() => void save()}
         onSubmit={() => void submit()}
         onAttachCode={attachCode}
+        onAsk={ask}
+        onWithdraw={() => void withdraw()}
         busy={busy}
         customer={
           <CustomerPicker
             value={draft.customer}
             onChange={(customer) => dispatch({ type: 'setCustomer', customer })}
-            locked={!!draft.code}
+            locked={draft.code ? 'code' : requestPending(draft.request) ? 'request' : null}
           />
         }
       />

@@ -13,6 +13,7 @@ import { ordersApi } from '../api/orders.js';
 import { queuesApi } from '../api/queues.js';
 import { labels } from '../labels.js';
 import { CancelOrderSheet } from '../register/CancelOrderSheet.js';
+import { RequestTag } from '../register/RequestTag.js';
 import { useQueue } from '../register/useQueue.js';
 import { waitOf } from '../register/wait.js';
 import { useStatusLine } from '../shell/status-line.js';
@@ -61,6 +62,12 @@ function Serving({
                 <span className="w-16 text-21 font-bold figures">{ticket}</span>
                 <span className="min-w-0 flex-1 leading-5">
                   <span className="block truncate font-semibold">{name}</span>
+                  {/* At a register, its payment waiting for the owner's answer (RG-REM-05). */}
+                  {item.discountPending && (
+                    <span className="mt-1 flex">
+                      <RequestTag />
+                    </span>
+                  )}
                   <span className="block text-ink-2">
                     {item.servedBy &&
                       text.servedBy(item.servedBy.fullName, item.station?.name ?? null)}
@@ -226,9 +233,15 @@ export function QueueBoard({ queue, now }: { queue: QueueName; now: number }) {
                     <td className={`${row} text-21 font-bold figures`}>{ticket}</td>
                     <td className={`${row} leading-5`}>
                       <span className="block truncate font-semibold">{item.customer.name}</span>
-                      {item.noShowCount > 0 && (
-                        <span className={`${tagClass} mt-1 border-madder text-madder`}>
-                          {columns.absences(item.noShowCount)}
+                      {(item.noShowCount > 0 || item.discountPending) && (
+                        <span className="mt-1 flex flex-wrap gap-1">
+                          {item.noShowCount > 0 && (
+                            <span className={`${tagClass} border-madder text-madder`}>
+                              {columns.absences(item.noShowCount)}
+                            </span>
+                          )}
+                          {/* The state of the discounts: a request awaits the owner (RG-DSP-04). */}
+                          {item.discountPending && <RequestTag />}
                         </span>
                       )}
                     </td>

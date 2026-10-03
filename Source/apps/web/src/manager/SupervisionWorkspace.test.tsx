@@ -68,6 +68,29 @@ describe('the manager’s supervision (RG-DSP-04, RG-FIL-02)', () => {
     expect(figures.getByText(shown(formatMga('100000.00')))).toBeVisible();
   });
 
+  it('marks the order whose discount request awaits the owner (H52)', async () => {
+    await mount({
+      'GET /queues/register': ok(queueOf([a1, { ...a2, discountPending: true }, a3])),
+    });
+    const row = (await board('register').findByText('Rabe Paul')).closest('tr')!;
+    expect(within(row).getByText(labels.requests.tag)).toBeVisible();
+    expect(board('register').getAllByText(labels.requests.tag)).toHaveLength(1);
+  });
+
+  it('marks, among those served, the order whose payment waits for the owner (RG-REM-05)', async () => {
+    const atRegister = item(3, {
+      station: counter.station,
+      calledAt: counter.calledAt,
+      status: 'AT_REGISTER',
+      servedBy: { id: HERY.id, fullName: HERY.fullName },
+      discountPending: true,
+    });
+    await mount({ 'GET /queues/register': ok(queueOf([a1], [atRegister])) });
+
+    const served = (await board('register').findByText('Randria Solo')).closest('li')!;
+    expect(within(served).getByText(labels.requests.tag)).toBeVisible();
+  });
+
   it('moves an order one place down from the keyboard, then marks another priority', async () => {
     const api = await mount({
       'POST /queues/register/reorder': { status: 204 },

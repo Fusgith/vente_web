@@ -14,6 +14,7 @@ import { StockPanel } from '../manager/StockPanel.js';
 import { SupervisionWorkspace } from '../manager/SupervisionWorkspace.js';
 import { DiscountCapsPanel } from '../owner/DiscountCapsPanel.js';
 import { DiscountCodesPanel } from '../owner/DiscountCodesPanel.js';
+import { DiscountRequestsPanel } from '../owner/DiscountRequestsPanel.js';
 import { RegisterWorkspace } from '../register/RegisterWorkspace.js';
 import { SalesWorkspace } from '../sales/SalesWorkspace.js';
 import { buttonClass, sheetClass } from '../ui/button.js';
@@ -129,6 +130,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
     return (
       <div className="flex flex-col pb-8">
         <SupervisionWorkspace />
+        {/* RG-DSH-05 (H54): the requests to the owner and the answers, read-only. */}
+        <DiscountRequestsPanel editable={false} />
         {/* RG-LIV-04 (H37): the manager decides on each delivery issue. */}
         <DeliveryIssuesPanel />
         {/* RG-CAI-04/05: the day's registers. */}
@@ -141,10 +144,16 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
     );
   }
   const workspace = labels.workspaces[role];
+  const owner = role === 'owner';
+  // The page's title comes first, above the panels: the owner's requests then follow it.
+  const title = <h1 className="type-title">{workspace.title}</h1>;
   return (
     <div className="flex flex-col">
+      {owner && <header className="mx-auto mt-8 w-full max-w-4xl px-4">{title}</header>}
+      {/* RG-REM-03, RG-DSH-05 (H53): the owner answers the discount requests, first of all. */}
+      {owner && <DiscountRequestsPanel editable />}
       <section className={`${sheetClass} mx-auto mt-8 flex w-full max-w-2xl flex-col gap-3 p-8`}>
-        <h1 className="type-title">{workspace.title}</h1>
+        {!owner && title}
         <p className="text-18 text-ink">{workspace.summary}</p>
         <p className="mt-3 flex items-center gap-3 border-t border-rule pt-5 text-ink-2">
           <Icon name="info" className="size-5" />
@@ -152,11 +161,11 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         </p>
       </section>
       {/* RG-CAI-04/05: the day's registers, until the dashboard (T-070). */}
-      {role === 'owner' && <RegisterSessionsPanel />}
+      {owner && <RegisterSessionsPanel />}
       {/* RG-REM-01 (H15): the owner sets the discount caps. */}
-      {role === 'owner' && <DiscountCapsPanel editable />}
+      {owner && <DiscountCapsPanel editable />}
       {/* RG-REM-04 (H41): the owner issues and revokes the discount codes. */}
-      {role === 'owner' && <DiscountCodesPanel />}
+      {owner && <DiscountCodesPanel />}
     </div>
   );
 }

@@ -130,7 +130,7 @@ describe('register: the owner’s code typed before payment (T-034c, RG-CMD-05b,
     expect(screen.getByText(code.tag('R7K4-29QP'))).toBeVisible();
   });
 
-  it('takes the code typed again as on, once the order read since carries it', async () => {
+  it('closes the sheet once the order read since carries the code typed', async () => {
     const api = mount({ [ATTACH]: 'network' });
     await screen.findByRole('button', { name: code.open });
     await waitFor(() =>
@@ -149,10 +149,8 @@ describe('register: the owner’s code typed before payment (T-034c, RG-CMD-05b,
         change: 'updated',
       }),
     );
-    expect(await screen.findByText(code.tag('R7K4-29QP'))).toBeInTheDocument();
-    fireEvent.click(within(sheet).getByRole('button', { name: code.apply }));
-
-    await waitFor(() => expect(band()).toHaveTextContent(text.codeAttached('R7K4-29QP')));
+    // The sheet belongs to the order without a code: the code on, it closes, its tag shown.
+    expect(await screen.findByText(code.tag('R7K4-29QP'))).toBeVisible();
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(api.callsTo(ATTACH)).toHaveLength(1);
   });

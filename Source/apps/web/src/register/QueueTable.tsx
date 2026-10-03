@@ -2,6 +2,7 @@ import { formatAmount, ticketLabel, type QueueItem } from '@vente-web/shared';
 
 import { labels } from '../labels.js';
 import { buttonClass, sheetClass, tagClass } from '../ui/button.js';
+import { RequestTag } from './RequestTag.js';
 import { waitOf } from './wait.js';
 
 const text = labels.register;
@@ -95,7 +96,7 @@ export function QueueTable({
                     <td className={`${row} text-21 font-bold figures`}>{ticket}</td>
                     <td className={`${row} leading-5`}>
                       <span className="block truncate font-semibold">{item.customer.name}</span>
-                      {(item.priority || item.noShowCount > 0) && (
+                      {(item.priority || item.noShowCount > 0 || item.discountPending) && (
                         <span className="mt-1 flex flex-wrap gap-1">
                           {item.priority && (
                             <span className={`${tagClass} border-saffron bg-saffron-soft text-ink`}>
@@ -107,6 +108,7 @@ export function QueueTable({
                               {text.absences(item.noShowCount)}
                             </span>
                           )}
+                          {item.discountPending && <RequestTag />}
                         </span>
                       )}
                     </td>

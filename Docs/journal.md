@@ -2,6 +2,41 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 03/10/2026 — T-033b, c, d : demandes de remise à l'écran — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Tablette (T-033b) :
+  - feuille « Demander au boss » : remise par article et/ou sur le total, en % ou en montant, motif pris dans la liste, note ; un devis jamais enregistré l'est d'abord ;
+  - pendant l'attente, une marque remplace les boutons ; le devis, le code et le client sont figés ; retrait possible avec l'accord du client ;
+  - la réponse du boss est annoncée dans la bande ; un accord applique son code aussitôt.
+- Écran du boss (T-033c) :
+  - chaque demande en attente avec sa commande et le motif ; accord élément par élément (valeur demandée, autre valeur ou rien) ou refus en un geste ;
+  - le code à transmettre est affiché ; les demandes closes du jour sont listées ; la liste « Codes du jour » suit les accords ;
+  - le responsable voit le même panneau en lecture seule, et il est avisé de chaque nouvelle demande.
+- Caisse et supervision (T-033d) :
+  - marque « Remise demandée » dans les files de la caisse et du responsable (en attente et en service) ;
+  - le caissier peut demander au boss ; « Encaisser » est bloqué pendant l'attente ; retrait avec l'accord du client, ou commande remise en file à sa place ;
+  - « Suivant » nomme la commande que l'appel prendra vraiment, en sautant celle qui attend ; la réponse du boss est dite, avec le ticket pour une commande remise en file.
+- Revue en workflow (relecture puis vérification) : 18 défauts confirmés et corrigés. Exemples :
+  - une feuille restait ouverte ou se rouvrait seule après un changement d'état ;
+  - le focus se perdait quand un bouton disparaissait ;
+  - une remise sur le total saisie pendant l'attente était perdue à l'arrivée du code ;
+  - une décision bloquait toutes les cartes du boss au lieu d'une seule ;
+  - un motif non lu (Wi-Fi) n'offrait pas « Réessayer » ;
+  - le titre de l'écran du boss venait après celui du panneau.
+- Tests : web +34 (demandes sur la tablette, à la caisse, écran du boss, supervision, codes du jour, coquille) ; format:check, lint, typecheck (0 erreur) ; suite complète : 615 tests verts.
+
+**Reste** : T-033e (notification push au boss) ; T-035 (devis et commandes du commercial).
+
+**Décisions** :
+- Aucune dépendance ajoutée.
+- La marque « Remise demandée » est indigo, comme le code du boss, dans les trois vues de file.
+- Une feuille ouverte se ferme quand l'état change (code ou demande arrivés d'ailleurs) et ne se rouvre jamais seule ; le focus va sur ce qui remplace le bouton.
+- Une remise sur le total saisie et non enregistrée est gardée à l'arrivée de l'accord, sauf si le code couvre le total ; elle est revérifiée avec le code au prochain enregistrement.
+- Le panneau des demandes relit la liste quand la commande d'une carte change (baissée à la caisse, annulée, payée).
+
+**Questions** : aucune.
+
 ## 03/10/2026 — H51 à H54 validées — agent : Claude Code (Opus 5.5)
 
 **Fait** :

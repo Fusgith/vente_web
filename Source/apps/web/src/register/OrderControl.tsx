@@ -6,17 +6,19 @@ import {
   type PaymentInput,
   type QuoteLine,
 } from '@vente-web/shared';
-import { useEffect, useRef, useState } from 'react';
+import { useId, useState } from 'react';
 
+import { requestPending } from '../api/discount-requests.js';
 import { labels } from '../labels.js';
+import type { RequestInput } from '../sales/useQuoteActions.js';
 import { buttonClass, sheetClass, tagClass } from '../ui/button.js';
 import { CELL, HEAD, isZero } from '../ui/document-table.js';
 import { AmountHead, TotalsList } from '../ui/DocumentTable.js';
 import { Icon } from '../ui/Icon.js';
-import { DiscountCodeSheet } from '../sales/DiscountCodeSheet.js';
 import { CancelOrderSheet } from './CancelOrderSheet.js';
 import { LineAdjustSheet } from './LineAdjustSheet.js';
 import { PaymentSheet } from './PaymentSheet.js';
+import { RegisterOwnerControls } from './RegisterOwnerControls.js';
 
 const text = labels.register;
 const draft = labels.sales.draft;
@@ -37,14 +39,18 @@ interface OrderControlProps {
   onPay: (input: PaymentInput, key: string) => Promise<boolean>;
   /** The owner's code typed in its sheet: null once attached, else why it was refused. */
   onAttachCode: (code: string) => Promise<string | null>;
+  /** The request to the owner from its sheet: null once sent, else why it was refused. */
+  onAsk: (request: RequestInput) => Promise<string | null>;
+  onWithdraw: () => void;
+  onSetAside: () => void;
 }
 
 /**
  * The order at the register, checked with the customer before payment (§5.6): its lines as a
  * table (RG-DEV-05) with where each discount comes from, a quantity lowered or a line removed
  * (RG-CMD-05b), or the whole order cancelled with a reason (RG-ANN-01). The owner's code, typed
- * here before payment, grants its discounts beyond the caps (RG-CMD-05b, H42); once attached, its
- * tag takes the button's place.
+ * here before payment, grants its discounts beyond the caps (RG-CMD-05b, H42); else a discount is
+ * asked of the owner (H51). While the request waits, the payment waits too (RG-REM-05).
  */
 export function OrderControl({
   order,
@@ -54,24 +60,17 @@ export function OrderControl({
   onCancel,
   onPay,
   onAttachCode,
+  onAsk,
+  onWithdraw,
+  onSetAside,
 }: OrderControlProps) {
   // The line open by its sale unit, one per order: a line removed elsewhere renumbers the others,
   // never the article the sheet was opened on; gone itself, the sheet closes.
   const [editing, setEditing] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [paying, setPaying] = useState(false);
-  const [coding, setCoding] = useState(false);
-  const tag = useRef<HTMLSpanElement>(null);
-  const shownCode = useRef(order.discountCode?.code ?? null);
-  // The code attached, its button gives way to the tag: the focus, left on nothing as the sheet
-  // closes, goes to the tag, so a screen reader says the code is on.
-  useEffect(() => {
-    const code = order.discountCode?.code ?? null;
-    if (coding || code === shownCode.current) return;
-    shownCode.current = code;
-    const lost = !document.activeElement || document.activeElement === document.body;
-    if (code && lost) tag.current?.focus();
-  }, [order.discountCode, coding]);
+  const waitsId = useId();
+  const waiting = requestPending(order.discountRequest);
   const line = order.lines.find((candidate) => candidate.productUnitId === editing) ?? null;
   const ticket = order.ticket ? ticketLabel(order.ticket) : order.number;
   const done = (ok: boolean) => {
@@ -161,27 +160,15 @@ export function OrderControl({
       </div>
       <div className="flex shrink-0 flex-wrap items-end gap-x-6 gap-y-2 border-t-2 border-ink px-4 py-2">
         <div className="flex flex-wrap gap-2">
-          {order.discountCode ? (
-            <span
-              ref={tag}
-              tabIndex={-1}
-              className="inline-flex min-h-12 items-center gap-2 rounded-control border border-indigo bg-indigo-soft px-4 font-semibold text-ink figures"
-            >
-              <Icon name="key" className="size-5 text-indigo" />
-              {labels.sales.code.tag(order.discountCode.code)}
-            </span>
-          ) : (
-            <button
-              type="button"
-              aria-haspopup="dialog"
-              onClick={() => setCoding(true)}
-              disabled={busy}
-              className={buttonClass('secondary', 'md', 'shrink-0')}
-            >
-              <Icon name="key" className="size-5" />
-              {labels.sales.code.open}
-            </button>
-          )}
+          <RegisterOwnerControls
+            order={order}
+            busy={busy}
+            waitsId={waitsId}
+            onAttachCode={onAttachCode}
+            onAsk={onAsk}
+            onWithdraw={onWithdraw}
+            onSetAside={onSetAside}
+          />
           <button
             type="button"
             onClick={() => setCancelling(true)}
@@ -197,7 +184,8 @@ export function OrderControl({
             type="button"
             aria-haspopup="dialog"
             onClick={() => setPaying(true)}
-            disabled={busy}
+            disabled={busy || waiting}
+            aria-describedby={waiting ? waitsId : undefined}
             className={buttonClass('primary', 'lg', 'min-w-56')}
           >
             <Icon name="check" className="size-5" />
@@ -228,13 +216,6 @@ export function OrderControl({
             })
           }
           onClose={() => setPaying(false)}
-        />
-      )}
-      {coding && (
-        <DiscountCodeSheet
-          hint={text.codeHint}
-          onAttach={onAttachCode}
-          onClose={() => setCoding(false)}
         />
       )}
       {cancelling && (

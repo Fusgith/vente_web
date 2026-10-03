@@ -1,9 +1,10 @@
 import { formatMga, formatQty, formatTime, type DiscountCode } from '@vente-web/shared';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { discountCodesApi } from '../api/discount-codes.js';
 import { errorMessage } from '../api/error-message.js';
 import { labels } from '../labels.js';
+import { useRealtimeConnect, useRealtimeEvent } from '../realtime/context.js';
 import { useStatusLine } from '../shell/status-line.js';
 import { buttonClass, sheetClass } from '../ui/button.js';
 import { CELL, HEAD } from '../ui/document-table.js';
@@ -34,16 +35,15 @@ export function DiscountCodesPanel() {
   const [latest, setLatest] = useState<DiscountCode | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
 
-  useEffect(() => {
-    let live = true;
-    discountCodesApi.list().then(
-      (list) => live && setCodes(list),
-      (error: unknown) => live && setFailure(errorMessage(error)),
-    );
-    return () => {
-      live = false;
-    };
+  const load = useCallback(() => {
+    discountCodesApi.list().then(setCodes, (error: unknown) => setFailure(errorMessage(error)));
   }, []);
+  useEffect(load, [load]);
+  // A request granted gives its code (H53), from this screen or another: the day's list follows.
+  useRealtimeEvent('discount.request_decided', ({ status }) => {
+    if (status === 'GRANTED') load();
+  });
+  useRealtimeConnect(load);
 
   const issued = (code: DiscountCode) => {
     setLatest(code);

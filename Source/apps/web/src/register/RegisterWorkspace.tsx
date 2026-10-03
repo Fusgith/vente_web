@@ -26,6 +26,7 @@ import { RefundSheet } from './RefundSheet.js';
 import { RegisterQueueNotices } from './RegisterQueueNotices.js';
 import { ServingPanel, type LastPaid } from './ServingPanel.js';
 import { useOrderAtRegister } from './useOrderAtRegister.js';
+import { useOrderRequest } from './useOrderRequest.js';
 import { useRegisterSession } from './useRegisterSession.js';
 import { useNow, useQueue } from './useQueue.js';
 
@@ -39,6 +40,13 @@ interface LostPayment {
   ticket: string;
   name: string;
 }
+
+/** Refusals of an order changed meanwhile elsewhere (a request made or closed): read again. */
+const STALE = new Set([
+  'ORDER_CHANGED',
+  'DISCOUNT_REQUEST_PENDING',
+  'DISCOUNT_REQUEST_NOT_PENDING',
+]);
 
 /** How often the waits shown move on. */
 const CLOCK_MS = 30_000;
@@ -95,7 +103,7 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
     } catch (failure) {
       sayError(errorMessage(failure));
       // Changed meanwhile elsewhere: the screen shows it as it now is.
-      if (failure instanceof ApiError && failure.code === 'ORDER_CHANGED' && mine) {
+      if (failure instanceof ApiError && STALE.has(failure.code) && mine) {
         ordersApi.get(mine.orderId).then(atRegister.replace, () => undefined);
       }
       return false;
@@ -104,6 +112,15 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
       refresh();
     }
   }
+  const request = useOrderRequest({
+    mine,
+    waiting,
+    order: atRegister.order,
+    replace: atRegister.replace,
+    act,
+    setBusy,
+    refresh,
+  });
   const pay = (input: PaymentInput, key: string) => {
     const order = atRegister.order;
     if (!order || !mine) return Promise.resolve(false);
@@ -185,16 +202,11 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
    * The owner's code typed before payment (RG-CMD-05b, H42): null once attached, else why it was
    * refused, for the sheet. The answer lost on the Wi-Fi (or a second try after it) may hide a
    * code that went on: the order read again tells; changed meanwhile, the screen shows it anew.
+   * The order read since carrying a code closes the sheet (`RegisterOwnerControls`).
    */
   async function attachCode(typed: string): Promise<string | null> {
     const sent = atRegister.order;
     if (!sent) return labels.errors.UNEXPECTED_RESPONSE;
-    // Typed again after a lost answer, the code already shown on the order read since: it is on.
-    const on = sent.discountCode?.code;
-    if (on && normalizeDiscountCode(on) === normalizeDiscountCode(typed)) {
-      say(text.codeAttached(on), 'check');
-      return null;
-    }
     setBusy(true);
     try {
       codeAttached(await ordersApi.attachCode(sent.id, typed, sent.version), sent);
@@ -219,7 +231,8 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
   const servingPanel = (
     <ServingPanel
       mine={mine}
-      next={waiting[0] ?? null}
+      // Passed over by the call while the owner decides (H52): the next is the one called.
+      next={waiting.find((item) => !item.discountPending) ?? null}
       elsewhere={elsewhere}
       register={register.session}
       lastPaid={mine ? null : lastPaid}
@@ -323,6 +336,9 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
                 }}
                 onPay={pay}
                 onAttachCode={attachCode}
+                onAsk={request.ask}
+                onWithdraw={request.withdraw}
+                onSetAside={request.setAside}
               />
             ) : (
               <p className="m-auto text-ink-2">{text.loadingOrder}</p>

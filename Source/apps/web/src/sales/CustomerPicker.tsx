@@ -80,15 +80,23 @@ function useCustomerSearch(term: string): CustomerSearch {
 interface CustomerPickerProps {
   value: DraftCustomer | null;
   onChange: (customer: DraftCustomer) => void;
-  /** The owner's code is attached: the quote keeps its customer (H42). */
-  locked?: boolean;
+  /**
+   * Why the quote keeps its customer: the owner's code attached (H42), or a request waiting for
+   * the owner (H52); null while it may change.
+   */
+  locked?: 'code' | 'request' | null;
 }
 
 /**
  * The quote's customer (RG-DEV-04): found by phone or name in the directory, or created on the
  * spot. A known phone is never duplicated: the API offers the existing record instead.
  */
-export function CustomerPicker({ value, onChange, locked = false }: CustomerPickerProps) {
+const lockedLabels = {
+  code: labels.sales.code.customerLocked,
+  request: labels.requests.customerLocked,
+};
+
+export function CustomerPicker({ value, onChange, locked = null }: CustomerPickerProps) {
   const [open, setOpen] = useState(false);
   const { say } = useStatusLine();
   const pick = (customer: DraftCustomer) => {
@@ -103,13 +111,9 @@ export function CustomerPicker({ value, onChange, locked = false }: CustomerPick
         type="button"
         aria-haspopup="dialog"
         aria-label={
-          value
-            ? locked
-              ? labels.sales.code.customerLocked(value.name)
-              : text.change(value.name)
-            : undefined
+          value ? (locked ? lockedLabels[locked](value.name) : text.change(value.name)) : undefined
         }
-        disabled={locked}
+        disabled={!!locked}
         onClick={() => setOpen(true)}
         className={buttonClass(value ? 'secondary' : 'primary', 'md', 'max-w-full min-w-0')}
       >

@@ -1,11 +1,4 @@
-import {
-  formatPhone,
-  isCapRate,
-  type Customer,
-  type DiscountCode,
-  type DiscountEntry,
-  type ProductHit,
-} from '@vente-web/shared';
+import { formatPhone, type Customer, type DiscountCode, type ProductHit } from '@vente-web/shared';
 import { useState, type FormEvent } from 'react';
 
 import { catalogApi } from '../api/catalog.js';
@@ -15,69 +8,17 @@ import { errorMessage } from '../api/error-message.js';
 import { labels } from '../labels.js';
 import { buttonClass, tagClass } from '../ui/button.js';
 import { CELL, HEAD } from '../ui/document-table.js';
+import { entryOf, isGrant, type Grant } from '../ui/grant.js';
+import { GrantField } from '../ui/GrantField.js';
 
 const text = labels.codes;
 const FIELD =
   'h-12 min-w-0 flex-1 rounded-control border border-rule-strong bg-white px-3 text-18 text-ink';
-const VALUE =
-  'h-12 w-32 min-w-0 rounded-control border border-rule-strong bg-white px-3 text-right text-18 text-ink figures';
 const ROW = `${CELL} h-14 border-b border-rule py-1`;
-const AMOUNT = /^\d{1,12}(?:\.\d{1,2})?$/;
 
-/** A grant being typed: its kind, and the value as typed (« 5 000 », « 7,5 »). */
-interface Grant {
-  kind: DiscountEntry['kind'];
-  value: string;
-}
 interface Line extends Grant {
   productId: string;
   sku: string;
-}
-
-/** « 5 000 » → « 5000 », « 7,5 » → « 7.5 ». */
-const entryOf = ({ kind, value }: Grant): DiscountEntry => ({
-  kind,
-  value: value.replace(/\s/g, '').replace(',', '.'),
-});
-/** Above 0; a rate up to 100 %, an amount in MGA with 2 decimals at most (H41). */
-function isGrant(grant: Grant): boolean {
-  const { kind, value } = entryOf(grant);
-  return /[1-9]/.test(value) && (kind === 'pct' ? isCapRate(value) : AMOUNT.test(value));
-}
-
-function GrantField({
-  what,
-  grant,
-  onChange,
-}: {
-  what: string;
-  grant: Grant;
-  onChange: (grant: Grant) => void;
-}) {
-  const valid = grant.value === '' || isGrant(grant);
-  return (
-    <span className="flex items-center gap-2">
-      <input
-        inputMode="decimal"
-        autoComplete="off"
-        aria-label={text.grantOf(what)}
-        aria-invalid={!valid}
-        title={valid ? undefined : text.invalid}
-        value={grant.value}
-        onChange={(event) => onChange({ ...grant, value: event.target.value })}
-        className={VALUE}
-      />
-      <select
-        aria-label={text.kindOf(what)}
-        value={grant.kind}
-        onChange={(event) => onChange({ ...grant, kind: event.target.value as Grant['kind'] })}
-        className="h-12 rounded-control border border-rule-strong bg-white px-2 text-18"
-      >
-        <option value="pct">{text.kinds.pct}</option>
-        <option value="amount">{text.kinds.amount}</option>
-      </select>
-    </span>
-  );
 }
 
 /**
