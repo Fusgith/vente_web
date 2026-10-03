@@ -2,6 +2,7 @@ import { ACCESS_ORIGINS, DEFAULT_APP_NAME, appNameProblem, tidyAppName } from '@
 import { z } from 'zod';
 
 import { parseTrustedProxies } from './services/trusted-proxy.js';
+import { vapidOf, vapidProblems } from './services/vapid.js';
 
 /** `VAR=` in a `.env` file means "not set", not "set to the empty string". */
 const blankAsUnset = (value: unknown): unknown =>
@@ -48,6 +49,13 @@ const envSchema = z
           }
         }),
     ),
+    /**
+     * Push notifications to the owner (T-033e, RG-DSH-05): the VAPID key pair and contact, all
+     * three or none — none turns push off (development, tests, a shop without it).
+     */
+    VAPID_PUBLIC_KEY: z.preprocess(blankAsUnset, z.string().trim().optional()),
+    VAPID_PRIVATE_KEY: z.preprocess(blankAsUnset, z.string().trim().optional()),
+    VAPID_SUBJECT: z.preprocess(blankAsUnset, z.string().trim().optional()),
   })
   .check((ctx) => {
     const appNameIssue = appNameProblem(ctx.value.APP_NAME);
@@ -67,6 +75,10 @@ const envSchema = z
         input: ctx.value.AUTH_DEFAULT_ORIGIN,
       });
     }
+    for (const { variable, message } of vapidProblems(ctx.value)) {
+      // The value is never echoed: the private key is a secret.
+      ctx.issues.push({ code: 'custom', path: [variable], message, input: undefined });
+    }
     if (ctx.value.NODE_ENV === 'production' && ctx.value.COOKIE_SECURE === false) {
       ctx.issues.push({
         code: 'custom',
@@ -81,6 +93,7 @@ const envSchema = z
     COOKIE_SECURE: env.COOKIE_SECURE ?? env.NODE_ENV === 'production',
     AUTH_DEFAULT_ORIGIN:
       env.NODE_ENV === 'production' ? undefined : (env.AUTH_DEFAULT_ORIGIN ?? 'LAN'),
+    VAPID: vapidOf(env),
   }));
 
 export type Env = z.infer<typeof envSchema>;

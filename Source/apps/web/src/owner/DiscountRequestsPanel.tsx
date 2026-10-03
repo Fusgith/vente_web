@@ -8,6 +8,7 @@ import { useRealtimeConnect, useRealtimeEvent } from '../realtime/context.js';
 import { useStatusLine } from '../shell/status-line.js';
 import { sheetClass } from '../ui/button.js';
 import { CELL, HEAD } from '../ui/document-table.js';
+import { PushSwitch } from './PushSwitch.js';
 import { entryText, itemName } from './request-answers.js';
 import { RequestCard, type Decision } from './RequestCard.js';
 
@@ -138,6 +139,7 @@ export function DiscountRequestsPanel({ editable }: { editable: boolean }) {
           {text.title}
         </h2>
         <p className="text-ink-2">{editable ? text.help : text.readOnly}</p>
+        {editable && <PushSwitch />}
       </header>
       {(unread ?? failure) && (
         <p role="alert" className="px-4 font-semibold text-madder">

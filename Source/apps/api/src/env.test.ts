@@ -1,3 +1,4 @@
+import webpush from 'web-push';
 import { describe, expect, it } from 'vitest';
 
 import { loadEnv } from './env.js';
@@ -85,5 +86,64 @@ describe('loadEnv', () => {
     expect(loadEnv({ DATABASE_URL, APP_NAME: '' }).APP_NAME).toBe('Vente Web');
     expect(() => loadEnv({ DATABASE_URL, APP_NAME: '<b>Rasoa</b>' })).toThrow(/APP_NAME/);
     expect(() => loadEnv({ DATABASE_URL, APP_NAME: 'x'.repeat(41) })).toThrow(/APP_NAME/);
+  });
+
+  describe('VAPID keys of the push notifications (T-033e)', () => {
+    const pair = webpush.generateVAPIDKeys();
+    const vapid = {
+      VAPID_PUBLIC_KEY: pair.publicKey,
+      VAPID_PRIVATE_KEY: pair.privateKey,
+      VAPID_SUBJECT: 'mailto:boss@example.mg',
+    };
+
+    it('turns push off without them, on with all three', () => {
+      expect(loadEnv({ DATABASE_URL }).VAPID).toBeNull();
+      expect(loadEnv({ DATABASE_URL, VAPID_PUBLIC_KEY: ' ', VAPID_SUBJECT: '' }).VAPID).toBeNull();
+      expect(loadEnv({ DATABASE_URL, ...vapid }).VAPID).toEqual({
+        publicKey: pair.publicKey,
+        privateKey: pair.privateKey,
+        subject: 'mailto:boss@example.mg',
+      });
+      expect(
+        loadEnv({ DATABASE_URL, ...vapid, VAPID_SUBJECT: 'https://magasin.example.mg' }).VAPID
+          ?.subject,
+      ).toBe('https://magasin.example.mg');
+    });
+
+    it('refuses a partial setting, naming what is missing', () => {
+      expect(() => loadEnv({ DATABASE_URL, VAPID_PUBLIC_KEY: pair.publicKey })).toThrow(
+        /VAPID_PRIVATE_KEY[\s\S]*VAPID_SUBJECT/,
+      );
+    });
+
+    it('refuses malformed keys and a mixed-up pair, never echoing the private key', () => {
+      const other = webpush.generateVAPIDKeys();
+      const refused = (overrides: Record<string, string>) => {
+        try {
+          loadEnv({ DATABASE_URL, ...vapid, ...overrides });
+        } catch (error) {
+          return (error as Error).message;
+        }
+        throw new Error('accepted');
+      };
+      expect(refused({ VAPID_PUBLIC_KEY: other.publicKey })).toMatch(/VAPID_PUBLIC_KEY/);
+      expect(refused({ VAPID_PRIVATE_KEY: 'abc' })).toMatch(/VAPID_PRIVATE_KEY/);
+      expect(refused({ VAPID_PUBLIC_KEY: pair.publicKey.slice(1) })).toMatch(/VAPID_PUBLIC_KEY/);
+      expect(refused({ VAPID_PRIVATE_KEY: other.privateKey })).not.toContain(other.privateKey);
+    });
+
+    it('wants a mailto: or https: contact (RFC 8292)', () => {
+      // Apple refuses a localhost contact: the owner on an iPhone would get nothing.
+      for (const subject of [
+        'boss@example.mg',
+        'http://magasin.example.mg',
+        'mailto:boss',
+        'https://localhost',
+      ]) {
+        expect(() => loadEnv({ DATABASE_URL, ...vapid, VAPID_SUBJECT: subject })).toThrow(
+          /VAPID_SUBJECT/,
+        );
+      }
+    });
   });
 });

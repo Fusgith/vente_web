@@ -14,6 +14,7 @@ import { accessOriginPlugin } from './plugins/access-origin.js';
 import { csrfPlugin } from './plugins/csrf.js';
 import { dbPlugin } from './plugins/db.js';
 import { expiryPlugin } from './plugins/expiry.js';
+import { pushPlugin, type PushSend } from './plugins/push.js';
 import { realtimePlugin } from './plugins/realtime.js';
 import { sessionPlugin } from './plugins/session.js';
 import { healthRoutes } from './routes/health.js';
@@ -32,6 +33,8 @@ export interface BuildAppOptions {
   realtime?: { revalidateMs?: number };
   /** Tests expire the orders on demand rather than every 30 s. */
   expiry?: { sweepMs?: number };
+  /** Tests post the notifications to a fake push service. */
+  push?: { send?: PushSend };
 }
 
 function loggerOptions(env: Env): LoggerOptions {
@@ -73,6 +76,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   await app.register(sessionPlugin, { env });
   await app.register(realtimePlugin, { env, ...options.realtime });
   await app.register(expiryPlugin, { ...options.expiry });
+  await app.register(pushPlugin, { env, ...options.push });
 
   await app.register(healthRoutes);
   await app.register(apiRoutes, { env, prefix: '/api/v1' });

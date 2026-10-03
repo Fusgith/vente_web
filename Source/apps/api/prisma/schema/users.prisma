@@ -82,6 +82,7 @@ model User {
   issuesDecided       DeliveryIssue[]   @relation("DeliveryIssueDecidedBy")
   auditEntries        AuditLog[]
   settingsUpdated     Setting[]
+  pushSubscriptions   PushSubscription[]
 
   @@map("users")
 }
@@ -125,4 +126,23 @@ model Session {
   @@index([userId])
   @@index([expiresAt])
   @@map("sessions")
+}
+
+/// A device where the owner is told of each discount request, the app closed (T-033e, RG-DSH-05,
+/// ⚠️ H55): the browser's push subscription, one per device, kept across logouts. The endpoint is
+/// a capability URL of the browser's push service: never logged, audited nor sent back.
+model PushSubscription {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  endpoint  String   @unique
+  /// The browser's keys (RFC 8291), base64url: the payload is encrypted for this device alone.
+  p256dh    String   @db.VarChar(128)
+  auth      String   @db.VarChar(64)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }

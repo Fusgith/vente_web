@@ -6,6 +6,7 @@ import type { AccessOrigin, AuthMe, Role } from '@vente-web/shared';
 import type { FastifyInstance, InjectOptions, LightMyRequestResponse } from 'fastify';
 
 import { buildApp } from '../src/app.js';
+import type { PushSend } from '../src/plugins/push.js';
 import type { Db } from '../src/db.js';
 import { loadEnv } from '../src/env.js';
 import type { StationType } from '../src/generated/prisma/enums.js';
@@ -34,7 +35,14 @@ export interface TestApp {
  */
 export async function createTestApp(
   envOverrides: Record<string, string> = {},
-  { captureLogs = false }: { captureLogs?: boolean } = {},
+  {
+    captureLogs = false,
+    push,
+  }: {
+    captureLogs?: boolean;
+    /** The owner's notifications go to this fake push service (T-033e). */
+    push?: PushSend;
+  } = {},
 ): Promise<TestApp> {
   const db = createTestDb();
   const logs: Record<string, unknown>[] = [];
@@ -50,7 +58,13 @@ export async function createTestApp(
     ...envOverrides,
   });
   const logger = captureLogs ? { level: 'warn', stream: sink } : false;
-  const app = await buildApp({ env, db, fastify: { logger }, expiry: { sweepMs: 0 } });
+  const app = await buildApp({
+    env,
+    db,
+    fastify: { logger },
+    expiry: { sweepMs: 0 },
+    ...(push ? { push: { send: push } } : {}),
+  });
   await app.ready();
   return {
     app,

@@ -46,6 +46,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,woff2}'],
         // API calls are never served from the cache: the server is the truth (ADR-0001).
         navigateFallbackDenylist: [/^\/api\//, /^\/socket\.io\//],
+        // The owner's notifications, app closed (T-033e): `public/push-sw.js`, run first.
+        importScripts: ['push-sw.js'],
       },
     }),
   ],

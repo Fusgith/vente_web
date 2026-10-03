@@ -57,6 +57,13 @@ const PATHS = {
       <path d="m11 12 9-9M17 6l2.5 2.5M14.5 8.5 16.5 10.5" />
     </>
   ),
+  /** The owner's notifications (T-033e). */
+  bell: (
+    <>
+      <path d="M12 3v2M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z" />
+      <path d="M10 20.5a2 2 0 0 0 4 0" />
+    </>
+  ),
   percent: (
     <>
       <path d="M18.5 5.5 5.5 18.5" />

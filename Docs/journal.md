@@ -2,6 +2,43 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 03/10/2026 — T-033e : notification push au boss — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Serveur :
+  - chaque nouvelle demande de remise part en notification push vers les appareils du boss, application fermée, juste après l'enregistrement de la demande ;
+  - le message : « Demande de remise : *client* », chaque remise demandée (« Remise sur le total : … », « Remise sur *article* : … », 3 au plus, « et N autres »), le total de la commande, le motif et le demandeur ; une notification par demande ;
+  - le service de push garde le message jusqu'à l'expiration de la demande (24 h au plus) ; un appareil que le service dit disparu est oublié ;
+  - routes réservées au boss : clé publique, enregistrement et retrait de l'appareil, message d'essai (5 par minute) ; seules les adresses des services de push de Google, Mozilla, Apple et Microsoft sont acceptées ;
+  - nouvelle table `push_subscriptions` (migration `20261003120000_add_push_subscriptions`) ; 10 appareils au plus par compte ; ajouts et retraits journalisés, jamais l'adresse ni les clés de l'appareil ;
+  - variables `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` : les trois ou aucune (push désactivé) ; une paire incohérente est refusée au démarrage.
+- Application :
+  - zone « Notifications sur cet appareil » dans le panneau des demandes du boss : Activer, Envoyer un essai, Désactiver ;
+  - elle dit quand le navigateur ne peut pas les recevoir, quand il faut d'abord ajouter l'application à l'écran d'accueil (iPhone, iPad), quand le magasin ne les a pas configurées, quand elles sont bloquées dans le navigateur ;
+  - le service worker affiche le message reçu ; un toucher ouvre l'application ou la ramène au premier plan.
+- Revue en workflow (relecture serveur et navigateur, puis vérification) : 4 défauts confirmés et corrigés :
+  - chaque ligne du message dit « Remise sur … » (une remise sur le total se lisait comme le total de la commande) ;
+  - sur iPhone et iPad, les notifications bloquées se débloquent dans Réglages, puis Notifications : le texte le dit ;
+  - un refus dans la question du navigateur est dit dans la bande, et le focus va sur la phrase au lieu de se perdre ;
+  - un test de durée de garde du message échouait parfois, à cheval sur une seconde.
+  Écartés : un message d'erreur distinct pour les navigateurs sans service de push (Chrome ne permet pas de distinguer une coupure d'Internet) ; l'icône SVG que Chrome n'affiche pas (cosmétique, icônes PNG avec T-010).
+- Tests : +37 (API 14 dont 4 sur les variables, partagé 5, web 18 : interrupteur, appareil, service worker).
+
+**Reste** :
+- ⚠️ `Source/.env.example` est à compléter par l'utilisateur (l'agent n'a pas le droit de lire les fichiers `.env*`) : `VAPID_PUBLIC_KEY=`, `VAPID_PRIVATE_KEY=`, `VAPID_SUBJECT=mailto:…`. Clés à générer une fois par `pnpm --filter @vente-web/api exec web-push generate-vapid-keys --json` et à placer dans `.env` ; sans elles, le push reste désactivé et le boss voit « non configuré ».
+- Le serveur doit être à l'heure (NTP) : un horodatage faux fait refuser les messages par les services de push.
+- Sur Android, l'économiseur de batterie peut retarder les notifications : à vérifier sur le téléphone du boss.
+- Icônes PNG des notifications avec T-010 ; en-tête `Cache-Control: no-cache` de `sw.js` et `push-sw.js` dans Caddy avec T-080.
+- T-035 (devis et commandes du commercial).
+
+**Décisions** :
+- Dépendance `web-push` 3.6 (MPL-2.0, 17 paquets, aucun script d'installation) : chiffrement des messages (RFC 8291) et signature VAPID (RFC 8292), largement utilisée et maintenue. Écartées : `@block65/webcrypto-web-push` et `pushforge` (peu utilisées) ; un chiffrement écrit à la main (risque d'erreur sur la cryptographie).
+- Dépendance de développement `@types/web-push` : les types de `web-push`, qui n'en fournit pas.
+- ⚠️ HYPOTHÈSE H55 (CDC métier v0.13, RG-DSH-05, §16.2) : activation appareil par appareil, abonnement gardé à la déconnexion, détail de la demande visible sur l'écran verrouillé, décision dans l'application seulement.
+- Pas de file d'attente ni de nouvel essai : un envoi échoué est journalisé, la demande reste visible dans l'application.
+
+**Questions** : valider H55 (CDC métier §16.2) ?
+
 ## 03/10/2026 — T-033b, c, d : demandes de remise à l'écran — agent : Claude Code (Opus 5.5)
 
 **Fait** :

@@ -41,6 +41,8 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 | Marge de remise restante | `discount_headroom` | Somme, sur les lignes, de (plafond × brut − remise de la ligne) : maximum de la remise sur le total sans code du boss. |
 | Plafond de remise | `max_discount_pct` | Remise maximale applicable sans le boss ; définie par unité de vente, sinon par article, sinon par catégorie, sinon paramètre global (0 = interdite). |
 | Demande de remise exceptionnelle | `discount_request` | Demande adressée au boss pour dépasser le plafond ; accordée ou refusée par lui seul. |
+| Notification push | `push` | Message que le serveur fait parvenir au téléphone du boss par le service de push du navigateur, application fermée (RG-DSH-05, H55). |
+| Abonnement (aux notifications) | `push_subscription` | Appareil sur lequel le boss a activé les notifications push : adresse du service de push et clés de chiffrement ; 10 au plus par compte. |
 | Code de remise | `discount_code` | Code à usage unique émis par le boss, qui applique une remise au-delà du plafond ; expire en fin de journée. |
 | Poste | `station` | Point physique déclaré par l'admin : tablette, caisse, comptoir de livraison, écran public, borne ; nombre libre. |
 | Caisse | `register` | Poste d'encaissement. |

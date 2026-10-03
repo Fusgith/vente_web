@@ -57,6 +57,8 @@ export const discountRequestRoutes: FastifyPluginAsync = async (app) => {
       input,
     );
     app.realtime.publish(discountRequested(requestId, followed(order)));
+    // On the owner's phone too, the app closed (RG-DSH-05, H54).
+    app.push.notifyOwners(order);
     return reply.code(201).send(order);
   });
 

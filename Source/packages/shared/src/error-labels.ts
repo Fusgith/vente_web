@@ -112,6 +112,15 @@ export const ERROR_LABELS = {
   CREDIT_NOT_PENDING: 'Ce reste a déjà été remboursé, ou il n’y a rien à rembourser.',
   TICKET_LETTER_MISSING:
     'Aucune lettre de ticket n’est attribuée à ce commercial : l’admin doit lui en donner une.',
+  PUSH_NOT_CONFIGURED:
+    'Les notifications ne sont pas configurées sur le serveur du magasin : l’admin doit le faire.',
+  PUSH_SERVICE_REFUSED:
+    'Ce navigateur passe par un service de notification que le magasin ne reconnaît pas : essayez Chrome, Firefox, Edge ou Safari.',
+  PUSH_SUBSCRIPTION_UNKNOWN: 'Cet appareil ne reçoit plus les notifications : réactivez-les.',
+  PUSH_SUBSCRIPTION_GONE:
+    'Le navigateur a mis fin aux notifications de cet appareil : réactivez-les.',
+  PUSH_SEND_FAILED:
+    'La notification n’est pas partie : vérifiez que le serveur du magasin a accès à Internet, puis réessayez.',
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_LABELS;
