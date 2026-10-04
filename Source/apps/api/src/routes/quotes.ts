@@ -1,7 +1,9 @@
 import {
   discountCodeAttachSchema,
+  orderListQuerySchema,
   quoteSaveSchema,
   quoteUpdateSchema,
+  type OrderSummaryList,
   type Quote,
   type Role,
 } from '@vente-web/shared';
@@ -9,6 +11,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
 import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { listOpenOrders } from '../services/order-list.js';
 import { attachDiscountCode } from '../services/quote-codes.js';
 import { quotePdf } from '../services/quote-pdf.js';
 import { createQuote, loadQuote, updateQuote } from '../services/quotes.js';
@@ -23,6 +26,16 @@ const READERS: readonly Role[] = ['sales', 'cashier', 'manager', 'owner', 'admin
 const EDITORS: readonly Role[] = ['sales', 'manager'];
 
 export const quoteRoutes: FastifyPluginAsync = async (app) => {
+  // The salesperson's quotes and orders still open, the manager's everyone's (RG-DEV-02/03, H56).
+  app.get(
+    '/quotes',
+    { preHandler: requireRole(...EDITORS) },
+    async (request): Promise<OrderSummaryList> => {
+      const query = orderListQuerySchema.parse(request.query);
+      return listOpenOrders(app.db, actorOf(authOf(request)), query);
+    },
+  );
+
   app.get(
     '/quotes/:id',
     { preHandler: requireRole(...READERS) },

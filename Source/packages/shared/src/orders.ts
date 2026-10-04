@@ -28,12 +28,13 @@ export type OrderStatus = z.infer<typeof orderStatusSchema>;
 /**
  * The transitions of CDC métier §5.2; any other is refused (RG-CMD-06). An absent customer sends
  * the order from the register back to its queue (RG-FIL-04); a customer absent at the delivery
- * counter leaves it READY, called again later (T-060).
+ * counter leaves it READY, called again later (T-060). Sent back from the register to its
+ * salesperson, an order is a quote again; so is an expired one its reactivation refused (H56).
  */
 export const ORDER_TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatus[]>> = {
   DRAFT: ['SUBMITTED'],
   SUBMITTED: ['AT_REGISTER', 'EXPIRED', 'CANCELLED'],
-  AT_REGISTER: ['PAID', 'SUBMITTED', 'CANCELLED'],
+  AT_REGISTER: ['PAID', 'SUBMITTED', 'DRAFT', 'CANCELLED'],
   PAID: ['PREPARING', 'REFUNDED'],
   // Back in the delivery queue: reassigned by the manager, or absent when called (H34).
   PREPARING: ['READY', 'ISSUE', 'PAID'],
@@ -41,7 +42,7 @@ export const ORDER_TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatu
   // The manager's decision (H37): back in the queue at its place, or delivered in part.
   ISSUE: ['PAID', 'DELIVERED'],
   DELIVERED: [],
-  EXPIRED: ['SUBMITTED'],
+  EXPIRED: ['SUBMITTED', 'DRAFT'],
   CANCELLED: [],
   REFUNDED: [],
 };
@@ -199,6 +200,36 @@ export const orderCancelSchema = z.object({
   reason: z.string().trim().min(3).max(300),
 });
 export type OrderCancel = z.infer<typeof orderCancelSchema>;
+
+/** Before payment, still to take up again on the tablet (T-035, H56). */
+export const OPEN_ORDER_STATUSES = [
+  'DRAFT',
+  'SUBMITTED',
+  'AT_REGISTER',
+  'EXPIRED',
+] as const satisfies readonly OrderStatus[];
+
+/** `number`: a colleague's quote found by its number (RG-DEV-03), case and spaces ignored. */
+export const orderListQuerySchema = z.object({
+  number: z.string().trim().min(1).max(32).optional(),
+});
+export type OrderListQuery = z.infer<typeof orderListQuerySchema>;
+
+/** A line of the salesperson's list of quotes and orders (T-035, H56). */
+export const orderSummarySchema = quoteSchema
+  .pick({ id: true, number: true, version: true, customer: true, salesUser: true, total: true })
+  .extend({
+    status: orderStatusSchema,
+    ticket: ticketSchema.nullable(),
+    updatedAt: z.iso.datetime({ offset: true }),
+    /** A quote past its validity (RG-DEV-02): its prices are checked again on validating (H28). */
+    outdated: z.boolean(),
+  });
+export type OrderSummary = z.infer<typeof orderSummarySchema>;
+
+/** The latest changed first, 100 at most (H56). */
+export const orderSummaryListSchema = z.object({ orders: z.array(orderSummarySchema) });
+export type OrderSummaryList = z.infer<typeof orderSummaryListSchema>;
 
 /** Details of `ORDER_PRICE_CHANGED`: lines whose price in force is no longer the saved one. */
 export interface OrderPriceChanged {

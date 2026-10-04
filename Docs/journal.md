@@ -2,6 +2,31 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 04/10/2026 — T-035a : devis et commandes du commercial (API) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- CDC métier v0.16 : hypothèse ⚠️ H56 (§16.2) pour ce que le CDC laissait ouvert :
+  - liste du commercial : ses devis et commandes non payées, les dernières modifiées d'abord ; le responsable voit celles de tous ; un devis d'un collègue se retrouve par son numéro ;
+  - commande renvoyée par la caisse : elle redevient devis, garde son ticket et sa place dans la file si elle est revalidée le même jour ; son stock est libéré entre-temps ;
+  - réactivation d'une commande expirée : en fin de file, ticket gardé s'il est du jour ; refusée (prix changé, stock insuffisant, remise au-delà du plafond), la commande redevient devis à reprendre ;
+  - tableau des états (§5.2), RG-CMD-05b et RG-CMD-08 mis en cohérence.
+- API :
+  - `GET /quotes` (avec `?number=`) : la liste, devis périmé signalé ;
+  - `POST /orders/{id}/send-back` : renvoi par le caissier qui a appelé la commande ou le responsable ; nouvel événement `queue.changed` `sent_back` ;
+  - `POST /orders/{id}/reactivate` : réactivation par le commercial de la commande ou le responsable ; une réponse perdue renvoyée rend la commande ;
+  - journal d'audit : `order.sent_back`, `order.reactivated`, `order.reopened` (avec le motif du refus) ;
+  - l'annulation avec motif existait déjà (T-050).
+- 5 tests d'API et 1 test partagé ajoutés ; lint, typecheck, 658 tests verts.
+- T-035 découpée en T-035a (API, faite), T-035b (tablette), T-035c (bouton de la caisse).
+
+**Reste** :
+- T-035b, T-035c.
+- `Source/.env.example` : modifié par l'utilisateur, non commité par l'agent (il ne lit pas les fichiers `.env*`) : à commiter par l'utilisateur.
+
+**Décisions** : aucune nouvelle dépendance.
+
+**Questions** : valider H56 (CDC métier §16.2) ?
+
 ## 04/10/2026 — H55 validée (notification push au boss) — agent : Claude Code (Opus 5.5)
 
 **Fait** :

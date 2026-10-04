@@ -102,10 +102,16 @@ async function priceAgain(db: Db, order: StoredOrder) {
  * A validation already done by this very caller from this very version: the tablet that lost
  * the answer on the shop's Wi-Fi and sends it again gets its ticket, not a refusal.
  */
-async function isReplay(db: Db, actor: Actor, order: StoredOrder, version: number) {
+async function isReplay(
+  db: Db,
+  actor: Actor,
+  order: StoredOrder,
+  version: number,
+  action: ValidationAction,
+) {
   if (order.status === 'DRAFT' || order.version !== version + 1) return false;
   const submitted = await db.auditLog.findFirst({
-    where: { entityType: 'order', entityId: order.id, action: 'order.submitted' },
+    where: { entityType: 'order', entityId: order.id, action },
     orderBy: { at: 'desc' },
     select: { userId: true },
   });
@@ -135,6 +141,17 @@ function snapshot(order: Order, reservations: ProductReservation[] = []): AuditS
 }
 
 type Priced = Awaited<ReturnType<typeof priceAgain>>;
+
+type ValidationAction = 'order.submitted' | 'order.reactivated';
+
+/** The ticket the order holds already if of the day: validated again that day, it keeps it (H56). */
+function ticketOfDay(order: StoredOrder, day: string) {
+  const { ticketLetter, ticketSeq, ticketDate } = order;
+  if (!ticketLetter || ticketSeq === null || ticketDate?.toISOString().slice(0, 10) !== day) {
+    return null;
+  }
+  return { ticketLetter, ticketSeq };
+}
 
 /** The lines frozen as validated: the price row in force and the cap of now (RG-CMD-04). */
 async function freezeLines(tx: AuditTx, order: StoredOrder, { priced, totals }: Priced) {
@@ -168,23 +185,99 @@ export async function submitOrder(
   const current = await findOrder(db, id);
   if (!current) throw new AppError(404, 'NOT_FOUND');
   if (current.status !== 'DRAFT') {
-    if (await isReplay(db, actor, current, version)) return toOrder(current);
+    if (await isReplay(db, actor, current, version, 'order.submitted')) return toOrder(current);
     throw new AppError(409, 'QUOTE_NOT_DRAFT');
   }
   if (current.version !== version) throw new AppError(409, 'QUOTE_CHANGED');
+  return validate(db, actor, current, 'order.submitted');
+}
+
+/** The refusals of a reactivation that make the order a quote again, to go over (H56). */
+const REOPENING: ReadonlySet<string> = new Set([
+  'ORDER_PRICE_CHANGED',
+  'STOCK_UNAVAILABLE',
+  'QUOTE_DISCOUNT_BEYOND_CAP',
+]);
+
+/**
+ * An expired order validated again (RG-CMD-08, H31, ⚠️ H56) by its salesperson or the manager:
+ * the checks of a validation, the last place in the queue, its ticket kept if of the day. Refused
+ * for a price changed, stock short or a cap lowered, it becomes a quote again, same number, for
+ * the salesperson to go over with the customer.
+ */
+export async function reactivateOrder(
+  db: Db,
+  actor: Actor,
+  id: string,
+  { version }: OrderSubmit,
+): Promise<Order> {
+  const current = await findOrder(db, id);
+  if (!current) throw new AppError(404, 'NOT_FOUND');
+  if (actor.activeRole === 'sales' && current.salesUserId !== actor.userId) {
+    throw new AppError(403, 'AUTH_FORBIDDEN');
+  }
+  if (current.status !== 'EXPIRED') {
+    if (await isReplay(db, actor, current, version, 'order.reactivated')) return toOrder(current);
+    throw new AppError(409, 'ORDER_NOT_EXPIRED');
+  }
+  if (current.version !== version) throw new AppError(409, 'ORDER_CHANGED');
+  try {
+    return await validate(db, actor, current, 'order.reactivated');
+  } catch (error) {
+    if (error instanceof AppError && REOPENING.has(error.code)) {
+      await reopen(db, actor, current, error.code);
+    }
+    throw error;
+  }
+}
+
+/** EXPIRED → DRAFT: a quote again, out of the queue — validated, it goes last. */
+async function reopen(db: Db, actor: Actor, order: StoredOrder, refusal: string) {
+  await db.$transaction(async (tx) => {
+    const { count } = await tx.order.updateMany({
+      where: { id: order.id, status: 'EXPIRED', version: order.version },
+      data: { status: 'DRAFT', queueRank: null, version: { increment: 1 } },
+    });
+    if (count === 0) return;
+    await recordAudit(tx, {
+      ...by(actor),
+      action: 'order.reopened',
+      entityType: 'order',
+      entityId: order.id,
+      before: { status: 'EXPIRED' },
+      after: { status: 'DRAFT' },
+      reason: refusal,
+    });
+  });
+}
+
+/**
+ * The validation itself, all or nothing (RG-CMD-02/03/04), of a quote or of an expired order.
+ * A quote sent back from the register keeps, validated again that day, its ticket and its place.
+ */
+async function validate(
+  db: Db,
+  actor: Actor,
+  current: StoredOrder,
+  action: ValidationAction,
+): Promise<Order> {
+  const { id, status: from, version } = current;
   const { salesUserId, letter } = await salesOwner(db, actor, current);
   await assertActiveCustomer(db, current.customerId);
   const priced = await priceAgain(db, current);
   const now = new Date();
   const expiresAt = nextShopTime(now, await dayEndTime(db));
   const ticketDate = shopDateValue(now);
+  const day = ticketDate.toISOString().slice(0, 10);
+  const kept = ticketOfDay(current, day);
+  const changed = from === 'DRAFT' ? 'QUOTE_CHANGED' : 'ORDER_CHANGED';
 
   return db.$transaction(async (tx) => {
-    // The quote row locked: a save or a validation of it elsewhere waits, then finds it changed.
+    // The row locked: a save or a validation of it elsewhere waits, then finds it changed.
     const [locked] = await tx.$queryRaw<{ status: string; version: number }[]>`
       SELECT "status"::text AS "status", "version" FROM "orders" WHERE "id" = ${id}::uuid FOR UPDATE`;
-    if (locked?.status !== 'DRAFT' || locked.version !== version) {
-      throw new AppError(409, 'QUOTE_CHANGED');
+    if (locked?.status !== from || locked.version !== version) {
+      throw new AppError(409, changed);
     }
     const reservations = await reserveStock(
       tx,
@@ -200,17 +293,21 @@ export async function submitOrder(
       expiresAt,
     );
     await freezeLines(tx, current, priced);
-    const day = ticketDate.toISOString().slice(0, 10);
     await tx.order.update({
       where: { id },
       data: {
         status: 'SUBMITTED',
         salesUserId,
-        ticketLetter: letter,
-        ticketSeq: await nextSequenceValue(tx, `TICKET-${day}-${letter}`),
+        ...(kept ?? {
+          ticketLetter: letter,
+          ticketSeq: await nextSequenceValue(tx, `TICKET-${day}-${letter}`),
+        }),
         ticketDate,
-        // Last in the register queue: the order of entry, until the manager reorders (RG-FIL-02).
-        queueRank: await nextSequenceValue(tx, 'QUEUE-REGISTER'),
+        // Last in the register queue: the order of entry, until the manager reorders (RG-FIL-02);
+        // sent back from the register, at its place again that day (H56).
+        queueRank:
+          (kept && from === 'DRAFT' ? current.queueRank : null) ??
+          (await nextSequenceValue(tx, 'QUEUE-REGISTER')),
         submittedAt: now,
         expiresAt,
         version: { increment: 1 },
@@ -219,7 +316,7 @@ export async function submitOrder(
     const order = await loadOrder(tx, id);
     await recordAudit(tx, {
       ...by(actor),
-      action: 'order.submitted',
+      action,
       entityType: 'order',
       entityId: id,
       before: snapshot(toOrder(current)),

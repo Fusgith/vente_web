@@ -53,7 +53,7 @@ export function snapshot(order: Order): AuditSnapshot {
 }
 
 /** The order as the register sees it: at this register, in the version the cashier read. */
-async function atMyRegister(db: Db, actor: Actor, id: string, version: number) {
+export async function atMyRegister(db: Db, actor: Actor, id: string, version: number) {
   const order = await findOrder(db, id);
   if (!order) throw new AppError(404, 'NOT_FOUND');
   const mine = actor.activeRole === 'manager' || order.cashierUserId === actor.userId;

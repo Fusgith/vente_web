@@ -91,6 +91,12 @@ describe('RG-CMD-06 order transitions', () => {
     expect(canTransition('EXPIRED', 'SUBMITTED')).toBe(true);
   });
 
+  it('makes a quote again of an order sent back by the register or refused reactivation (H56)', () => {
+    expect(canTransition('AT_REGISTER', 'DRAFT')).toBe(true);
+    expect(canTransition('EXPIRED', 'DRAFT')).toBe(true);
+    expect(canTransition('SUBMITTED', 'DRAFT')).toBe(false);
+  });
+
   it('refuses any other move, and nothing leaves a final state', () => {
     expect(canTransition('DRAFT', 'AT_REGISTER')).toBe(false);
     expect(canTransition('SUBMITTED', 'PAID')).toBe(false);

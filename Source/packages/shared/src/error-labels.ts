@@ -75,6 +75,7 @@ export const ERROR_LABELS = {
   ORDER_LAST_LINE: 'C’est la dernière ligne : annulez la commande plutôt que de la supprimer.',
   ORDER_TOTAL_ZERO:
     'Le total serait de 0,00\u00a0MGA : une commande n’est jamais gratuite, il doit rester un montant à payer.',
+  ORDER_NOT_EXPIRED: 'Cette commande n’est plus expirée : la liste a été mise à jour.',
   ORDER_NOT_CANCELLABLE: 'Cette commande ne s’annule plus ici : elle est payée, livrée ou close.',
   REGISTER_BUSY:
     'Un client est déjà à votre caisse : encaissez-le ou déclarez-le absent avant d’en appeler un autre.',

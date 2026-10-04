@@ -13,11 +13,13 @@ import { z } from 'zod';
 import { AppError } from '../errors.js';
 import { actorOf, authOf, requireRole } from '../plugins/session.js';
 import { adjustOrder, attachOrderCode, cancelOrder } from '../services/order-changes.js';
-import { loadOrder, submitOrder } from '../services/orders.js';
+import { sendBackOrder } from '../services/order-send-back.js';
+import { loadOrder, reactivateOrder, submitOrder } from '../services/orders.js';
 import {
   discountDecided,
   orderAdjusted,
   orderCancelled,
+  orderSentBack,
   orderSubmitted,
   stockLow,
 } from '../services/realtime-rooms.js';
@@ -38,6 +40,17 @@ const DELIVERY_STATUSES: ReadonlySet<OrderStatus> = new Set([
 ]);
 
 export const orderRoutes: FastifyPluginAsync = async (app) => {
+  /** Committed: the cashiers see the order enter their queue (RG-CMD-03); a product now at or
+   * under its threshold is told to the manager (RG-STK-07). */
+  async function publishSubmitted(order: Order) {
+    app.realtime.publish(orderSubmitted({ id: order.id, salesUserId: order.salesUser.id }));
+    const low = await stockAlerts(
+      app.db,
+      order.lines.map((line) => line.productId),
+    );
+    app.realtime.publish(stockLow(low.map((alert) => alert.productId)));
+  }
+
   app.get(
     '/orders/:id',
     { preHandler: requireRole(...READERS) },
@@ -63,14 +76,33 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
       const { id } = paramsSchema.parse(request.params);
       const body = orderSubmitSchema.parse(request.body);
       const order = await submitOrder(app.db, actorOf(authOf(request)), id, body);
-      // Committed: the cashiers see the order enter their queue (RG-CMD-03).
-      app.realtime.publish(orderSubmitted({ id: order.id, salesUserId: order.salesUser.id }));
-      // Reserved: a product now at or under its threshold is told to the manager (RG-STK-07).
-      const low = await stockAlerts(
-        app.db,
-        order.lines.map((line) => line.productId),
-      );
-      app.realtime.publish(stockLow(low.map((alert) => alert.productId)));
+      await publishSubmitted(order);
+      return order;
+    },
+  );
+
+  // An expired order validated again (RG-CMD-08, H31, H56): its salesperson or the manager.
+  app.post(
+    '/orders/:id/reactivate',
+    { preHandler: requireRole('sales', 'manager') },
+    async (request): Promise<Order> => {
+      const { id } = paramsSchema.parse(request.params);
+      const body = orderSubmitSchema.parse(request.body);
+      const order = await reactivateOrder(app.db, actorOf(authOf(request)), id, body);
+      await publishSubmitted(order);
+      return order;
+    },
+  );
+
+  // Back to its salesperson from the register (RG-CMD-05b, H56): the cashier who called it, the manager.
+  app.post(
+    '/orders/:id/send-back',
+    { preHandler: requireRole('cashier', 'manager') },
+    async (request): Promise<Order> => {
+      const { id } = paramsSchema.parse(request.params);
+      const body = orderSubmitSchema.parse(request.body);
+      const order = await sendBackOrder(app.db, actorOf(authOf(request)), id, body);
+      app.realtime.publish(orderSentBack({ id, salesUserId: order.salesUser.id }));
       return order;
     },
   );

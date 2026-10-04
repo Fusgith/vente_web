@@ -136,6 +136,14 @@ export function orderCancelled(order: CalledOrder): Emission[] {
   return [...queueChanged('register', order.id, 'cancelled'), statusChanged(order, 'CANCELLED')];
 }
 
+/**
+ * Sent back from the register to its salesperson (RG-CMD-05b, H56): out of the register queue, a
+ * quote again on their tablet.
+ */
+export function orderSentBack(order: CalledOrder): Emission[] {
+  return [...queueChanged('register', order.id, 'sent_back'), statusChanged(order, 'DRAFT')];
+}
+
 /** Past its day end unpaid (RG-CMD-08): out of the register queue, its salesperson told. */
 export function orderExpired(order: CalledOrder): Emission[] {
   return [...queueChanged('register', order.id, 'expired'), statusChanged(order, 'EXPIRED')];

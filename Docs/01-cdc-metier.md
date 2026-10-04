@@ -1,6 +1,6 @@
 # Cahier des charges MÉTIER — Vente Web
 
-Version 0.15 — 04/10/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16), **corrections du 23/09/2026** (§16.3), **décisions du 25/09/2026** (§16.4, dont H22), **décisions du 26/09/2026** (§16.5 : H14 à H28) ; ADR 0001–0006 acceptés , **décision du 27/09/2026** (§16.6 : H29), **décisions du 28/09/2026** (§16.7 : H30 à H35, perte de la priorité), **décisions du 29/09/2026** (§16.8 : H36, H37 ; §16.9 : H43 à H48, remarques du boss), **décisions du 01/10/2026** (§16.10 : H38 à H42 et H49 validées telles quelles — indicateurs de la supervision, ajustements de stock, plafonds de remise, codes de remise et leur saisie, modalités des remarques du boss ; H50, commande jamais gratuite) ; **décisions du 03/10/2026** (§16.11 : H51 à H54 validées telles quelles — demandes de remise exceptionnelle : qui demande, attente, décision du boss, retrait, expiration et suivi) ; **mise en cohérence du 04/10/2026** (droits du boss, d'après H15, H40, H45 et H49 b) ; **décision du 04/10/2026** (§16.12 : H55 validée telle quelle — notification push au boss).
+Version 0.16 — 04/10/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16), **corrections du 23/09/2026** (§16.3), **décisions du 25/09/2026** (§16.4, dont H22), **décisions du 26/09/2026** (§16.5 : H14 à H28) ; ADR 0001–0006 acceptés , **décision du 27/09/2026** (§16.6 : H29), **décisions du 28/09/2026** (§16.7 : H30 à H35, perte de la priorité), **décisions du 29/09/2026** (§16.8 : H36, H37 ; §16.9 : H43 à H48, remarques du boss), **décisions du 01/10/2026** (§16.10 : H38 à H42 et H49 validées telles quelles — indicateurs de la supervision, ajustements de stock, plafonds de remise, codes de remise et leur saisie, modalités des remarques du boss ; H50, commande jamais gratuite) ; **décisions du 03/10/2026** (§16.11 : H51 à H54 validées telles quelles — demandes de remise exceptionnelle : qui demande, attente, décision du boss, retrait, expiration et suivi) ; **mise en cohérence du 04/10/2026** (droits du boss, d'après H15, H40, H45 et H49 b) ; **décision du 04/10/2026** (§16.12 : H55 validée telle quelle — notification push au boss) ; **hypothèse du 04/10/2026** (§16.2 : H56, devis et commandes du commercial — T-035).
 
 Nouveautés v0.14 : les droits du boss alignés sur les décisions déjà prises — il fixe aussi les plafonds de remise et le plafond général (H15, H40), la durée de réservation générale et par client (H45) et les articles à promouvoir (H49 b) : RG-DSH-07, rôle Boss (§3) et annexe B (paramètres, deux lignes ajoutées) ; glossaire corrigé.
 
@@ -167,13 +167,13 @@ La matrice détaillée des droits est en **annexe B**.
 |---|---|---|---|
 | Devis | `DRAFT` | Brouillon, non engageant, pas de réservation | Validée · Abandonné |
 | Validée (en file caisse) | `SUBMITTED` | Ticket attribué, stock réservé jusqu'à la fin de la journée | Appelée caisse · Expirée · Annulée |
-| Appelée à la caisse | `AT_REGISTER` | Affichée sur l'écran public (ou appelée verbalement), en cours de contrôle | Payée · Retour en file (absent) · Annulée |
+| Appelée à la caisse | `AT_REGISTER` | Affichée sur l'écran public (ou appelée verbalement), en cours de contrôle | Payée · Retour en file (absent) · Renvoyée au commercial (→ Devis, ⚠️ H56) · Annulée |
 | Payée (à livrer) | `PAID` | Facture émise, réservation ferme | En préparation · Annulée après paiement |
 | En préparation | `PREPARING` | Prise en charge par un magasinier | Prête · Anomalie · Retour en file (réaffectation, H34) |
 | Prête (appelée livraison) | `READY` | Appelée côté livraison | Livrée · Retour en file (absent ou réaffectation, H34) · Anomalie |
 | Anomalie | `ISSUE` | Article manquant ou abîmé, décision du responsable attendue | Retour en file (attente levée) · Livrée partiellement + avoir (H37) |
 | Livrée | `DELIVERED` | Marchandise remise, stock sorti — **état final** | Retour [V1.1] |
-| Expirée | `EXPIRED` | Non payée à la fin de la journée, réservation libérée | Réactivée (→ Validée) |
+| Expirée | `EXPIRED` | Non payée à la fin de la journée, réservation libérée | Réactivée (→ Validée) · Devis (réactivation refusée, ⚠️ H56) |
 | Annulée | `CANCELLED` | Annulée avant paiement — final | — |
 | Annulée après paiement | `REFUNDED` | Avoir émis — final | — |
 
@@ -229,7 +229,7 @@ Règles :
 4. Il enregistre le paiement : un ou plusieurs moyens (RG-PAY).
 5. Le paiement complet **génère la facture** (RG-FAC-01) et notifie la livraison.
 
-- **RG-CMD-05b** *(Modalités : décision H30, 28/09/2026.)* Modifications autorisées à la caisse avant paiement : suppression de ligne, baisse de quantité, saisie d'un code de remise, retrait d'une remise non couverte (avec l'accord du client). Un ajout d'article ou un changement de remise dans le plafond passe par le commercial (renvoi en un clic, la commande garde son ticket).
+- **RG-CMD-05b** *(Modalités : décision H30, 28/09/2026.)* Modifications autorisées à la caisse avant paiement : suppression de ligne, baisse de quantité, saisie d'un code de remise, retrait d'une remise non couverte (avec l'accord du client). Un ajout d'article ou un changement de remise dans le plafond passe par le commercial (renvoi en un clic, la commande garde son ticket). ⚠️ HYPOTHÈSE H56 (§16.2) : renvoyée, la commande redevient un devis, même numéro, qui garde son ticket et sa place en tête de file ; sa réservation est libérée.
 
 ### 5.7 Étape 5 — Facture
 
@@ -248,7 +248,7 @@ Voir RG-FAC. La facture est produite en PDF, imprimable en A4 et, en option, en 
 
 ### 5.9 Cas particuliers
 
-- **RG-CMD-08 Expiration** *(modalités : décision H31, 28/09/2026 ; durée : décision H45, 29/09/2026)* : une commande `SUBMITTED` non payée à l'**échéance de sa réservation** (RG-STK-02 : fin de la journée, ou du dernier jour de la durée de réservation) passe `EXPIRED` ; le stock est libéré ; le commercial est notifié. Le commercial peut la **réactiver** le lendemain ou plus tard : nouveau contrôle de stock, nouveau ticket (le jour a changé), nouvelle échéance selon RG-STK-02. Une commande gardée d'un jour sur l'autre par sa durée de réservation reçoit de même un **nouveau ticket** le jour où le client se présente (RG-TKT-01 : numéros par jour).
+- **RG-CMD-08 Expiration** *(modalités : décision H31, 28/09/2026 ; durée : décision H45, 29/09/2026)* : une commande `SUBMITTED` non payée à l'**échéance de sa réservation** (RG-STK-02 : fin de la journée, ou du dernier jour de la durée de réservation) passe `EXPIRED` ; le stock est libéré ; le commercial est notifié. Le commercial peut la **réactiver** le lendemain ou plus tard : nouveau contrôle de stock, nouveau ticket (le jour a changé), nouvelle échéance selon RG-STK-02. Une commande gardée d'un jour sur l'autre par sa durée de réservation reçoit de même un **nouveau ticket** le jour où le client se présente (RG-TKT-01 : numéros par jour). ⚠️ HYPOTHÈSE H56 (§16.2) : réactivée, elle prend la dernière place de la file ; refusée (prix changé, stock manquant, plafond baissé), elle redevient un devis.
 - **RG-ANN-01 Annulation avant paiement** : par le commercial (ses commandes), le caissier ou le responsable, motif obligatoire ; réservation libérée ; ticket clos.
 - *(Modalités de RG-ANN-02 et de l'avoir : décision H36, 29/09/2026.)*
 - **RG-ANN-02 Annulation après paiement, avant livraison** : par le caissier **avec validation du responsable** ; émet un **avoir total**, enregistre le remboursement (moyen, référence), libère la réservation ; état `REFUNDED`.
@@ -483,10 +483,11 @@ Les ADR 0001 à 0004 ont été **acceptés** par l'utilisateur le 21/09/2026.
 
 ### 16.2 Points nouveaux à confirmer
 
-H14 à H28 tranchés le 26/09 (§16.5), H29 le 27/09 (§16.6), H30 à H35 le 28/09 (§16.7), H36 et H37 le 29/09 (§16.8), H43 à H48 le même jour (§16.9, remarques du boss), H38 à H42, H49 et H50 le 01/10 (§16.10), H51 à H54 le 03/10 (§16.11, demandes de remise exceptionnelle), H55 le 04/10 (§16.12, notification push au boss). En attente : aucun. Un nouveau point s'inscrit ici, marqué ⚠️ HYPOTHÈSE dans la règle concernée.
+H14 à H28 tranchés le 26/09 (§16.5), H29 le 27/09 (§16.6), H30 à H35 le 28/09 (§16.7), H36 et H37 le 29/09 (§16.8), H43 à H48 le même jour (§16.9, remarques du boss), H38 à H42, H49 et H50 le 01/10 (§16.10), H51 à H54 le 03/10 (§16.11, demandes de remise exceptionnelle), H55 le 04/10 (§16.12, notification push au boss). En attente : H56 (04/10, T-035). Un nouveau point s'inscrit ici, marqué ⚠️ HYPOTHÈSE dans la règle concernée.
 
 | # | Hypothèse | Règle | Alternative |
 |---|---|---|---|
+| H56 | **Devis et commandes du commercial** (T-035). **(a) Liste** : la tablette montre au commercial ses devis et ses commandes non payées (`DRAFT`, `SUBMITTED`, `AT_REGISTER`, `EXPIRED`), les dernières modifiées d'abord (100 au plus) ; le responsable voit celles de tous ; un devis d'un collègue se retrouve par son **numéro** (RG-DEV-03). Un devis dont la validité est passée (RG-DEV-02) reste dans la liste, marqué : ses prix sont revus à la validation (H28). **(b) Renvoi au commercial** (RG-CMD-05b) : le caissier qui a appelé la commande, ou le responsable, la renvoie d'un geste ; elle redevient un **devis** (`AT_REGISTER` → `DRAFT`), même numéro, **gardant son ticket et sa place en tête de file** ; sa réservation est libérée (un devis ne réserve rien, §5.2) et le commercial est averti sur sa tablette. Validée de nouveau le même jour, elle reprend son ticket et sa place, stock recontrôlé ; un autre jour, elle reçoit un nouveau ticket et la dernière place. **(c) Réactivation** (H31) : une commande expirée validée de nouveau prend la **dernière place** de la file ; son ticket est gardé s'il est du jour, sinon elle en reçoit un nouveau. Refusée parce qu'un prix a changé, que le stock manque ou qu'un plafond a baissé, elle redevient un **devis** (`EXPIRED` → `DRAFT`), même numéro, à revoir avec le client | RG-DEV-02, RG-DEV-03, RG-CMD-05b, RG-CMD-08, §5.2 | (b) la commande renvoyée garde sa réservation, dans un état propre « renvoyée » ; (c) elle ne redevient un devis que sur un prix changé, comme écrit en H31 |
 
 ### 16.3 Corrections de l'utilisateur du 23/09/2026
 
