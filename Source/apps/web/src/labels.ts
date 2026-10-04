@@ -5,6 +5,7 @@ import { codesLabels } from './labels-codes.js';
 import { closingLabels } from './labels-closing.js';
 import { deliveryLabels } from './labels-delivery.js';
 import { issueLabels } from './labels-issues.js';
+import { mineLabels } from './labels-mine.js';
 import { pushLabels } from './labels-push.js';
 import { refundLabels } from './labels-refund.js';
 import { registerLabels } from './labels-register.js';
@@ -318,6 +319,8 @@ export const labels = {
   codes: codesLabels,
   requests: requestsLabels,
   push: pushLabels,
+  /** The salesperson's quotes and orders (T-035b). */
+  mine: mineLabels,
 
   /** The manager's notices, in the bottom band. */
   manager: {

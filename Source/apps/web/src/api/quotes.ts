@@ -1,9 +1,24 @@
-import { quoteSchema, type Quote, type QuoteSave } from '@vente-web/shared';
+import {
+  orderSummaryListSchema,
+  quoteSchema,
+  type OrderSummary,
+  type Quote,
+  type QuoteSave,
+} from '@vente-web/shared';
 
 import { API_BASE, ApiError, apiRequest, parseResponse } from './client.js';
 
 /** Quotes (T-030, RG-DEV-01/02): the API prices the lines, checks the caps and numbers. */
 export const quotesApi = {
+  /**
+   * The salesperson's quotes and orders not paid, the latest changed first; with `number`, the
+   * quote of that number, a colleague's too (RG-DEV-03, H56).
+   */
+  async list(number?: string): Promise<OrderSummary[]> {
+    const query = number ? `?number=${encodeURIComponent(number)}` : '';
+    return parseResponse(orderSummaryListSchema, await apiRequest(`/quotes${query}`)).orders;
+  },
+
   async get(id: string): Promise<Quote> {
     return parseResponse(quoteSchema, await apiRequest(`/quotes/${id}`));
   },

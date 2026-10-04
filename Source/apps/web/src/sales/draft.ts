@@ -94,7 +94,9 @@ export type DraftAction =
   | { type: 'closeShortages' }
   | { type: 'submitted'; order: Order }
   /** A new quote, empty, once the ticket was given. */
-  | { type: 'reset' };
+  | { type: 'reset' }
+  /** A saved quote taken up again from the salesperson's list (T-035b), as `loadQuote` built it. */
+  | { type: 'load'; draft: DraftState };
 
 export const emptyDraft: DraftState = {
   lines: [],
@@ -254,6 +256,8 @@ function productTouched(state: DraftState, action: DraftAction): string | null {
 }
 
 export function draftReducer(state: DraftState, action: DraftAction): DraftState {
+  // Built whole, its grants included: nothing of the screen it replaces carries over.
+  if (action.type === 'load') return action.draft;
   const reduced = reduce(state, action);
   const next =
     reduced.code && (reduced.lines !== state.lines || reduced.code !== state.code)
@@ -314,5 +318,7 @@ function reduce(state: DraftState, action: DraftAction): DraftState {
       return { ...state, selected: null, shortages: [], shortagesOpen: false, order: action.order };
     case 'reset':
       return emptyDraft;
+    case 'load':
+      return action.draft;
   }
 }

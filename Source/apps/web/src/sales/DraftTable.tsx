@@ -35,6 +35,8 @@ interface DraftTableProps {
   busy: QuoteBusy;
   /** The customer's picker, at the end of the header. */
   customer?: ReactNode;
+  /** The way to the salesperson's quotes and orders (T-035b), after the quote's status. */
+  mine?: ReactNode;
 }
 
 const text = labels.sales.draft;
@@ -82,6 +84,7 @@ export function DraftTable({
   onWithdraw,
   busy,
   customer,
+  mine,
 }: DraftTableProps) {
   const { lines, selected } = draft;
   const quote = computeQuote(quoteInput(draft));
@@ -114,6 +117,7 @@ export function DraftTable({
           {text.title}
         </h2>
         <QuoteStatus draft={draft} />
+        {mine}
         {customer && <div className="ml-auto max-w-full min-w-0">{customer}</div>}
       </header>
       {lines.length === 0 ? (

@@ -41,6 +41,18 @@ export const ordersApi = {
     return parseResponse(orderSchema, data);
   },
 
+  /**
+   * An expired order sent to the register again (RG-CMD-08, H56): refused for a price changed, a
+   * stock short or a discount beyond the cap, it is a quote again to take up.
+   */
+  async reactivate(id: string, version: number): Promise<Order> {
+    const data = await apiRequest(`/orders/${id}/reactivate`, {
+      method: 'POST',
+      body: { version },
+    });
+    return parseResponse(orderSchema, data);
+  },
+
   /** Validates the quote saved under `version`, the one last read. */
   async submit(id: string, version: number): Promise<Order> {
     const data = await apiRequest(`/orders/${id}/submit`, { method: 'POST', body: { version } });

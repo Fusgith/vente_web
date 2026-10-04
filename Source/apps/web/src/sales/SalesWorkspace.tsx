@@ -1,11 +1,15 @@
-import { useReducer } from 'react';
+import { useReducer, useState } from 'react';
 
 import { requestPending } from '../api/discount-requests.js';
 import { labels } from '../labels.js';
+import { buttonClass } from '../ui/button.js';
+import { Icon } from '../ui/Icon.js';
 import { OrderNotices } from './OrderNotices.js';
 import { CustomerPicker } from './CustomerPicker.js';
 import { DraftTable } from './DraftTable.js';
-import { draftReducer, emptyDraft, grantedAt, type DraftState } from './draft.js';
+import { draftReducer, emptyDraft, grantedAt, unsavedChanges, type DraftState } from './draft.js';
+import { loadQuote } from './draft-load.js';
+import { MyOrdersSheet } from './MyOrdersSheet.js';
 import { OrderTicketSheet } from './OrderTicketSheet.js';
 import { ProductSearch } from './ProductSearch.js';
 import { QuantityPad } from './QuantityPad.js';
@@ -29,6 +33,9 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
   const selected = draft.lines[position];
   const { save, submit, attachCode, ask, withdraw, busy } = useQuoteActions(draft, dispatch);
   useRequestDecisions(draft, dispatch);
+  const [mineOpen, setMineOpen] = useState(false);
+  // Lines never saved, or changed since: taking up another quote would lose them.
+  const unsaved = draft.lines.length > 0 && (!draft.saved || unsavedChanges(draft));
 
   return (
     <div className="flex flex-1 flex-col gap-4 md:min-h-0 lg:grid lg:grid-cols-[minmax(0,30rem)_minmax(0,1fr)] 2xl:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
@@ -68,6 +75,16 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
         onAsk={ask}
         onWithdraw={() => void withdraw()}
         busy={busy}
+        mine={
+          <button
+            type="button"
+            className={buttonClass('secondary', 'md', 'gap-2')}
+            onClick={() => setMineOpen(true)}
+          >
+            <Icon name="document" className="size-5" />
+            {labels.mine.open}
+          </button>
+        }
         customer={
           <CustomerPicker
             value={draft.customer}
@@ -83,6 +100,13 @@ export function SalesWorkspace({ initialDraft = emptyDraft }: SalesWorkspaceProp
           onFit={(key, qty) => dispatch({ type: 'setQty', key, qty })}
           onRemove={(key) => dispatch({ type: 'remove', key })}
           onClose={() => dispatch({ type: 'closeShortages' })}
+        />
+      )}
+      {mineOpen && (
+        <MyOrdersSheet
+          unsaved={unsaved}
+          onTakeUp={async (id) => dispatch({ type: 'load', draft: await loadQuote(id) })}
+          onClose={() => setMineOpen(false)}
         />
       )}
       {draft.order && (

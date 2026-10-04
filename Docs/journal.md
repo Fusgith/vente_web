@@ -2,6 +2,28 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 04/10/2026 — T-035b : « Mes devis et commandes » sur la tablette — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Écran de saisie : un bouton « Mes devis et commandes » ouvre la liste du commercial :
+  - numéro, client, état, total (MGA) ; ticket affiché ; marques « Renvoyée par la caisse » et « Périmé » ;
+  - recherche par numéro (devis d'un collègue, nom du commercial affiché) ;
+  - liste relue à chaque changement d'état d'une commande (temps réel).
+- Actions selon l'état :
+  - devis → « Reprendre » : lignes, client et remises rechargés, chaque article relu au catalogue (unités, stock) ; un article disparu garde l'unité enregistrée ; si l'écran a des modifications non enregistrées, confirmation avant de les perdre ;
+  - commande validée ou à la caisse → « Annuler » avec motif (feuille d'annulation de la caisse réutilisée) ;
+  - commande expirée → « Réactiver » ; refusée (prix, stock, remise), le message dit qu'elle est redevenue devis (H56).
+- Avis au commercial quand la caisse renvoie une de ses commandes.
+- 5 tests de composant ajoutés ; lint, typecheck, 266 tests web verts.
+
+**Reste** :
+- T-035c (bouton « Renvoyer au commercial » à la caisse).
+- `Source/.env.example` : modifié par l'utilisateur, à commiter par lui.
+
+**Décisions** : aucune nouvelle dépendance.
+
+**Questions** : valider H56 (CDC métier §16.2) ?
+
 ## 04/10/2026 — T-035a : devis et commandes du commercial (API) — agent : Claude Code (Opus 5.5)
 
 **Fait** :

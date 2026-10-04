@@ -9,7 +9,8 @@ import { useStatusLine } from '../shell/status-line.js';
  * What the salesperson's tablet hears of their orders, each read again first: without a public
  * display, a ticket called to the register, to tell the customer (RG-DSP-05); an order expired
  * unpaid at the day end, its stock freed (RG-CMD-08); the owner's answer to a discount asked on
- * an order in the queue (H53), or the request's end — unless the order expired with it (H54).
+ * an order in the queue (H53), or the request's end — unless the order expired with it (H54); an
+ * order sent back by the register, a quote again to take up (RG-CMD-05b, H56).
  */
 export function OrderNotices() {
   const { say } = useStatusLine();
@@ -28,6 +29,8 @@ export function OrderNotices() {
   useRealtimeEvent('order.status_changed', ({ orderId, status }) => {
     if (status === 'EXPIRED') {
       tell(orderId, (ticket, order) => labels.sales.expired(ticket, order.customer.name));
+    } else if (status === 'DRAFT') {
+      tell(orderId, (ticket, order) => labels.mine.sentBackNotice(ticket, order.customer.name));
     }
   });
   useRealtimeEvent('discount.request_decided', ({ orderId, status }) => {
