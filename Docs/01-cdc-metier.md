@@ -1,6 +1,8 @@
 # Cahier des charges MÉTIER — Vente Web
 
-Version 0.13 — 03/10/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16), **corrections du 23/09/2026** (§16.3), **décisions du 25/09/2026** (§16.4, dont H22), **décisions du 26/09/2026** (§16.5 : H14 à H28) ; ADR 0001–0006 acceptés , **décision du 27/09/2026** (§16.6 : H29), **décisions du 28/09/2026** (§16.7 : H30 à H35, perte de la priorité), **décisions du 29/09/2026** (§16.8 : H36, H37 ; §16.9 : H43 à H48, remarques du boss), **décisions du 01/10/2026** (§16.10 : H38 à H42 et H49 validées telles quelles — indicateurs de la supervision, ajustements de stock, plafonds de remise, codes de remise et leur saisie, modalités des remarques du boss ; H50, commande jamais gratuite) ; **décisions du 03/10/2026** (§16.11 : H51 à H54 validées telles quelles — demandes de remise exceptionnelle : qui demande, attente, décision du boss, retrait, expiration et suivi) ; **H55 en attente** (§16.2, notification push au boss).
+Version 0.14 — 04/10/2026 — Statut : **hypothèses H1–H13 et H18 tranchées par l'utilisateur le 21/09/2026** (§16), **corrections du 23/09/2026** (§16.3), **décisions du 25/09/2026** (§16.4, dont H22), **décisions du 26/09/2026** (§16.5 : H14 à H28) ; ADR 0001–0006 acceptés , **décision du 27/09/2026** (§16.6 : H29), **décisions du 28/09/2026** (§16.7 : H30 à H35, perte de la priorité), **décisions du 29/09/2026** (§16.8 : H36, H37 ; §16.9 : H43 à H48, remarques du boss), **décisions du 01/10/2026** (§16.10 : H38 à H42 et H49 validées telles quelles — indicateurs de la supervision, ajustements de stock, plafonds de remise, codes de remise et leur saisie, modalités des remarques du boss ; H50, commande jamais gratuite) ; **décisions du 03/10/2026** (§16.11 : H51 à H54 validées telles quelles — demandes de remise exceptionnelle : qui demande, attente, décision du boss, retrait, expiration et suivi) ; **H55 en attente** (§16.2, notification push au boss) ; **mise en cohérence du 04/10/2026** (droits du boss, d'après H15, H40, H45 et H49 b).
+
+Nouveautés v0.14 : les droits du boss alignés sur les décisions déjà prises — il fixe aussi les plafonds de remise et le plafond général (H15, H40), la durée de réservation générale et par client (H45) et les articles à promouvoir (H49 b) : RG-DSH-07, rôle Boss (§3) et annexe B (paramètres, deux lignes ajoutées) ; glossaire corrigé.
 
 Nouveautés v0.8 : contrôle à la caisse validé (H30, RG-CMD-05b) ; **un client absent perd sa priorité**, de même qu'une commande prioritaire placée en dernier par le responsable (RG-FIL-02, RG-FIL-04).
 
@@ -79,7 +81,7 @@ Objectifs mesurables :
 | **Caissier** | Caisse | Appeler, contrôler la commande, saisir un code de remise du boss le cas échéant, encaisser, émettre la facture, clôturer sa caisse | PC ou tablette + imprimante |
 | **Magasinier** | Comptoir livraison / réserve (plusieurs magasiniers, chacun sur un comptoir) | Préparer, appeler, remettre la marchandise, signaler les anomalies | Tablette ou PC |
 | **Responsable** | Magasin | Importer les articles, superviser les files en direct et les réordonner, ajuster le stock, valider les annulations après paiement et les clôtures | PC + tablette |
-| **Boss** | Partout (à distance) | Suivre le tableau de bord (horaire, journalier, hebdomadaire, mensuel) ; recevoir les demandes de remise exceptionnelle et délivrer les codes de remise ; fixer les plafonds de remise (décision H15) ; tout le reste en lecture | Téléphone, PC |
+| **Boss** | Partout (à distance) | Suivre le tableau de bord (horaire, journalier, hebdomadaire, mensuel) ; recevoir les demandes de remise exceptionnelle et délivrer les codes de remise ; fixer les plafonds de remise (décisions H15, H40), la durée de réservation (décision H45) et les articles à promouvoir (décision H49 b) ; tout le reste en lecture | Téléphone, PC |
 | **Admin** | Magasin / à distance | Créer et désactiver les comptes, attribuer les rôles, déclarer les postes, gérer les paramètres, exécuter les corrections assistées, superviser sauvegardes et restauration | PC |
 | **Écran public** | Mur du magasin (optionnel) | Afficher les numéros appelés (pas un utilisateur : un poste sans compte). Sans écran, l'appel est verbal (RG-DSP-05) | TV + mini-PC/Chromecast |
 | **Borne libre-service** | Surface de vente (optionnelle, nombre libre) | Laisser le client composer lui-même son panier, repris ensuite par un commercial (pas un utilisateur : un poste sans compte, §5.10) | Tablette 10" ou écran tactile fixe |
@@ -406,7 +408,7 @@ Accessible à distance sur téléphone et PC, actualisé en temps réel. *(Déci
 - **RG-DSH-04** Comparaisons : veille, même jour de la semaine précédente, semaine, mois.
 - **RG-DSH-05** Notifications au boss : **[MVP]** demande de remise exceptionnelle (RG-REM-03), avec accord/refus en un geste et affichage du code émis ; **[V1.1]** résumé de fin de journée, clôture avec écart, stock sous seuil. *(Décision H54, 03/10/2026 :)* le boss voit les demandes en attente, la plus ancienne d'abord, et celles closes depuis le début de la journée ; l'avis arrive dans l'application ouverte, la notification push sur son téléphone vient ensuite (T-033e). ⚠️ HYPOTHÈSE H55 : le boss active la notification push **appareil par appareil**, depuis son tableau de bord ; chaque nouvelle demande arrive sur ses appareils, application fermée, avec le client, les éléments demandés, le total de la commande, le motif et le demandeur ; un toucher ouvre le tableau de bord, la décision se prend dans l'application (§16.2).
 - **RG-DSH-06** Le responsable voit le même tableau de bord, limité au magasin, plus la supervision des files (RG-DSP-04) ; il ne voit pas les demandes de remise adressées au boss autrement qu'en lecture.
-- **RG-DSH-07** Hors remises exceptionnelles (RG-REM-03/04), le boss ne modifie rien ; s'il veut agir comme responsable, l'admin lui attribue aussi ce rôle (RG-USR-02) et ses actions sont journalisées sous ce rôle.
+- **RG-DSH-07** Le boss ne modifie que : les remises exceptionnelles (RG-REM-03/04), les plafonds de remise et le plafond général (RG-REM-01, décisions H15, H40), la durée de réservation générale et par client (RG-STK-02, décision H45), les articles à promouvoir (RG-DEV-06, décision H49 b) ; tout le reste en lecture *(mise en cohérence du 04/10/2026)*. S'il veut agir comme responsable, l'admin lui attribue aussi ce rôle (RG-USR-02) et ses actions sont journalisées sous ce rôle.
 
 ## 12. Historique
 
@@ -635,9 +637,11 @@ La **date d'entrée** n'est pas une colonne : elle est choisie à l'import pour 
 | Unités de vente et grille de prix (créer, désactiver, nouveau prix) | — | — | — | C, M | — | L |
 | Historique des prix (consulter, exporter) | — | — | — | L | L | L |
 | Plafonds de remise (article, unité, catégorie) | L | L | — | L | M | L |
+| Articles à promouvoir (marquer, dates, argument) (RG-DEV-06) | L | — | — | L | C, M | L |
 | Import articles (dépôt, visualisation, annulation, validation) | — | — | — | C | — | C |
 | Ajustement de stock | — | — | — | C | — | C (assisté) |
 | Clients (répertoire) | C, M | L, M | — | L, M (fusion) | L | L |
+| Durée de réservation d'un client (RG-STK-02) | — | — | — | L | M | M |
 | Devis | C, M (siens) | L | — | L, M | L | L |
 | Paniers de la borne : prendre en charge (RG-BOR-05) | C | — | — | C, M (réaffecter) | L | — |
 | Commande : valider | V (siennes) | — | — | V | — | — |
@@ -659,6 +663,6 @@ La **date d'entrée** n'est pas une colonne : elle est choisie à l'import pour 
 | Exports | — | ses clôtures | — | L | L | L (audit) |
 | Journal d'audit | — | — | — | L | L | L |
 | Comptes, rôles, PIN, postes | — | — | — | — | — | C, M |
-| Paramètres | — | — | — | L | L | M |
+| Paramètres | — | — | — | L | L, M (plafond général, durée de réservation) | M |
 | Corrections assistées | — | — | — | — | — | C |
 | Sauvegardes, restauration | — | — | — | — | — | C |

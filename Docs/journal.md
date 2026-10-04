@@ -2,6 +2,29 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 04/10/2026 — Mise en cohérence des droits du boss (CDC métier v0.14) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Contradiction relevée : RG-REM-01 (décisions H15, H40), RG-STK-02 (H45) et RG-DEV-06 (H49 b) laissent le boss fixer les plafonds de remise, la durée de réservation et les articles à promouvoir, alors que RG-DSH-07, le rôle Boss (§3), l'annexe B et le glossaire disaient qu'il ne modifie rien hors remises exceptionnelles.
+- CDC métier v0.14 :
+  - RG-DSH-07 : le boss modifie les remises exceptionnelles, les plafonds de remise et le plafond général, la durée de réservation générale et par client, les articles à promouvoir ; tout le reste en lecture ;
+  - rôle Boss (§3) : mêmes droits ;
+  - annexe B : ligne Paramètres (le boss modifie le plafond général et la durée de réservation) ; deux lignes ajoutées : « Articles à promouvoir » et « Durée de réservation d'un client ».
+- Glossaire : Responsable (voit les plafonds de remise sans les changer) et Boss (mêmes droits que RG-DSH-07).
+- Code déjà conforme : les plafonds de remise ne se changent que par le boss (`requireRole('owner')`, `routes/discount-caps.ts`). Aucun changement de code.
+- Graphe de connaissance du dépôt généré par graphify dans `graphify-out/` (non versionné).
+
+**Reste** :
+- T-022b (durée de réservation) et T-037 (articles à promouvoir) se codent selon le texte corrigé.
+- `graphify-out/` n'est pas dans `.gitignore` : à ajouter si le dossier doit rester local.
+- T-035 (devis et commandes du commercial).
+
+**Décisions** :
+- Droits de lecture des deux nouvelles lignes de l'annexe B, proposés par l'agent et acceptés par l'utilisateur : les articles à promouvoir sont lus par le commercial, le responsable et l'admin ; la durée de réservation d'un client est lue par le responsable, modifiée par le boss et l'admin.
+- Pas de nouvelle hypothèse : les textes suivent des décisions déjà prises.
+
+**Questions** : valider H55 (CDC métier §16.2) ?
+
 ## 03/10/2026 — T-033e : notification push au boss — agent : Claude Code (Opus 5.5)
 
 **Fait** :

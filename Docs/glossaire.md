@@ -89,8 +89,8 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 | Ariary | `MGA` | Devise (code ISO 4217). Les montants s'affichent avec le sigle « MGA » (`1 250 000,00 MGA`) ; « Ariary » en toutes lettres ; jamais « Ar » (RG-FMT-01). |
 | Fin de journée | `day_end_time` | Heure paramétrable à laquelle expirent les réservations non payées et les codes de remise. |
 | Admin | rôle `admin` | Comptes, paramètres, corrections assistées, sauvegardes. |
-| Responsable | rôle `manager` | Import, plafonds de remise, files, ajustements, validations. |
+| Responsable | rôle `manager` | Import, files, ajustements, validations ; voit les plafonds de remise sans les changer. |
 | Commercial | rôle `sales` | Devis et commandes sur tablette. |
 | Caissier | rôle `cashier` | Contrôle, paiement, facture, session de caisse. |
 | Magasinier | rôle `warehouse` | Préparation et remise de la marchandise. |
-| Boss | rôle `owner` | Tableau de bord et rapports à distance ; seule action : accorder les remises exceptionnelles (codes). |
+| Boss | rôle `owner` | Tableau de bord et rapports à distance ; accorde les remises exceptionnelles (codes), fixe les plafonds de remise, la durée de réservation et les articles à promouvoir ; tout le reste en lecture. |
