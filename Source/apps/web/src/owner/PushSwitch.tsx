@@ -20,7 +20,7 @@ const SENTENCE: Record<Exclude<PushState, 'unknown'>, string> = {
 
 /**
  * The owner's notifications on this device, in the requests panel (T-033e, RG-DSH-05, H54,
- * ⚠️ H55): each request reaches the phone, app closed. Shown once the device is read.
+ * H55): each request reaches the phone, app closed. Shown once the device is read.
  */
 export function PushSwitch() {
   const { state, busy, failure, enable, disable, test } = usePushNotifications();

@@ -28,7 +28,7 @@ const failureOf = (error: unknown) =>
   error instanceof ApiError ? errorMessage(error) : text.failed;
 
 /**
- * The owner's notifications on this device (T-033e, RG-DSH-05, H54, ⚠️ H55): read at the opening —
+ * The owner's notifications on this device (T-033e, RG-DSH-05, H54, H55): read at the opening —
  * an active subscription is sent again so the server keeps it —, turned on within the tap
  * (browsers ask the permission only then), turned off, tested. Signing out leaves them on: the
  * owner turns them off here.

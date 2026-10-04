@@ -74,7 +74,7 @@ describe('the notification kept until the request expires (T-033e)', () => {
 });
 
 describe.skipIf(!TEST_DATABASE_URL)(
-  "push notifications to the owner's phone (RG-DSH-05, H54, ⚠️ H55)",
+  "push notifications to the owner's phone (RG-DSH-05, H54, H55)",
   () => {
     const vapid = webpush.generateVAPIDKeys();
     const service = fakePushService();

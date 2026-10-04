@@ -2,6 +2,21 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 04/10/2026 — H55 validée (notification push au boss) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- L'utilisateur valide H55 telle quelle. CDC métier v0.15 : sa ligne passe du §16.2 au nouveau §16.12 ; RG-DSH-05 cite la décision.
+- Marques ⚠️ retirées du CDC technique, du backlog, de CLAUDE.md, des commentaires du code et d'un titre de test ; la migration déjà appliquée garde la sienne (la modifier changerait sa somme de contrôle).
+- Aucun changement de comportement : T-033e suivait déjà H55.
+
+**Reste** :
+- `Source/.env.example` à compléter par l'utilisateur (variables VAPID, voir l'entrée T-033e).
+- T-035 (devis et commandes du commercial).
+
+**Décisions** : aucune hypothèse ouverte (§16.2).
+
+**Questions** : aucune.
+
 ## 04/10/2026 — Mise en cohérence des droits du boss (CDC métier v0.14) — agent : Claude Code (Opus 5.5)
 
 **Fait** :

@@ -1,5 +1,5 @@
 /*
- * The owner's notifications (T-033e, RG-DSH-05, H54, ⚠️ H55), loaded by the generated service
+ * The owner's notifications (T-033e, RG-DSH-05, H54, H55), loaded by the generated service
  * worker (`workbox.importScripts`): shown even with the app closed, a tap opens the app. A classic
  * script, served as is from `public/`: no build step, no import.
  */

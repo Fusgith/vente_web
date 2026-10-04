@@ -1,4 +1,4 @@
-/** The owner's notifications on a device (T-033e, RG-DSH-05, H54, ⚠️ H55): `labels.push`. */
+/** The owner's notifications on a device (T-033e, RG-DSH-05, H54, H55): `labels.push`. */
 export const pushLabels = {
   title: 'Notifications sur cet appareil',
   off: 'Recevez chaque demande de remise sur cet appareil, même application fermée.',

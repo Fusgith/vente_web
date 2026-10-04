@@ -129,7 +129,7 @@ model Session {
 }
 
 /// A device where the owner is told of each discount request, the app closed (T-033e, RG-DSH-05,
-/// ⚠️ H55): the browser's push subscription, one per device, kept across logouts. The endpoint is
+/// H55): the browser's push subscription, one per device, kept across logouts. The endpoint is
 /// a capability URL of the browser's push service: never logged, audited nor sent back.
 model PushSubscription {
   id        String   @id @default(uuid(7)) @db.Uuid

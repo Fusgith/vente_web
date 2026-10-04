@@ -30,7 +30,7 @@ const targetOf = (row: {
 });
 
 /**
- * This device now tells its user (T-033e, ⚠️ H55): one subscription per device, its keys renewed
+ * This device now tells its user (T-033e, H55): one subscription per device, its keys renewed
  * as the browser gives them. A device that told someone else now tells this user — the phone
  * changed hands. Beyond `MAX_DEVICES`, the device seen the least recently stops. The endpoint and
  * keys are never audited: the endpoint lets anyone write to the device.
@@ -124,7 +124,7 @@ export async function findSubscription(
 
 /**
  * The devices of the owners (RG-DSH-05): an account deactivated or no longer owner is told
- * nothing, though its devices stay until turned off (⚠️ H55).
+ * nothing, though its devices stay until turned off (H55).
  */
 export async function ownerTargets(db: Db): Promise<PushTarget[]> {
   const rows = await db.pushSubscription.findMany({

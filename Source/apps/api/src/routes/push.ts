@@ -19,7 +19,7 @@ const testLimit: RouteShorthandOptions = {
   config: { rateLimit: { max: TESTS_PER_MINUTE, timeWindow: 60_000 } },
 };
 
-/** Push notifications to the owner's devices (T-033e, ⚠️ H55). */
+/** Push notifications to the owner's devices (T-033e, H55). */
 export const pushRoutes: FastifyPluginAsync = async (app) => {
   app.get('/push/key', owner, async (): Promise<PushKey> => ({ publicKey: app.push.publicKey }));
 
