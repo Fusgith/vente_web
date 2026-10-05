@@ -1,5 +1,5 @@
 import { formatTime, type DiscountRequest, type DiscountRequestGrant } from '@vente-web/shared';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { discountRequestsApi } from '../api/discount-requests.js';
 import { errorMessage } from '../api/error-message.js';
@@ -79,7 +79,9 @@ export function DiscountRequestsPanel({ editable }: { editable: boolean }) {
   useRealtimeEvent('discount.request_decided', load);
   useRealtimeConnect(load);
   // The order of a card changed (lines lowered at the register, cancelled, paid…): read again.
-  useEffect(() => {
+  // Kept within the commit that shows the cards: an event arriving before React's next slice
+  // (a loaded tablet) still finds their orders.
+  useLayoutEffect(() => {
     orders.current = new Set(pending?.map((request) => request.order.id));
   }, [pending]);
   const follow = ({ orderId }: { orderId: string }) => {

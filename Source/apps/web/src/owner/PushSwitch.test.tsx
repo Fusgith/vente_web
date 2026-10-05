@@ -160,8 +160,9 @@ describe('PushSwitch — the owner’s notifications on this device (T-033e, RG-
     expect(options?.applicationServerKey).toEqual(KEY_BYTES);
     expect(api.callsTo(SAVE).map((call) => call.body)).toEqual([SUBSCRIPTION]);
     expect(band()).toHaveTextContent(text.enabled);
-    // The button pressed is gone: the focus goes to the test.
-    expect(zone().getByRole('button', { name: text.test })).toHaveFocus();
+    // The button pressed is gone: the focus goes to the test. An effect moves it once the state
+    // is shown: on a loaded machine, React runs it a slice later.
+    await waitFor(() => expect(zone().getByRole('button', { name: text.test })).toHaveFocus());
   });
 
   it('stays off when the owner refuses in the browser’s question', async () => {
@@ -170,7 +171,7 @@ describe('PushSwitch — the owner’s notifications on this device (T-033e, RG-
 
     fireEvent.click(await zone().findByRole('button', { name: text.enable }));
 
-    expect(await zone().findByText(text.denied)).toHaveFocus();
+    await waitFor(() => expect(zone().getByText(text.denied)).toHaveFocus());
     expect(band()).toHaveTextContent(text.refused);
     expect(device.pushManager.subscribe).not.toHaveBeenCalled();
   });
@@ -210,7 +211,7 @@ describe('PushSwitch — the owner’s notifications on this device (T-033e, RG-
     expect(api.callsTo(REMOVE).map((call) => call.body)).toEqual([{ endpoint: ENDPOINT }]);
     expect(device.existing?.unsubscribe).toHaveBeenCalledOnce();
     expect(band()).toHaveTextContent(text.disabled);
-    expect(zone().getByRole('button', { name: text.enable })).toHaveFocus();
+    await waitFor(() => expect(zone().getByRole('button', { name: text.enable })).toHaveFocus());
   });
 
   it('a subscription made with the shop’s former key is dropped at the opening', async () => {

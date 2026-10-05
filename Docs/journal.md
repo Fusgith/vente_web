@@ -2,6 +2,21 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 05/10/2026 — Tests du boss instables sous charge — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Cause : le focus (et la liste des commandes suivies du panneau des demandes) est posé par un `useEffect`. React l'exécute dans la même tranche que l'affichage, sauf quand il épuise sa tranche de 5 ms (machine chargée) : l'effet passe alors à la tranche suivante, après le `findBy…`/`waitFor` du test et son `setTimeout(0)`, et la vérification synchrone qui suit échoue.
+- Reproduit à coup sûr en simulant la charge (horloge de React qui saute, tranche suivante retardée de 20 ms ; configuration temporaire, non commitée) : 6 échecs dans `DiscountRequestsPanel.test.tsx` et `PushSwitch.test.tsx`.
+- Tests : les 5 vérifications de focus attendent le focus (`waitFor`), comme le correctif de `DiscountRequest.test.tsx` ; ce qu'elles vérifient ne change pas.
+- `DiscountRequestsPanel` : les commandes des cartes sont relevées dans un `useLayoutEffect` (pendant l'affichage) au lieu d'un `useEffect`. Un événement temps réel reçu juste après la lecture de la liste, sur une tablette chargée, trouve ces commandes : avant, il pouvait être ignoré (même cause, test « reads again when the order of a card changes »).
+- Sous charge simulée : 21/21 trois fois ; suite web complète 274/274 cinq fois ; lint, format et typecheck verts.
+
+**Décisions** : aucune nouvelle.
+
+**Reste** : la même charge simulée fait échouer 8 autres tests web, presque tous de la même famille (focus ou bandeau vérifiés juste après une mise à jour asynchrone) : `OrderCode`, `OrderRequest` (2), `DiscountCode`, `realtime`, `DeliveryWorkspace`, `DiscountCapsPanel` ; `push-device` (délai dépassé) est peut-être un artefact de la simulation. À stabiliser de la même façon.
+
+**Questions** : aucune.
+
 ## 05/10/2026 — T-016g : le boss choisit son mot de passe avec le code — agent : Claude Code (Opus 5.5)
 
 **Fait** :

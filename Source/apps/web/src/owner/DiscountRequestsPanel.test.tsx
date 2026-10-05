@@ -125,8 +125,9 @@ describe('DiscountRequestsPanel — the owner answers (T-033c, RG-REM-03, H53)',
       ],
     });
     expect(panel().getByRole('status', { name: text.toGive })).toHaveTextContent('R7K4-29QP');
-    // The card gone with its button, the focus goes to the code to give.
-    expect(panel().getByRole('status', { name: text.toGive })).toHaveFocus();
+    // The card gone with its button, the focus goes to the code to give. An effect moves it once
+    // the band is shown: on a loaded machine, React runs it a slice later.
+    await waitFor(() => expect(panel().getByRole('status', { name: text.toGive })).toHaveFocus());
     expect(panel().queryByRole('article')).toBeNull();
     expect(panel().getByText(text.pendingEmpty)).toBeVisible();
     const recent = within(panel().getByRole('table', { name: text.recent }));
@@ -173,7 +174,8 @@ describe('DiscountRequestsPanel — the owner answers (T-033c, RG-REM-03, H53)',
     expect(api.callsTo(REJECT)).toHaveLength(1);
     expect(panel().queryByRole('status', { name: text.toGive })).toBeNull();
     expect(panel().getByText(text.pendingEmpty)).toBeVisible();
-    expect(panel().getByRole('heading', { name: text.pending })).toHaveFocus();
+    // Moved by an effect after the band is shown, as for the code to give.
+    await waitFor(() => expect(panel().getByRole('heading', { name: text.pending })).toHaveFocus());
   });
 
   it('waits on each decision in its own card', async () => {
