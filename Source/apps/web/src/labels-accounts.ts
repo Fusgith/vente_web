@@ -38,4 +38,32 @@ export const accountsLabels = {
     totp: 'TOTP',
     none: 'Aucun',
   },
+  /** The ways in of one account (T-016f): set or reset, never shown. */
+  secrets: {
+    title: (name: string) => `Accès de ${name}`,
+    help: 'Vous fixez un secret sans jamais voir l’ancien ; chaque changement ferme les sessions ouvertes avec lui.',
+    pin: 'Nouveau PIN',
+    pinHint: '4 à 6 chiffres.',
+    setPin: 'Définir le PIN',
+    pinSet: (name: string) => `PIN de ${name} défini.`,
+    password: 'Nouveau mot de passe',
+    passwordHint: (min: number) =>
+      `${min} caractères au moins ; la personne le remplacera à sa prochaine connexion.`,
+    setPassword: 'Définir le mot de passe',
+    passwordSet: (name: string) => `Mot de passe de ${name} défini.`,
+    ownerHelp:
+      'Le mot de passe du boss reste le sien : remettez-lui un code d’activation, il choisira son mot de passe avec.',
+    issueCode: 'Créer un code d’activation',
+    code: 'Code à remettre au boss',
+    codeUntil: (date: string, time: string) => `Valable une fois, jusqu’au ${date} à ${time}.`,
+    codeIssued: (name: string) => `Code d’activation de ${name} créé.`,
+    unlock: 'Déverrouiller',
+    unlocked: (name: string) => `Compte de ${name} déverrouillé.`,
+    resetTotp: 'Effacer le TOTP',
+    totpReset: (name: string) =>
+      `TOTP de ${name} effacé : il l’enregistrera à nouveau depuis le magasin.`,
+    closeSessions: 'Fermer ses sessions',
+    sessionsClosed: (name: string) => `Sessions de ${name} fermées.`,
+    working: 'Envoi…',
+  },
 };

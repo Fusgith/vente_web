@@ -2,6 +2,20 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 05/10/2026 — T-016f : accès d'un compte dans l'écran de l'admin — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Sous le formulaire d'un compte, bloc « Accès de … » (`admin/AccountSecrets.tsx`) : nouveau PIN (rôles opérationnels, 4 à 6 chiffres), nouveau mot de passe (tout compte sauf le boss ; la personne le remplace à sa prochaine connexion, H20), « Déverrouiller » si le compte est verrouillé (RG-USR-05), « Effacer le TOTP » s'il en a un, « Fermer ses sessions ». L'admin ne voit jamais un secret ; la liste se met à jour (accès, état) sans fermer le formulaire.
+- Boss : pas de champ mot de passe ; « Créer un code d'activation » affiche le code à remettre et son échéance (heure du magasin, RG-USR-10).
+- `usersApi` : `setPin`, `setPassword`, `activationCode`, `unlock`, `resetTotp`, `closeSessions`.
+- 2 tests web ; lint, format, typecheck verts. Suite web complète : 271/273 ; deux tests existants du boss (`DiscountRequestsPanel` « grants the soap… », `PushSwitch` « turns them on… ») échouent sous charge puis réussissent seuls (21/21) — instabilité préexistante, hors T-016f.
+
+**Décisions** : aucune nouvelle.
+
+**Reste** : T-016g (écran du boss pour choisir son mot de passe avec le code) ; stabiliser les tests du boss qui échouent sous charge.
+
+**Questions** : aucune.
+
 ## 05/10/2026 — T-016e : écran des comptes de l'admin — agent : Claude Code (Opus 5.5)
 
 **Fait** :

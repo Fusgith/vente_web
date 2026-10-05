@@ -8,14 +8,18 @@ import { useStatusLine } from '../shell/status-line.js';
 import { buttonClass, sheetClass } from '../ui/button.js';
 import { CELL, HEAD } from '../ui/document-table.js';
 import { AccountForm } from './AccountForm.js';
+import { AccountSecrets } from './AccountSecrets.js';
 
 const text = labels.accounts;
 const ROW = `${CELL} h-14 border-b border-rule py-1`;
 
+function isLocked(account: UserAccount, now: number): boolean {
+  return account.lockedUntil !== null && Date.parse(account.lockedUntil) > now;
+}
+
 function stateOf(account: UserAccount, now: number): string {
   if (!account.isActive) return text.state.inactive;
-  const locked = account.lockedUntil !== null && Date.parse(account.lockedUntil) > now;
-  return locked ? text.state.locked : text.state.active;
+  return isLocked(account, now) ? text.state.locked : text.state.active;
 }
 
 /** Which ways in exist, never the secrets themselves. */
@@ -31,7 +35,8 @@ function accessOf(account: UserAccount): string {
 
 /**
  * The admin's accounts (T-016e, annexe B): the list with each account's state and ways in, a new
- * account, a change of name, roles, ticket letter, or a deactivation. Never a deletion (RG-USR-06).
+ * account, a change of name, roles, ticket letter, or a deactivation; then its ways in (T-016f).
+ * Never a deletion (RG-USR-06).
  */
 export function AccountsPanel() {
   const { say } = useStatusLine();
@@ -60,6 +65,12 @@ export function AccountsPanel() {
     );
     setEditing(null);
     say((created ? text.created : text.saved)(account.fullName), 'check');
+  };
+
+  // A secret changed: the form stays open on the same account.
+  const changed = (account: UserAccount) => {
+    setAccounts((list) => list?.map((kept) => (kept.id === account.id ? account : kept)) ?? null);
+    setEditing(account);
   };
 
   return (
@@ -95,6 +106,14 @@ export function AccountsPanel() {
           account={editing === 'new' ? null : editing}
           onSaved={saved}
           onCancel={() => setEditing(null)}
+        />
+      )}
+      {editing !== null && editing !== 'new' && (
+        <AccountSecrets
+          key={editing.id}
+          account={editing}
+          locked={isLocked(editing, loadedAt)}
+          onChanged={changed}
         />
       )}
       {accounts && (

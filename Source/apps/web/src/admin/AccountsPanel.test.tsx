@@ -13,6 +13,8 @@ const text = labels.accounts;
 const RIJA_ID = '0192a4f0-0000-7000-8000-000000000601';
 const ADMIN_ID = '0192a4f0-0000-7000-8000-000000000602';
 const LOVA_ID = '0192a4f0-0000-7000-8000-000000000603';
+const BOSS_ID = '0192a4f0-0000-7000-8000-000000000604';
+const NO_CONTENT = { status: 204 };
 
 const account = (over: Partial<UserAccount>): UserAccount => ({
   id: RIJA_ID,
@@ -134,5 +136,83 @@ describe('AccountsPanel — the admin’s accounts (T-016e, annexe B, RG-USR-06)
     expect(await rowOf('rija').findByText(text.state.inactive)).toBeInTheDocument();
     expect(band()).toHaveTextContent(text.saved('Rija Rakoto'));
     expect(api.callsTo(`PATCH /users/${RIJA_ID}`)[0]?.body).toEqual({ isActive: false });
+  });
+});
+
+describe('AccountsPanel — the ways in of an account (T-016f, H20, RG-USR-05)', () => {
+  it('sets a PIN and a password, lifts a lock, forgets the TOTP, closes the sessions', async () => {
+    const LOCKED = { ...RIJA, lockedUntil: '2999-01-01T00:00:00.000Z', totpEnabled: true };
+    const api = mount({
+      'GET /users': ok({ users: [LOCKED] }),
+      [`PUT /users/${RIJA_ID}/pin`]: NO_CONTENT,
+      [`PUT /users/${RIJA_ID}/password`]: NO_CONTENT,
+      [`POST /users/${RIJA_ID}/unlock`]: NO_CONTENT,
+      [`DELETE /users/${RIJA_ID}/totp`]: NO_CONTENT,
+      [`DELETE /users/${RIJA_ID}/sessions`]: NO_CONTENT,
+    });
+    await panel().findByRole('table', { name: text.list });
+    fireEvent.click(panel().getByRole('button', { name: text.edit('Rija Rakoto') }));
+    const ways = within(panel().getByRole('region', { name: text.secrets.title('Rija Rakoto') }));
+
+    const setPin = ways.getByRole('button', { name: text.secrets.setPin });
+    fireEvent.change(ways.getByLabelText(text.secrets.pin), { target: { value: '12a' } });
+    expect(setPin).toBeDisabled();
+    fireEvent.change(ways.getByLabelText(text.secrets.pin), { target: { value: '4821' } });
+    fireEvent.click(setPin);
+    expect(await within(band()).findByText(text.secrets.pinSet('Rija Rakoto'))).toBeInTheDocument();
+    expect(ways.getByLabelText(text.secrets.pin)).toHaveValue('');
+    expect(api.callsTo(`PUT /users/${RIJA_ID}/pin`)[0]?.body).toEqual({ pin: '4821' });
+
+    fireEvent.change(ways.getByLabelText(text.secrets.password), {
+      target: { value: 'entree-magasin' },
+    });
+    fireEvent.click(ways.getByRole('button', { name: text.secrets.setPassword }));
+    expect(await rowOf('rija').findByText(/Mot de passe à changer/)).toBeInTheDocument();
+    expect(api.callsTo(`PUT /users/${RIJA_ID}/password`)[0]?.body).toEqual({
+      password: 'entree-magasin',
+    });
+
+    fireEvent.click(ways.getByRole('button', { name: text.secrets.unlock }));
+    expect(await rowOf('rija').findByText(text.state.active)).toBeInTheDocument();
+    expect(ways.queryByRole('button', { name: text.secrets.unlock })).not.toBeInTheDocument();
+
+    fireEvent.click(ways.getByRole('button', { name: text.secrets.resetTotp }));
+    expect(
+      await within(band()).findByText(text.secrets.totpReset('Rija Rakoto')),
+    ).toBeInTheDocument();
+    expect(ways.queryByRole('button', { name: text.secrets.resetTotp })).not.toBeInTheDocument();
+
+    fireEvent.click(ways.getByRole('button', { name: text.secrets.closeSessions }));
+    expect(
+      await within(band()).findByText(text.secrets.sessionsClosed('Rija Rakoto')),
+    ).toBeInTheDocument();
+    expect(api.callsTo(`DELETE /users/${RIJA_ID}/sessions`)).toHaveLength(1);
+  });
+
+  it('hands the owner a one-time code, never a password set for them (RG-USR-10)', async () => {
+    const BOSS = account({
+      id: BOSS_ID,
+      username: 'boss',
+      fullName: 'Fara Boss',
+      roles: ['owner'],
+      ticketLetter: null,
+      hasPin: false,
+    });
+    mount({
+      'GET /users': ok({ users: [BOSS] }),
+      [`POST /users/${BOSS_ID}/activation-code`]: {
+        status: 201,
+        body: { code: 'K7P2M9QX4R8T', expiresAt: '2026-10-06T09:30:00.000Z' },
+      },
+    });
+    await panel().findByRole('table', { name: text.list });
+    fireEvent.click(panel().getByRole('button', { name: text.edit('Fara Boss') }));
+    const ways = within(panel().getByRole('region', { name: text.secrets.title('Fara Boss') }));
+
+    expect(ways.queryByLabelText(text.secrets.password)).not.toBeInTheDocument();
+    expect(ways.queryByLabelText(text.secrets.pin)).not.toBeInTheDocument();
+    fireEvent.click(ways.getByRole('button', { name: text.secrets.issueCode }));
+    expect(await ways.findByText('K7P2M9QX4R8T')).toBeInTheDocument();
+    expect(ways.getByText(text.secrets.codeUntil('06/10/2026', '12:30'))).toBeInTheDocument();
   });
 });
