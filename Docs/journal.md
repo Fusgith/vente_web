@@ -2,6 +2,24 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 05/10/2026 — T-016a : comptes gérés par l'admin, côté API — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- T-016 découpée en quatre (backlog) : a) API des comptes, b) code d'activation du boss, c) changement de mot de passe imposé et `admin:bootstrap`, d) écran de l'admin.
+- `GET /users` : tous les comptes, désactivés compris, avec la présence des secrets (jamais leur valeur).
+- `POST /users` : identifiant (unique sans tenir compte de la casse, sans espace), nom, un ou plusieurs rôles fixes (RG-USR-01/02), lettre de ticket exigée d'un commercial (RG-USR-07) ; aucun secret à la création.
+- `PATCH /users/{id}` : seuls les champs donnés changent ; jamais de suppression, une désactivation (RG-USR-06). Un changement de rôles ou une désactivation ferme toutes les sessions du compte, celle de l'admin comprise s'il se modifie lui-même.
+- Journal : `user.created`, `user.updated`, `user.deactivated` (avant → après des seuls champs changés), puis `user.sessions_revoked`.
+- Contrats partagés `packages/shared/src/users.ts` ; codes d'erreur `USERNAME_TAKEN`, `TICKET_LETTER_REQUIRED`, `TICKET_LETTER_TAKEN`, `LAST_ADMIN`.
+- 7 tests d'API (`users-accounts.test.ts`) ; lint, format et typecheck verts. Pas de `.env` sur le poste : les tests avec base tournent sur la CI.
+
+**Décisions** :
+- Garde technique `LAST_ADMIN` : le dernier admin actif ne perd ni son rôle ni son activité, sinon plus personne ne gère les comptes. Ce n'est pas une règle métier nouvelle, seulement l'impossibilité de se priver d'administration.
+
+**Reste** : T-016b (code d'activation du boss), T-016c, T-016d.
+
+**Questions** : aucune.
+
 ## 05/10/2026 — H56 validée (devis et commandes du commercial) — agent : Claude Code (Opus 5.5)
 
 **Fait** :
