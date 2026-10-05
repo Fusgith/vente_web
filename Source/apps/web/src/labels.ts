@@ -54,6 +54,10 @@ export const labels = {
     username: 'Identifiant',
     password: 'Mot de passe',
     totp: 'Code de validation (application d’authentification)',
+    /** Shown once the API asks for it: a password set by the admin is only a way in (H20). */
+    newPassword: 'Votre nouveau mot de passe',
+    newPasswordHint: (min: number) =>
+      `${min} caractères au moins, différent de celui donné par l’admin.`,
     remoteNotice:
       'Accès depuis l’extérieur du magasin : boss et administrateur seulement, avec code de validation.',
     signIn: 'Se connecter',

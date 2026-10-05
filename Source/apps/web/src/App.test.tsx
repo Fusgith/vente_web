@@ -137,6 +137,55 @@ describe('login in the shop (RG-USR-03)', () => {
     });
   });
 
+  it('asks for a new password when the admin set the current one (H20)', async () => {
+    const api = fakeApi({
+      'GET /auth/me': NOT_SIGNED_IN,
+      'GET /auth/users': ok(DIRECTORY),
+      'POST /auth/login': apiError(403, 'AUTH_PASSWORD_CHANGE_REQUIRED'),
+    });
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: labels.login.passwordLink }));
+    fireEvent.change(screen.getByLabelText(labels.login.username), { target: { value: 'adm2' } });
+    fireEvent.change(screen.getByLabelText(labels.login.password), {
+      target: { value: 'Given-by-adm1!' },
+    });
+    fireEvent.click(screen.getByRole('radio', { name: 'Administrateur' }));
+    fireEvent.click(screen.getByRole('button', { name: labels.login.signIn }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      ERROR_LABELS.AUTH_PASSWORD_CHANGE_REQUIRED,
+    );
+    const fresh = screen.getByLabelText(labels.login.newPassword);
+    expect(fresh).toHaveFocus();
+    expect(screen.getByLabelText(labels.login.password)).toHaveValue('Given-by-adm1!');
+    const submit = screen.getByRole('button', { name: labels.login.signIn });
+    fireEvent.change(fresh, { target: { value: 'short' } });
+    expect(submit).toBeDisabled();
+
+    api.on(
+      'POST /auth/login',
+      ok(
+        meFor({
+          user: { ...RIJA, username: 'adm2', fullName: 'Admin', roles: ['admin'] },
+          activeRole: 'admin',
+          authMethod: 'PASSWORD',
+        }),
+      ),
+    );
+    fireEvent.change(fresh, { target: { value: 'Mine-only-42!' } });
+    fireEvent.click(submit);
+    expect(
+      await screen.findByRole('heading', { name: labels.workspaces.admin.title }),
+    ).toBeVisible();
+    expect(api.callsTo('POST /auth/login')[1]?.body).toEqual({
+      username: 'adm2',
+      role: 'admin',
+      password: 'Given-by-adm1!',
+      newPassword: 'Mine-only-42!',
+    });
+  });
+
   it('shows why the server is unreachable and retries', async () => {
     const api = fakeApi({ 'GET /auth/me': 'network', 'GET /auth/users': 'network' });
     render(<App />);

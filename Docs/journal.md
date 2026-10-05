@@ -2,6 +2,18 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 05/10/2026 — T-016d : nouveau mot de passe à la connexion — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Formulaire de connexion par mot de passe : quand l'API répond `AUTH_PASSWORD_CHANGE_REQUIRED`, le champ « Votre nouveau mot de passe » apparaît (focus, aide : 10 caractères au moins, différent de celui donné par l'admin) ; le mot de passe actuel et le code TOTP sont gardés, la nouvelle tentative envoie `newPassword`. Sur `AUTH_PASSWORD_UNCHANGED`, seul le nouveau mot de passe est à ressaisir.
+- Test web (`App.test.tsx`) ; lint, format, typecheck verts.
+
+**Décisions** : T-016d réduite au champ de connexion ; l'écran de l'admin et l'écran d'activation du boss passent en T-016e.
+
+**Reste** : T-016e (écran de l'admin, écran du boss pour le code d'activation).
+
+**Questions** : aucune.
+
 ## 05/10/2026 — T-016c : mot de passe à changer et premier admin — agent : Claude Code (Opus 5.5)
 
 **Fait** :

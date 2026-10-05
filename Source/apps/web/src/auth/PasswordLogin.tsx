@@ -1,6 +1,13 @@
-import { REMOTE_ROLES, ROLES, TOTP_PATTERN, type Role } from '@vente-web/shared';
+import {
+  PASSWORD_MIN_LENGTH,
+  REMOTE_ROLES,
+  ROLES,
+  TOTP_PATTERN,
+  type Role,
+} from '@vente-web/shared';
 import { useId, useState, type FormEvent } from 'react';
 
+import { ApiError } from '../api/client.js';
 import { errorMessage } from '../api/error-message.js';
 import { labels } from '../labels.js';
 import { buttonClass } from '../ui/button.js';
@@ -36,12 +43,17 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [totp, setTotp] = useState('');
+  // Asked only when the API says the password was set by the admin (H20): null until then.
+  const [newPassword, setNewPassword] = useState<string | null>(null);
   // The boss is the usual remote user; in the shop the role is always a deliberate choice.
   const [role, setRole] = useState<Role | null>(remote ? 'owner' : null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const complete =
-    username.trim() !== '' && password !== '' && (!remote || TOTP_PATTERN.test(totp));
+    username.trim() !== '' &&
+    password !== '' &&
+    (!remote || TOTP_PATTERN.test(totp)) &&
+    (newPassword === null || newPassword.length >= PASSWORD_MIN_LENGTH);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -54,11 +66,18 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
     setError(null);
     try {
       const base = { username: username.trim(), role, password };
-      await signIn(remote ? { ...base, totp } : base);
+      const withNew = newPassword === null ? base : { ...base, newPassword };
+      await signIn(remote ? { ...withNew, totp } : withNew);
     } catch (failure) {
       setError(errorMessage(failure));
-      setPassword('');
-      setTotp('');
+      const code = failure instanceof ApiError ? failure.code : null;
+      // The password was right: keep it (and the unspent TOTP code), ask only for the new one.
+      if (code === 'AUTH_PASSWORD_CHANGE_REQUIRED' || code === 'AUTH_PASSWORD_UNCHANGED') {
+        setNewPassword('');
+      } else {
+        setPassword('');
+        setTotp('');
+      }
       setBusy(false);
     }
   };
@@ -120,6 +139,28 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
             className={`${inputClass} figures max-w-60 text-24 font-semibold tracking-[0.3em]`}
           />
         </label>
+      )}
+
+      {newPassword !== null && (
+        <div className={fieldClass}>
+          <label htmlFor={`${id}-new-password`} className="font-semibold">
+            {labels.login.newPassword}
+          </label>
+          <input
+            id={`${id}-new-password`}
+            name="new-password"
+            type="password"
+            autoComplete="new-password"
+            aria-describedby={`${id}-new-password-hint`}
+            autoFocus
+            value={newPassword}
+            onChange={(event) => setNewPassword(event.target.value)}
+            className={`${inputClass} text-18`}
+          />
+          <span id={`${id}-new-password-hint`} className="text-14 text-ink-2">
+            {labels.login.newPasswordHint(PASSWORD_MIN_LENGTH)}
+          </span>
+        </div>
       )}
 
       {error && (
