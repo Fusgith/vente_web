@@ -2,6 +2,21 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 05/10/2026 — T-016b : code d'activation du boss, côté API — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- `POST /users/{id}/activation-code` (admin, compte boss seulement) : code de 12 caractères en groupes de 4 (même alphabet sans ambiguïté que les codes de remise), valable 24 h, montré une seule fois ; seule son empreinte argon2id est gardée (colonnes `activation_code_hash`, `activation_expires_at`, migration `20261005120000_add_owner_activation_code`). Un nouveau code remplace le précédent. Journalisé `user.activation_issued` (échéance seule).
+- `POST /auth/activate` (public, limité comme la connexion) : le boss donne son identifiant, le code et le mot de passe qu'il choisit (RG-USR-10). Code faux ou expiré : une seule réponse `ACTIVATION_INVALID`, comptée comme un échec de connexion (verrouillage RG-USR-05). Code juste : consommé une seule fois, mot de passe posé, verrouillage levé, toutes les sessions du compte fermées ; journalisé `user.activation_used` puis `user.sessions_revoked`. Le boss se connecte ensuite normalement.
+- Codes d'erreur `ACTIVATION_OWNER_ONLY`, `ACTIVATION_INVALID` ; CDC technique §5 et §6 à jour.
+- 6 tests d'API (`owner-activation.test.ts`) ; lint, format et typecheck verts ; tests avec base sur la CI.
+
+**Décisions** :
+- L'activation n'ouvre pas de session : le boss se connecte ensuite avec son nouveau mot de passe (et son TOTP hors du magasin), comme toute connexion.
+
+**Reste** : T-016c, T-016d (dont l'écran d'activation du boss).
+
+**Questions** : aucune.
+
 ## 05/10/2026 — T-016a : comptes gérés par l'admin, côté API — agent : Claude Code (Opus 5.5)
 
 **Fait** :

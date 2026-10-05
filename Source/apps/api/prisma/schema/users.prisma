@@ -56,6 +56,9 @@ model User {
   failedLoginCount  Int       @default(0) @map("failed_login_count")
   lastFailedAt      DateTime? @map("last_failed_at") @db.Timestamptz(6)
   lockedUntil       DateTime? @map("locked_until") @db.Timestamptz(6)
+  /// The owner's one-time activation code (RG-USR-10): its hash, valid until `activationExpiresAt`.
+  activationCodeHash  String?   @map("activation_code_hash")
+  activationExpiresAt DateTime? @map("activation_expires_at") @db.Timestamptz(6)
   /// Ticket letter of a sales user (RG-TKT-01); unique among active sales users (partial index).
   ticketLetter      String?   @map("ticket_letter") @db.Char(1)
   isActive          Boolean   @default(true) @map("is_active")

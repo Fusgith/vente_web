@@ -1,4 +1,5 @@
 import {
+  activateBodySchema,
   OPERATIONAL_ROLES,
   isOperationalRole,
   loginBodySchema,
@@ -11,6 +12,7 @@ import type { Env } from '../env.js';
 import { AppError } from '../errors.js';
 import { authOf, requireAuth, sessionCookieOptions } from '../plugins/session.js';
 import { login } from '../services/login.js';
+import { activateOwner } from '../services/owner-activation.js';
 import { endAllSessions, endSession, sessionCookieName, toAuthMe } from '../services/sessions.js';
 import { switchRole } from '../services/switch-role.js';
 import { authRateLimit } from './rate-limit.js';
@@ -29,6 +31,13 @@ export const authRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env })
     );
     reply.setCookie(cookieName, result.token, cookieOptions);
     return result.me;
+  });
+
+  /** The owner chooses their password with the admin's one-time code (RG-USR-10), then logs in. */
+  app.post('/auth/activate', authRateLimit, async (request, reply) => {
+    const body = activateBodySchema.parse(request.body);
+    await activateOwner(app.db, body, request.accessOrigin);
+    return reply.code(204).send();
   });
 
   app.get('/auth/me', { preHandler: requireAuth }, async (request) => toAuthMe(authOf(request)));

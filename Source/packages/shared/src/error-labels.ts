@@ -33,6 +33,8 @@ export const ERROR_LABELS = {
   TICKET_LETTER_REQUIRED: 'Un commercial doit avoir sa lettre de ticket.',
   TICKET_LETTER_TAKEN: 'Cette lettre de ticket est déjà celle d’un autre commercial actif.',
   LAST_ADMIN: 'Il faut au moins un admin actif : ce compte garde son rôle admin.',
+  ACTIVATION_OWNER_ONLY: 'Le code d’activation ne sert qu’au compte du boss.',
+  ACTIVATION_INVALID: 'Identifiant ou code d’activation incorrect, ou code expiré.',
   CUSTOMER_PHONE_TAKEN: 'Ce numéro de téléphone est déjà celui d’un client du répertoire.',
   CUSTOMER_INACTIVE: 'Cette fiche client est désactivée ou fusionnée avec une autre.',
   CUSTOMER_PHONES_SAME: 'Les deux téléphones du client sont identiques.',

@@ -4,7 +4,7 @@
  */
 import { z } from 'zod';
 
-import { roleSchema, USERNAME_MAX_LENGTH } from './auth.js';
+import { passwordSchema, roleSchema, USERNAME_MAX_LENGTH } from './auth.js';
 
 export const FULL_NAME_MAX_LENGTH = 120;
 /** A sales user's ticket letter (RG-USR-07, RG-TKT-01). */
@@ -60,3 +60,21 @@ export const updateUserBodySchema = z
   .strict()
   .refine((body) => Object.keys(body).length > 0, 'nothing to change');
 export type UpdateUserBody = z.infer<typeof updateUserBodySchema>;
+
+/** The owner's activation code (RG-USR-10): 12 characters grouped by 4, valid 24 h. */
+export const ACTIVATION_CODE_LENGTH = 12;
+export const ACTIVATION_HOURS = 24;
+
+/** Shown once to the admin, who hands it to the owner; only its hash is kept. */
+export const activationCodeSchema = z.object({ code: z.string(), expiresAt: z.iso.datetime() });
+export type ActivationCode = z.infer<typeof activationCodeSchema>;
+
+/** The owner chooses their password with the code: the admin never knows it (RG-USR-10). */
+export const activateBodySchema = z
+  .object({
+    username: z.string().trim().min(1).max(USERNAME_MAX_LENGTH),
+    code: z.string().trim().min(1).max(32),
+    password: passwordSchema,
+  })
+  .strict();
+export type ActivateBody = z.infer<typeof activateBodySchema>;

@@ -3,6 +3,7 @@ import {
   setPasswordBodySchema,
   setPinBodySchema,
   updateUserBodySchema,
+  type ActivationCode,
   type UserAccount,
   type UserAccountList,
 } from '@vente-web/shared';
@@ -17,6 +18,7 @@ import {
   adminSetPin,
   adminUnlock,
 } from '../services/credentials.js';
+import { issueActivationCode } from '../services/owner-activation.js';
 import { createUser, listUsers, updateUser } from '../services/users.js';
 
 const paramsSchema = z.object({ id: z.uuid() });
@@ -40,6 +42,17 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
     const body = updateUserBodySchema.parse(request.body);
     return updateUser(app.db, actorOf(authOf(request)), id, body);
   });
+
+  // The owner's password stays theirs: the admin hands over a one-time code instead (RG-USR-10).
+  app.post(
+    '/users/:id/activation-code',
+    adminOnly,
+    async (request, reply): Promise<ActivationCode> => {
+      const { id } = paramsSchema.parse(request.params);
+      const code = await issueActivationCode(app.db, actorOf(authOf(request)), id);
+      return reply.code(201).send(code);
+    },
+  );
 
   app.put('/users/:id/pin', adminOnly, async (request, reply) => {
     const { id } = paramsSchema.parse(request.params);
