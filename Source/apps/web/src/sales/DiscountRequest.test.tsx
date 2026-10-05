@@ -148,7 +148,8 @@ describe('quote screen: a discount asked of the owner (T-033b, RG-REM-03, H51, H
     });
     expect(band()).toHaveTextContent(text.sent);
     // While it waits: its mark and the withdrawal take the buttons' place (H52).
-    expect(screen.getByText(text.pending)).toHaveFocus();
+    // The closing dialog hands focus back first: on a slow machine the mark takes it a frame later.
+    await waitFor(() => expect(screen.getByText(text.pending)).toHaveFocus());
     expect(screen.getByRole('button', { name: text.withdraw })).toBeEnabled();
     expect(screen.queryByRole('button', { name: text.ask })).toBeNull();
     expect(screen.queryByRole('button', { name: labels.sales.code.open })).toBeNull();
