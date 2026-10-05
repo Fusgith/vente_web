@@ -2,6 +2,18 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 05/10/2026 — Correctif T-010d : l'API refusait le `.env` copié du modèle — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Au premier double-clic sur `Lancer Vente Web.cmd`, l'API s'arrêtait (« Réponse inattendue du serveur » à l'écran) : `.env.example` livrait `VAPID_SUBJECT=mailto:` sans clés, or les trois variables VAPID vont ensemble ou pas du tout (T-033e).
+- `.env.example` : `VAPID_SUBJECT` vide (push coupé par défaut), commentaire sur la façon de l'activer.
+- `pnpm demarrer` répare un `.env` déjà copié de l'ancien modèle (ligne `VAPID_SUBJECT=mailto:` nue → vide).
+- Test : l'API démarre avec le modèle tel que le lanceur le copie (échoue avec l'ancien modèle, passe avec le nouveau).
+
+**Reste** : inchangé (T-010b ensuite ; T-080 selon ADR-0007).
+
+**Décisions** : aucune. **Questions** : aucune.
+
 ## 05/10/2026 — Livraison : dossier Windows tout-en-un (ADR-0007) — agent : Claude Code (Opus 5.5)
 
 **Fait** :

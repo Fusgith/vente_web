@@ -3,7 +3,7 @@
 // From Source/: pnpm demarrer — or a double-click on « Lancer Vente Web.cmd » at the repository root.
 // Messages are in French: the shop's owner runs it, not only developers.
 import { spawn, spawnSync } from 'node:child_process';
-import { copyFileSync, existsSync } from 'node:fs';
+import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
@@ -65,6 +65,11 @@ if (!existsSync(envFile)) {
   copyFileSync(join(source, '.env.example'), envFile);
   console.log('▶ Fichier de réglages .env créé à partir de .env.example.');
 }
+// Earlier templates shipped a bare `VAPID_SUBJECT=mailto:` without keys, which the API refuses
+// (all three VAPID variables or none): blank it so push is simply off.
+const settings = readFileSync(envFile, 'utf8');
+const repaired = settings.replace(/^VAPID_SUBJECT=mailto:[ \t]*$/m, 'VAPID_SUBJECT=');
+if (repaired !== settings) writeFileSync(envFile, repaired);
 process.loadEnvFile(envFile);
 
 // The launcher always targets the dev database it starts, so the URL is built from the same

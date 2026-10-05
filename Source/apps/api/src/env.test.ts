@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { parseEnv } from 'node:util';
+
 import webpush from 'web-push';
 import { describe, expect, it } from 'vitest';
 
@@ -15,6 +18,11 @@ describe('loadEnv', () => {
     expect(env.AUTH_DEFAULT_ORIGIN).toBe('LAN');
     expect(env.COOKIE_SECURE).toBe(false);
     expect(env.TRUST_PROXY.entries).toEqual(['127.0.0.1', '::1']);
+  });
+
+  it('starts with the template as copied by the launcher (pnpm demarrer)', () => {
+    const template = readFileSync(new URL('../../../.env.example', import.meta.url), 'utf8');
+    expect(() => loadEnv(parseEnv(template))).not.toThrow();
   });
 
   it('rejects an invalid port', () => {
