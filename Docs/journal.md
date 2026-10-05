@@ -2,6 +2,20 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 05/10/2026 — Livraison : dossier Windows tout-en-un (ADR-0007) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Question de l'utilisateur : faudra-t-il installer « mille et une choses » chez le client, ou lui faire acheter un serveur ? Il veut copier des fichiers et que ça marche.
+- Réponse : le code (API, PWA, règles) ne dépend pas de la façon d'installer ; seule la livraison (T-080, pas commencée) était prévue sur mini-PC Linux + Docker.
+- **ADR-0007** : le serveur du magasin est un PC Windows (8 Go suffisent) ; `pnpm dist` livrera un dossier autonome (Node portable, PostgreSQL, Caddy, cloudflared, scripts Installer / Mettre à jour / Sauvegarder / Restaurer, services Windows, données hors du dossier). Docker reste pour le développement.
+- CDC technique (§2, §2.3, §5, §10, T4), `CLAUDE.md` et backlog (T-080, T-081) alignés.
+
+**Décisions** : ADR-0007, choix A de l'utilisateur. B (mini-PC Linux + Docker) et l'hébergement web par FTP écartés (ce dernier contraire à ADR-0001).
+
+**Reste** : T-080 réécrite selon ADR-0007 ; dépendances binaires (Node, PostgreSQL, Caddy, cloudflared, outil de service Windows) à justifier ici avec T-080. Prochaine tâche : T-010b.
+
+**Questions** : aucune.
+
 ## 05/10/2026 — T-010d : lanceur de développement en un double-clic — agent : Claude Code (Opus 5.5)
 
 **Fait** :

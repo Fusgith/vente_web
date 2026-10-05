@@ -62,7 +62,7 @@ Rôles fixes : l'admin attribue les rôles, il n'en crée pas. Détail : CDC mé
 
 ## Stack (figée par ADR-0003)
 Monorepo TypeScript (pnpm) · React + Vite + PWA · Fastify + Prisma · PostgreSQL · Socket.IO ·
-Docker Compose · Vitest + Playwright. Commandes (depuis `Source/`) : `pnpm install`, `pnpm dev`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` — détail dans `Source/CLAUDE.md`.
+Docker Compose (dev ; le magasin reçoit un dossier Windows tout-en-un sans Docker, ADR-0007) · Vitest + Playwright. Commandes (depuis `Source/`) : `pnpm install`, `pnpm dev`, `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build` — détail dans `Source/CLAUDE.md`.
 
 ## Ce que l'agent ne fait jamais
 - Forcer un push ou réécrire l'historique publié ; committer un secret. Modifier un ADR existant (en créer un nouveau).

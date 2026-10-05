@@ -97,8 +97,8 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-061 | MVP | Anomalies de livraison et décision du responsable | Terminé | E06 | RG-LIV-04, RG-ANN-03 ; H37 (validée le 29/09) ; fait le 29/09 : signalement au comptoir (quantité non remise, cause), décision du responsable (remise en file ou livraison partielle), avoir partiel remboursé à la caisse sur le compteur sans trou, PDF, effet sur la clôture ; correction du stock → T-023 |
 | T-070 | MVP | Tableau de bord boss (indicateurs, files, stock, comparaisons) | À faire | E07 | RG-DSH-01 à 04 |
 | T-071 | MVP | Exports Excel | À faire | E07 | RG-EXP ; dont le rapport de clôture de caisse (RG-CAI-03, H35) |
-| T-080 | MVP | Docker Compose prod, Caddy TLS DNS-01, tunnel, DNS local | À faire | E08 | CDC technique §2, §10 ; Caddy écrase `x-access-origin` et transmet `X-Forwarded-Proto`, l'hôte d'origine et `X-Forwarded-For` sur ses deux écoutes, depuis un pair de `TRUST_PROXY` (§2.2 : sinon CSRF et limitation de débit cassés) |
-| T-081 | MVP | Sauvegardes chiffrées + procédure de reprise testée | À faire | E08 | §2.3 |
+| T-080 | MVP | Livraison Windows tout-en-un (ADR-0007) : `pnpm dist` ajoute Node portable, PostgreSQL, Caddy TLS DNS-01, cloudflared et les scripts Installer / Mettre à jour (services Windows, données hors du dossier) ; DNS local | À faire | E08 | CDC technique §2, §10 ; Caddy écrase `x-access-origin` et transmet `X-Forwarded-Proto`, l'hôte d'origine et `X-Forwarded-For` sur ses deux écoutes, depuis un pair de `TRUST_PROXY` (§2.2 : sinon CSRF et limitation de débit cassés) |
+| T-081 | MVP | Sauvegardes chiffrées + procédure de reprise testée (scripts Sauvegarder / Restaurer, ADR-0007) | À faire | E08 | §2.3 |
 | T-082 | MVP | Surveillance et alertes | À faire | E08 | §10.5 |
 | T-083 | MVP | Test bout-en-bout du parcours complet | À faire | E08 | §11 |
 | T-084 | MVP | Formation et mise en service (jeu d'essai, journée pilote) | À faire | E08 | Hors agent |

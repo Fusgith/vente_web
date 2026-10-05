@@ -7,7 +7,7 @@ Ce document traduit le CDC métier en architecture, stack et règles d'implémen
 ## 1. Principes directeurs
 
 1. **Une seule vérité** : une base PostgreSQL maître sur le serveur du magasin. Aucune synchronisation bidirectionnelle (ADR-0001).
-2. **Simplicité opérationnelle** : tout tourne avec `docker compose up` sur n'importe quelle machine (mini-PC du magasin, PC de secours, cloud). Un environnement = un fichier `.env`.
+2. **Simplicité opérationnelle** : au magasin, un dossier Windows tout-en-un copié puis installé d'un double-clic, le même sur un PC de secours (ADR-0007) ; en développement, `pnpm demarrer` (Docker). Un environnement = un fichier `.env`.
 3. **Un seul langage** : TypeScript partout (ADR-0003). Moins de contexte à charger pour un agent IA, une seule chaîne d'outils, types partagés entre front et back.
 4. **Invariants garantis par la base** : numérotation, stock non négatif, unicité, immuabilité du journal — contraintes et transactions, pas seulement du code applicatif.
 5. **Testable** : les règles `RG-*` sont des fonctions pures testées unitairement ; le parcours complet est couvert par un test bout-en-bout.
@@ -22,7 +22,7 @@ Ce document traduit le CDC métier en architecture, stack et règles d'implémen
  │        └───────────────┴─────────────────┴──────────────────┘             │
  │                         https://app.<domaine>  (DNS local → IP mini-PC)   │
  │                                      │                                    │
- │   MINI-PC (Ubuntu/Debian, Docker, onduleur)                               │
+ │   PC WINDOWS (services, onduleur ; ADR-0007)                              │
  │   ┌──────────────────────────────────▼─────────────────────────────────┐  │
  │   │ caddy (TLS, reverse proxy, fichiers statiques du front)            │  │
  │   │   ├─► api (Fastify + Prisma + Socket.IO)  ──►  postgres            │  │
@@ -56,7 +56,7 @@ Ce document traduit le CDC métier en architecture, stack et règles d'implémen
 
 - `pg_dump` compressé toutes les **15 min** (incrémental logique : dernière heure) + complet chaque nuit ; chiffrement côté client ; envoi via `rclone` vers un stockage objet (Backblaze B2, Cloudflare R2, ou Google Drive en secours). Rétention : 48 dumps horaires, 30 quotidiens, 12 mensuels.
 - Les fichiers (PDF émis, Excel importés) sont sauvegardés avec la base.
-- **Procédure de reprise** documentée et **testée trimestriellement** : installer Docker sur une machine, restaurer `.env` + dernier dump + fichiers, `docker compose up`, repointer le DNS local. Objectif : RPO 15 min, RTO 2 h.
+- **Procédure de reprise** documentée et **testée trimestriellement** : copier le dossier sur un autre PC Windows, **Installer**, **Restaurer** la dernière sauvegarde, repointer le DNS local (ADR-0007). Objectif : RPO 15 min, RTO 2 h.
 - Si le serveur meurt et qu'aucune machine de secours n'est disponible, la même stack se déploie sur un cloud (Fly.io, Render, VPS) en attendant.
 
 ### 2.4 Coupure d'Internet
@@ -86,7 +86,7 @@ Réplication logique PostgreSQL (magasin → cloud) vers une instance qui ne re�
 | PDF | pdfmake (génération serveur, sans navigateur headless) | recommandé | Léger ; gabarits déclaratifs versionnés |
 | Excel | exceljs | recommandé | Lecture/écriture xlsx, formats numériques |
 | Reverse proxy | Caddy | recommandé | TLS automatique, configuration minimale |
-| Conteneurs | Docker Compose | figé | Même stack partout |
+| Conteneurs | Docker Compose | figé (dev) | Base de dev ; le serveur du magasin est livré sans Docker (ADR-0007) |
 | Tests | Vitest (unit/intégration), Playwright (e2e) | recommandé | |
 | Qualité | ESLint, Prettier, TypeScript strict, Husky (pré-commit : lint + typecheck) | recommandé | |
 | Logs | pino (JSON), rotation par Docker | recommandé | |
@@ -273,19 +273,19 @@ Notification push (T-033e) : après la validation de la transaction d'une nouvel
 |---|---|---|---|
 | `dev` | PC du développeur / agent IA, `docker compose up` | jeu de données de démonstration (seed) | développement, tests |
 | `staging` (optionnel) | second mini-PC ou cloud gratuit | copie anonymisée | recette avant mise à jour |
-| `prod` | mini-PC du magasin | réelles | exploitation |
+| `prod` | PC Windows du magasin (dossier tout-en-un, ADR-0007) | réelles | exploitation |
 
 ### 10.2 Serveur du magasin (matériel minimal)
 
-Mini-PC 4 cœurs, 16 Go RAM, SSD 256 Go, Ethernet vers le point d'accès, **onduleur** dimensionné pour 30 min (mini-PC + point d'accès + box), Ubuntu Server LTS ou Debian, Docker, démarrage automatique des conteneurs (`restart: unless-stopped`), arrêt propre sur signal onduleur.
+**ADR-0007** : PC Windows 10 ou 11 64 bits, dédié de préférence (pas le PC de caisse), 8 Go de mémoire au moins (16 Go confortables), SSD, Ethernet vers le point d'accès, **onduleur** dimensionné pour 30 min (PC + point d'accès + box), arrêt propre sur signal onduleur. Ni Linux ni Docker : les services Windows démarrent seuls au boot.
 
-### 10.3 Composition (`docker-compose.prod.yml`)
+### 10.3 Composition (dossier `Dist/<nom-simplifié>/`, ADR-0007)
 
-`caddy` (80/443, TLS DNS-01, sert `Source/apps/web/dist`, proxy `/api` et `/socket.io`) · `api` · `postgres` (volume persistant) · `backup` (cron : dump + rclone) · `cloudflared` (tunnel). Volumes : `pgdata`, `files`, `caddy_data`.
+Node.js portable + API construite · PostgreSQL (binaires Windows officiels) · Caddy (80/443, TLS DNS-01, sert la PWA, proxy `/api` et `/socket.io`) · `cloudflared` (tunnel) · scripts **Installer**, **Mettre à jour**, **Sauvegarder**, **Restaurer**. Services Windows à démarrage automatique. Données hors du dossier de l'application : base, fichiers émis (`FILES_DIR`), sauvegardes, `.env`.
 
 ### 10.4 Mise à jour
 
-`git pull` → `docker compose build` → migrations Prisma (`migrate deploy`, réversibles testées en staging) → redémarrage ; fenêtre hors ouverture ; sauvegarde complète avant chaque mise à jour ; procédure de retour arrière documentée.
+Copier le nouveau dossier sur le serveur → double-clic sur **Mettre à jour** : sauvegarde, arrêt des services, migrations Prisma (`migrate deploy`, réversibles testées en staging) → redémarrage ; fenêtre hors ouverture ; sauvegarde complète avant chaque mise à jour ; procédure de retour arrière documentée.
 
 ### 10.5 Surveillance
 
@@ -316,7 +316,7 @@ Mini-PC 4 cœurs, 16 Go RAM, SSD 256 Go, Ethernet vers le point d'accès, **ondu
 | T1 | Cloudflare Tunnel + nom de domaine chez Cloudflare (gratuit) | **OK** | Tailscale ; VPN maison |
 | T2 | Stockage des sauvegardes : Backblaze B2 ou Cloudflare R2 (quelques centimes/mois) | **OK** | Google Drive via rclone |
 | T3 | Rôles opérationnels refusés hors du magasin (le boss, lui, agit à distance : demandes de remise) | **OK** | Autoriser avec 2FA |
-| T4 | Mini-PC dédié sous Linux (pas le PC de caisse Windows) | **OK** | Docker Desktop sur le PC de caisse (déconseillé : redémarrages, verrouillage, performances) |
+| T4 | ~~Mini-PC dédié sous Linux~~ → PC Windows dédié, dossier tout-en-un sans Docker (ADR-0007, 05/10/2026) | **OK** | Docker Desktop sur le PC de caisse (déconseillé : redémarrages, verrouillage, performances) |
 | T5 | Sessions cookie plutôt que JWT | **OK** | JWT si un client natif (TWA) exige des jetons |
 | T6 | pdfmake plutôt que HTML→PDF par navigateur headless | **OK** | Playwright PDF si la fidélité visuelle prime |
 | T7 | Un seul écran public (deux files affichées ensemble) | **OK**, et écran optionnel : 0 ou 1 (H11, appel verbal sinon) | Un écran par file |
