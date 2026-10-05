@@ -1,4 +1,6 @@
 * text=auto eol=lf
+# cmd.exe needs Windows line endings.
+*.cmd text eol=crlf
 *.png binary
 *.jpg binary
 *.pdf binary

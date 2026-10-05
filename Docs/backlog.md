@@ -35,6 +35,7 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-010 | MVP | Scaffolding monorepo, Docker Compose dev, CI lint/typecheck/test | Terminé | E01 | Sur `main` le 23/09 |
 | T-010b | MVP | Pré-commit local (Husky ou hook git manuel) — racine git ≠ `Source/` | À faire | E01 | CI = garde-fou en attendant |
 | T-010c | MVP | Icônes PWA PNG 192/512 depuis le logo du magasin | À faire | E01 | Logo à déposer dans `Autres/` par l'utilisateur ; SVG provisoire en place |
+| T-010d | MVP | Lanceur de développement en un double-clic (`Lancer Vente Web.cmd`, `pnpm demarrer`) | Terminé | E01 | Demandé par l'utilisateur le 05/10 |
 | T-011 | MVP | Schéma Prisma initial + migrations + seed de démonstration | Terminé | E01 | Sur `main` le 23/09 (migration `init` + SQL manuel, seed idempotent, CI avec PostgreSQL ✅) ; suite : T-011b |
 | T-011b | MVP | Reporter dans le CDC technique §5 les écarts entre le schéma réel et le modèle décrit | À faire | E01 | Documentation seulement |
 | T-012 | MVP | Auth : PIN local, mot de passe, TOTP boss/admin, sessions, verrouillage | Terminé | E01 | RG-USR-03 à 06 ; 120 tests verts ; sur `main` le 23/09 ; question ouverte H20 (qui peut poser le mot de passe du `owner`) à trancher avant T-016 |

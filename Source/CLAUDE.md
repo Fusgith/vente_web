@@ -6,6 +6,7 @@ Lire d'abord `../CLAUDE.md`. Ici : commandes et structure. Détail : `../Docs/02
 
 - `pnpm install` — dépendances (Node ≥ 22.12 ; version de pnpm pilotée par `packageManager`). Sans droits admin
   sous Windows : `corepack enable --install-directory "%APPDATA%\npm" pnpm` crée le shim `pnpm` dans le PATH utilisateur.
+- `pnpm demarrer` (ou double-clic sur `../Lancer Vente Web.cmd`) — tout en un : Docker Desktop, `.env` depuis `.env.example` s'il manque, base, migrations, seed, `pnpm dev`, navigateur.
 - `pnpm dev` — API (`tsx watch`, port 3000) + PWA (Vite, port 5173, proxy `/api` et `/socket.io`).
 - `pnpm db:up` / `pnpm db:down` — PostgreSQL 16 de dev (`infra/docker-compose.yml`, lit `.env`).
 - `pnpm lint` · `pnpm typecheck` · `pnpm test` · `pnpm format:check` · `pnpm build` ; `pnpm check` enchaîne tout.

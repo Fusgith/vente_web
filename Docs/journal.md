@@ -2,6 +2,27 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 05/10/2026 — T-010d : lanceur de développement en un double-clic — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Demande de l'utilisateur : ne plus taper de commandes pour lancer l'application (l'API s'arrêtait sur `DATABASE_URL` absent, faute de `Source/.env`).
+- `Lancer Vente Web.cmd` (racine du dépôt) → `pnpm demarrer` (`Source/scripts/demarrer.mjs`), qui enchaîne :
+  - démarre Docker Desktop s'il est installé mais arrêté (attente jusqu'à 3 min) ;
+  - crée `.env` depuis `.env.example` s'il manque (sans jamais afficher les valeurs) ;
+  - installe les dépendances si `node_modules` manque ; régénère le client Prisma (il suit le schéma après un `git pull`) ;
+  - démarre la base, attend `pg_isready`, applique les migrations (`db:deploy`) et le seed (il garde ce qui est déjà en base) ;
+  - lance `pnpm dev` et ouvre `http://localhost:5173` dès que la PWA répond. Fermer la fenêtre arrête tout.
+- `DATABASE_URL` est construite à partir des mêmes variables que `infra/docker-compose.yml` (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `POSTGRES_PORT`, mêmes valeurs par défaut) : le lanceur vise toujours la base qu'il démarre, même si `.env` porte encore l'ancien port 5432 (entrée T-010).
+- `.gitattributes` : `*.cmd` en fin de ligne Windows (cmd.exe).
+- Aucune dépendance ajoutée (Node seul : `child_process`, `fs`, `fetch`, `process.loadEnvFile`).
+- Vérifié : lint et format verts ; sonde `pg_isready`, `db:deploy` et `db:seed` passent sur la base de dev avec l'URL construite. Le script complet n'a pas été lancé par l'agent : la création de `.env` revient à l'utilisateur (règle des fichiers `.env*`).
+
+**Décisions** : aucune nouvelle.
+
+**Reste** : premier lancement par l'utilisateur (double-clic). Puis T-010b, prochaine tâche du backlog.
+
+**Questions** : aucune.
+
 ## 05/10/2026 — Tests du boss instables sous charge — agent : Claude Code (Opus 5.5)
 
 **Fait** :
