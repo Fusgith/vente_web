@@ -9,7 +9,7 @@ import { findOrder, toOrder } from './order-view.js';
 import { releaseReservations } from './stock-reservation.js';
 
 /**
- * Sent back from the register to its salesperson (RG-CMD-05b, ⚠️ H56) by the cashier who called it
+ * Sent back from the register to its salesperson (RG-CMD-05b, H56) by the cashier who called it
  * or the manager: a quote again, same number, to go over with the customer. It keeps its ticket and
  * its place in the queue for a validation that day; its stock is freed meanwhile.
  */

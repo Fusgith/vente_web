@@ -200,7 +200,7 @@ const REOPENING: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * An expired order validated again (RG-CMD-08, H31, ⚠️ H56) by its salesperson or the manager:
+ * An expired order validated again (RG-CMD-08, H31, H56) by its salesperson or the manager:
  * the checks of a validation, the last place in the queue, its ticket kept if of the day. Refused
  * for a price changed, stock short or a cap lowered, it becomes a quote again, same number, for
  * the salesperson to go over with the customer.

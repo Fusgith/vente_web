@@ -10,7 +10,7 @@ const LIST_LIMIT = 100;
 
 /**
  * The quotes and orders still open — to take up again, have paid or reactivate (RG-DEV-02/03,
- * RG-CMD-08, ⚠️ H56): the salesperson's own, everyone's for the manager, the latest changed first;
+ * RG-CMD-08, H56): the salesperson's own, everyone's for the manager, the latest changed first;
  * a colleague's quote found by its number. A quote past its validity is told outdated (RG-DEV-02).
  */
 export async function listOpenOrders(

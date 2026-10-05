@@ -2,6 +2,19 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 05/10/2026 — H56 validée (devis et commandes du commercial) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- L'utilisateur valide H56 telle quelle. CDC métier v0.17 : sa ligne passe du §16.2 au nouveau §16.13 ; RG-CMD-05b, RG-CMD-08 et le tableau des états (§5.2) citent la décision.
+- Marques ⚠️ retirées du CDC technique, du backlog, de CLAUDE.md et des commentaires du code.
+- Aucun changement de comportement : T-035a à T-035c suivaient déjà H56.
+
+**Reste** : aucune hypothèse ouverte ; prochaine tâche à prendre au backlog.
+
+**Décisions** : H56 (§16.13).
+
+**Questions** : aucune.
+
 ## 05/10/2026 — T-035c : « Renvoyer au commercial » à la caisse — agent : Claude Code (Opus 5.5)
 
 **Fait** :
