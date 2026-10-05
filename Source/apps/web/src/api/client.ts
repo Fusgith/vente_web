@@ -18,7 +18,7 @@ export class ApiError extends Error {
 export const API_BASE = '/api/v1';
 
 interface RequestOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
   signal?: AbortSignal;
   /** Extra headers, e.g. `idempotency-key` on a payment. */

@@ -1,6 +1,7 @@
 import { ROLE_LABELS, type AuthMe, type Role } from '@vente-web/shared';
 import { useState, type ReactNode } from 'react';
 
+import { AccountsPanel } from '../admin/AccountsPanel.js';
 import { errorMessage } from '../api/error-message.js';
 import { useAuth } from '../auth/context.js';
 import { switchableRoles } from '../auth/roles.js';
@@ -140,6 +141,17 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         <StockPanel />
         {/* RG-REM-01 (H15): the caps the owner set, read-only. */}
         <DiscountCapsPanel editable={false} />
+      </div>
+    );
+  }
+  if (role === 'admin') {
+    return (
+      <div className="flex flex-col pb-8">
+        <header className="mx-auto mt-8 w-full max-w-4xl px-4">
+          <h1 className="type-title">{labels.workspaces.admin.title}</h1>
+        </header>
+        {/* Annexe B, RG-USR-06: the admin manages the accounts, never deletes one. */}
+        <AccountsPanel />
       </div>
     );
   }

@@ -2,6 +2,19 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 05/10/2026 — T-016e : écran des comptes de l'admin — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Espace « Administration » : panneau « Comptes » (`admin/AccountsPanel.tsx`) — liste avec identifiant, nom, rôles, lettre de ticket, état (actif, désactivé, verrouillé) et accès existants (PIN, mot de passe, « mot de passe à changer », TOTP), jamais un secret.
+- Formulaire (`admin/AccountForm.tsx`) : nouveau compte (identifiant, nom, rôles, lettre de ticket demandée pour un commercial seulement) et modification ; seuls les champs changés partent (`PATCH /users/{id}`) ; case « Compte actif » avec l'avertissement que rôles et désactivation ferment les sessions ; refus de l'API affichés (ex. `LAST_ADMIN`). Client `api/users.ts` ; libellés `labels-accounts.ts`.
+- 3 tests web ; lint, format, typecheck verts. CI du correctif du test instable (`176af1a`) verte. Un test existant (`DiscountRequestsPanel`, « refuses in one gesture ») a échoué une fois sous charge en local puis réussi seul : à surveiller.
+
+**Décisions** : T-016 redécoupée — T-016f (secrets et code d'activation dans l'écran de l'admin), T-016g (écran d'activation du boss).
+
+**Reste** : T-016f, T-016g.
+
+**Questions** : aucune.
+
 ## 05/10/2026 — T-016d : nouveau mot de passe à la connexion — agent : Claude Code (Opus 5.5)
 
 **Fait** :

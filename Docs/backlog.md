@@ -45,7 +45,9 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-016b | MVP | Comptes — **code d'activation** à usage unique (24 h) par lequel le boss choisit lui-même son mot de passe, l'admin ne le posant jamais (RG-USR-10) | Terminé (API, 05/10) | E01 | RG-USR-10, H20 |
 | T-016c | MVP | Comptes — `password_change_required` après un mot de passe posé par l'admin ; commande `admin:bootstrap` pour le premier admin | Terminé (API, 05/10) | E01 | H20 ; prérequis de T-080 (aucun compte en production sans seed) |
 | T-016d | MVP | Comptes — champ « nouveau mot de passe » à la connexion quand l’API répond `AUTH_PASSWORD_CHANGE_REQUIRED` | Terminé (05/10) | E01 | H20 ; s'appuie sur T-016c |
-| T-016e | MVP | Comptes — écran de l'admin : liste, création, modification, désactivation, secrets (PIN, mot de passe, TOTP, verrouillage, sessions), code d'activation à remettre au boss ; écran du boss pour choisir son mot de passe avec ce code (`POST /auth/activate`) | À faire | E01 | annexe B ; s'appuie sur T-016a à d |
+| T-016e | MVP | Comptes — écran de l'admin : liste (état, accès), création, modification, désactivation | Terminé (05/10) | E01 | annexe B, RG-USR-06 ; s'appuie sur T-016a |
+| T-016f | MVP | Comptes — écran de l'admin, secrets : PIN, mot de passe, TOTP, déverrouillage, fermeture des sessions, code d'activation à remettre au boss | À faire | E01 | annexe B, RG-USR-10 ; s'appuie sur T-016e |
+| T-016g | MVP | Comptes — écran du boss pour choisir son mot de passe avec le code d'activation (`POST /auth/activate`) | À faire | E01 | RG-USR-10 ; s'appuie sur T-016b |
 
 | T-015 | MVP | Postes : déclaration libre (tablettes, caisses, comptoirs, écran 0/1), modifiable à chaud ; appairage de l'appareil à son poste, puis **poste obligatoire** à toute connexion dans le magasin (RG-USR-09) | À faire | E01 | §13 `stations`, H11, H21 |
 | T-013 | MVP | Module de permissions (annexe B) + tests | À faire | E01 | |
