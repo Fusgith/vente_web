@@ -47,10 +47,23 @@ async function storePin(db: Db, actor: Actor, target: User, pin: string): Promis
   });
 }
 
-async function storePassword(db: Db, actor: Actor, target: User, password: string): Promise<void> {
+/**
+ * `changeRequired`: a password the admin set is only a way in, replaced by the user's own at the
+ * next login (H20); one the user chose is theirs.
+ */
+async function storePassword(
+  db: Db,
+  actor: Actor,
+  target: User,
+  password: string,
+  changeRequired: boolean,
+): Promise<void> {
   const passwordHash = await hashSecret(password);
   await db.$transaction(async (tx) => {
-    await tx.user.update({ where: { id: target.id }, data: { passwordHash } });
+    await tx.user.update({
+      where: { id: target.id },
+      data: { passwordHash, passwordChangeRequired: changeRequired },
+    });
     await recordAudit(tx, {
       ...by(actor),
       action: 'user.password_set',
@@ -92,7 +105,7 @@ export async function adminSetPassword(
 ): Promise<void> {
   const target = await loadUser(db, targetId);
   if (target.roles.includes('owner')) throw new AppError(403, 'OWNER_PASSWORD_SELF_ONLY');
-  await storePassword(db, actor, target, password);
+  await storePassword(db, actor, target, password, true);
 }
 
 /** Lifts a lock before its 15 minutes elapse (RG-USR-05). */
@@ -189,5 +202,5 @@ export async function changeOwnPassword(
 ): Promise<void> {
   const user = await loadUser(db, actor.userId);
   await verifyCurrentOrFail(db, actor, user, [user.passwordHash], current, 'password_change');
-  await storePassword(db, actor, user, password);
+  await storePassword(db, actor, user, password, false);
 }

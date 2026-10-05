@@ -99,7 +99,12 @@ export async function activateOwner(
     // Spent in the same statement that checks it: the same code wins exactly once.
     const cleared = await clearLoginFailures(tx, user.id, {
       where: { activationCodeHash: user.activationCodeHash },
-      data: { passwordHash, activationCodeHash: null, activationExpiresAt: null },
+      data: {
+        passwordHash,
+        passwordChangeRequired: false,
+        activationCodeHash: null,
+        activationExpiresAt: null,
+      },
     });
     if (!cleared) return false;
     await recordAudit(tx, {

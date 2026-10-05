@@ -61,9 +61,16 @@ const loginBaseSchema = z.object({
 
 /** Login by PIN (shared stations, LAN only). */
 export const pinLoginBodySchema = loginBaseSchema.extend({ pin: pinSchema }).strict();
-/** Login by password; TOTP is mandatory for owner/admin outside the shop (RG-USR-04). */
+/**
+ * Login by password; TOTP is mandatory for owner/admin outside the shop (RG-USR-04). A password
+ * set by the admin is replaced by `newPassword` at that login (H20, T-016c).
+ */
 export const passwordLoginBodySchema = loginBaseSchema
-  .extend({ password: typedSecretSchema, totp: totpCodeSchema.optional() })
+  .extend({
+    password: typedSecretSchema,
+    totp: totpCodeSchema.optional(),
+    newPassword: passwordSchema.optional(),
+  })
   .strict();
 export const loginBodySchema = z.union([pinLoginBodySchema, passwordLoginBodySchema]);
 export type PinLoginBody = z.infer<typeof pinLoginBodySchema>;

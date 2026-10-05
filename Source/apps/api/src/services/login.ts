@@ -20,7 +20,7 @@ import {
   reserveLoginAttempt,
   unspentTotpStep,
 } from './lockout.js';
-import { verifySecret } from './password-hash.js';
+import { hashSecret, verifySecret } from './password-hash.js';
 import {
   createSession,
   idleMinutesFor,
@@ -178,17 +178,44 @@ export async function login(
     authMethod = 'PASSWORD_TOTP';
   }
 
+  // A password the admin set opens nothing by itself: the user chooses theirs at this login (H20).
+  // Identity is proven by now, so the answer helps and the attempt does not count as a failure.
+  let newPasswordHash: string | undefined;
+  if ('password' in body && user.passwordChangeRequired) {
+    if (body.newPassword === undefined || body.newPassword === body.password) {
+      await clearLoginFailures(db, user.id);
+      if (body.newPassword === undefined) throw new AppError(403, 'AUTH_PASSWORD_CHANGE_REQUIRED');
+      throw new AppError(400, 'AUTH_PASSWORD_UNCHANGED');
+    }
+    newPasswordHash = await hashSecret(body.newPassword);
+  }
+
   // The step is spent and the counter reset in one statement: a replayed code loses the race.
-  const cleared = await clearLoginFailures(
-    db,
-    user.id,
-    totpStep === undefined
-      ? {}
-      : { where: unspentTotpStep(totpStep), data: { totpLastStep: totpStep } },
-  );
+  const cleared = await clearLoginFailures(db, user.id, {
+    ...(totpStep !== undefined && { where: unspentTotpStep(totpStep) }),
+    data: {
+      ...(totpStep !== undefined && { totpLastStep: totpStep }),
+      ...(newPasswordHash !== undefined && {
+        passwordHash: newPasswordHash,
+        passwordChangeRequired: false,
+      }),
+    },
+  });
   if (!cleared) return fail('totp_replayed');
 
+  const self = { userId: user.id, activeRole: body.role, stationId: station?.id ?? null, origin };
   const created = await db.$transaction(async (tx) => {
+    if (newPasswordHash !== undefined) {
+      await recordAudit(tx, {
+        ...self,
+        action: 'user.password_set',
+        entityType: 'user',
+        entityId: user.id,
+        before: { passwordChangeRequired: true },
+        after: { passwordChangeRequired: false },
+        reason: 'change_required',
+      });
+    }
     await purgeExpiredSessions(tx, user.id, now);
     await replaceSessions(tx, user.id, 'new_login');
     const session = await createSession(tx, {
@@ -201,10 +228,7 @@ export async function login(
       now,
     });
     await recordAudit(tx, {
-      userId: user.id,
-      activeRole: body.role,
-      stationId: station?.id ?? null,
-      origin,
+      ...self,
       action: 'auth.login',
       entityType: 'session',
       entityId: session.id,

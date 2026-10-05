@@ -46,6 +46,8 @@ model User {
   /// argon2id hashes (RG-USR-03); PIN for shared stations, password for remote access.
   pinHash           String?   @map("pin_hash")
   passwordHash      String?   @map("password_hash")
+  /// A password set by the admin is replaced by the user's own at the next login (H20).
+  passwordChangeRequired Boolean @default(false) @map("password_change_required")
   /// TOTP (RG-USR-04): `totpSecret` is active once `totpEnabledAt` is set; enrolment writes the pending secret first.
   totpSecret        String?   @map("totp_secret")
   totpPendingSecret String?   @map("totp_pending_secret")

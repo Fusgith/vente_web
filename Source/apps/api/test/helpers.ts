@@ -172,6 +172,7 @@ export interface LoginInput {
   pin?: string;
   password?: string;
   totp?: string;
+  newPassword?: string;
   stationId?: string;
   origin?: AccessOrigin;
 }

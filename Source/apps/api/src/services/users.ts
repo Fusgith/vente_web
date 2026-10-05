@@ -21,6 +21,7 @@ export function toUserAccount(user: User): UserAccount {
     isActive: user.isActive,
     hasPin: user.pinHash !== null,
     hasPassword: user.passwordHash !== null,
+    passwordChangeRequired: user.passwordChangeRequired,
     totpEnabled: user.totpEnabledAt !== null,
     lockedUntil: user.lockedUntil?.toISOString() ?? null,
   };

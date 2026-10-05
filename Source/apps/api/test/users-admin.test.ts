@@ -169,10 +169,9 @@ describe.skipIf(!TEST_DATABASE_URL)('admin credential management (/users/:id/*, 
       body: { password: 'Admin2-1234!' },
     });
     expect(password.statusCode).toBe(204);
-    expect(
-      (await login(t.app, { username: 'adm2', role: 'admin', password: 'Admin2-1234!' })).response
-        .statusCode,
-    ).toBe(200);
+    // Only a way in: its user replaces it at the next login (H20, T-016c).
+    const first = await login(t.app, { username: 'adm2', role: 'admin', password: 'Admin2-1234!' });
+    expect(first.response.json().code).toBe('AUTH_PASSWORD_CHANGE_REQUIRED');
   });
 
   it('never sets the owner’s password: the owner alone chooses it (RG-USR-10)', async () => {

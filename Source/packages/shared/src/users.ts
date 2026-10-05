@@ -29,6 +29,8 @@ export const userAccountSchema = z.object({
   isActive: z.boolean(),
   hasPin: z.boolean(),
   hasPassword: z.boolean(),
+  /** Set by the admin: replaced by the user's own at the next login (H20). */
+  passwordChangeRequired: z.boolean(),
   totpEnabled: z.boolean(),
   lockedUntil: z.iso.datetime().nullable(),
 });

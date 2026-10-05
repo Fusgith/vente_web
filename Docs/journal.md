@@ -2,6 +2,22 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 05/10/2026 — T-016c : mot de passe à changer et premier admin — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Colonne `users.password_change_required` (migration `20261005130000_add_password_change_required`) : posée quand l'admin fixe un mot de passe (`PUT /users/{id}/password`), levée quand l'utilisateur choisit le sien (`PUT /auth/password`, activation du boss). Exposée dans la liste des comptes (`passwordChangeRequired`).
+- Connexion par mot de passe : tant que ce mot de passe n'est pas remplacé, `POST /auth/login` répond `AUTH_PASSWORD_CHANGE_REQUIRED` (403) une fois l'identité prouvée (mot de passe juste, et TOTP hors du magasin) ; l'échec n'est pas compté et le code TOTP n'est pas consommé. Avec `newPassword` (différent de l'actuel, sinon `AUTH_PASSWORD_UNCHANGED`), le mot de passe est remplacé dans la même instruction que la remise à zéro du verrouillage, journalisé `user.password_set` motif `change_required`, puis la session s'ouvre. La connexion par PIN n'est pas concernée.
+- Commande `admin:bootstrap --identifiant … --nom …` (`src/cli/admin-bootstrap.ts`, service `bootstrapAdmin`) : crée le premier admin tant qu'aucun admin actif n'existe, mot de passe provisoire de 16 caractères (alphabet sans ambiguïté des codes) affiché une seule fois, à changer à la première connexion ; journalisé `user.created` motif `bootstrap` sans auteur. Sinon ne fait rien ; refuse un identifiant déjà pris. Aucune dépendance ajoutée (`node:util` `parseArgs`).
+- CDC technique §5, §6 et exploitation à jour ; 5 tests d'API (`password-change-required.test.ts`), test des comptes adapté ; lint, format et typecheck verts ; tests avec base sur la CI.
+
+**Décisions** :
+- Le changement imposé se fait dans la requête de connexion (`newPassword`) plutôt que par une session restreinte : aucune session ne s'ouvre avec un mot de passe que l'admin connaît.
+- `admin:bootstrap` ne crée un admin que s'il n'en reste aucun actif : c'est aussi la voie de secours si tous les admins sont désactivés, jamais un moyen de contourner l'admin en place.
+
+**Reste** : T-016d (écran de l'admin, écran du boss pour le code d'activation, champ « nouveau mot de passe » à la connexion).
+
+**Questions** : aucune.
+
 ## 05/10/2026 — T-016b : code d'activation du boss, côté API — agent : Claude Code (Opus 5.5)
 
 **Fait** :

@@ -20,6 +20,9 @@ export const ERROR_LABELS = {
   AUTH_TOTP_NOT_ENROLLED: 'La double authentification n’est pas activée pour ce compte.',
   AUTH_TOTP_INVALID: 'Code de validation incorrect.',
   AUTH_TOTP_NOT_PENDING: 'Aucune activation de la double authentification en cours.',
+  AUTH_PASSWORD_CHANGE_REQUIRED:
+    'Mot de passe posé par l’admin : choisissez le vôtre pour vous connecter.',
+  AUTH_PASSWORD_UNCHANGED: 'Le nouveau mot de passe doit être différent de l’actuel.',
   AUTH_REAUTH_REQUIRED: 'Reconnectez-vous avec votre mot de passe pour ce rôle.',
   AUTH_ORIGIN_MISMATCH: 'Session ouverte dans le magasin : inutilisable à distance.',
   AUTH_SESSION_EXPIRED: 'Session expirée, reconnectez-vous.',
