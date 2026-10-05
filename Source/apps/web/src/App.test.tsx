@@ -186,6 +186,48 @@ describe('login in the shop (RG-USR-03)', () => {
     });
   });
 
+  it('lets the owner choose their password with the admin’s code, then log in (RG-USR-10)', async () => {
+    const api = fakeApi({
+      'GET /auth/me': NOT_SIGNED_IN,
+      'GET /auth/users': ok(DIRECTORY),
+      'POST /auth/activate': apiError(400, 'ACTIVATION_INVALID'),
+    });
+    render(<App />);
+
+    fireEvent.click(await screen.findByRole('button', { name: labels.login.passwordLink }));
+    fireEvent.click(screen.getByRole('button', { name: labels.login.activationLink }));
+    const activate = screen.getByRole('button', { name: labels.login.activate });
+    fireEvent.change(screen.getByLabelText(labels.login.username), { target: { value: 'boss ' } });
+    fireEvent.change(screen.getByLabelText(labels.login.activationCode), {
+      target: { value: 'WRONG' },
+    });
+    fireEvent.change(screen.getByLabelText(labels.login.newPassword), {
+      target: { value: 'short' },
+    });
+    expect(activate).toBeDisabled();
+    fireEvent.change(screen.getByLabelText(labels.login.newPassword), {
+      target: { value: 'Mine-only-42!' },
+    });
+    fireEvent.click(activate);
+    expect(await screen.findByRole('alert')).toHaveTextContent(ERROR_LABELS.ACTIVATION_INVALID);
+    expect(screen.getByLabelText(labels.login.activationCode)).toHaveValue('');
+
+    api.on('POST /auth/activate', { status: 204 });
+    fireEvent.change(screen.getByLabelText(labels.login.activationCode), {
+      target: { value: ' K7P2M9QX4R8T ' },
+    });
+    fireEvent.click(activate);
+    expect(await screen.findByText(labels.login.activated)).toBeVisible();
+    expect(api.callsTo('POST /auth/activate')[1]?.body).toEqual({
+      username: 'boss',
+      code: 'K7P2M9QX4R8T',
+      password: 'Mine-only-42!',
+    });
+    expect(screen.getByLabelText(labels.login.username)).toHaveValue('boss');
+    expect(screen.getByLabelText(labels.login.password)).toHaveValue('');
+    expect(screen.getByRole('radio', { name: 'Boss' })).toBeChecked();
+  });
+
   it('shows why the server is unreachable and retries', async () => {
     const api = fakeApi({ 'GET /auth/me': 'network', 'GET /auth/users': 'network' });
     render(<App />);

@@ -13,6 +13,7 @@ import { labels } from '../labels.js';
 import { buttonClass } from '../ui/button.js';
 import { Icon } from '../ui/Icon.js';
 import { useAuth } from './context.js';
+import { OwnerActivation } from './OwnerActivation.js';
 import { RoleChoice } from './RoleChoice.js';
 import { textLinkClass } from './user-look.js';
 
@@ -47,6 +48,9 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
   const [newPassword, setNewPassword] = useState<string | null>(null);
   // The boss is the usual remote user; in the shop the role is always a deliberate choice.
   const [role, setRole] = useState<Role | null>(remote ? 'owner' : null);
+  // The owner's first password, chosen with the admin's one-time code (RG-USR-10).
+  const [activating, setActivating] = useState(false);
+  const [activated, setActivated] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const complete =
@@ -82,6 +86,21 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
     }
   };
 
+  if (activating) {
+    return (
+      <OwnerActivation
+        onDone={(name) => {
+          setActivating(false);
+          setActivated(true);
+          setUsername(name);
+          setPassword('');
+          setRole('owner');
+        }}
+        onCancel={() => setActivating(false)}
+      />
+    );
+  }
+
   return (
     <form onSubmit={submit} className="flex flex-col gap-4">
       <h2 className="type-title flex items-center gap-3">
@@ -95,6 +114,7 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
       </h2>
       {remote && <Note>{labels.login.remoteNotice}</Note>}
       {intro && <Note>{intro}</Note>}
+      {activated && <Note>{labels.login.activated}</Note>}
 
       <label htmlFor={`${id}-username`} className={fieldClass}>
         <span className="font-semibold">{labels.login.username}</span>
@@ -186,6 +206,9 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
           {labels.login.pinLink}
         </button>
       )}
+      <button type="button" onClick={() => setActivating(true)} className={textLinkClass}>
+        {labels.login.activationLink}
+      </button>
     </form>
   );
 }

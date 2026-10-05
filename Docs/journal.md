@@ -2,6 +2,21 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 05/10/2026 — T-016g : le boss choisit son mot de passe avec le code — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Connexion par mot de passe (au magasin comme à distance) : lien « J’ai un code d’activation » → formulaire « Choisir votre mot de passe » (`auth/OwnerActivation.tsx`) : identifiant, code d'activation, nouveau mot de passe (10 caractères au moins) → `POST /auth/activate` (RG-USR-10). Aucune session ne s'ouvre : retour à la connexion avec « Votre mot de passe est enregistré : connectez-vous avec. », l'identifiant gardé et le rôle « Boss » coché.
+- Code refusé : message de l'API, le code s'efface (un code faux compte comme un essai).
+- `authApi.activate` ; libellés `labels.login.activation*`.
+- 1 test web ; lint, format, typecheck verts ; suite web complète 274/274.
+- **T-016 (comptes) terminée** : API (a à c), connexion (d), écran de l'admin (e, f), activation du boss (g).
+
+**Décisions** : aucune nouvelle.
+
+**Reste** : prochaine tâche du backlog (T-010b pré-commit local, ou la suivante en MVP) ; surveiller les tests du boss (`DiscountRequestsPanel`, `PushSwitch`) qui ont échoué une fois sous charge.
+
+**Questions** : aucune.
+
 ## 05/10/2026 — T-016f : accès d'un compte dans l'écran de l'admin — agent : Claude Code (Opus 5.5)
 
 **Fait** :

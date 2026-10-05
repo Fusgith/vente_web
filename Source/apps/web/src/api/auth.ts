@@ -1,6 +1,7 @@
 import {
   authMeSchema,
   authUserDirectorySchema,
+  type ActivateBody,
   type AuthMe,
   type AuthUserDirectory,
   type LoginBody,
@@ -32,5 +33,10 @@ export const authApi = {
   async switchRole(role: Role): Promise<AuthMe> {
     const data = await apiRequest('/auth/switch-role', { method: 'POST', body: { role } });
     return parseResponse(authMeSchema, data);
+  },
+
+  /** The owner chooses their password with the admin's one-time code; no session opens (RG-USR-10). */
+  async activate(body: ActivateBody): Promise<void> {
+    await apiRequest('/auth/activate', { method: 'POST', body });
   },
 };

@@ -63,6 +63,17 @@ export const labels = {
       'Accès depuis l’extérieur du magasin : boss et administrateur seulement, avec code de validation.',
     signIn: 'Se connecter',
     signingIn: 'Connexion…',
+    /** The owner's first password, chosen with the admin's one-time code (RG-USR-10). */
+    activationLink: 'J’ai un code d’activation',
+    activationTitle: 'Choisir votre mot de passe',
+    activationHelp:
+      'Avec le code remis par l’admin : il sert une seule fois, avant son échéance. L’admin ne connaîtra pas votre mot de passe.',
+    activationCode: 'Code d’activation',
+    activationPasswordHint: (min: number) => `${min} caractères au moins.`,
+    activate: 'Enregistrer mon mot de passe',
+    activating: 'Enregistrement…',
+    activated: 'Votre mot de passe est enregistré : connectez-vous avec.',
+    backToLogin: 'Retour à la connexion',
   },
 
   session: {
