@@ -36,6 +36,8 @@ interface OrderControlProps {
   onLower: (line: QuoteLine, qty: string) => Promise<boolean>;
   onRemove: (line: QuoteLine) => Promise<boolean>;
   onCancel: (reason: string) => Promise<boolean>;
+  /** An article to add or a discount to change: the salesperson's, in one click (RG-CMD-05b). */
+  onSendBack: () => void;
   onPay: (input: PaymentInput, key: string) => Promise<boolean>;
   /** The owner's code typed in its sheet: null once attached, else why it was refused. */
   onAttachCode: (code: string) => Promise<string | null>;
@@ -48,7 +50,8 @@ interface OrderControlProps {
 /**
  * The order at the register, checked with the customer before payment (§5.6): its lines as a
  * table (RG-DEV-05) with where each discount comes from, a quantity lowered or a line removed
- * (RG-CMD-05b), or the whole order cancelled with a reason (RG-ANN-01). The owner's code, typed
+ * (RG-CMD-05b), the order sent back to its salesperson for an article to add or a discount to change
+ * (H56), or the whole order cancelled with a reason (RG-ANN-01). The owner's code, typed
  * here before payment, grants its discounts beyond the caps (RG-CMD-05b, H42); else a discount is
  * asked of the owner (H51). While the request waits, the payment waits too (RG-REM-05).
  */
@@ -58,6 +61,7 @@ export function OrderControl({
   onLower,
   onRemove,
   onCancel,
+  onSendBack,
   onPay,
   onAttachCode,
   onAsk,
@@ -169,6 +173,14 @@ export function OrderControl({
             onWithdraw={onWithdraw}
             onSetAside={onSetAside}
           />
+          <button
+            type="button"
+            onClick={onSendBack}
+            disabled={busy}
+            className={buttonClass('secondary', 'md', 'shrink-0')}
+          >
+            {text.sendBack}
+          </button>
           <button
             type="button"
             onClick={() => setCancelling(true)}

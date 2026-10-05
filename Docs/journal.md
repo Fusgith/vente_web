@@ -2,6 +2,24 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 05/10/2026 — T-035c : « Renvoyer au commercial » à la caisse — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Caisse, contrôle de la commande : bouton « Renvoyer au commercial » à côté de « Annuler la commande », en un clic (RG-CMD-05b) :
+  - la commande redevient un devis, garde son ticket et sa place (H56) ;
+  - message « Commande A1 — Nom renvoyée au commercial : elle garde son ticket et sa place. », file relue ;
+  - commande changée entre-temps : message d'erreur et commande relue, comme pour les autres actions de la caisse.
+- Le commercial en est averti sur sa tablette (fait en T-035b).
+- 1 test de composant ajouté ; lint, typecheck, 267 tests web verts.
+- Graphe graphify du code mis à jour (lecture du code par `graphify query`, demande du 05/10).
+
+**Reste** :
+- T-035 terminée (a, b, c).
+
+**Décisions** : aucune nouvelle dépendance ; pas de confirmation avant le renvoi (« renvoi en un clic », RG-CMD-05b).
+
+**Questions** : valider H56 (CDC métier §16.2) ?
+
 ## 04/10/2026 — T-035b : « Mes devis et commandes » sur la tablette — agent : Claude Code (Opus 5.5)
 
 **Fait** :

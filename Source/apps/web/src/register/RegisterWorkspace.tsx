@@ -334,6 +334,14 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
                     () => text.cancelled(ticketLabel(mine.ticket), mine.customer.name),
                   );
                 }}
+                onSendBack={() => {
+                  const order = atRegister.order;
+                  if (!order) return;
+                  void act(
+                    () => ordersApi.sendBack(order.id, order.version),
+                    () => text.sentBack(ticketLabel(mine.ticket), mine.customer.name),
+                  );
+                }}
                 onPay={pay}
                 onAttachCode={attachCode}
                 onAsk={request.ask}

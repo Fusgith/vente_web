@@ -52,6 +52,14 @@ export const ordersApi = {
     });
     return parseResponse(orderSchema, data);
   },
+  /**
+   * The order at the register sent back to its salesperson (RG-CMD-05b, H56): a quote again, same
+   * number, keeping its ticket and its place; its reservation is freed.
+   */
+  async sendBack(id: string, version: number): Promise<Order> {
+    const data = await apiRequest(`/orders/${id}/send-back`, { method: 'POST', body: { version } });
+    return parseResponse(orderSchema, data);
+  },
 
   /** Validates the quote saved under `version`, the one last read. */
   async submit(id: string, version: number): Promise<Order> {

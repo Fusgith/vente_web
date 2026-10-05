@@ -113,6 +113,16 @@ describe('register: the order checked before payment (T-050, §5.6)', () => {
     });
   });
 
+  it('sends the order back to its salesperson in one click (RG-CMD-05b, H56)', async () => {
+    const api = mount({
+      [`POST ${ORDER}/send-back`]: ok({ ...orderWithLines(entry, 3), status: 'DRAFT' }),
+    });
+    fireEvent.click(await screen.findByRole('button', { name: text.sendBack }));
+    await waitFor(() => expect(band()).toHaveTextContent(text.sentBack('A1', 'Rasoa Hanta')));
+    expect(api.callsTo(`POST ${ORDER}/send-back`)[0]!.body).toEqual({ version: 2 });
+    expect(api.callsTo('GET /queues/register').length).toBeGreaterThan(1);
+  });
+
   it('keeps the sheet on its article when another line is removed elsewhere', async () => {
     const api = mount();
     fireEvent.click(await screen.findByRole('button', { name: text.modifyLine(2) }));

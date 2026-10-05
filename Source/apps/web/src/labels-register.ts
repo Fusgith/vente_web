@@ -95,6 +95,10 @@ export const registerLabels = {
   cancelHint: 'Le stock réservé est libéré et le ticket clos. L’annulation est journalisée.',
   keepOrder: 'Revenir',
   cancelled: (ticket: string, name: string) => `Commande ${ticket} — ${name} annulée.`,
+  /** An article to add or a discount to change within the caps (RG-CMD-05b, H56). */
+  sendBack: 'Renvoyer au commercial',
+  sentBack: (ticket: string, name: string) =>
+    `Commande ${ticket} — ${name} renvoyée au commercial : elle garde son ticket et sa place.`,
   adjusted: (position: number) => `Ligne ${position} modifiée.`,
   removed: (position: number) => `Ligne ${position} supprimée.`,
   waitingShort: 'En attente',
