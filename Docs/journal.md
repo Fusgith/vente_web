@@ -17,9 +17,9 @@ Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-c
 - Aucune dépendance ajoutée (Node seul : `child_process`, `fs`, `fetch`, `process.loadEnvFile`).
 - Vérifié : lint et format verts ; sonde `pg_isready`, `db:deploy` et `db:seed` passent sur la base de dev avec l'URL construite. Le script complet n'a pas été lancé par l'agent : la création de `.env` revient à l'utilisateur (règle des fichiers `.env*`).
 
-**Décisions** : aucune nouvelle.
+**Décisions** : à la demande de l'utilisateur, les règles `deny Read(**/.env)` et `deny Read(**/.env.*)` sont retirées de `.claude/settings.json` (phase de test : aucun vrai mot de passe). Le mode auto de Claude Code refuse encore à l'agent de créer `.env` (« Self-Modification ») : seul l'utilisateur peut lever ce refus.
 
-**Reste** : premier lancement par l'utilisateur (double-clic). Puis T-010b, prochaine tâche du backlog.
+**Reste** : premier lancement par l'utilisateur (double-clic). Choix de la livraison chez le client (A : dossier Windows tout-en-un, nouvel ADR ; B : mini-PC Linux + Docker, CDC §10.2) avant T-080. Puis T-010b, prochaine tâche du backlog.
 
 **Questions** : aucune.
 
