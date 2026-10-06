@@ -2,6 +2,19 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 06/10/2026 — ADR-0008 : cloud chez OVH, partagé entre les clients — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- ADR-0008 (accepté par l'utilisateur) : l'utilisateur livre ce type d'application à plusieurs clients, toujours en local d'abord, et vend un package unique ; la partie cloud tourne sur son compte OVH, partagée. Un domaine par client (DNS OVH, DNS-01 par `caddy-dns/ovh`, clé API limitée à la zone) ; relais VPS OVH partagé, tunnel WireGuard sortant, aiguillage par nom sans déchiffrement (nginx `stream`, protocole PROXY), TLS terminé au magasin ; sauvegardes `rclone crypt` vers OVH Object Storage, compartiment par client, identifiant sans droit d'effacement, copie sur disque externe ; surveillance depuis le VPS.
+- CDC technique §2.1 à §2.3, §10.3, §10.5 et §13 (T1, T2 remplacées) mis à jour ; commentaire de `Source/infra/docker-compose.yml`.
+- Backlog : T-080, T-081, T-082 précisées ; nouvelle T-086 (relais VPS partagé).
+
+**Reste** : T-056 (arrondi espèces) ; T-010c attend le logo ; H58, H59 à confirmer.
+
+**Décisions** : ADR-0008.
+
+**Questions** : aucune nouvelle. Hors code, pour l'utilisateur : prix du package couvrant le coût OVH dans la durée (forfait annuel recommandé), clauses de réversibilité et de sous-traitance des données au contrat ; vérifier qu'OVH vend le suffixe de domaine voulu (sinon zone DNS chez OVH, domaine acheté ailleurs).
+
 ## 06/10/2026 — T-010b : pré-commit local — agent : Claude Code (Opus 5.5)
 
 **Fait** :

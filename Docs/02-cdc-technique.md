@@ -27,37 +27,37 @@ Ce document traduit le CDC métier en architecture, stack et règles d'implémen
  │   │ caddy (TLS, reverse proxy, fichiers statiques du front)            │  │
  │   │   ├─► api (Fastify + Prisma + Socket.IO)  ──►  postgres            │  │
  │   │   ├─► fichiers : PDF émis, fichiers Excel importés (volume)        │  │
- │   │ backup (pg_dump + rclone → stockage cloud chiffré)                 │  │
- │   │ cloudflared / tailscale (tunnel sortant, aucun port entrant)       │  │
+ │   │ backup (pg_dump + rclone crypt → OVH Object Storage)               │  │
+ │   │ WireGuard (tunnel sortant vers le relais OVH, ADR-0008)            │  │
  │   └──────────────────────────────────┬─────────────────────────────────┘  │
  └──────────────────────────────────────┼────────────────────────────────────┘
                                         │ Internet (connexion sortante)
                     ┌───────────────────┴───────────────────┐
-                    │ Tunnel → https://app.<domaine>        │   Boss : téléphone / PC
-                    │ Stockage cloud : sauvegardes          │   Admin : à distance
-                    │ Surveillance : ping de disponibilité   │
+                    │ Relais VPS OVH → app.<domaine>        │   Boss : téléphone / PC
+                    │ OVH Object Storage : sauvegardes      │   Admin : à distance
+                    │ Surveillance depuis le VPS            │
                     └───────────────────────────────────────┘
 ```
 
 ### 2.1 Réseau et noms
 
-- Un **nom de domaine** unique (`app.<domaine>`) partout. Dans le magasin, le DNS local (résolveur sur le mini-PC ou surcharge sur la box) le fait pointer vers l'IP fixe du mini-PC ; à l'extérieur, il pointe vers le tunnel. La PWA ne contient **aucune logique de détection** de réseau ; une tablette passée en 4G atteint le même serveur via le tunnel.
-- Certificat TLS valide en local **et** à distance : Caddy avec défi DNS-01 (jeton API du fournisseur DNS). Le certificat est renouvelé quand Internet est disponible ; sa validité (90 jours) couvre largement une coupure.
+- Un **nom de domaine** unique (`app.<domaine>`) partout. Dans le magasin, le DNS local (résolveur sur le mini-PC ou surcharge sur la box) le fait pointer vers l'IP fixe du mini-PC ; à l'extérieur, il pointe vers le relais OVH, qui fait suivre au magasin par le tunnel (ADR-0008 : un domaine par client). La PWA ne contient **aucune logique de détection** de réseau ; une tablette passée en 4G atteint le même serveur via le tunnel.
+- Certificat TLS valide en local **et** à distance : Caddy avec défi DNS-01 par l'API OVH (module `caddy-dns/ovh` ; une clé API par client, limitée à la zone DNS de son domaine, ADR-0008). Le certificat est renouvelé quand Internet est disponible ; sa validité (90 jours) couvre largement une coupure.
 - HTTPS obligatoire : requis pour la PWA (service worker), la caméra (scan code-barres) et les cookies sécurisés.
 - Le Wi-Fi du magasin est une **infrastructure critique** : point d'accès professionnel, onduleur sur le point d'accès et le mini-PC, canal dédié, IP fixe pour le serveur.
 
 ### 2.2 Accès distant
 
-- Tunnel sortant (recommandé : Cloudflare Tunnel ; alternative : Tailscale Funnel). Aucun port ouvert sur la box.
-- **Origine d'accès** (T-012) : le reverse proxy (Caddy) pose l'en-tête `x-access-origin: lan` sur l'écoute locale et `x-access-origin: remote` sur celle du tunnel, en **écrasant** toute valeur envoyée par le client. L'API ne lit cet en-tête que si le pair TCP figure dans `TRUST_PROXY` (liste d'IP/CIDR, défaut `127.0.0.1,::1` ; même liste passée à Fastify pour `X-Forwarded-For`) ; en-tête absent, invalide ou venu d'un pair non listé ⇒ **`REMOTE`** (fail-closed : un client direct ne peut jamais se faire passer pour le magasin). Hors production seulement, `AUTH_DEFAULT_ORIGIN` (défaut `LAN`) s'applique à toute requête sans en-tête, quel que soit le pair (un serveur de dev ou un test *est* le magasin) ; la validation de l'environnement refuse cette variable en production. Une variable vide dans `.env` (`VAR=`) vaut non définie. Le port de l'API n'est jamais publié : seul Caddy l'atteint (T-080) ; le tunnel et Caddy doivent transmettre l'adresse du client (`X-Forwarded-For`), sinon toutes les requêtes distantes partagent la même clé de limitation de débit. De même, le schéma vu par l'API est celui de `X-Forwarded-Proto` et l'hôte celui de `Host` (ou `X-Forwarded-Host`), crus seulement d'un pair de `TRUST_PROXY` : Caddy transmet `X-Forwarded-Proto: https` et l'hôte d'origine sur ses deux écoutes ; derrière le tunnel, Caddy fait confiance à `cloudflared` (`trusted_proxies`) ou pose lui-même `X-Forwarded-Proto: https`. Sinon la vérification CSRF par `Origin` (§8) refuse les navigateurs qui n'envoient pas `Sec-Fetch-Site`.
+- Tunnel **WireGuard sortant** du magasin vers un petit VPS OVH partagé entre les clients du développeur (ADR-0008). Le VPS aiguille le HTTPS d'après le nom demandé (SNI) **sans le déchiffrer** et transmet l'adresse du client par le protocole PROXY ; TLS s'arrête au magasin. Aucun port ouvert sur la box ; aucun routage d'un magasin à l'autre.
+- **Origine d'accès** (T-012) : le reverse proxy (Caddy) pose l'en-tête `x-access-origin: lan` sur l'écoute locale et `x-access-origin: remote` sur celle du tunnel, en **écrasant** toute valeur envoyée par le client. L'API ne lit cet en-tête que si le pair TCP figure dans `TRUST_PROXY` (liste d'IP/CIDR, défaut `127.0.0.1,::1` ; même liste passée à Fastify pour `X-Forwarded-For`) ; en-tête absent, invalide ou venu d'un pair non listé ⇒ **`REMOTE`** (fail-closed : un client direct ne peut jamais se faire passer pour le magasin). Hors production seulement, `AUTH_DEFAULT_ORIGIN` (défaut `LAN`) s'applique à toute requête sans en-tête, quel que soit le pair (un serveur de dev ou un test *est* le magasin) ; la validation de l'environnement refuse cette variable en production. Une variable vide dans `.env` (`VAR=`) vaut non définie. Le port de l'API n'est jamais publié : seul Caddy l'atteint (T-080) ; le relais (protocole PROXY) puis Caddy (`X-Forwarded-For`) doivent transmettre l'adresse du client, sinon toutes les requêtes distantes partagent la même clé de limitation de débit. De même, le schéma vu par l'API est celui de `X-Forwarded-Proto` et l'hôte celui de `Host` (ou `X-Forwarded-Host`), crus seulement d'un pair de `TRUST_PROXY` : Caddy transmet `X-Forwarded-Proto: https` et l'hôte d'origine sur ses deux écoutes ; sur l'écoute du tunnel (son adresse WireGuard), Caddy n'accepte le protocole PROXY que du relais et termine lui-même TLS. Sinon la vérification CSRF par `Origin` (§8) refuse les navigateurs qui n'envoient pas `Sec-Fetch-Site`.
 - L'API utilise l'origine pour exiger la 2FA des rôles `owner` et `admin` (RG-USR-04), refuser les rôles opérationnels et le PIN hors du magasin (T3, validé : un commercial n'a pas de raison de vendre depuis l'extérieur), et **réévaluer l'origine à chaque requête** : une session ouverte dans le magasin présentée depuis l'extérieur est détruite et l'événement journalisé (`auth.origin_rejected`). Le rôle `owner` doit pouvoir traiter une demande de remise depuis l'extérieur (RG-REM-03) : notification push via le service worker de la PWA quand le tunnel est joignable.
 
 ### 2.3 Sauvegarde et reprise
 
-- `pg_dump` compressé toutes les **15 min** (incrémental logique : dernière heure) + complet chaque nuit ; chiffrement côté client ; envoi via `rclone` vers un stockage objet (Backblaze B2, Cloudflare R2, ou Google Drive en secours). Rétention : 48 dumps horaires, 30 quotidiens, 12 mensuels.
+- `pg_dump` compressé toutes les **15 min** (incrémental logique : dernière heure) + complet chaque nuit ; chiffrement au magasin (`rclone crypt`, clé propre au client, remise au client sous enveloppe scellée) ; envoi vers OVH Object Storage, un compartiment par client, avec un identifiant qui écrit sans pouvoir effacer (ADR-0008) ; copie sur un disque externe au magasin. Rétention : 48 dumps horaires, 30 quotidiens, 12 mensuels.
 - Les fichiers (PDF émis, Excel importés) sont sauvegardés avec la base.
 - **Procédure de reprise** documentée et **testée trimestriellement** : copier le dossier sur un autre PC Windows, **Installer**, **Restaurer** la dernière sauvegarde, repointer le DNS local (ADR-0007). Objectif : RPO 15 min, RTO 2 h.
-- Si le serveur meurt et qu'aucune machine de secours n'est disponible, la même stack se déploie sur un cloud (Fly.io, Render, VPS) en attendant.
+- Si le serveur meurt et qu'aucune machine de secours n'est disponible, la même stack se déploie sur une instance OVH en attendant.
 
 ### 2.4 Coupure d'Internet
 
@@ -283,7 +283,7 @@ Notification push (T-033e) : après la validation de la transaction d'une nouvel
 
 ### 10.3 Composition (dossier `Dist/<nom-simplifié>/`, ADR-0007)
 
-Node.js portable + API construite · PostgreSQL (binaires Windows officiels) · Caddy (80/443, TLS DNS-01, sert la PWA, proxy `/api` et `/socket.io`) · `cloudflared` (tunnel) · scripts **Installer**, **Mettre à jour**, **Sauvegarder**, **Restaurer**. Services Windows à démarrage automatique. Données hors du dossier de l'application : base, fichiers émis (`FILES_DIR`), sauvegardes, `.env`.
+Node.js portable + API construite · PostgreSQL (binaires Windows officiels) · Caddy (80/443, TLS DNS-01, sert la PWA, proxy `/api` et `/socket.io`) · WireGuard (tunnel vers le relais OVH, ADR-0008) · scripts **Installer**, **Mettre à jour**, **Sauvegarder**, **Restaurer**. Services Windows à démarrage automatique. Données hors du dossier de l'application : base, fichiers émis (`FILES_DIR`), sauvegardes, `.env`.
 
 ### 10.4 Mise à jour
 
@@ -291,7 +291,7 @@ Copier le nouveau dossier sur le serveur → double-clic sur **Mettre à jour** 
 
 ### 10.5 Surveillance
 
-- Endpoint `/healthz` (API + base + espace disque) interrogé par un service de ping externe via le tunnel ; alerte e-mail/SMS à l'admin et au boss si indisponible 5 min.
+- Endpoint `/healthz` (API + base + espace disque) interrogé depuis le relais VPS OVH par le tunnel de chaque magasin, avec la fraîcheur de sa dernière sauvegarde (ADR-0008) ; alerte au développeur, et e-mail/SMS à l'admin et au boss si indisponible 5 min. Le VPS est lui-même surveillé de l'extérieur.
 - Alertes locales : disque < 15 %, sauvegarde en échec, session de caisse non clôturée (RG-CAI-05), certificat à < 15 jours.
 - Logs JSON conservés 90 jours localement.
 
@@ -315,8 +315,8 @@ Copier le nouveau dossier sur le serveur → double-clic sur **Mettre à jour** 
 
 | # | Hypothèse | Décision | Alternative écartée |
 |---|---|---|
-| T1 | Cloudflare Tunnel + nom de domaine chez Cloudflare (gratuit) | **OK** | Tailscale ; VPN maison |
-| T2 | Stockage des sauvegardes : Backblaze B2 ou Cloudflare R2 (quelques centimes/mois) | **OK** | Google Drive via rclone |
+| T1 | ~~Cloudflare Tunnel + nom de domaine chez Cloudflare (gratuit)~~ → tunnel WireGuard vers un VPS OVH partagé, sans déchiffrement ; un domaine par client, DNS chez OVH (ADR-0008, 06/10/2026) | **OK** | Cloudflare Tunnel ; Tailscale Funnel ; un VPS par client |
+| T2 | ~~Stockage des sauvegardes : Backblaze B2 ou Cloudflare R2~~ → OVH Object Storage, chiffré au magasin, un compartiment par client (ADR-0008, 06/10/2026) | **OK** | Backblaze B2 ; Cloudflare R2 |
 | T3 | Rôles opérationnels refusés hors du magasin (le boss, lui, agit à distance : demandes de remise) | **OK** | Autoriser avec 2FA |
 | T4 | ~~Mini-PC dédié sous Linux~~ → PC Windows dédié, dossier tout-en-un sans Docker (ADR-0007, 05/10/2026) | **OK** | Docker Desktop sur le PC de caisse (déconseillé : redémarrages, verrouillage, performances) |
 | T5 | Sessions cookie plutôt que JWT | **OK** | JWT si un client natif (TWA) exige des jetons |

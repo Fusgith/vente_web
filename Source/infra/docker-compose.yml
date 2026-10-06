@@ -1,5 +1,5 @@
 # Development database only. Run from Source/: `pnpm db:up` (reads Source/.env).
-# Production stack (caddy, api, postgres, backup, cloudflared) comes with T-080.
+# Production is a Windows all-in-one folder (ADR-0007), tunnelled to the OVH relay (ADR-0008): T-080.
 name: vente-web-dev
 
 services:
