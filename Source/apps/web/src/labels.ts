@@ -1,6 +1,7 @@
 import { CURRENCY, DEFAULT_APP_NAME, type Role } from '@vente-web/shared';
 
 import { accountsLabels } from './labels-accounts.js';
+import { auditLabels } from './labels-audit.js';
 import { capsLabels } from './labels-caps.js';
 import { codesLabels } from './labels-codes.js';
 import { closingLabels } from './labels-closing.js';
@@ -316,6 +317,7 @@ export const labels = {
   stock: stockLabels,
   caps: capsLabels,
   accounts: accountsLabels,
+  audit: auditLabels,
   codes: codesLabels,
   requests: requestsLabels,
   push: pushLabels,

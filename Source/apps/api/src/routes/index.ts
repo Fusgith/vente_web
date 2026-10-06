@@ -1,6 +1,7 @@
 import type { FastifyPluginAsync } from 'fastify';
 
 import type { Env } from '../env.js';
+import { auditRoutes } from './audit.js';
 import { authCredentialRoutes } from './auth-credentials.js';
 import { authRoutes } from './auth.js';
 import { catalogRoutes } from './catalog.js';
@@ -40,4 +41,5 @@ export const apiRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) 
   await app.register(discountCodeRoutes);
   await app.register(discountRequestRoutes);
   await app.register(pushRoutes);
+  await app.register(auditRoutes);
 };

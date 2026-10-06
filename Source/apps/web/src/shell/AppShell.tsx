@@ -9,6 +9,7 @@ import { useIdleLock } from '../auth/useIdleLock.js';
 import { DeliveryWorkspace } from '../delivery/DeliveryWorkspace.js';
 import { labels } from '../labels.js';
 import { RealtimeProvider } from '../realtime/RealtimeProvider.js';
+import { AuditLogPanel } from '../manager/AuditLogPanel.js';
 import { DeliveryIssuesPanel } from '../manager/DeliveryIssuesPanel.js';
 import { RegisterSessionsPanel } from '../manager/RegisterSessionsPanel.js';
 import { StockPanel } from '../manager/StockPanel.js';
@@ -141,6 +142,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         <StockPanel />
         {/* RG-REM-01 (H15): the caps the owner set, read-only. */}
         <DiscountCapsPanel editable={false} />
+        {/* RG-AUD-01: who did what, read only. */}
+        <AuditLogPanel />
       </div>
     );
   }
@@ -152,6 +155,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         </header>
         {/* Annexe B, RG-USR-06: the admin manages the accounts, never deletes one. */}
         <AccountsPanel />
+        {/* RG-AUD-01: who did what, read only. */}
+        <AuditLogPanel />
       </div>
     );
   }
@@ -178,6 +183,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
       {owner && <DiscountCapsPanel editable />}
       {/* RG-REM-04 (H41): the owner issues and revokes the discount codes. */}
       {owner && <DiscountCodesPanel />}
+      {/* RG-AUD-01: who did what, read only. */}
+      {owner && <AuditLogPanel />}
     </div>
   );
 }

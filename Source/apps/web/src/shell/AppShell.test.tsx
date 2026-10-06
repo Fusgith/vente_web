@@ -39,6 +39,7 @@ describe('signed-in shell', () => {
       'GET /auth/me': ok(meFor({ user: HERY, activeRole: 'manager' })),
       'POST /auth/switch-role': apiError(403, 'AUTH_ROLE_REMOTE_FORBIDDEN'),
       'GET /register-sessions': ok({ sessions: [] }),
+      'GET /audit': ok({ entries: [], more: false }),
       'GET /deliveries/issues': ok([]),
       'GET /stock/alerts': ok({ items: [] }),
       'GET /discount-caps': ok({ defaultPct: '0.00', categories: [] }),
@@ -70,6 +71,7 @@ describe('signed-in shell', () => {
       'GET /auth/me': ok(meFor({ user: { ...RIJA, roles: ['owner'] }, activeRole: 'owner' })),
       'GET /discount-requests': ok({ pending: [], recent: [] }),
       'GET /register-sessions': ok({ sessions: [] }),
+      'GET /audit': ok({ entries: [], more: false }),
       'GET /discount-caps': ok({ defaultPct: '0.00', categories: [] }),
       'GET /discount-codes': ok({ items: [] }),
     });

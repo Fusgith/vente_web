@@ -10,6 +10,7 @@ export {
   NBSP,
   SHOP_TIME_ZONE,
 } from './format.js';
+export * from './audit.js';
 export * from './auth.js';
 export * from './brand.js';
 export * from './catalog.js';

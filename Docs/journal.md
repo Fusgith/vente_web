@@ -2,6 +2,34 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 06/10/2026 — T-014 : lire le journal d'audit — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Écran « Journal d'audit » pour le responsable, le boss et l'admin (annexe B), en lecture seule :
+  - une journée du magasin à la fois (aujourd'hui par défaut), la plus récente opération en tête ;
+  - filtres : sujet (devis et commandes, clients, remises, stock, caisses, comptes, connexions) et identifiant ;
+  - colonnes Heure, Qui (nom, rôle, « à distance »), Opération, Détail (motif, puis chaque champ changé « avant → après ») ;
+  - bouton « Opérations plus anciennes » : 100 lignes par page, sans trou ni doublon.
+- API : `GET /audit?day=&subject=&user=&before=` ; refus 403 pour commercial, caissier et magasinier, 401 sans session, 400 pour un filtre inconnu.
+- Contrat partagé `audit.ts` (requête, ligne, page).
+- Ajout seul : un test prouve que la base refuse toute modification et toute suppression d'une ligne du journal (déclencheurs existants).
+- Vérifié :
+  - tests API 327, web et shared 365 ; lint, typecheck et Prettier propres ;
+  - dans le navigateur, connecté en responsable : les connexions et déconnexions du jour s'affichent.
+
+**Reste** :
+- Droits SQL `REVOKE UPDATE, DELETE` sur `audit_log` pour l'utilisateur applicatif : avec T-080 (installation du magasin), les déclencheurs protègent déjà.
+- Export CSV/PDF du journal : avec T-071.
+- Page qui défile de côté sur un écran étroit (545 px) : cause, le tableau « File livraison » (antérieur à T-014) ; tâche proposée à part.
+
+**Décisions** :
+- Sujets regroupés par type d'enregistrement (ex. « Remises » = codes, demandes et plafonds) ; une opération sans nom français affiche son code tel quel.
+- Les champs changés s'affichent avec leur nom technique (`status : SUBMITTED → PAID`) : lisible pour le responsable, sans maintenir une traduction de chaque champ.
+- Aucune dépendance ajoutée.
+- Tests web instables sous charge (`OrderRequest`, `DiscountCode`) : passent seuls et à la relance complète ; minutage, sans lien.
+
+**Questions** : aucune.
+
 ## 06/10/2026 — T-017d : le PIN disparaît partout — agent : Claude Code (Opus 5.5)
 
 **Fait** :
