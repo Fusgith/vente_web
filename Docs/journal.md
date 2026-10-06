@@ -2,6 +2,23 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 06/10/2026 — Décision H57 : connexion par identifiant et mot de passe, sans PIN ni choix du rôle — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Remarque de l'utilisateur sur l'écran de connexion : la liste des noms (supprimée par H48 le 29/09) était toujours là, car T-017c n'avait pas été codée ; le PIN et le choix du rôle venaient des règles d'origine RG-USR-02 et RG-USR-03.
+- CDC métier : RG-USR-02 (aucun choix de rôle à la connexion, sélecteur dans l'application pour qui en cumule) et RG-USR-03 (identifiant + mot de passe partout, plus de PIN) réécrites ; décision H57 ajoutée au tableau des hypothèses.
+- Backlog : T-017c réécrite (écran de connexion simple), passée « En cours » ; T-017d ajoutée (retrait du PIN partout ailleurs).
+
+**Reste** :
+- Coder T-017c : contrat partagé sans `role` dans le corps de connexion ; l'API déduit le rôle (rôle servi par le poste appairé, sinon le premier du compte) ; écran Identifiant + Mot de passe (+ code à usage unique hors du magasin seulement) ; mots de passe de démonstration pour les comptes du magasin dans le seed.
+- Puis T-017d.
+
+**Décisions** : H57 (utilisateur, 06/10/2026). Rôle d'ouverture d'un compte à plusieurs rôles : ⚠️ HYPOTHÈSE notée dans H57.
+
+**Questions** : aucune.
+
+**Arrêt** : plafond hebdomadaire de 60 % atteint ; reprise après le 09/10.
+
 ## 05/10/2026 — Correctif T-010d : l'API refusait le `.env` copié du modèle — agent : Claude Code (Opus 5.5)
 
 **Fait** :
