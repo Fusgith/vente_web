@@ -9,26 +9,41 @@ type OnAdd = (hit: ProductHit, unitId: string, qty: string | null) => void;
 
 export type Favorites =
   | { status: 'loading' }
-  | { status: 'done'; items: ProductHit[] }
+  | { status: 'done'; items: ProductHit[]; promoted: ProductHit[] }
   | { status: 'error'; message: string };
 
 const quiet = 'text-14 text-ink-2';
 
-/** The best sellers while the field is empty: 12 tiles, one tap adds (RG-DEV-06 §5). */
+function Tiles({ hits, onAdd }: { hits: ProductHit[]; onAdd: OnAdd }) {
+  return (
+    <ul className="grid grid-cols-2 gap-2 @md:grid-cols-3 @3xl:grid-cols-4">
+      {hits.map((hit) => (
+        <FavoriteTile key={hit.id} hit={hit} onPick={(unitId) => onAdd(hit, unitId, null)} />
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * While the field is empty: the products the owner wants proposed today, if any (RG-DEV-06 §6),
+ * then the 12 best sellers (§5); one tap adds.
+ */
 export function FavoriteList({ favorites, onAdd }: { favorites: Favorites; onAdd: OnAdd }) {
   if (favorites.status === 'loading') return <p className={quiet}>{labels.loading}</p>;
   if (favorites.status === 'error') return <p className="text-madder">{favorites.message}</p>;
   return (
     <div className="@container flex flex-col gap-2">
+      {favorites.promoted.length > 0 && (
+        <>
+          <h2 className="text-14 font-semibold text-ink-2">{labels.sales.promoted}</h2>
+          <Tiles hits={favorites.promoted} onAdd={onAdd} />
+        </>
+      )}
       <h2 className="text-14 font-semibold text-ink-2">{labels.sales.favorites}</h2>
       {favorites.items.length === 0 ? (
         <p className={quiet}>{labels.sales.noFavorites}</p>
       ) : (
-        <ul className="grid grid-cols-2 gap-2 @md:grid-cols-3 @3xl:grid-cols-4">
-          {favorites.items.map((hit) => (
-            <FavoriteTile key={hit.id} hit={hit} onPick={(unitId) => onAdd(hit, unitId, null)} />
-          ))}
-        </ul>
+        <Tiles hits={favorites.items} onAdd={onAdd} />
       )}
     </div>
   );

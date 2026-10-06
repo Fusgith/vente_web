@@ -5,6 +5,7 @@ import { auditLabels } from './labels-audit.js';
 import { capsLabels } from './labels-caps.js';
 import { codesLabels } from './labels-codes.js';
 import { customersLabels } from './labels-customers.js';
+import { promotionsLabels } from './labels-promotions.js';
 import { closingLabels } from './labels-closing.js';
 import { deliveryLabels } from './labels-delivery.js';
 import { issueLabels } from './labels-issues.js';
@@ -95,6 +96,8 @@ export const labels = {
     allCategoriesTile: 'Toutes les catégories',
     closeCategories: 'Fermer',
     favorites: 'Les plus vendus',
+    /** The owner's products to propose (RG-DEV-06 §6): the row and the mark of a hit. */
+    promoted: 'À proposer',
     noFavorites: 'Vos articles les plus vendus s’afficheront ici après les premières ventes.',
     searching: 'Recherche…',
     noResult: 'Aucun article ne correspond.',
@@ -328,6 +331,7 @@ export const labels = {
   accounts: accountsLabels,
   audit: auditLabels,
   customers: customersLabels,
+  promotions: promotionsLabels,
   codes: codesLabels,
   requests: requestsLabels,
   push: pushLabels,

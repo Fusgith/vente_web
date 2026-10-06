@@ -2,6 +2,35 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 06/10/2026 — T-037 : articles à proposer — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Nouveau panneau « Articles à proposer » chez le boss (RG-DEV-06 §6, H46, H49 b) :
+  - chercher un article, choisir les dates « Du » et « Au » (par défaut aujourd'hui et +6 jours), un argument facultatif (200 caractères au plus) ;
+  - « Mettre à proposer », puis la liste des articles en cours ou à venir, avec « Retirer » ;
+  - ajout et retrait journalisés (RG-AUD-01), visibles dans le journal d'audit sous le sujet « Stock ».
+- Sur la tablette, quand le champ de recherche est vide : rangée « À proposer » au-dessus de « Les plus vendus », tuiles en jaune avec l'argument.
+- Dans les résultats de recherche, l'article porte le repère « À proposer » et son argument.
+- Le prix ne change pas : l'article reste au prix de son unité (RG-ART-07).
+- API :
+  - `GET /promotions`, `POST /promotions`, `POST /promotions/:id/withdraw` (boss seul) ;
+  - `GET /products/favorites` renvoie aussi `promoted` ; chaque article trouvé porte `promotion` s'il est à proposer ce jour.
+- Migration `add_product_promotions` : table `product_promotions`.
+- Vérifié : tests API (4 nouveaux) et suite complète, web et shared (5 nouveaux) ; lint, typecheck et Prettier propres. Pas encore vu au navigateur.
+
+**Reste** :
+- Voir l'écran au navigateur en boss puis en commercial.
+
+**Décisions** :
+- Un article n'a qu'une période à la fois : deux périodes qui se chevauchent sont refusées ; des périodes qui se suivent sont acceptées.
+- 12 articles au plus dans la rangée, ceux qui finissent le plus tôt d'abord ; le filtre de catégorie s'applique aussi.
+- Un article à venir n'apparaît sur la tablette qu'à son premier jour ; le boss le voit déjà dans sa liste.
+- Un article retiré du catalogue ne peut pas être mis à proposer.
+- Aucune dépendance ajoutée.
+
+**Questions** :
+- Aucune nouvelle. H58 (historique : 30 lignes ou 12 mois) attend toujours votre réponse.
+
 ## 06/10/2026 — T-029b : catégorie de client — agent : Claude Code (Opus 5.5)
 
 **Fait** :

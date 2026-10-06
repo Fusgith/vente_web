@@ -70,7 +70,7 @@ export function ProductSearch({ onAdd, pad, onType }: ProductSearchProps) {
   useEffect(() => {
     const controller = new AbortController();
     catalogApi.favorites(categoryId, controller.signal).then(
-      (items) => setFavorites({ status: 'done', items }),
+      (lists) => setFavorites({ status: 'done', ...lists }),
       (error: unknown) => {
         if (!controller.signal.aborted)
           setFavorites({ status: 'error', message: errorMessage(error) });

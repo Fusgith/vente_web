@@ -1,0 +1,20 @@
+/** The owner's products to propose (T-037, RG-DEV-06 §6, H46, H49 b); `labels.promotions`. */
+export const promotionsLabels = {
+  title: 'Articles à proposer',
+  intro: 'Les commerciaux les voient en tête de la tablette, du premier au dernier jour.',
+  search: 'Code ou désignation',
+  searchGo: 'Chercher',
+  searchNone: 'Aucun article ne correspond.',
+  from: 'Du',
+  to: 'Au',
+  pitch: 'Argument (facultatif)',
+  argument: 'Argument',
+  pick: (sku: string, name: string) => `${sku} ${name}`,
+  add: 'Mettre à proposer',
+  product: 'Article',
+  withdraw: 'Retirer',
+  withdrawOf: (name: string) => `Retirer « ${name} »`,
+  none: 'Aucun article à proposer pour le moment.',
+  added: (name: string) => `« ${name} » est à proposer.`,
+  withdrawn: (name: string) => `« ${name} » n’est plus à proposer.`,
+};

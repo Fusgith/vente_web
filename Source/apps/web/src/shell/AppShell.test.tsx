@@ -75,6 +75,7 @@ describe('signed-in shell', () => {
       'GET /audit': ok({ entries: [], more: false }),
       'GET /discount-caps': ok({ defaultPct: '0.00', categories: [] }),
       'GET /discount-codes': ok({ items: [] }),
+      'GET /promotions': ok({ items: [] }),
     });
     render(<App />);
 

@@ -12,6 +12,10 @@ import { labels } from '../labels.js';
 import { tagClass } from '../ui/button.js';
 import { capSummary } from './cap-summary.js';
 
+/** The mark of a product the owner wants proposed today (RG-DEV-06 §6). */
+const PROMOTED_TAG =
+  'inline-block shrink-0 rounded-tag bg-saffron-soft px-1.5 text-14 leading-[18px] font-semibold text-ink';
+
 interface HitProps {
   hit: ProductHit;
   /** Adds the article in the unit tapped; the unit buttons replace any drop-down (RG-DEV-06 §4). */
@@ -42,6 +46,8 @@ export function HitRow({ hit, onPick }: HitProps) {
             {labels.sales.availableIn(formatQty(hit.available), hit.baseUnit)}
           </span>
           {cap && <span className="figures">{cap}</span>}
+          {hit.promotion && <span className={PROMOTED_TAG}>{labels.sales.promoted}</span>}
+          {hit.promotion?.pitch && <span className="line-clamp-1">{hit.promotion.pitch}</span>}
         </p>
       </div>
       <div className="flex shrink-0 flex-wrap gap-1.5 @md:max-w-67.5 @md:justify-end">
@@ -86,7 +92,7 @@ function UnitButton({ hit, unit, nameId, onPick }: UnitButtonProps) {
   );
 }
 
-/** A best seller, added in one tap in its default unit (RG-DEV-06 §5). */
+/** A best seller or a product to propose, added in one tap in its default unit (RG-DEV-06 §5, §6). */
 export function FavoriteTile({ hit, onPick }: HitProps) {
   const unit = defaultSaleUnit(hit.units);
   return (
@@ -95,9 +101,12 @@ export function FavoriteTile({ hit, onPick }: HitProps) {
         type="button"
         disabled={unit === null}
         onClick={() => unit && onPick(unit.id)}
-        className="flex min-h-22 w-full flex-col justify-between gap-1.5 rounded-control border border-rule-strong bg-white px-3 py-2 text-left transition-colors duration-100 active:bg-indigo-soft disabled:border-dashed disabled:bg-cotton disabled:text-ink-2"
+        className={`flex min-h-22 w-full flex-col justify-between gap-1.5 rounded-control border px-3 py-2 text-left transition-colors duration-100 active:bg-indigo-soft disabled:border-dashed disabled:bg-cotton disabled:text-ink-2 ${hit.promotion ? 'border-saffron bg-saffron-soft' : 'border-rule-strong bg-white'}`}
       >
         <span className="line-clamp-2 text-16 leading-5 font-semibold">{hit.name}</span>
+        {hit.promotion?.pitch && (
+          <span className="line-clamp-2 text-14 leading-5 text-ink-2">{hit.promotion.pitch}</span>
+        )}
         <span className="flex flex-wrap items-baseline justify-between gap-x-2 text-14 leading-5">
           {unit?.price ? (
             <>

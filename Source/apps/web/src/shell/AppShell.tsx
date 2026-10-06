@@ -17,6 +17,7 @@ import { StockPanel } from '../manager/StockPanel.js';
 import { SupervisionWorkspace } from '../manager/SupervisionWorkspace.js';
 import { DiscountCapsPanel } from '../owner/DiscountCapsPanel.js';
 import { DiscountCodesPanel } from '../owner/DiscountCodesPanel.js';
+import { PromotionsPanel } from '../owner/PromotionsPanel.js';
 import { DiscountRequestsPanel } from '../owner/DiscountRequestsPanel.js';
 import { RegisterWorkspace } from '../register/RegisterWorkspace.js';
 import { SalesWorkspace } from '../sales/SalesWorkspace.js';
@@ -186,6 +187,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
       {owner && <DiscountCapsPanel editable />}
       {/* RG-REM-04 (H41): the owner issues and revokes the discount codes. */}
       {owner && <DiscountCodesPanel />}
+      {/* RG-DEV-06 §6 (H46, H49 b): the owner marks the products to propose. */}
+      {owner && <PromotionsPanel />}
       {/* RG-AUD-01: who did what, read only. */}
       {owner && <AuditLogPanel />}
     </div>

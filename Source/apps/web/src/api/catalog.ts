@@ -3,7 +3,7 @@ import {
   favoritesResultSchema,
   productSearchResultSchema,
   type CategorySummary,
-  type ProductHit,
+  type FavoritesResult,
   type ProductSearchResult,
 } from '@vente-web/shared';
 
@@ -28,12 +28,13 @@ export const catalogApi = {
     return parseResponse(productSearchResultSchema, data);
   },
 
-  async favorites(categoryId?: string, signal?: AbortSignal): Promise<ProductHit[]> {
+  /** The best sellers and the products to propose today (RG-DEV-06 §5 and §6). */
+  async favorites(categoryId?: string, signal?: AbortSignal): Promise<FavoritesResult> {
     const data = await apiRequest(
       withQuery('/products/favorites', { categoryId }),
       signal ? { signal } : {},
     );
-    return parseResponse(favoritesResultSchema, data).items;
+    return parseResponse(favoritesResultSchema, data);
   },
 
   async categories(signal?: AbortSignal): Promise<CategorySummary[]> {
