@@ -16,6 +16,7 @@ import { RegisterSessionsPanel } from '../manager/RegisterSessionsPanel.js';
 import { StockPanel } from '../manager/StockPanel.js';
 import { SupervisionWorkspace } from '../manager/SupervisionWorkspace.js';
 import { DiscountCapsPanel } from '../owner/DiscountCapsPanel.js';
+import { ReservationDaysPanel } from '../owner/ReservationDaysPanel.js';
 import { DiscountCodesPanel } from '../owner/DiscountCodesPanel.js';
 import { PromotionsPanel } from '../owner/PromotionsPanel.js';
 import { DiscountRequestsPanel } from '../owner/DiscountRequestsPanel.js';
@@ -159,6 +160,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         </header>
         {/* Annexe B, RG-USR-06: the admin manages the accounts, never deletes one. */}
         <AccountsPanel />
+        {/* RG-STK-02 (H45): how long a validated order keeps its goods. */}
+        <ReservationDaysPanel />
         {/* RG-AUD-01: who did what, read only. */}
         <AuditLogPanel />
       </div>
@@ -187,6 +190,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
       {owner && <DiscountCapsPanel editable />}
       {/* RG-REM-04 (H41): the owner issues and revokes the discount codes. */}
       {owner && <DiscountCodesPanel />}
+      {/* RG-STK-02 (H45): how long a validated order keeps its goods. */}
+      {owner && <ReservationDaysPanel />}
       {/* RG-DEV-06 §6 (H46, H49 b): the owner marks the products to propose. */}
       {owner && <PromotionsPanel />}
       {/* RG-AUD-01: who did what, read only. */}

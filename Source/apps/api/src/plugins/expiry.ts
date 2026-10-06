@@ -18,9 +18,9 @@ declare module 'fastify' {
 
 /**
  * The internal task that expires the orders past their day end (RG-CMD-08) — with the request
- * each still awaits, the others kept from a former day given a ticket of the day (H45) —
- * each still awaits —, the discount codes (RG-REM-04) and the requests the owner has not answered
- * (H54), every `sweepMs` and once at start: orders left from a day the server was off expire
+ * each still awaits —, gives those kept from a former day a ticket of the day (H45), and expires
+ * the discount codes (RG-REM-04) and the requests the owner has not answered (H54), every
+ * `sweepMs` and once at start: orders left from a day the server was off expire
  * at once. No separate service (CDC technique §5); `sweepMs: 0` leaves the sweeps to the caller
  * (tests).
  */

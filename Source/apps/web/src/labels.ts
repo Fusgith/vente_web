@@ -4,6 +4,7 @@ import { accountsLabels } from './labels-accounts.js';
 import { auditLabels } from './labels-audit.js';
 import { capsLabels } from './labels-caps.js';
 import { codesLabels } from './labels-codes.js';
+import { reservationLabels } from './labels-reservation.js';
 import { customersLabels } from './labels-customers.js';
 import { promotionsLabels } from './labels-promotions.js';
 import { closingLabels } from './labels-closing.js';
@@ -328,6 +329,8 @@ export const labels = {
   supervision: supervisionLabels,
   stock: stockLabels,
   caps: capsLabels,
+  /** Reservation duration, general and per customer (T-022b, H45). */
+  reservation: reservationLabels,
   accounts: accountsLabels,
   audit: auditLabels,
   customers: customersLabels,

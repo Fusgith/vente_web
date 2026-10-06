@@ -1,0 +1,35 @@
+const days = (n: number) => (n === 0 ? 'le jour même' : n === 1 ? '1 jour' : `${n} jours`);
+
+/** Reservation duration (T-022b, RG-STK-02, H45); `labels.reservation`. */
+export const reservationLabels = {
+  title: 'Durée de réservation',
+  help: 'Une commande validée garde sa marchandise jusqu’à la fin de journée, plus ce nombre de jours ; gardée d’un jour sur l’autre, elle reçoit chaque matin un ticket du jour.',
+  readOnly: 'Fixée par l’admin ou le boss ; vous la consultez sans pouvoir la changer.',
+  general: 'Durée générale',
+  generalHelp: '0 : jusqu’à la fin de la journée de validation.',
+  field: 'Jours',
+  generalField: 'Durée générale (jours)',
+  days,
+  invalid: 'Un nombre entier de jours, de 0 à 365.',
+  save: 'Enregistrer',
+  saving: 'Enregistrement…',
+  generalSaved: (n: number) => `Durée générale : ${days(n)}.`,
+  customers: 'Clients à durée propre',
+  customersHelp: 'Leur durée l’emporte sur la durée générale.',
+  none: 'Aucun client n’a de durée propre.',
+  customer: 'Client',
+  phone: 'Téléphone',
+  daysHead: 'Jours',
+  daysOf: (name: string) => `Durée de ${name} (jours)`,
+  saveOf: (name: string) => `Enregistrer la durée de ${name}`,
+  remove: 'Retirer',
+  removeOf: (name: string) => `Rendre la durée générale à ${name}`,
+  saved: (name: string, n: number | null) =>
+    n === null ? `${name} : durée générale rendue.` : `${name} : ${days(n)}.`,
+  search: 'Donner une durée à un client',
+  searchPlaceholder: 'Nom ou téléphone',
+  searchGo: 'Chercher',
+  searchNone: 'Aucun client trouvé.',
+  give: 'Choisir',
+  giveOf: (name: string) => `Donner une durée propre à ${name}`,
+};

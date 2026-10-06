@@ -2,6 +2,23 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 06/10/2026 — T-022b : durée de réservation (tests et écran) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Tests API `test/reservation-days.test.ts` (4 tests) : droits (lecture admin/responsable/boss, écriture admin/boss), audit avant → après, valeur identique sans trace, bornes refusées (400) ; durée propre d’un client (404 inconnu, 409 inactif) ; expiration décalée d’1 ou 3 jours selon la durée générale ou propre ; ticket du jour donné une seule fois, même place, file caisse prévenue. Test `shop-time` : jours comptés depuis la fin de journée.
+- Écran : panneau « Durée de réservation » sur les pages admin et boss (`owner/ReservationDaysPanel.tsx`) — durée générale, tableau des clients à durée propre (modifier, retirer), recherche d’un client pour lui en donner une ; test du panneau (2 tests).
+- Libellés d’audit : « Durée de réservation fixée », « Ticket du jour donné ».
+- Vérifié : lint, typecheck, tests API `reservation-days`, `expiry`, `orders` et web ; capture de l’écran du boss.
+
+**Reste** : rien pour T-022b, sauf la réponse à H59.
+
+**Décisions** :
+- Borne 0 à 365 jours : purement technique (H45 parle d’un soir ou de quelques jours).
+- Le responsable lit la durée par l’API mais n’a pas de panneau (simplicité).
+
+**Questions** :
+- ⚠️ HYPOTHÈSE H59 (CDC métier §16.2) : ticket renouvelé chaque matin, place inchangée — ou ticket donné seulement quand le client se présente ?
+
 ## 06/10/2026 — T-022b : durée de réservation (API) — agent : Claude Code (Opus 5.5)
 
 **Fait** (API, non encore testée) :

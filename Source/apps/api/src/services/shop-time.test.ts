@@ -54,6 +54,17 @@ describe('shop time (Indian/Antananarivo, UTC+3)', () => {
     );
     expect(() => nextShopTime(new Date(), '24:00')).toThrow(RangeError);
   });
+
+  it('counts the reservation days from that day end (H45)', () => {
+    // Validated on Monday 10:00 with 2 days: until Wednesday's day end.
+    expect(nextShopTime(new Date('2026-10-05T07:00:00Z'), '18:00', 2).toISOString()).toBe(
+      '2026-10-07T15:00:00.000Z',
+    );
+    // Validated on Monday 19:00, past the day end: from Tuesday's, so until Thursday's.
+    expect(nextShopTime(new Date('2026-10-05T16:00:00Z'), '18:00', 2).toISOString()).toBe(
+      '2026-10-08T15:00:00.000Z',
+    );
+  });
 });
 
 describe('shopDayStart', () => {
