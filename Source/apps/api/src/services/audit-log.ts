@@ -12,7 +12,7 @@ const SUBJECT_ENTITIES: Record<AuditSubject, string[]> = {
   orders: ['order'],
   customers: ['customer'],
   discounts: ['discount_code', 'discount_request', 'setting'],
-  stock: ['product'],
+  stock: ['product', 'product_promotion'],
   registers: ['register_session'],
   accounts: ['user', 'push_subscription'],
   sessions: ['session'],

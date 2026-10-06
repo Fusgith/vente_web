@@ -9,7 +9,12 @@ import {
 import type { FastifyPluginAsync } from 'fastify';
 
 import { authOf, requireAuth } from '../plugins/session.js';
-import { activeCategories, favoriteProducts, searchProducts } from '../services/product-search.js';
+import {
+  activeCategories,
+  favoriteProducts,
+  promotedProducts,
+  searchProducts,
+} from '../services/product-search.js';
 
 /** Annexe B: every role reads the catalog, all but the warehouse read the discount caps. */
 const CAP_READERS: readonly Role[] = ['admin', 'manager', 'sales', 'cashier', 'owner'];
@@ -29,10 +34,12 @@ export const catalogRoutes: FastifyPluginAsync = async (app) => {
   app.get('/products/favorites', signedIn, async (request): Promise<FavoritesResult> => {
     const auth = authOf(request);
     const { categoryId } = favoritesQuerySchema.parse(request.query);
-    const items = await favoriteProducts(app.db, auth.user.id, categoryId, {
-      showCaps: CAP_READERS.includes(auth.session.activeRole),
-    });
-    return { items };
+    const options = { showCaps: CAP_READERS.includes(auth.session.activeRole) };
+    const [items, promoted] = await Promise.all([
+      favoriteProducts(app.db, auth.user.id, categoryId, options),
+      promotedProducts(app.db, categoryId, options),
+    ]);
+    return { items, promoted };
   });
 
   app.get('/categories', signedIn, async (): Promise<{ items: CategorySummary[] }> => ({

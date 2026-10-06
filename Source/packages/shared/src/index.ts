@@ -26,6 +26,7 @@ export * from './discount.js';
 export * from './invoices.js';
 export * from './orders.js';
 export * from './payments.js';
+export * from './promotions.js';
 export * from './push.js';
 export * from './queues.js';
 export * from './quotes.js';

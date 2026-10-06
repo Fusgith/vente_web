@@ -106,6 +106,11 @@ export const ERROR_LABELS = {
     'Cochez chaque ligne remise au client ; une ligne manquante ou abîmée se signale comme anomalie.',
   REGISTER_SESSION_NOTE_REQUIRED:
     'La caisse ne tombe pas juste : expliquez l’écart dans le commentaire avant de clôturer.',
+  PROMOTION_DATES_INVALID:
+    'La date de fin ne peut ni précéder la date de début, ni être déjà passée.',
+  PROMOTION_OVERLAP: 'Cet article est déjà à proposer sur une partie de ces dates.',
+  PROMOTION_PRODUCT_UNAVAILABLE: 'Cet article n’est plus en vente.',
+  PROMOTION_NOT_CURRENT: 'Cet article n’est déjà plus à proposer.',
   INVOICE_NOT_FOUND: 'Aucune facture à ce numéro : vérifiez-le sur la facture du client.',
   ORDER_NOT_REFUNDABLE:
     'Cette vente ne s’annule pas ici : elle est en préparation, livrée ou déjà remboursée.',

@@ -1,6 +1,7 @@
 import {
   FAVORITES_COUNT,
   FAVORITES_DAYS,
+  PROMOTED_COUNT,
   SEARCH_MAX_RESULTS,
   SEARCH_MIN_LENGTH,
   defaultSaleUnit,
@@ -14,6 +15,8 @@ import {
 import type { Db } from '../db.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { loadHits, type HitOptions } from './product-hits.js';
+import { currentOn } from './promotions.js';
+import { shopDateValue } from './shop-time.js';
 
 interface ExactMatch {
   productId: string;
@@ -153,6 +156,28 @@ export async function favoriteProducts(
   const shop = mine.length < FAVORITES_COUNT ? await bestSellers(db, null, categoryId) : [];
   const ids = [...new Set([...mine, ...shop])].slice(0, FAVORITES_COUNT);
   return loadHits(db, ids, options);
+}
+
+/** The « À proposer » row (RG-DEV-06 §6): today's promotions of products on sale, ending soonest. */
+export async function promotedProducts(
+  db: Db,
+  categoryId: string | undefined,
+  options: HitOptions,
+): Promise<ProductHit[]> {
+  const rows = await db.productPromotion.findMany({
+    where: {
+      ...currentOn(shopDateValue(new Date())),
+      product: { isActive: true, ...(categoryId ? { categoryId } : {}) },
+    },
+    orderBy: [{ endsOn: 'asc' }, { product: { sku: 'asc' } }],
+    select: { productId: true },
+    take: PROMOTED_COUNT,
+  });
+  return loadHits(
+    db,
+    rows.map((row) => row.productId),
+    options,
+  );
 }
 
 /** Active categories, for the optional filter of the search (RG-DEV-06 §5). */

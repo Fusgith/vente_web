@@ -11,6 +11,8 @@ export const SEARCH_MAX_LENGTH = 100;
 export const SEARCH_MAX_RESULTS = 8;
 /** Favourites row: best sellers of this salesperson over 30 days, else of the shop. */
 export const FAVORITES_COUNT = 12;
+/** The « À proposer » row beside the favorites (RG-DEV-06 §6), as long. */
+export const PROMOTED_COUNT = 12;
 export const FAVORITES_DAYS = 30;
 
 const decimalString = z.string().regex(/^-?\d+(\.\d+)?$/);
@@ -49,6 +51,8 @@ export const productHitSchema = z.object({
   available: decimalString,
   /** Active sale units, smallest factor first. */
   units: z.array(productUnitHitSchema),
+  /** Marked « à proposer » by the owner today (RG-DEV-06 §6), with what to tell the customer. */
+  promotion: z.object({ pitch: z.string().nullable() }).optional(),
 });
 export type ProductHit = z.infer<typeof productHitSchema>;
 
@@ -63,6 +67,8 @@ export type ProductSearchResult = z.infer<typeof productSearchResultSchema>;
 
 export const favoritesResultSchema = z.object({
   items: z.array(productHitSchema).max(FAVORITES_COUNT),
+  /** The products to propose today, ending soonest first (RG-DEV-06 §6). */
+  promoted: z.array(productHitSchema).max(PROMOTED_COUNT).default([]),
 });
 export type FavoritesResult = z.infer<typeof favoritesResultSchema>;
 

@@ -87,6 +87,7 @@ model User {
   auditEntries        AuditLog[]
   settingsUpdated     Setting[]
   pushSubscriptions   PushSubscription[]
+  promotions          ProductPromotion[]
 
   @@map("users")
 }

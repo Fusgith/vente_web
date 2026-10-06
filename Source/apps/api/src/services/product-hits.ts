@@ -2,7 +2,9 @@ import { resolveDiscountCap, type ProductHit } from '@vente-web/shared';
 
 import type { Db } from '../db.js';
 import type { Prisma } from '../generated/prisma/client.js';
+import { currentOn } from './promotions.js';
 import { readSetting } from './settings.js';
+import { shopDateValue } from './shop-time.js';
 
 export interface HitOptions {
   /** Discount caps are hidden from roles that may not read them (annexe B). */
@@ -99,13 +101,22 @@ export async function loadHits(
   options: HitOptions,
 ): Promise<ProductHit[]> {
   if (ids.length === 0) return [];
-  const [products, fallbackCap] = await Promise.all([
-    db.product.findMany({ where: { id: { in: [...ids] } }, include: hitInclude(new Date()) }),
+  const now = new Date();
+  const [products, fallbackCap, promotions] = await Promise.all([
+    db.product.findMany({ where: { id: { in: [...ids] } }, include: hitInclude(now) }),
     defaultDiscountCap(db),
+    db.productPromotion.findMany({
+      where: { productId: { in: [...ids] }, ...currentOn(shopDateValue(now)) },
+      select: { productId: true, pitch: true },
+    }),
   ]);
   const byId = new Map(products.map((product) => [product.id, product]));
+  // Promotions of one product never overlap: one argument at most (RG-DEV-06 §6).
+  const pitchOf = new Map(promotions.map((promotion) => [promotion.productId, promotion.pitch]));
   return ids.flatMap((id) => {
     const product = byId.get(id);
-    return product ? [toHit(product, fallbackCap, options)] : [];
+    if (!product) return [];
+    const hit = toHit(product, fallbackCap, options);
+    return [pitchOf.has(id) ? { ...hit, promotion: { pitch: pitchOf.get(id) ?? null } } : hit];
   });
 }

@@ -48,6 +48,7 @@ model Product {
   orderLines   OrderLine[]
   codeItems    DiscountCodeItem[]
   requestItems DiscountRequestItem[]
+  promotions   ProductPromotion[]
 
   @@index([categoryId])
   @@index([name])
@@ -110,4 +111,27 @@ model ProductStock {
   product Product @relation(fields: [productId], references: [id])
 
   @@map("product_stock")
+}
+
+/// A product the owner marks « à proposer » to the salespeople (RG-DEV-06 §6, H46, H49 b), from
+/// `startsOn` to `endsOn`, both included (shop days). Never a price change (RG-ART-07).
+model ProductPromotion {
+  id          String    @id @default(uuid(7)) @db.Uuid
+  productId   String    @map("product_id") @db.Uuid
+  startsOn    DateTime  @map("starts_on") @db.Date
+  /// Not before `startsOn` (CHECK in the migration).
+  endsOn      DateTime  @map("ends_on") @db.Date
+  /// What to tell the customer, optional.
+  pitch       String?   @db.VarChar(200)
+  createdById String    @map("created_by") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  /// Withdrawn before its end: no longer shown, kept for the audit.
+  withdrawnAt DateTime? @map("withdrawn_at") @db.Timestamptz(6)
+
+  product   Product @relation(fields: [productId], references: [id])
+  createdBy User    @relation(fields: [createdById], references: [id])
+
+  @@index([productId])
+  @@index([endsOn])
+  @@map("product_promotions")
 }
