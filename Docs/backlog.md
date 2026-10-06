@@ -33,7 +33,7 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-007 | — | Premier commit du dépôt (docs seulement) et premier push vers `origin/main` | Fait | E00 | Commit e8d73a1 le 21/09/2026 |
 | T-008 | — | **GO pour coder** consigné dans le journal | Fait | E00 | GO donné le 21/09/2026 |
 | T-010 | MVP | Scaffolding monorepo, Docker Compose dev, CI lint/typecheck/test | Terminé | E01 | Sur `main` le 23/09 |
-| T-010b | MVP | Pré-commit local (Husky ou hook git manuel) — racine git ≠ `Source/` | À faire | E01 | CI = garde-fou en attendant |
+| T-010b | MVP | Pré-commit local (Husky ou hook git manuel) — racine git ≠ `Source/` | Terminé (06/10) | E01 | Hook `.githooks/pre-commit` : Prettier + ESLint sur les fichiers indexés ; typecheck et tests restent en CI |
 | T-010c | MVP | Icônes PWA PNG 192/512 depuis le logo du magasin | À faire | E01 | Logo à déposer dans `Autres/` par l'utilisateur ; SVG provisoire en place |
 | T-010d | MVP | Lanceur de développement en un double-clic (`Lancer Vente Web.cmd`, `pnpm demarrer`) | Terminé | E01 | Demandé par l'utilisateur le 05/10 |
 | T-011 | MVP | Schéma Prisma initial + migrations + seed de démonstration | Terminé | E01 | Sur `main` le 23/09 (migration `init` + SQL manuel, seed idempotent, CI avec PostgreSQL ✅) ; suite : T-011b |

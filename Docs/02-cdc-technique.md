@@ -88,7 +88,7 @@ Réplication logique PostgreSQL (magasin → cloud) vers une instance qui ne re�
 | Reverse proxy | Caddy | recommandé | TLS automatique, configuration minimale |
 | Conteneurs | Docker Compose | figé (dev) | Base de dev ; le serveur du magasin est livré sans Docker (ADR-0007) |
 | Tests | Vitest (unit/intégration), Playwright (e2e) | recommandé | |
-| Qualité | ESLint, Prettier, TypeScript strict, Husky (pré-commit : lint + typecheck) | recommandé | |
+| Qualité | ESLint, Prettier, TypeScript strict, hook git `.githooks/pre-commit` (Prettier + ESLint sur les fichiers indexés ; typecheck et tests en CI) | recommandé | |
 | Logs | pino (JSON), rotation par Docker | recommandé | |
 
 Dépendances à éviter : ORM ou framework « magique » supplémentaire, bibliothèques d'état globales lourdes, tout composant nécessitant Chromium côté serveur.

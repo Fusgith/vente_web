@@ -2,6 +2,22 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 06/10/2026 — T-010b : pré-commit local — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Hook `.githooks/pre-commit` (racine git) → `Source/scripts/pre-commit.mjs` : Prettier `--check` et ESLint sur les fichiers indexés sous `Source/` ; commit refusé avec la marche à suivre en français ; sauté si les dépendances manquent.
+- Activation : script `prepare` (`scripts/hooks.mjs`) qui pose `core.hooksPath = .githooks` à chaque `pnpm install`, seulement dans un dépôt git dont la racine est le dossier au-dessus de `Source/` (rien dans un dossier `Dist/`).
+- Vérifié : un fichier mal formaté est refusé (code 1), les fichiers propres passent ; ce commit est passé par le hook.
+- CDC technique §3 (ligne Qualité) et `Source/CLAUDE.md` mis à jour.
+
+**Reste** : rien.
+
+**Décisions** :
+- Pas de Husky ni de nouvelle dépendance : la racine git n’est pas `Source/` ; un hook versionné et `core.hooksPath` suffisent.
+- Typecheck et tests restent en CI (trop lents pour chaque commit) ; le CDC disait « lint + typecheck », corrigé.
+
+**Questions** : aucune.
+
 ## 06/10/2026 — T-022b : durée de réservation (tests et écran) — agent : Claude Code (Opus 5.5)
 
 **Fait** :

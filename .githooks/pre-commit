@@ -1,0 +1,3 @@
+#!/bin/sh
+# Prettier and ESLint on the staged files under Source/ (T-010b).
+exec node Source/scripts/pre-commit.mjs

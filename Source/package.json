@@ -12,6 +12,7 @@
     "dev": "pnpm -r --parallel --stream run dev",
     "build": "pnpm -r run build",
     "demarrer": "node scripts/demarrer.mjs",
+    "prepare": "node scripts/hooks.mjs",
     "dist": "node scripts/dist.mjs",
     "typecheck": "pnpm -r run typecheck",
     "lint": "eslint .",
