@@ -4,6 +4,7 @@ import {
   customerSearchQuerySchema,
   customerUpdateSchema,
   type Customer,
+  type CustomerPurchases,
   type CustomerSearchResult,
   type Role,
 } from '@vente-web/shared';
@@ -11,6 +12,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
 import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { customerPurchases } from '../services/customer-purchases.js';
 import {
   createCustomer,
   deactivateCustomer,
@@ -43,6 +45,12 @@ export const customerRoutes: FastifyPluginAsync = async (app) => {
   app.get('/customers/:id', readers, async (request): Promise<Customer> => {
     const { id } = paramsSchema.parse(request.params);
     return findCustomer(app.db, id);
+  });
+
+  /** The latest purchases, shown on the tablet once the customer is chosen (H47). */
+  app.get('/customers/:id/purchases', readers, async (request): Promise<CustomerPurchases> => {
+    const { id } = paramsSchema.parse(request.params);
+    return customerPurchases(app.db, id);
   });
 
   app.post('/customers', { preHandler: requireRole('sales') }, async (request, reply) => {

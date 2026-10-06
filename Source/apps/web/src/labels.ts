@@ -139,6 +139,14 @@ export const labels = {
       phonesSame: 'Les deux téléphones sont identiques : laissez le second vide.',
       pick: (name: string) => `Choisir ${name}`,
       chosen: (name: string) => `Client : ${name}`,
+      /** Beside the chosen customer: the latest invoiced lines on demand (H47, T-038). */
+      lastPurchase: (date: string) => `Dernier achat : ${date}`,
+      noPurchase: 'Aucun achat',
+      purchasesTitle: (name: string) => `Derniers achats de ${name}`,
+      purchaseDate: 'Date',
+      purchaseItem: 'Article',
+      purchaseUnit: 'Unité',
+      purchaseQty: 'Quantité',
     },
 
     draft: {

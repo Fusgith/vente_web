@@ -16,6 +16,7 @@ import { useStatusLine } from '../shell/status-line.js';
 import { buttonClass } from '../ui/button.js';
 import { Icon } from '../ui/Icon.js';
 import { Sheet } from '../ui/Sheet.js';
+import { CustomerHistory } from './CustomerHistory.js';
 import type { DraftCustomer } from './draft.js';
 import { SEARCH_DEBOUNCE_MS } from './useProductSearch.js';
 
@@ -106,7 +107,7 @@ export function CustomerPicker({ value, onChange, locked = null }: CustomerPicke
   };
 
   return (
-    <>
+    <span className="flex max-w-full min-w-0 flex-wrap items-center justify-end gap-x-2">
       <button
         type="button"
         aria-haspopup="dialog"
@@ -127,10 +128,11 @@ export function CustomerPicker({ value, onChange, locked = null }: CustomerPicke
           text.choose
         )}
       </button>
+      {value && <CustomerHistory customer={value} />}
       {open && (
         <CustomerSheet chosenId={value?.id ?? null} onPick={pick} onClose={() => setOpen(false)} />
       )}
-    </>
+    </span>
   );
 }
 

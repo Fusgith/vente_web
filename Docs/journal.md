@@ -2,6 +2,30 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 06/10/2026 — T-038 : derniers achats du client sur la tablette — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Dès que le commercial choisit le client sur le devis, la tablette affiche « Dernier achat : 03/10/2026 » à côté de son nom (H47, RG-DEV-04).
+- Un appui ouvre la feuille « Derniers achats de … » : Date, Article, Unité, Quantité, en lecture seule.
+- Un client sans facture affiche « Aucun achat ». Si le serveur ne répond pas, rien ne s'affiche : c'est une aide, pas une étape.
+- API : `GET /customers/:id/purchases`, mêmes lecteurs que la fiche client (commercial, caissier, responsable, boss, admin), refusé au magasinier.
+- Vérifié :
+  - tests API (3 nouveaux), web et shared 367 ; lint, typecheck et Prettier propres ;
+  - dans le navigateur, connecté en commercial `hery` : le client Rasoanaivo Hanta montre « Dernier achat : 03/10/2026 » et ses 4 articles.
+
+**Reste** :
+- Confirmer H58 (périmètre de l'historique, ci-dessous).
+
+**Décisions** :
+- ⚠️ HYPOTHÈSE H58 (CDC métier §16.2) :
+  - 30 dernières lignes facturées, la facture la plus récente d'abord ;
+  - une facture annulée en entier par un avoir est exclue ; une facture remboursée en partie garde ses lignes ;
+  - les achats des fiches fusionnées dans celle-ci comptent.
+- Aucune dépendance ajoutée.
+
+**Questions** :
+- H58 vous convient-elle (30 lignes) ? Alternative : une période, par exemple 12 mois.
+
 ## 06/10/2026 — T-014 : lire le journal d'audit — agent : Claude Code (Opus 5.5)
 
 **Fait** :

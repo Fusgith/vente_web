@@ -121,3 +121,22 @@ export type CustomerSearchResult = z.infer<typeof customerSearchResultSchema>;
 /** Details of `CUSTOMER_PHONE_TAKEN`: the active record holding the number, to offer it. */
 export const customerPhoneTakenSchema = z.object({ customer: customerSchema, phone: z.string() });
 export type CustomerPhoneTaken = z.infer<typeof customerPhoneTakenSchema>;
+
+/** How many invoiced lines the tablet shows of a customer's latest purchases (H47). */
+export const CUSTOMER_PURCHASES_MAX_LINES = 30;
+
+/**
+ * A customer's latest purchases, the newest first, from the invoices (H47, RG-DEV-04): what the
+ * sales person sees once the customer is chosen on the quote, read only.
+ */
+export const customerPurchasesSchema = z.object({
+  lines: z.array(
+    z.object({
+      at: z.iso.datetime({ offset: true }),
+      name: z.string(),
+      unitLabel: z.string(),
+      qty: z.string(),
+    }),
+  ),
+});
+export type CustomerPurchases = z.infer<typeof customerPurchasesSchema>;

@@ -50,7 +50,8 @@ describe('CustomerPicker (RG-DEV-04)', () => {
     const trigger = screen.getByRole('button', { name: text.change('Rakoto Jean') });
     expect(trigger).toHaveTextContent('034 12 345 67');
     // Two digits are not searched: one request, for the whole number typed.
-    expect(api.calls.map((call) => call.path)).toEqual(['/customers?q=034+12']);
+    const searches = api.calls.filter((call) => call.path.startsWith('/customers?'));
+    expect(searches.map((call) => call.path)).toEqual(['/customers?q=034+12']);
   });
 
   it('asks to refine beyond 8 customers', async () => {
@@ -163,5 +164,36 @@ describe('CustomerPicker (RG-DEV-04)', () => {
       phone: '0331112233',
       secondPhone: '0324455566',
     });
+  });
+
+  it('shows the chosen customer’s last purchase, the lines on demand (H47)', async () => {
+    fakeApi({
+      [`GET /customers/${RAKOTO.id}/purchases`]: ok({
+        lines: [
+          { at: '2026-09-12T08:00:00.000Z', name: 'Clous 70 mm', unitLabel: 'kg', qty: '2.50' },
+          { at: '2026-08-30T08:00:00.000Z', name: 'Riz blanc', unitLabel: 'sac', qty: '1.00' },
+        ],
+      }),
+      [`GET /customers/${RABE.id}/purchases`]: ok({ lines: [] }),
+    });
+    const { unmount } = render(<Harness initial={RAKOTO} />);
+    fireEvent.click(await screen.findByRole('button', { name: text.lastPurchase('12/09/2026') }));
+    const sheet = screen.getByRole('dialog', { name: text.purchasesTitle('Rakoto Jean') });
+    expect(within(sheet).getAllByRole('row')).toHaveLength(3);
+    expect(within(sheet).getByText('Clous 70 mm')).toBeVisible();
+    expect(within(sheet).getByText('2,5')).toBeVisible();
+    expect(within(sheet).getByText('30/08/2026')).toBeVisible();
+    unmount();
+
+    render(<Harness initial={RABE} />);
+    expect(await screen.findByText(text.noPurchase)).toBeVisible();
+  });
+
+  it('shows nothing of the history when the server cannot answer', async () => {
+    const api = fakeApi({});
+    render(<Harness initial={RAKOTO} />);
+    await waitFor(() => expect(api.calls).toHaveLength(1));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.queryByText(text.noPurchase)).not.toBeInTheDocument();
   });
 });

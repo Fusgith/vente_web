@@ -1,10 +1,12 @@
 import {
   customerPhoneTakenSchema,
+  customerPurchasesSchema,
   customerSchema,
   customerSearchResultSchema,
   type Customer,
   type CustomerCreateInput,
   type CustomerPhoneTaken,
+  type CustomerPurchases,
   type CustomerSearchResult,
 } from '@vente-web/shared';
 
@@ -23,6 +25,11 @@ export const customersApi = {
   async create(body: CustomerCreateInput): Promise<Customer> {
     const data = await apiRequest('/customers', { method: 'POST', body });
     return parseResponse(customerSchema, data);
+  },
+
+  /** The latest invoiced lines, shown beside the chosen customer (H47). */
+  async purchases(id: string): Promise<CustomerPurchases> {
+    return parseResponse(customerPurchasesSchema, await apiRequest(`/customers/${id}/purchases`));
   },
 };
 
