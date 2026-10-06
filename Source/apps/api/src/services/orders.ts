@@ -19,6 +19,7 @@ import {
   type PricedLine,
 } from './quotes.js';
 import { nextSequenceValue } from './sequences.js';
+import { reservationDaysOf } from './reservation-days.js';
 import { readSetting } from './settings.js';
 import { CLOCK_TIME, nextShopTime, shopDateValue } from './shop-time.js';
 import { reserveStock, type ProductReservation } from './stock-reservation.js';
@@ -266,7 +267,12 @@ async function validate(
   await assertActiveCustomer(db, current.customerId);
   const priced = await priceAgain(db, current);
   const now = new Date();
-  const expiresAt = nextShopTime(now, await dayEndTime(db));
+  // The day end of its last day: the customer's own duration, else the general one (H45).
+  const expiresAt = nextShopTime(
+    now,
+    await dayEndTime(db),
+    await reservationDaysOf(db, current.customerId),
+  );
   const ticketDate = shopDateValue(now);
   const day = ticketDate.toISOString().slice(0, 10);
   const kept = ticketOfDay(current, day);

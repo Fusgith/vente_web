@@ -2,6 +2,25 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 06/10/2026 — T-022b : durée de réservation (API) — agent : Claude Code (Opus 5.5)
+
+**Fait** (API, non encore testée) :
+- Paramètre `reservation_days` (durée générale, 0 par défaut) et colonne `customers.reservation_days` (durée propre d'un client, nulle : la générale) ; migration `20261006180000_add_customer_reservation_days`.
+- Routes : `GET /reservation-days` (admin, responsable, boss), `PUT /reservation-days` et `PUT /customers/:id/reservation-days` (admin, boss) ; chaque changement est journalisé (`reservation_days.set`).
+- À la validation, la commande expire à la fin du dernier jour de sa durée (`nextShopTime(now, fin de journée, jours)`).
+- Le balayage donne un ticket du jour aux commandes gardées d'un jour sur l'autre : même lettre, numéro suivant, même place (`order.ticket_renewed`, file caisse prévenue).
+
+**Reste** :
+- Tests API (`test/reservation-days.test.ts` : droits, audit, expiration selon la durée du client, renouvellement du ticket) ; relancer `expiry` et `orders`.
+- Écran : panneau « Durée de réservation » pour l'admin et le boss (durée générale, clients à durée propre), libellés d'audit.
+
+**Décisions** :
+- Borne 0 à 365 jours : purement technique (H45 parle d'un soir ou de quelques jours).
+- Le responsable lit la durée par l'API mais n'a pas de panneau (simplicité).
+
+**Questions** :
+- ⚠️ HYPOTHÈSE H59 (CDC métier §16.2) : ticket renouvelé chaque matin, place inchangée — ou ticket donné seulement quand le client se présente ?
+
 ## 06/10/2026 — T-011b : CDC technique §5 aligné sur la base réelle — agent : Claude Code (Opus 5.5)
 
 **Fait** (documentation seulement) :

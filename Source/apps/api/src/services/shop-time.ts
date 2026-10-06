@@ -84,9 +84,10 @@ export const CLOCK_TIME = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 /**
  * The first instant after `now` at which the shop's clock reads `time` (`HH:MM`): today's if it
- * is still ahead, tomorrow's otherwise. Serves the day end of reservations (RG-STK-02).
+ * is still ahead, tomorrow's otherwise — `days` later still. Serves the day end of reservations
+ * (RG-STK-02): validated on Monday with a duration of 2 days, an order runs until Wednesday's.
  */
-export function nextShopTime(now: Date, time: string): Date {
+export function nextShopTime(now: Date, time: string, days = 0): Date {
   const match = CLOCK_TIME.exec(time);
   if (!match) throw new RangeError(`Not a clock time: "${time}"`);
   const clock = shopClock(now);
@@ -105,6 +106,5 @@ export function nextShopTime(now: Date, time: string): Date {
       Date.UTC(clock.year, clock.month - 1, clock.day + days, Number(match[1]), Number(match[2])) -
         offset,
     );
-  const today = at(0);
-  return today.getTime() > now.getTime() ? today : at(1);
+  return at(at(0).getTime() > now.getTime() ? days : days + 1);
 }

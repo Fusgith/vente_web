@@ -2,8 +2,8 @@ import fp from 'fastify-plugin';
 
 import { expireDiscountCodes } from '../services/discount-codes.js';
 import { expireDiscountRequests } from '../services/discount-requests.js';
-import { expireOrders, SWEEP_MS, type ExpiredOrder } from '../services/expiry.js';
-import { discountDecided, orderExpired } from '../services/realtime-rooms.js';
+import { expireOrders, renewTickets, SWEEP_MS, type ExpiredOrder } from '../services/expiry.js';
+import { discountDecided, orderExpired, queueChanged } from '../services/realtime-rooms.js';
 
 export interface Expiry {
   /** One sweep now: the orders it expired, their followers told once it committed. */
@@ -18,6 +18,7 @@ declare module 'fastify' {
 
 /**
  * The internal task that expires the orders past their day end (RG-CMD-08) — with the request
+ * each still awaits, the others kept from a former day given a ticket of the day (H45) —
  * each still awaits —, the discount codes (RG-REM-04) and the requests the owner has not answered
  * (H54), every `sweepMs` and once at start: orders left from a day the server was off expire
  * at once. No separate service (CDC technique §5); `sweepMs: 0` leaves the sweeps to the caller
@@ -39,6 +40,11 @@ export const expiryPlugin = fp<{ sweepMs?: number }>(
         ]),
       );
       if (expired.length > 0) app.log.info({ count: expired.length }, 'orders expired');
+      // Kept from a former day by their reservation duration: a ticket of the day (H45, H59).
+      const renewed = await renewTickets(app.db, (orderId, error) =>
+        app.log.error({ err: error, orderId }, 'ticket renewal failed'),
+      );
+      app.realtime.publish(renewed.flatMap((id) => queueChanged('register', id, 'updated')));
       const codes = await expireDiscountCodes(app.db).catch((error: unknown) => {
         app.log.error({ err: error }, 'discount code expiry failed');
         return 0;

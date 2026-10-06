@@ -55,6 +55,9 @@ model Customer {
   secondPhone  String?  @map("second_phone") @db.VarChar(32)
   /// Classes the customer (H43, H49 a): one of the `customer_categories` setting.
   category     String   @default("Divers") @db.VarChar(40)
+  /// Days an order stays reserved after its own (H45, T-022b): a particular condition that
+  /// prevails; null → the `reservation_days` setting. 0 to 365 (CHECK in the migration).
+  reservationDays Int?  @map("reservation_days")
   notes        String?
   isActive     Boolean  @default(true) @map("is_active")
   /// Set when this record was merged into another one (deduplication).

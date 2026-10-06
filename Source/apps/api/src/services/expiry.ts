@@ -1,5 +1,7 @@
 import type { Db } from '../db.js';
 import { recordAudit } from './audit.js';
+import { nextSequenceValue } from './sequences.js';
+import { shopDateValue } from './shop-time.js';
 import { releaseReservations } from './stock-reservation.js';
 
 /** How often the API looks for orders past their day end (CDC technique §5). */
@@ -81,5 +83,62 @@ async function expireOne(db: Db, id: string, now: Date): Promise<ExpiredOrder | 
       reason: 'order_expired',
     });
     return { id, salesUserId: row.sales_user_id, requestId: request.id };
+  });
+}
+
+/**
+ * Gives a ticket of the day to the orders kept from a former day by their reservation duration
+ * (RG-CMD-08, H45; ⚠️ HYPOTHÈSE H59): tickets are numbered per day (RG-TKT-01), yesterday's would
+ * be taken for one of today's. Same letter, the next number of the day, same place in the queue;
+ * audited as the system's doing, one transaction per order as the expiry. Returns their ids.
+ */
+export async function renewTickets(
+  db: Db,
+  onError: (orderId: string, error: unknown) => void,
+  now = new Date(),
+): Promise<string[]> {
+  const day = shopDateValue(now).toISOString().slice(0, 10);
+  const due = await db.order.findMany({
+    where: { status: 'SUBMITTED', ticketDate: { lt: shopDateValue(now) } },
+    // Numbered in the order of the queue.
+    orderBy: [{ queueRank: 'asc' }, { id: 'asc' }],
+    select: { id: true },
+    take: BATCH,
+  });
+  const renewed: string[] = [];
+  for (const { id } of due) {
+    const done = await renewOne(db, id, day).catch((error: unknown) => {
+      onError(id, error);
+      return false;
+    });
+    if (done) renewed.push(id);
+  }
+  return renewed;
+}
+
+async function renewOne(db: Db, id: string, day: string): Promise<boolean> {
+  return db.$transaction(async (tx) => {
+    const [row] = await tx.$queryRaw<{ letter: string; seq: number; date: Date }[]>`
+        SELECT "ticket_letter" AS "letter", "ticket_seq" AS "seq", "ticket_date" AS "date"
+          FROM "orders"
+         WHERE "id" = ${id}::uuid AND "status" = 'SUBMITTED' AND "ticket_date" < ${day}::date
+           AND "ticket_letter" IS NOT NULL AND "ticket_seq" IS NOT NULL
+           FOR UPDATE`;
+    if (!row) return false;
+    const seq = await nextSequenceValue(tx, `TICKET-${day}-${row.letter}`);
+    await tx.order.update({
+      where: { id },
+      data: { ticketSeq: seq, ticketDate: new Date(day), version: { increment: 1 } },
+    });
+    await recordAudit(tx, {
+      action: 'order.ticket_renewed',
+      entityType: 'order',
+      entityId: id,
+      before: {
+        ticket: { letter: row.letter, seq: row.seq, date: row.date.toISOString().slice(0, 10) },
+      },
+      after: { ticket: { letter: row.letter, seq, date: day } },
+    });
+    return true;
   });
 }

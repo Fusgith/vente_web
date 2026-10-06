@@ -248,7 +248,7 @@ Voir RG-FAC. La facture est produite en PDF, imprimable en A4 et, en option, en 
 
 ### 5.9 Cas particuliers
 
-- **RG-CMD-08 Expiration** *(modalités : décision H31, 28/09/2026 ; durée : décision H45, 29/09/2026)* : une commande `SUBMITTED` non payée à l'**échéance de sa réservation** (RG-STK-02 : fin de la journée, ou du dernier jour de la durée de réservation) passe `EXPIRED` ; le stock est libéré ; le commercial est notifié. Le commercial peut la **réactiver** le lendemain ou plus tard : nouveau contrôle de stock, nouveau ticket (le jour a changé), nouvelle échéance selon RG-STK-02. Une commande gardée d'un jour sur l'autre par sa durée de réservation reçoit de même un **nouveau ticket** le jour où le client se présente (RG-TKT-01 : numéros par jour). *(Décision H56, 05/10/2026.)* Réactivée, elle prend la dernière place de la file ; refusée (prix changé, stock manquant, plafond baissé), elle redevient un devis.
+- **RG-CMD-08 Expiration** *(modalités : décision H31, 28/09/2026 ; durée : décision H45, 29/09/2026)* : une commande `SUBMITTED` non payée à l'**échéance de sa réservation** (RG-STK-02 : fin de la journée, ou du dernier jour de la durée de réservation) passe `EXPIRED` ; le stock est libéré ; le commercial est notifié. Le commercial peut la **réactiver** le lendemain ou plus tard : nouveau contrôle de stock, nouveau ticket (le jour a changé), nouvelle échéance selon RG-STK-02. Une commande gardée d'un jour sur l'autre par sa durée de réservation reçoit de même un **nouveau ticket** le jour où le client se présente (RG-TKT-01 : numéros par jour) ; ⚠️ HYPOTHÈSE H59 : ce ticket lui est donné au début de chaque jour où elle reste gardée, avec la lettre de son commercial, et sa place dans la file ne change pas. *(Décision H56, 05/10/2026.)* Réactivée, elle prend la dernière place de la file ; refusée (prix changé, stock manquant, plafond baissé), elle redevient un devis.
 - **RG-ANN-01 Annulation avant paiement** : par le commercial (ses commandes), le caissier ou le responsable, motif obligatoire ; réservation libérée ; ticket clos.
 - *(Modalités de RG-ANN-02 et de l'avoir : décision H36, 29/09/2026.)*
 - **RG-ANN-02 Annulation après paiement, avant livraison** : par le caissier **avec validation du responsable** ; émet un **avoir total**, enregistre le remboursement (moyen, référence), libère la réservation ; état `REFUNDED`.
@@ -429,6 +429,7 @@ Accessible à distance sur téléphone et PC, actualisé en temps réel. *(Déci
 | `cash_rounding` | aucun | Arrondi espèces (RG-FMT-04) |
 | `invoice_prefix` / `credit_note_prefix` / `quote_prefix` | F / AV / D | Préfixes de numérotation |
 | `day_end_time` | 23:59 | Fin de journée : expiration des réservations (RG-STK-02) et des codes de remise (RG-REM-04) (décision H16) |
+| `reservation_days` | 0 | Durée de réservation générale, en jours après celui de la validation (0 à 365) ; la durée propre d'un client prime ; l'admin ou le boss les fixent (RG-STK-02, décision H45) |
 | `quote_validity_days` | 7 | Validité d'un devis |
 | `default_max_discount_pct` | 0 | Plafond de remise si ni l'article ni sa catégorie n'en ont |
 | `discount_code.length` | 8 | Longueur des codes de remise |
@@ -483,11 +484,12 @@ Les ADR 0001 à 0004 ont été **acceptés** par l'utilisateur le 21/09/2026.
 
 ### 16.2 Points nouveaux à confirmer
 
-H14 à H28 tranchés le 26/09 (§16.5), H29 le 27/09 (§16.6), H30 à H35 le 28/09 (§16.7), H36 et H37 le 29/09 (§16.8), H43 à H48 le même jour (§16.9, remarques du boss), H38 à H42, H49 et H50 le 01/10 (§16.10), H51 à H54 le 03/10 (§16.11, demandes de remise exceptionnelle), H55 le 04/10 (§16.12, notification push au boss), H56 le 05/10 (§16.13, devis et commandes du commercial). H58 en attente (T-038, 06/10). Un nouveau point s'inscrit ici, marqué ⚠️ HYPOTHÈSE dans la règle concernée.
+H14 à H28 tranchés le 26/09 (§16.5), H29 le 27/09 (§16.6), H30 à H35 le 28/09 (§16.7), H36 et H37 le 29/09 (§16.8), H43 à H48 le même jour (§16.9, remarques du boss), H38 à H42, H49 et H50 le 01/10 (§16.10), H51 à H54 le 03/10 (§16.11, demandes de remise exceptionnelle), H55 le 04/10 (§16.12, notification push au boss), H56 le 05/10 (§16.13, devis et commandes du commercial). H58 (T-038) et H59 (T-022b) en attente (06/10). Un nouveau point s'inscrit ici, marqué ⚠️ HYPOTHÈSE dans la règle concernée.
 
 | # | Hypothèse | Règle | Alternative |
 |---|---|---|---|
 | H58 | **Derniers achats du client** (T-038) : la feuille montre les **30 dernières lignes facturées**, la facture la plus récente d'abord ; une facture **annulée en entier** par un avoir n'est plus un achat, une facture remboursée en partie garde ses lignes telles que facturées ; les achats des fiches **fusionnées** dans celle-ci y comptent ; un client sans facture affiche « Aucun achat ». | RG-DEV-04 (H47) | Une période (ex. 12 mois) au lieu d'un nombre de lignes ; les quantités nettes des retours partiels. |
+| H59 | **Ticket d'une commande gardée** (T-022b) : une commande gardée d'un jour sur l'autre par sa durée de réservation reçoit un **ticket du jour** au début de chaque jour (premier balayage après 00:00), même lettre, numéro suivant du jour ; sa place dans la file caisse ne change pas. Le jour où le client se présente, elle porte ainsi un ticket de ce jour. | RG-CMD-08, RG-TKT-01 (H45) | Le ticket donné seulement quand le client se présente (caissier ou commercial la « rappelle »), la commande hors de la file en attendant. |
 
 ### 16.3 Corrections de l'utilisateur du 23/09/2026
 
