@@ -64,6 +64,12 @@ async function seedUsers(db: Db): Promise<void> {
     } else if (existing.pinHash === null && existing.passwordHash === null) {
       // An account that never had a secret gets the demo ones; a changed secret is never touched.
       await db.user.update({ where: { id: existing.id }, data: credentials });
+    } else if (existing.passwordHash === null && credentials.passwordHash !== null) {
+      // Shop accounts seeded with a PIN only get their demo password (H57); the PIN stays.
+      await db.user.update({
+        where: { id: existing.id },
+        data: { passwordHash: credentials.passwordHash },
+      });
     }
   }
 }

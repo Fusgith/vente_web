@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { App } from '../App.js';
 import { labels } from '../labels.js';
-import { apiError, DIRECTORY, fakeApi, HERY, meFor, ok, RIJA } from '../test/fake-api.js';
+import { apiError, fakeApi, HERY, meFor, ok, RIJA } from '../test/fake-api.js';
 
 /** Lets pending fetch promises settle while intervals and Date are faked (setTimeout stays real). */
 const settle = () =>
@@ -89,7 +89,6 @@ describe('signed-in shell', () => {
     fakeApi({
       'GET /auth/me': ok(meFor({ user: HERY, activeRole: 'manager' })),
       'POST /auth/switch-role': apiError(401, 'AUTH_SESSION_IDLE'),
-      'GET /auth/users': ok(DIRECTORY),
     });
     render(<App />);
 
@@ -98,21 +97,21 @@ describe('signed-in shell', () => {
     });
 
     expect(await screen.findByText(ERROR_LABELS.AUTH_SESSION_IDLE)).toBeVisible();
-    // Same person, same tablet: only the PIN is asked again.
-    expect(await screen.findByRole('heading', { name: HERY.fullName })).toBeVisible();
+    // Same person, same tablet: the identifier is kept, only the password is asked again.
+    expect(await screen.findByLabelText(labels.login.username)).toHaveValue(HERY.username);
+    expect(screen.getByLabelText(labels.login.password)).toHaveFocus();
   });
 
   it('signs out', async () => {
     const api = fakeApi({
       'GET /auth/me': ok(meFor({ user: RIJA, activeRole: 'sales' })),
       'POST /auth/logout': { status: 204 },
-      'GET /auth/users': ok(DIRECTORY),
     });
     render(<App />);
 
     fireEvent.click(await screen.findByRole('button', { name: labels.shell.signOut }));
 
-    expect(await screen.findByRole('button', { name: /Rija Rakoto/ })).toBeVisible();
+    expect(await screen.findByLabelText(labels.login.username)).toHaveValue('');
     expect(screen.queryByRole('status')).not.toBeInTheDocument();
     expect(api.callsTo('POST /auth/logout')).toHaveLength(1);
   });
@@ -122,7 +121,6 @@ describe('signed-in shell', () => {
     const api = fakeApi({
       'GET /auth/me': ok(meFor({ user: RIJA, activeRole: 'sales', idleMinutes: 5 })),
       'POST /auth/logout': { status: 204 },
-      'GET /auth/users': ok(DIRECTORY),
     });
     render(<App />);
     await settle();
@@ -141,6 +139,6 @@ describe('signed-in shell', () => {
 
     expect(screen.getByText(labels.session.locked(5))).toBeVisible();
     expect(api.callsTo('POST /auth/logout')).toHaveLength(1);
-    expect(screen.getByRole('heading', { name: RIJA.fullName })).toBeVisible();
+    expect(screen.getByLabelText(labels.login.username)).toHaveValue(RIJA.username);
   });
 });

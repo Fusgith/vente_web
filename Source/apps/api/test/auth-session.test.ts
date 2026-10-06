@@ -245,7 +245,7 @@ describe.skipIf(!TEST_DATABASE_URL)('cookie flags with COOKIE_SECURE', () => {
       await t.reset();
       await createUser(t.db, { username: 'vola', roles: ['sales'], pin: '1234' });
       const response = await request(t.app, 'POST', '/api/v1/auth/login', {
-        body: { username: 'vola', role: 'sales', pin: '1234' },
+        body: { username: 'vola', password: '1234' },
       });
       expect(response.statusCode).toBe(200);
       expect(t.cookieName).toBe('__Host-vw_session');

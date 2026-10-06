@@ -2,6 +2,37 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 06/10/2026 — T-017c : connexion par identifiant et mot de passe — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Écran de connexion : un seul formulaire « Identifiez-vous » (Identifiant, Mot de passe, Se connecter), plus le lien « J'ai un code d'activation ». Plus de liste des noms, de PIN ni de choix du rôle : le compte ouvre directement son espace.
+- Le code à usage unique (TOTP) n'apparaît que hors du magasin, quand l'API le demande ; le mot de passe saisi est gardé. Le nouveau mot de passe (H20) est demandé au même endroit.
+- Après verrouillage pour inactivité, l'identifiant est prérempli : on retape seulement le mot de passe.
+- Contrat partagé : le corps de connexion n'a plus ni `role` ni `pin` (`username`, `password`, `totp`, `newPassword`, `stationId`).
+- API : le rôle d'ouverture est déduit du compte (`openingRole`) :
+  - hors du magasin, le premier rôle autorisé à distance (boss, admin) ;
+  - au magasin sans poste appairé, le premier rôle du compte ;
+  - au magasin sur un poste appairé, le premier rôle opérationnel accepté par le poste.
+  - Celui qui cumule des rôles change ensuite par le sélecteur de l'application (RG-USR-02).
+- Seed : un mot de passe de démonstration pour chaque compte du magasin, ajouté aussi aux comptes déjà en base (valeurs dans `Source/apps/api/prisma/seed/data.ts`).
+- Fichiers web retirés : `PinEntry`, `PinLogin`, `RoleChoice`, `UserTile` et leur test. Galerie de dev : écrans « connexion » et « verrouillage ».
+- Vérifié :
+  - tests web 268, API 323, shared 94 ; lint, typecheck et Prettier propres ;
+  - vraie connexion de « hery » dans le navigateur : arrivée directe sur « Ventes ».
+
+**Reste** : T-017d. Le PIN sert encore à trois endroits, à retirer :
+- la validation du responsable à la caisse ;
+- la liste `/auth/users` utilisée par le remboursement ;
+- les routes PIN et la colonne `pinHash`.
+
+À la place, l'admin posera un mot de passe provisoire.
+
+**Décisions** :
+- Rôle d'ouverture selon `openingRole`, comme formulé dans ⚠️ HYPOTHÈSE H57.
+- Le code TOTP n'est demandé qu'une fois que l'API l'exige ; l'écran ne devine pas l'origine.
+
+**Questions** : aucune.
+
 ## 06/10/2026 — Décision H57 : connexion par identifiant et mot de passe, sans PIN ni choix du rôle — agent : Claude Code (Opus 5.5)
 
 **Fait** :
@@ -17,7 +48,7 @@ Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-c
 
 **Questions** : aucune.
 
-**Arrêt** : plafond hebdomadaire de 60 % atteint ; reprise après le 09/10.
+**Arrêt** : plafond hebdomadaire de 60 % atteint ; reprise le jour même, plafond relevé à 80 % par l'utilisateur.
 
 ## 05/10/2026 — Correctif T-010d : l'API refusait le `.env` copié du modèle — agent : Claude Code (Opus 5.5)
 

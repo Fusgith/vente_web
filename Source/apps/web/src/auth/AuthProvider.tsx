@@ -20,11 +20,9 @@ import {
  */
 export const KEEPALIVE_INTERVAL_MS = 60_000;
 
-/** A PIN user coming back to a locked tablet only retypes the PIN (RG-USR-03). */
-function resumeHintOf(me: AuthMe): ResumeHint | null {
-  return me.session.authMethod === 'PIN'
-    ? { username: me.user.username, role: me.session.activeRole }
-    : null;
+/** A user coming back to a locked screen only retypes the password (RG-USR-03, H57). */
+function resumeHintOf(me: AuthMe): ResumeHint {
+  return { username: me.user.username };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

@@ -4,153 +4,78 @@ import { describe, expect, it } from 'vitest';
 
 import { App } from './App.js';
 import { labels } from './labels.js';
-import { apiError, DIRECTORY, fakeApi, HERY, meFor, ok, RIJA } from './test/fake-api.js';
+import { apiError, fakeApi, HERY, meFor, ok, RIJA } from './test/fake-api.js';
 
 const NOT_SIGNED_IN = apiError(401, 'AUTH_REQUIRED');
 
-function typeOnKeypad(digits: string) {
-  for (const digit of digits) fireEvent.click(screen.getByRole('button', { name: digit }));
+function fill(label: string, value: string) {
+  fireEvent.change(screen.getByLabelText(label), { target: { value } });
 }
 
-describe('login in the shop (RG-USR-03)', () => {
-  it('signs in by tapping a name and typing the PIN', async () => {
+describe('login: identifier and password, nothing else (RG-USR-02, RG-USR-03, H57)', () => {
+  it('opens the account’s own space, with no name list, PIN or role to choose', async () => {
     const api = fakeApi({
       'GET /auth/me': NOT_SIGNED_IN,
-      'GET /auth/users': ok(DIRECTORY),
-      'POST /auth/login': ok(meFor({ user: RIJA, activeRole: 'sales' })),
+      'POST /auth/login': ok(meFor({ user: HERY, activeRole: 'cashier', authMethod: 'PASSWORD' })),
     });
     render(<App />);
 
     expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(labels.appName);
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
-    fireEvent.click(await screen.findByRole('button', { name: /Rija Rakoto/ }));
-    // A single role needs no choice.
+    expect(screen.getByText(labels.login.instruction)).toBeVisible();
+    const username = await screen.findByLabelText(labels.login.username);
+    expect(username).toHaveFocus();
     expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument();
-    typeOnKeypad('1234');
-    expect(screen.getByRole('status')).toHaveAccessibleName(labels.login.pinEntered(4));
-    fireEvent.click(screen.getByRole('button', { name: labels.login.submit }));
+    expect(screen.queryByLabelText(labels.login.totp)).not.toBeInTheDocument();
+    const submit = screen.getByRole('button', { name: labels.login.signIn });
+    expect(submit).toBeDisabled();
 
-    expect(
-      await screen.findByRole('heading', { name: labels.workspaces.sales.title }),
-    ).toBeVisible();
-    expect(api.callsTo('POST /auth/login')[0]?.body).toEqual({
-      username: 'rija',
-      role: 'sales',
-      pin: '1234',
-    });
-  });
-
-  it('moves the focus to the chosen name, and back to the tile on « Changer d’utilisateur »', async () => {
-    fakeApi({ 'GET /auth/me': NOT_SIGNED_IN, 'GET /auth/users': ok(DIRECTORY) });
-    render(<App />);
-
-    const tile = await screen.findByRole('button', { name: /Rija Rakoto/ });
-    fireEvent.click(tile);
-    expect(screen.getByRole('heading', { name: RIJA.fullName })).toHaveFocus();
-
-    fireEvent.click(screen.getByRole('button', { name: labels.login.otherUser }));
-    expect(screen.getByRole('button', { name: /Rija Rakoto/ })).toHaveFocus();
-  });
-
-  it('asks a multi-role user for the role; the keyboard works too', async () => {
-    const api = fakeApi({
-      'GET /auth/me': NOT_SIGNED_IN,
-      'GET /auth/users': ok(DIRECTORY),
-      'POST /auth/login': ok(meFor({ user: HERY, activeRole: 'cashier' })),
-    });
-    render(<App />);
-
-    fireEvent.click(await screen.findByRole('button', { name: /Hery Rabe/ }));
-    for (const key of '5678') fireEvent.keyDown(window, { key });
-    fireEvent.keyDown(window, { key: 'Enter' });
-    expect(screen.getByRole('alert')).toHaveTextContent(labels.login.roleRequired);
-    expect(api.callsTo('POST /auth/login')).toHaveLength(0);
-
-    fireEvent.click(screen.getByRole('radio', { name: 'Caissier' }));
-    fireEvent.keyDown(window, { key: 'Enter' });
+    fill(labels.login.username, ' hery ');
+    fill(labels.login.password, 'correct horse');
+    fireEvent.click(submit);
 
     expect(
       await screen.findByRole('heading', { name: labels.workspaces.cashier.title }),
     ).toBeVisible();
     expect(api.callsTo('POST /auth/login')[0]?.body).toEqual({
       username: 'hery',
-      role: 'cashier',
-      pin: '5678',
+      password: 'correct horse',
     });
+    expect(api.callsTo('GET /auth/users')).toHaveLength(0);
   });
 
-  it('clears the PIN on failure and tells how long a lock lasts (RG-USR-05)', async () => {
+  it('clears the password on failure and tells how long a lock lasts (RG-USR-05)', async () => {
     const api = fakeApi({
       'GET /auth/me': NOT_SIGNED_IN,
-      'GET /auth/users': ok(DIRECTORY),
       'POST /auth/login': apiError(401, 'AUTH_INVALID_CREDENTIALS'),
     });
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: /Rija Rakoto/ }));
-    typeOnKeypad('0000');
-    fireEvent.click(screen.getByRole('button', { name: labels.login.submit }));
+    await screen.findByLabelText(labels.login.username);
+    fill(labels.login.username, 'rija');
+    fill(labels.login.password, 'wrong one');
+    fireEvent.click(screen.getByRole('button', { name: labels.login.signIn }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       ERROR_LABELS.AUTH_INVALID_CREDENTIALS,
     );
-    expect(screen.getByRole('status')).toHaveAccessibleName(labels.login.pinEntered(0));
+    expect(screen.getByLabelText(labels.login.username)).toHaveValue('rija');
+    expect(screen.getByLabelText(labels.login.password)).toHaveValue('');
 
     api.on('POST /auth/login', apiError(423, 'AUTH_LOCKED', { retryAfterSeconds: 570 }));
-    typeOnKeypad('1111');
-    fireEvent.click(screen.getByRole('button', { name: labels.login.submit }));
+    fill(labels.login.password, 'wrong again');
+    fireEvent.click(screen.getByRole('button', { name: labels.login.signIn }));
     expect(await screen.findByText(labels.errors.lockedFor(10))).toBeVisible();
-  });
-
-  it('offers the password form, e.g. for the admin in the shop', async () => {
-    const api = fakeApi({
-      'GET /auth/me': NOT_SIGNED_IN,
-      'GET /auth/users': ok(DIRECTORY),
-      'POST /auth/login': ok(
-        meFor({
-          user: { ...RIJA, username: 'admin', fullName: 'Admin', roles: ['admin'] },
-          activeRole: 'admin',
-          authMethod: 'PASSWORD',
-        }),
-      ),
-    });
-    render(<App />);
-
-    fireEvent.click(await screen.findByRole('button', { name: labels.login.passwordLink }));
-    expect(screen.queryByLabelText(labels.login.totp)).not.toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(labels.login.username), { target: { value: 'admin ' } });
-    fireEvent.change(screen.getByLabelText(labels.login.password), {
-      target: { value: 'correct horse' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: labels.login.signIn }));
-    expect(screen.getByRole('alert')).toHaveTextContent(labels.login.roleRequired);
-
-    fireEvent.click(screen.getByRole('radio', { name: 'Administrateur' }));
-    fireEvent.click(screen.getByRole('button', { name: labels.login.signIn }));
-
-    expect(
-      await screen.findByRole('heading', { name: labels.workspaces.admin.title }),
-    ).toBeVisible();
-    expect(api.callsTo('POST /auth/login')[0]?.body).toEqual({
-      username: 'admin',
-      role: 'admin',
-      password: 'correct horse',
-    });
   });
 
   it('asks for a new password when the admin set the current one (H20)', async () => {
     const api = fakeApi({
       'GET /auth/me': NOT_SIGNED_IN,
-      'GET /auth/users': ok(DIRECTORY),
       'POST /auth/login': apiError(403, 'AUTH_PASSWORD_CHANGE_REQUIRED'),
     });
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: labels.login.passwordLink }));
-    fireEvent.change(screen.getByLabelText(labels.login.username), { target: { value: 'adm2' } });
-    fireEvent.change(screen.getByLabelText(labels.login.password), {
-      target: { value: 'Given-by-adm1!' },
-    });
-    fireEvent.click(screen.getByRole('radio', { name: 'Administrateur' }));
+    await screen.findByLabelText(labels.login.username);
+    fill(labels.login.username, 'adm2');
+    fill(labels.login.password, 'Given-by-adm1!');
     fireEvent.click(screen.getByRole('button', { name: labels.login.signIn }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -180,7 +105,6 @@ describe('login in the shop (RG-USR-03)', () => {
     ).toBeVisible();
     expect(api.callsTo('POST /auth/login')[1]?.body).toEqual({
       username: 'adm2',
-      role: 'admin',
       password: 'Given-by-adm1!',
       newPassword: 'Mine-only-42!',
     });
@@ -189,33 +113,23 @@ describe('login in the shop (RG-USR-03)', () => {
   it('lets the owner choose their password with the admin’s code, then log in (RG-USR-10)', async () => {
     const api = fakeApi({
       'GET /auth/me': NOT_SIGNED_IN,
-      'GET /auth/users': ok(DIRECTORY),
       'POST /auth/activate': apiError(400, 'ACTIVATION_INVALID'),
     });
     render(<App />);
 
-    fireEvent.click(await screen.findByRole('button', { name: labels.login.passwordLink }));
-    fireEvent.click(screen.getByRole('button', { name: labels.login.activationLink }));
+    fireEvent.click(await screen.findByRole('button', { name: labels.login.activationLink }));
     const activate = screen.getByRole('button', { name: labels.login.activate });
-    fireEvent.change(screen.getByLabelText(labels.login.username), { target: { value: 'boss ' } });
-    fireEvent.change(screen.getByLabelText(labels.login.activationCode), {
-      target: { value: 'WRONG' },
-    });
-    fireEvent.change(screen.getByLabelText(labels.login.newPassword), {
-      target: { value: 'short' },
-    });
+    fill(labels.login.username, 'boss ');
+    fill(labels.login.activationCode, 'WRONG');
+    fill(labels.login.newPassword, 'short');
     expect(activate).toBeDisabled();
-    fireEvent.change(screen.getByLabelText(labels.login.newPassword), {
-      target: { value: 'Mine-only-42!' },
-    });
+    fill(labels.login.newPassword, 'Mine-only-42!');
     fireEvent.click(activate);
     expect(await screen.findByRole('alert')).toHaveTextContent(ERROR_LABELS.ACTIVATION_INVALID);
     expect(screen.getByLabelText(labels.login.activationCode)).toHaveValue('');
 
     api.on('POST /auth/activate', { status: 204 });
-    fireEvent.change(screen.getByLabelText(labels.login.activationCode), {
-      target: { value: ' K7P2M9QX4R8T ' },
-    });
+    fill(labels.login.activationCode, ' K7P2M9QX4R8T ');
     fireEvent.click(activate);
     expect(await screen.findByText(labels.login.activated)).toBeVisible();
     expect(api.callsTo('POST /auth/activate')[1]?.body).toEqual({
@@ -225,26 +139,42 @@ describe('login in the shop (RG-USR-03)', () => {
     });
     expect(screen.getByLabelText(labels.login.username)).toHaveValue('boss');
     expect(screen.getByLabelText(labels.login.password)).toHaveValue('');
-    expect(screen.getByRole('radio', { name: 'Boss' })).toBeChecked();
   });
 
-  it('shows why the server is unreachable and retries', async () => {
-    const api = fakeApi({ 'GET /auth/me': 'network', 'GET /auth/users': 'network' });
+  it('says why the server is unreachable, and the form stays usable', async () => {
+    fakeApi({ 'GET /auth/me': 'network' });
     render(<App />);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(labels.errors.NETWORK_ERROR);
-    api.on('GET /auth/users', ok(DIRECTORY));
-    fireEvent.click(screen.getByRole('button', { name: labels.retry }));
-    expect(await screen.findByRole('button', { name: /Rija Rakoto/ })).toBeVisible();
+    expect(await screen.findByText(labels.errors.NETWORK_ERROR)).toBeVisible();
+    expect(screen.getByLabelText(labels.login.username)).toBeVisible();
   });
 });
 
 describe('login from outside the shop (RG-USR-04)', () => {
-  it('asks for password and TOTP, for the boss or the admin only', async () => {
+  it('asks for the TOTP code once the API requires it, keeping the password', async () => {
     const api = fakeApi({
       'GET /auth/me': NOT_SIGNED_IN,
-      'GET /auth/users': apiError(403, 'AUTH_LAN_ONLY'),
-      'POST /auth/login': ok(
+      'POST /auth/login': apiError(401, 'AUTH_TOTP_REQUIRED'),
+    });
+    render(<App />);
+
+    await screen.findByLabelText(labels.login.username);
+    fill(labels.login.username, 'boss');
+    fill(labels.login.password, 'long passphrase');
+    fireEvent.click(screen.getByRole('button', { name: labels.login.signIn }));
+
+    // Not a mistake: a note, no error, the password kept, the code field focused.
+    const code = await screen.findByLabelText(labels.login.totp);
+    expect(code).toHaveFocus();
+    expect(screen.getByText(labels.login.remoteNotice)).toBeVisible();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(screen.getByLabelText(labels.login.password)).toHaveValue('long passphrase');
+    const submit = screen.getByRole('button', { name: labels.login.signIn });
+    expect(submit).toBeDisabled();
+
+    api.on(
+      'POST /auth/login',
+      ok(
         meFor({
           user: { ...RIJA, username: 'boss', fullName: 'Le Boss', roles: ['owner'] },
           activeRole: 'owner',
@@ -252,30 +182,16 @@ describe('login from outside the shop (RG-USR-04)', () => {
           origin: 'REMOTE',
         }),
       ),
-    });
-    render(<App />);
-
-    expect(await screen.findByText(labels.login.remoteNotice)).toBeVisible();
-    const radios = screen.getAllByRole('radio');
-    expect(radios.map((radio) => radio.textContent)).toEqual(['Boss', 'Administrateur']);
-    expect(screen.getByRole('radio', { name: 'Boss' })).toHaveAttribute('aria-checked', 'true');
-
-    fireEvent.change(screen.getByLabelText(labels.login.username), { target: { value: 'boss' } });
-    fireEvent.change(screen.getByLabelText(labels.login.password), {
-      target: { value: 'long passphrase' },
-    });
-    const submit = screen.getByRole('button', { name: labels.login.signIn });
-    expect(submit).toBeDisabled();
-    fireEvent.change(screen.getByLabelText(labels.login.totp), { target: { value: '12 34 56' } });
+    );
+    fireEvent.change(code, { target: { value: '12 34 56' } });
     fireEvent.click(submit);
 
     expect(
       await screen.findByRole('heading', { name: labels.workspaces.owner.title }),
     ).toBeVisible();
     expect(screen.getByText(labels.shell.remote)).toBeVisible();
-    expect(api.callsTo('POST /auth/login')[0]?.body).toEqual({
+    expect(api.callsTo('POST /auth/login')[1]?.body).toEqual({
       username: 'boss',
-      role: 'owner',
       password: 'long passphrase',
       totp: '123456',
     });

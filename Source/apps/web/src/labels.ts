@@ -31,27 +31,9 @@ export const labels = {
 
   login: {
     title: 'Connexion',
-    chooseUser: 'Qui êtes-vous ?',
-    /** The login frame's bottom band: a static instruction, never a status line. */
-    instruction: 'Touchez votre nom, puis tapez votre code.',
-    /** The same band in the password form. */
-    passwordInstruction: 'Saisissez votre identifiant et votre mot de passe, puis votre rôle.',
-    /** The empty PIN sheet, before a name is touched. */
-    pinInvitation: 'Votre code PIN se tape ici, une fois votre nom choisi.',
-    passwordTitle: 'Connexion par mot de passe',
-    noPinUsers: 'Aucun compte à code PIN pour l’instant : connectez-vous par mot de passe.',
-    otherUser: 'Changer d’utilisateur',
-    chooseRole: 'Rôle',
-    roleRequired: 'Choisissez un rôle.',
-    typePin: 'Code PIN',
-    pinEntered: (count: number) =>
-      count === 0
-        ? 'Aucun chiffre saisi'
-        : `${count} chiffre${count > 1 ? 's' : ''} saisi${count > 1 ? 's' : ''}`,
-    erase: 'Effacer',
-    submit: 'Valider',
-    passwordLink: 'Connexion par mot de passe',
-    pinLink: 'Connexion par code PIN',
+    /** The login frame's bottom band: a static instruction, never a status line (H57). */
+    instruction: 'Saisissez votre identifiant et votre mot de passe.',
+    formTitle: 'Identifiez-vous',
     username: 'Identifiant',
     password: 'Mot de passe',
     totp: 'Code de validation (application d’authentification)',
@@ -59,8 +41,9 @@ export const labels = {
     newPassword: 'Votre nouveau mot de passe',
     newPasswordHint: (min: number) =>
       `${min} caractères au moins, différent de celui donné par l’admin.`,
+    /** Shown once the API asks for the TOTP code: outside the shop (RG-USR-04). */
     remoteNotice:
-      'Accès depuis l’extérieur du magasin : boss et administrateur seulement, avec code de validation.',
+      'Accès depuis l’extérieur du magasin : saisissez aussi le code de votre application d’authentification.',
     signIn: 'Se connecter',
     signingIn: 'Connexion…',
     /** The owner's first password, chosen with the admin's one-time code (RG-USR-10). */

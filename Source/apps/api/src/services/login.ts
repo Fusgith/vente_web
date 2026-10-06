@@ -2,6 +2,7 @@ import { createHmac, randomBytes } from 'node:crypto';
 
 import {
   isRemoteRole,
+  ROLES,
   type AccessOrigin,
   type AuthMe,
   type AuthMethod,
@@ -31,28 +32,6 @@ import {
 } from './sessions.js';
 import { verifyTotp } from './totp.js';
 
-export interface LoginShape {
-  method: 'PIN' | 'PASSWORD';
-  role: Role;
-  hasTotp: boolean;
-}
-
-/**
- * Rules decided from the request alone, before any account lookup (nothing to enumerate):
- * PIN only in the shop and only for operational roles (RG-USR-03), operational roles never
- * remote (T3), owner/admin remote only with password + TOTP (RG-USR-04).
- */
-export function loginShapeError(shape: LoginShape, origin: AccessOrigin): AppError | null {
-  if (shape.method === 'PIN' && (origin === 'REMOTE' || isRemoteRole(shape.role))) {
-    return new AppError(403, 'AUTH_PIN_LAN_ONLY');
-  }
-  if (origin === 'REMOTE') {
-    if (!isRemoteRole(shape.role)) return new AppError(403, 'AUTH_ROLE_REMOTE_FORBIDDEN');
-    if (!shape.hasTotp) return new AppError(401, 'AUTH_TOTP_REQUIRED');
-  }
-  return null;
-}
-
 /** A station serves one kind of work; managers and above may use any of them (H21). */
 export function stationAcceptsRole(stationType: StationType, role: Role): boolean {
   switch (stationType) {
@@ -69,6 +48,23 @@ export function stationAcceptsRole(stationType: StationType, role: Role): boolea
 
 function isSupervisor(role: Role): boolean {
   return role === 'manager' || role === 'admin' || role === 'owner';
+}
+
+/**
+ * The role a login opens, nothing being chosen on the login screen (RG-USR-02, H57): outside the
+ * shop a remote role (RG-USR-04, T3); on a paired station the work it serves, else a supervisor
+ * role it accepts; otherwise the account's first role in `ROLES` order. Null: none fits.
+ */
+export function openingRole(
+  roles: readonly Role[],
+  origin: AccessOrigin,
+  stationType: StationType | null,
+): Role | null {
+  const held = ROLES.filter((role) => roles.includes(role));
+  if (origin === 'REMOTE') return held.find(isRemoteRole) ?? null;
+  if (stationType === null) return held[0] ?? null;
+  const accepted = held.filter((role) => stationAcceptsRole(stationType, role));
+  return accepted.find((role) => !isSupervisor(role)) ?? accepted[0] ?? null;
 }
 
 /** Per-process key: digests match within one run of the server, never across logs. */
@@ -94,12 +90,6 @@ export interface LoginResult {
   me: AuthMe;
 }
 
-function toShape(body: LoginBody): LoginShape {
-  return 'pin' in body
-    ? { method: 'PIN', role: body.role, hasTotp: false }
-    : { method: 'PASSWORD', role: body.role, hasTotp: body.totp !== undefined };
-}
-
 /**
  * Full login flow: one argon2 verification per call, generic 401 on every credential failure.
  * A known account costs one attempt slot before its secret is looked at (RG-USR-05).
@@ -111,9 +101,8 @@ export async function login(
   now = new Date(),
 ): Promise<LoginResult> {
   const { db } = deps;
-  const shape = toShape(body);
-  const shapeError = loginShapeError(shape, origin);
-  if (shapeError) throw shapeError;
+  // Decided from the request alone, before any account lookup (nothing to enumerate).
+  if (origin === 'REMOTE' && body.totp === undefined) throw new AppError(401, 'AUTH_TOTP_REQUIRED');
 
   const station = body.stationId
     ? await db.station.findUnique({
@@ -121,12 +110,12 @@ export async function login(
         select: { id: true, type: true, isActive: true },
       })
     : null;
-  if (body.stationId && (!station?.isActive || !stationAcceptsRole(station.type, body.role))) {
+  if (body.stationId && (!station?.isActive || station.type === 'DISPLAY')) {
     throw new AppError(400, 'STATION_INVALID');
   }
 
   const invalid = new AppError(401, 'AUTH_INVALID_CREDENTIALS');
-  const secret = 'pin' in body ? body.pin : body.password;
+  const secret = body.password;
   const user = await db.user.findUnique({ where: { username: body.username } });
   if (!user) {
     // Same cost as a real verification: no timing oracle on account existence.
@@ -148,20 +137,26 @@ export async function login(
     throw invalid;
   }
   const { slot } = reservation;
-  const failureContext = { origin, role: body.role, stationId: station?.id ?? null };
+  const failureContext = { origin, stationId: station?.id ?? null };
   const fail = async (reason: string): Promise<never> => {
     await recordLoginFailure(db, user.id, slot, { ...failureContext, reason });
     throw invalid;
   };
 
-  const storedHash = shape.method === 'PIN' ? user.pinHash : user.passwordHash;
-  if (!(await verifySecret(storedHash, secret))) return fail('invalid_secret');
+  if (!(await verifySecret(user.passwordHash, secret))) return fail('invalid_secret');
   if (!user.isActive) return fail('inactive');
-  if (!user.roles.includes(body.role)) return fail('role_not_held');
+  const role = openingRole(user.roles, origin, station?.type ?? null);
+  if (role === null) {
+    // Outside, the account stays indistinguishable from a wrong password; in the shop the
+    // password was right and the station is the problem.
+    if (origin === 'REMOTE') return fail('role_remote_forbidden');
+    await clearLoginFailures(db, user.id);
+    throw new AppError(400, 'STATION_INVALID');
+  }
 
-  let authMethod: AuthMethod = shape.method;
+  let authMethod: AuthMethod = 'PASSWORD';
   let totpStep: number | undefined;
-  if ('totp' in body && body.totp !== undefined) {
+  if (body.totp !== undefined) {
     if (!user.totpSecret || !user.totpEnabledAt) {
       // Outside, the account stays indistinguishable from one with a wrong code; in the shop
       // the password was right and the message helps: enrol first.
@@ -181,7 +176,7 @@ export async function login(
   // A password the admin set opens nothing by itself: the user chooses theirs at this login (H20).
   // Identity is proven by now, so the answer helps and the attempt does not count as a failure.
   let newPasswordHash: string | undefined;
-  if ('password' in body && user.passwordChangeRequired) {
+  if (user.passwordChangeRequired) {
     if (body.newPassword === undefined || body.newPassword === body.password) {
       await clearLoginFailures(db, user.id);
       if (body.newPassword === undefined) throw new AppError(403, 'AUTH_PASSWORD_CHANGE_REQUIRED');
@@ -203,7 +198,7 @@ export async function login(
   });
   if (!cleared) return fail('totp_replayed');
 
-  const self = { userId: user.id, activeRole: body.role, stationId: station?.id ?? null, origin };
+  const self = { userId: user.id, activeRole: role, stationId: station?.id ?? null, origin };
   const created = await db.$transaction(async (tx) => {
     if (newPasswordHash !== undefined) {
       await recordAudit(tx, {
@@ -220,7 +215,7 @@ export async function login(
     await replaceSessions(tx, user.id, 'new_login');
     const session = await createSession(tx, {
       userId: user.id,
-      activeRole: body.role,
+      activeRole: role,
       stationId: station?.id ?? null,
       origin,
       authMethod,
@@ -247,7 +242,7 @@ export async function login(
     },
     session: {
       id: created.id,
-      activeRole: body.role,
+      activeRole: role,
       origin,
       authMethod,
       stationId: station?.id ?? null,

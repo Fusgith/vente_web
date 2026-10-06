@@ -2,48 +2,29 @@ import { createHash } from 'node:crypto';
 
 import { describe, expect, it } from 'vitest';
 
-import { loginShapeError, stationAcceptsRole, usernameDigest } from './login.js';
+import { openingRole, stationAcceptsRole, usernameDigest } from './login.js';
 
-describe('loginShapeError (RG-USR-03, RG-USR-04, T3: decided before any account lookup)', () => {
-  it('allows a PIN in the shop for operational roles only', () => {
-    expect(loginShapeError({ method: 'PIN', role: 'sales', hasTotp: false }, 'LAN')).toBeNull();
-    expect(loginShapeError({ method: 'PIN', role: 'manager', hasTotp: false }, 'LAN')).toBeNull();
-    expect(loginShapeError({ method: 'PIN', role: 'admin', hasTotp: false }, 'LAN')?.code).toBe(
-      'AUTH_PIN_LAN_ONLY',
-    );
-    expect(loginShapeError({ method: 'PIN', role: 'owner', hasTotp: false }, 'LAN')?.code).toBe(
-      'AUTH_PIN_LAN_ONLY',
-    );
-    expect(loginShapeError({ method: 'PIN', role: 'sales', hasTotp: false }, 'REMOTE')?.code).toBe(
-      'AUTH_PIN_LAN_ONLY',
-    );
+describe('openingRole (RG-USR-02, H57: the account opens its role, nothing is chosen)', () => {
+  it('opens the only role of a single-role account', () => {
+    expect(openingRole(['cashier'], 'LAN', null)).toBe('cashier');
+    expect(openingRole(['owner'], 'REMOTE', null)).toBe('owner');
   });
 
-  it('allows a password in the shop for any role, with or without TOTP', () => {
-    expect(
-      loginShapeError({ method: 'PASSWORD', role: 'admin', hasTotp: false }, 'LAN'),
-    ).toBeNull();
-    expect(loginShapeError({ method: 'PASSWORD', role: 'owner', hasTotp: true }, 'LAN')).toBeNull();
-    expect(
-      loginShapeError({ method: 'PASSWORD', role: 'cashier', hasTotp: false }, 'LAN'),
-    ).toBeNull();
+  it('opens the first role in ROLES order without a station', () => {
+    expect(openingRole(['cashier', 'manager'], 'LAN', null)).toBe('manager');
+    expect(openingRole(['warehouse', 'sales'], 'LAN', null)).toBe('sales');
   });
 
-  it('remote: owner/admin only, password and TOTP mandatory', () => {
-    expect(
-      loginShapeError({ method: 'PASSWORD', role: 'owner', hasTotp: true }, 'REMOTE'),
-    ).toBeNull();
-    expect(
-      loginShapeError({ method: 'PASSWORD', role: 'admin', hasTotp: true }, 'REMOTE'),
-    ).toBeNull();
-    const noTotp = loginShapeError({ method: 'PASSWORD', role: 'owner', hasTotp: false }, 'REMOTE');
-    expect(noTotp?.status).toBe(401);
-    expect(noTotp?.code).toBe('AUTH_TOTP_REQUIRED');
-    for (const role of ['sales', 'cashier', 'warehouse', 'manager'] as const) {
-      const error = loginShapeError({ method: 'PASSWORD', role, hasTotp: true }, 'REMOTE');
-      expect(error?.status).toBe(403);
-      expect(error?.code).toBe('AUTH_ROLE_REMOTE_FORBIDDEN');
-    }
+  it('opens the work a paired station serves, else a supervisor role it accepts', () => {
+    expect(openingRole(['manager', 'cashier'], 'LAN', 'REGISTER')).toBe('cashier');
+    expect(openingRole(['manager'], 'LAN', 'SALES')).toBe('manager');
+    expect(openingRole(['cashier'], 'LAN', 'SALES')).toBeNull();
+    expect(openingRole(['manager'], 'LAN', 'DISPLAY')).toBeNull();
+  });
+
+  it('opens only a remote role outside the shop (RG-USR-04, T3)', () => {
+    expect(openingRole(['sales', 'admin'], 'REMOTE', null)).toBe('admin');
+    expect(openingRole(['manager', 'cashier'], 'REMOTE', null)).toBeNull();
   });
 });
 

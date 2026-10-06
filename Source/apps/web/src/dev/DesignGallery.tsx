@@ -16,14 +16,13 @@ import { demoMe, PRODUCTS } from './fixtures.js';
 
 /**
  * Dev-only gallery (`/__design?screen=…`): the real screens fed with demo data, to look at the
- * design on a tablet or in screenshots without a server or a PIN. Never part of a build.
+ * design on a tablet or in screenshots without a server or a password. Never part of a build.
  */
 installDemoApi();
 
 const SCREENS = {
-  connexion: 'Connexion : choix du nom',
-  pin: 'Connexion : code PIN après verrouillage',
-  'mot-de-passe': 'Connexion par mot de passe',
+  connexion: 'Connexion : identifiant et mot de passe',
+  verrouillage: 'Connexion après verrouillage : l’identifiant déjà saisi',
   devis: 'Devis : recherche « sav » et cinq lignes',
   'devis-pave': 'Devis : pavé de quantité ouvert sur la ligne 3',
   'devis-vide': 'Devis vide : les plus vendus',
@@ -177,17 +176,6 @@ function useTypedSearch(text: string | null) {
   }, [text]);
 }
 
-/** Presses PIN digits on the keyboard, as on a register PC. */
-function useTypedPin(digits: string | null) {
-  useEffect(() => {
-    if (!digits) return;
-    const timer = window.setTimeout(() => {
-      for (const key of digits) window.dispatchEvent(new KeyboardEvent('keydown', { key }));
-    }, 50);
-    return () => window.clearTimeout(timer);
-  }, [digits]);
-}
-
 /** What the bottom band says on a sales screen: the last line added, or a scan error. */
 interface News {
   tone: 'info' | 'error';
@@ -230,7 +218,7 @@ function Sales({ draft, search, news = null }: SalesProps) {
 
 /**
  * Clicks the first element matching `selector` once the screen has settled (the demo API answers
- * on the next tick), to show a state behind a tap: the password form, the category sheet.
+ * on the next tick), to show a state behind a tap: the category sheet.
  */
 function useAutoClick(selector: string | ((element: HTMLElement) => boolean)) {
   useEffect(() => {
@@ -247,29 +235,6 @@ function useAutoClick(selector: string | ((element: HTMLElement) => boolean)) {
 
 const anonymous: AuthState = { status: 'anonymous', notice: null, resume: null };
 
-function Pin() {
-  useTypedPin('123');
-  return (
-    <DemoAuth state={anonymous}>
-      <LoginScreen
-        notice={labels.session.locked(5)}
-        resume={{ username: 'rakoto', role: 'sales' }}
-      />
-    </DemoAuth>
-  );
-}
-
-const isPasswordLink = (button: HTMLElement) => button.textContent === labels.login.passwordLink;
-
-function Password() {
-  useAutoClick(isPasswordLink);
-  return (
-    <DemoAuth state={anonymous}>
-      <LoginScreen notice={null} resume={null} />
-    </DemoAuth>
-  );
-}
-
 /** The category trigger of the tool pane carries `data-category-trigger` (Sales workspace). */
 function SalesCategories() {
   useAutoClick('[data-category-trigger]');
@@ -284,10 +249,12 @@ function ScreenView({ screen }: { screen: Screen }) {
           <LoginScreen notice={null} resume={null} />
         </DemoAuth>
       );
-    case 'pin':
-      return <Pin />;
-    case 'mot-de-passe':
-      return <Password />;
+    case 'verrouillage':
+      return (
+        <DemoAuth state={anonymous}>
+          <LoginScreen notice={labels.session.locked(5)} resume={{ username: 'rakoto' }} />
+        </DemoAuth>
+      );
     case 'devis':
       return <Sales draft={demoDraft(FIVE_LINES)} search="sav" news={ADDED} />;
     case 'devis-pave':

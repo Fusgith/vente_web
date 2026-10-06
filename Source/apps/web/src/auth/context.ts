@@ -3,10 +3,9 @@ import { createContext, use } from 'react';
 
 import { ApiError } from '../api/client.js';
 
-/** Who to preselect on the login screen after an idle lock. */
+/** The identifier kept on the login screen after an idle lock. */
 export interface ResumeHint {
   username: string;
-  role: Role;
 }
 
 export type AuthState =

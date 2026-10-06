@@ -74,7 +74,6 @@ describe('realtime connection (T-018)', () => {
     fakeApi({
       'GET /auth/me': ok(meFor({ user: HERY, activeRole: 'manager' })),
       'POST /auth/logout': { status: 204 },
-      'GET /auth/users': ok({ users: [] }),
     });
     render(<App />);
     fireEvent.click(await screen.findByRole('button', { name: labels.shell.signOut }));

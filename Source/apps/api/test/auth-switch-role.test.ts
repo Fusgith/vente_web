@@ -29,11 +29,17 @@ describe.skipIf(!TEST_DATABASE_URL)('POST /api/v1/auth/switch-role', () => {
   afterAll(() => t.close());
   beforeEach(async () => {
     await t.reset();
-    await createUser(t.db, { username: 'vola', roles: ['sales', 'cashier', 'admin'], pin: '1234' });
+    await createUser(t.db, {
+      username: 'vola',
+      roles: ['sales', 'cashier', 'admin'],
+      password: 'Shop-1234!',
+    });
   });
 
-  it('switches between held operational roles and audits it', async () => {
-    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+  it('switches between held roles and audits it', async () => {
+    // Without a station the account opens its first role in the fixed order (H57).
+    const { cookie, me } = await loginOk(t.app, { username: 'vola', password: 'Shop-1234!' });
+    expect(me.session.activeRole).toBe('admin');
     const response = await request(t.app, 'POST', SWITCH, { cookie, body: { role: 'cashier' } });
     expect(response.statusCode).toBe(200);
     expect(response.json().session.activeRole).toBe('cashier');
@@ -41,15 +47,19 @@ describe.skipIf(!TEST_DATABASE_URL)('POST /api/v1/auth/switch-role', () => {
     expect(await auditActions(t.db)).toEqual(['auth.login', 'auth.role_switched']);
   });
 
-  it('refuses a role not held, or owner/admin from a PIN session', async () => {
-    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+  it('refuses a role not held; admin stays reachable from a password session (H57)', async () => {
+    const { cookie } = await loginOk(t.app, {
+      username: 'vola',
+      role: 'sales',
+      password: 'Shop-1234!',
+    });
     const notHeld = await request(t.app, 'POST', SWITCH, { cookie, body: { role: 'manager' } });
     expect(notHeld.statusCode).toBe(403);
     expect(notHeld.json().code).toBe('AUTH_FORBIDDEN');
 
     const admin = await request(t.app, 'POST', SWITCH, { cookie, body: { role: 'admin' } });
-    expect(admin.statusCode).toBe(403);
-    expect(admin.json().code).toBe('AUTH_REAUTH_REQUIRED');
+    expect(admin.statusCode).toBe(200);
+    expect(admin.json().session.activeRole).toBe('admin');
   });
 
   it('keeps a remote session on remote roles (T3)', async () => {
@@ -80,7 +90,7 @@ describe.skipIf(!TEST_DATABASE_URL)('POST /api/v1/auth/switch-role', () => {
     const { cookie } = await loginOk(t.app, {
       username: 'vola',
       role: 'sales',
-      pin: '1234',
+      password: 'Shop-1234!',
       stationId: tablet.id,
     });
     const response = await request(t.app, 'POST', SWITCH, { cookie, body: { role: 'cashier' } });
@@ -89,7 +99,7 @@ describe.skipIf(!TEST_DATABASE_URL)('POST /api/v1/auth/switch-role', () => {
   });
 
   it('fails closed when the session vanished between the check and the switch', async () => {
-    const { me } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+    const { me } = await loginOk(t.app, { username: 'vola', password: 'Shop-1234!' });
     const user = await t.db.user.findUniqueOrThrow({ where: { username: 'vola' } });
     const auth: AuthContext = {
       user: { ...me.user, id: user.id },
@@ -97,7 +107,7 @@ describe.skipIf(!TEST_DATABASE_URL)('POST /api/v1/auth/switch-role', () => {
         id: randomUUID(),
         activeRole: 'sales',
         origin: 'LAN',
-        authMethod: 'PIN',
+        authMethod: 'PASSWORD',
         stationId: null,
         stationType: null,
         expiresAt: new Date(me.session.expiresAt),

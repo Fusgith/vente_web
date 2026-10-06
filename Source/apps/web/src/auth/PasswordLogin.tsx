@@ -1,10 +1,4 @@
-import {
-  PASSWORD_MIN_LENGTH,
-  REMOTE_ROLES,
-  ROLES,
-  TOTP_PATTERN,
-  type Role,
-} from '@vente-web/shared';
+import { PASSWORD_MIN_LENGTH, TOTP_PATTERN } from '@vente-web/shared';
 import { useId, useState, type FormEvent } from 'react';
 
 import { ApiError } from '../api/client.js';
@@ -14,21 +8,17 @@ import { buttonClass } from '../ui/button.js';
 import { Icon } from '../ui/Icon.js';
 import { useAuth } from './context.js';
 import { OwnerActivation } from './OwnerActivation.js';
-import { RoleChoice } from './RoleChoice.js';
 import { textLinkClass } from './user-look.js';
 
 interface PasswordLoginProps {
-  /** Outside the shop: owner/admin only, TOTP always required (RG-USR-04). */
-  remote: boolean;
-  /** Shown in the shop when PIN users exist. */
-  onPinMode?: () => void;
-  intro?: string | null;
+  /** The account a lock for inactivity closed: its identifier is already typed. */
+  initialUsername: string;
 }
 
 const fieldClass = 'flex flex-col gap-1.5';
 const inputClass = 'h-14 w-full rounded-control border border-rule-strong bg-white px-4 text-ink';
 
-/** A calm note in the sheet (remote access, no PIN account yet). */
+/** A calm note in the sheet (code asked outside the shop, password just chosen). */
 function Note({ children }: { children: string }) {
   return (
     <p className="flex items-start gap-2.5 rounded-control bg-indigo-soft px-3 py-2.5 text-ink">
@@ -38,16 +28,20 @@ function Note({ children }: { children: string }) {
   );
 }
 
-export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) {
+/**
+ * Identifier and password, nothing to choose: the API opens the account's role (RG-USR-02,
+ * RG-USR-03, H57). Outside the shop it asks owner/admin for a TOTP code (RG-USR-04): the field
+ * appears then, the password typed is kept.
+ */
+export function PasswordLogin({ initialUsername }: PasswordLoginProps) {
   const { signIn } = useAuth();
   const id = useId();
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState(initialUsername);
   const [password, setPassword] = useState('');
-  const [totp, setTotp] = useState('');
+  // Asked only when the API requires it: null until then.
+  const [totp, setTotp] = useState<string | null>(null);
   // Asked only when the API says the password was set by the admin (H20): null until then.
   const [newPassword, setNewPassword] = useState<string | null>(null);
-  // The boss is the usual remote user; in the shop the role is always a deliberate choice.
-  const [role, setRole] = useState<Role | null>(remote ? 'owner' : null);
   // The owner's first password, chosen with the admin's one-time code (RG-USR-10).
   const [activating, setActivating] = useState(false);
   const [activated, setActivated] = useState(false);
@@ -56,33 +50,37 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
   const complete =
     username.trim() !== '' &&
     password !== '' &&
-    (!remote || TOTP_PATTERN.test(totp)) &&
+    (totp === null || TOTP_PATTERN.test(totp)) &&
     (newPassword === null || newPassword.length >= PASSWORD_MIN_LENGTH);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (busy || !complete) return;
-    if (role === null) {
-      setError(labels.login.roleRequired);
-      return;
-    }
     setBusy(true);
     setError(null);
     try {
-      const base = { username: username.trim(), role, password };
-      const withNew = newPassword === null ? base : { ...base, newPassword };
-      await signIn(remote ? { ...withNew, totp } : withNew);
+      await signIn({
+        username: username.trim(),
+        password,
+        ...(totp !== null && { totp }),
+        ...(newPassword !== null && { newPassword }),
+      });
     } catch (failure) {
-      setError(errorMessage(failure));
       const code = failure instanceof ApiError ? failure.code : null;
+      setBusy(false);
+      if (code === 'AUTH_TOTP_REQUIRED' && totp === null) {
+        // Not a mistake: the note explains, the password stays.
+        setTotp('');
+        return;
+      }
+      setError(errorMessage(failure));
       // The password was right: keep it (and the unspent TOTP code), ask only for the new one.
       if (code === 'AUTH_PASSWORD_CHANGE_REQUIRED' || code === 'AUTH_PASSWORD_UNCHANGED') {
         setNewPassword('');
       } else {
         setPassword('');
-        setTotp('');
+        if (totp !== null) setTotp('');
       }
-      setBusy(false);
     }
   };
 
@@ -94,7 +92,6 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
           setActivated(true);
           setUsername(name);
           setPassword('');
-          setRole('owner');
         }}
         onCancel={() => setActivating(false)}
       />
@@ -110,10 +107,9 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
         >
           <Icon name="lock" className="size-5" />
         </span>
-        {labels.login.passwordTitle}
+        {labels.login.formTitle}
       </h2>
-      {remote && <Note>{labels.login.remoteNotice}</Note>}
-      {intro && <Note>{intro}</Note>}
+      {totp !== null && <Note>{labels.login.remoteNotice}</Note>}
       {activated && <Note>{labels.login.activated}</Note>}
 
       <label htmlFor={`${id}-username`} className={fieldClass}>
@@ -124,6 +120,7 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
           autoComplete="username"
           autoCapitalize="none"
           spellCheck={false}
+          autoFocus={initialUsername === ''}
           value={username}
           onChange={(event) => setUsername(event.target.value)}
           className={`${inputClass} text-18`}
@@ -137,15 +134,14 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
           name="password"
           type="password"
           autoComplete="current-password"
+          autoFocus={initialUsername !== ''}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           className={`${inputClass} text-18`}
         />
       </label>
 
-      <RoleChoice roles={remote ? REMOTE_ROLES : ROLES} value={role} onChange={setRole} />
-
-      {remote && (
+      {totp !== null && (
         <label htmlFor={`${id}-totp`} className={fieldClass}>
           <span className="font-semibold">{labels.login.totp}</span>
           <input
@@ -154,6 +150,7 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={6}
+            autoFocus
             value={totp}
             onChange={(event) => setTotp(event.target.value.replace(/\D/g, ''))}
             className={`${inputClass} figures max-w-60 text-24 font-semibold tracking-[0.3em]`}
@@ -201,11 +198,6 @@ export function PasswordLogin({ remote, onPinMode, intro }: PasswordLoginProps) 
         {busy ? labels.login.signingIn : labels.login.signIn}
       </button>
 
-      {onPinMode && (
-        <button type="button" onClick={onPinMode} className={textLinkClass}>
-          {labels.login.pinLink}
-        </button>
-      )}
       <button type="button" onClick={() => setActivating(true)} className={textLinkClass}>
         {labels.login.activationLink}
       </button>

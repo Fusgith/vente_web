@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
+import { verifySecret } from '../src/services/password-hash.js';
 import { generateTotpCode } from '../src/services/totp.js';
 import { TEST_DATABASE_URL } from './db.js';
 import {
@@ -48,7 +49,7 @@ describe.skipIf(!TEST_DATABASE_URL)('admin credential management (/users/:id/*, 
     ).toBe(401);
   });
 
-  it('sets a PIN: the target logs in with it and loses its sessions; the change is audited', async () => {
+  it('sets a PIN (manager approval until T-017d): the target loses its sessions; audited', async () => {
     const before = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
     const response = await request(t.app, 'PUT', `/api/v1/users/${vola.id}/pin`, {
       cookie: adminCookie,
@@ -57,9 +58,8 @@ describe.skipIf(!TEST_DATABASE_URL)('admin credential management (/users/:id/*, 
     expect(response.statusCode).toBe(204);
     expect((await request(t.app, 'GET', ME, { cookie: before.cookie })).statusCode).toBe(401);
     expect((await request(t.app, 'GET', ME, { cookie: adminCookie })).statusCode).toBe(200);
-    expect(
-      (await login(t.app, { username: 'vola', role: 'sales', pin: '9999' })).response.statusCode,
-    ).toBe(200);
+    const target = await t.db.user.findUniqueOrThrow({ where: { id: vola.id } });
+    expect(await verifySecret(target.pinHash, '9999')).toBe(true);
 
     const adm = await t.db.user.findUniqueOrThrow({ where: { username: 'adm' } });
     const row = await t.db.auditLog.findFirstOrThrow({ where: { action: 'user.pin_set' } });

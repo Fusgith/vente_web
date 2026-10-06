@@ -8,7 +8,7 @@ import { z } from 'zod';
 export const ROLES = ['admin', 'manager', 'sales', 'cashier', 'warehouse', 'owner'] as const;
 export type Role = (typeof ROLES)[number];
 
-/** Roles working on shared stations in the shop: PIN login, never remote (RG-USR-03, T3). */
+/** Roles working on shared stations in the shop, never remote (T3). */
 export const OPERATIONAL_ROLES = ['sales', 'cashier', 'warehouse', 'manager'] as const;
 export type OperationalRole = (typeof OPERATIONAL_ROLES)[number];
 
@@ -28,7 +28,7 @@ export function isRemoteRole(role: Role): role is RemoteRole {
 export const ACCESS_ORIGINS = ['LAN', 'REMOTE'] as const;
 export type AccessOrigin = (typeof ACCESS_ORIGINS)[number];
 
-/** How a session was opened; a PIN session never reaches owner/admin (CDC technique §8). */
+/** How a session was opened; `PIN` only on sessions opened before H57 (RG-USR-03). */
 export const AUTH_METHODS = ['PIN', 'PASSWORD', 'PASSWORD_TOTP'] as const;
 export type AuthMethod = (typeof AUTH_METHODS)[number];
 
@@ -52,29 +52,21 @@ const usernameSchema = z.string().trim().min(1).max(USERNAME_MAX_LENGTH);
 /** A secret typed at login: validated for shape only, never for strength. */
 const typedSecretSchema = z.string().min(1).max(PASSWORD_MAX_LENGTH);
 
-const loginBaseSchema = z.object({
-  username: usernameSchema,
-  role: roleSchema,
-  /** Optional until station pairing exists, then mandatory in the shop (T-015, H21). */
-  stationId: z.uuid().optional(),
-});
-
-/** Login by PIN (shared stations, LAN only). */
-export const pinLoginBodySchema = loginBaseSchema.extend({ pin: pinSchema }).strict();
 /**
- * Login by password; TOTP is mandatory for owner/admin outside the shop (RG-USR-04). A password
- * set by the admin is replaced by `newPassword` at that login (H20, T-016c).
+ * Login everywhere: identifier and password, nothing else to choose (RG-USR-02, RG-USR-03, H57);
+ * the API opens the account's role. A TOTP code is required for owner/admin outside the shop
+ * (RG-USR-04). A password set by the admin is replaced by `newPassword` at that login (H20).
  */
-export const passwordLoginBodySchema = loginBaseSchema
-  .extend({
+export const loginBodySchema = z
+  .object({
+    username: usernameSchema,
     password: typedSecretSchema,
     totp: totpCodeSchema.optional(),
     newPassword: passwordSchema.optional(),
+    /** Optional until station pairing exists, then mandatory in the shop (T-015, H21). */
+    stationId: z.uuid().optional(),
   })
   .strict();
-export const loginBodySchema = z.union([pinLoginBodySchema, passwordLoginBodySchema]);
-export type PinLoginBody = z.infer<typeof pinLoginBodySchema>;
-export type PasswordLoginBody = z.infer<typeof passwordLoginBodySchema>;
 export type LoginBody = z.infer<typeof loginBodySchema>;
 
 export const switchRoleBodySchema = z.object({ role: roleSchema }).strict();

@@ -129,6 +129,7 @@ export function sessionCookie(
 export interface TestUserInput {
   username: string;
   roles: Role[];
+  /** Kept for the manager's approval until T-017d; also the password when none is given (H57). */
   pin?: string;
   password?: string;
   /** Base32 secret, enabled right away. */
@@ -145,7 +146,8 @@ export async function createUser(db: Db, input: TestUserInput): Promise<{ id: st
       fullName: `User ${input.username}`,
       roles: input.roles,
       pinHash: input.pin ? await hashSecret(input.pin) : null,
-      passwordHash: input.password ? await hashSecret(input.password) : null,
+      passwordHash:
+        (input.password ?? input.pin) ? await hashSecret(input.password ?? input.pin ?? '') : null,
       totpSecret: input.totpSecret ?? null,
       totpEnabledAt: input.totpSecret ? new Date() : null,
       isActive: input.isActive ?? true,
@@ -168,7 +170,12 @@ export async function createStation(
 
 export interface LoginInput {
   username: string;
-  role: Role;
+  /**
+   * The role the scenario works in. The API opens the account's role (H57): another one held is
+   * reached by switch-role right after, as a user would.
+   */
+  role?: Role;
+  /** Shorthand for a user created with a PIN only, whose password it is (see `createUser`). */
   pin?: string;
   password?: string;
   totp?: string;
@@ -184,16 +191,23 @@ export interface LoginResult {
 }
 
 export async function login(app: FastifyInstance, input: LoginInput): Promise<LoginResult> {
-  const { origin, ...body } = input;
+  const { origin, role, pin, password, ...rest } = input;
+  const secret = password ?? pin;
   const response = await request(app, 'POST', '/api/v1/auth/login', {
-    body,
+    body: { ...rest, ...(secret !== undefined && { password: secret }) },
     ...(origin ? { origin } : {}),
   });
-  return {
-    response,
-    cookie: sessionCookie(response) ?? '',
-    me: response.statusCode === 200 ? response.json<AuthMe>() : ({} as AuthMe),
-  };
+  const cookie = sessionCookie(response) ?? '';
+  if (response.statusCode !== 200) return { response, cookie, me: {} as AuthMe };
+  const me = response.json<AuthMe>();
+  if (role === undefined || me.session.activeRole === role) return { response, cookie, me };
+  const switched = await request(app, 'POST', '/api/v1/auth/switch-role', {
+    body: { role },
+    cookie,
+    ...(origin ? { origin } : {}),
+  });
+  if (switched.statusCode !== 200) return { response: switched, cookie, me: {} as AuthMe };
+  return { response: switched, cookie, me: switched.json<AuthMe>() };
 }
 
 /** Logs in and fails loudly when it does not work, so scenarios stay readable. */

@@ -49,7 +49,12 @@ export const PAYMENT_METHODS = [
 
 /** Demo credentials (development only; the seed refuses NODE_ENV=production). */
 export const DEMO_PIN = '1234';
-export const DEMO_PASSWORDS = { admin: 'Admin-1234!', boss: 'Boss-1234!' } as const;
+export const DEMO_PASSWORDS = {
+  admin: 'Admin-1234!',
+  boss: 'Boss-1234!',
+  /** Every shop account (manager, sales, cashier, warehouse). */
+  shop: 'Magasin-1234!',
+} as const;
 /** Fixed TOTP secret so the demo owner/admin can be added once to an authenticator app. */
 export const DEMO_TOTP_SECRET = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP';
 
@@ -63,7 +68,10 @@ export interface DemoUser {
   totpSecret?: string;
 }
 
-/** One account per role. Operational roles log in by PIN (RG-USR-03), owner/admin by password + TOTP. */
+/**
+ * One account per role, all logging in by identifier and password (RG-USR-03, H57); owner/admin
+ * add a TOTP code outside the shop. The PIN stays for the manager's validation until T-017d.
+ */
 export const USERS: DemoUser[] = [
   {
     username: 'admin',
@@ -72,13 +80,20 @@ export const USERS: DemoUser[] = [
     password: DEMO_PASSWORDS.admin,
     totpSecret: DEMO_TOTP_SECRET,
   },
-  { username: 'responsable', fullName: 'Rakoto Responsable', roles: ['manager'], pin: DEMO_PIN },
+  {
+    username: 'responsable',
+    fullName: 'Rakoto Responsable',
+    roles: ['manager'],
+    pin: DEMO_PIN,
+    password: DEMO_PASSWORDS.shop,
+  },
   {
     username: 'vola',
     fullName: 'Vola Commerciale',
     roles: ['sales'],
     ticketLetter: 'A',
     pin: DEMO_PIN,
+    password: DEMO_PASSWORDS.shop,
   },
   {
     username: 'hery',
@@ -86,10 +101,29 @@ export const USERS: DemoUser[] = [
     roles: ['sales'],
     ticketLetter: 'B',
     pin: DEMO_PIN,
+    password: DEMO_PASSWORDS.shop,
   },
-  { username: 'caisse1', fullName: 'Soa Caissière', roles: ['cashier'], pin: DEMO_PIN },
-  { username: 'magasin1', fullName: 'Feno Magasinier', roles: ['warehouse'], pin: DEMO_PIN },
-  { username: 'magasin2', fullName: 'Tahina Magasinière', roles: ['warehouse'], pin: DEMO_PIN },
+  {
+    username: 'caisse1',
+    fullName: 'Soa Caissière',
+    roles: ['cashier'],
+    pin: DEMO_PIN,
+    password: DEMO_PASSWORDS.shop,
+  },
+  {
+    username: 'magasin1',
+    fullName: 'Feno Magasinier',
+    roles: ['warehouse'],
+    pin: DEMO_PIN,
+    password: DEMO_PASSWORDS.shop,
+  },
+  {
+    username: 'magasin2',
+    fullName: 'Tahina Magasinière',
+    roles: ['warehouse'],
+    pin: DEMO_PIN,
+    password: DEMO_PASSWORDS.shop,
+  },
   {
     username: 'boss',
     fullName: 'Le Boss',

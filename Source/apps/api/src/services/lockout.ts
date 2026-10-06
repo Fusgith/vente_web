@@ -15,7 +15,7 @@ export interface FailureContext {
   origin: AccessOrigin;
   role?: Role | null;
   stationId?: string | null;
-  /** Machine reason: `invalid_secret`, `inactive`, `role_not_held`, `totp_invalid`… */
+  /** Machine reason: `invalid_secret`, `inactive`, `role_remote_forbidden`, `totp_invalid`… */
   reason: string;
 }
 

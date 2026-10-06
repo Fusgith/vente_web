@@ -30,7 +30,9 @@ describe.skipIf(!TEST_DATABASE_URL)('self-service credentials (H20)', () => {
   });
 
   it('changes the PIN with the current one, keeps the session, audits no secret', async () => {
-    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+    // The PIN no longer opens a session (H57); it stays for the manager's approval until T-017d.
+    const { cookie } = await loginOk(t.app, { username: 'vola', pin: '1234' });
+    const before = await t.db.user.findUniqueOrThrow({ where: { username: 'vola' } });
 
     const response = await request(t.app, 'PUT', '/api/v1/auth/pin', {
       cookie,
@@ -39,12 +41,9 @@ describe.skipIf(!TEST_DATABASE_URL)('self-service credentials (H20)', () => {
     expect(response.statusCode).toBe(204);
 
     expect((await request(t.app, 'GET', ME, { cookie })).statusCode).toBe(200);
-    expect(
-      (await login(t.app, { username: 'vola', role: 'sales', pin: '1234' })).response.statusCode,
-    ).toBe(401);
-    expect(
-      (await login(t.app, { username: 'vola', role: 'sales', pin: '5678' })).response.statusCode,
-    ).toBe(200);
+    const after = await t.db.user.findUniqueOrThrow({ where: { username: 'vola' } });
+    expect(after.pinHash).not.toBe(before.pinHash);
+    expect(after.passwordHash).toBe(before.passwordHash);
 
     const rows = await t.db.auditLog.findMany({ where: { action: 'user.pin_set' } });
     expect(rows).toHaveLength(1);
@@ -166,14 +165,7 @@ describe.skipIf(!TEST_DATABASE_URL)('self-service credentials (H20)', () => {
     ]);
   });
 
-  it('refuses enrolment from a PIN session, from outside, or without the current code once enabled', async () => {
-    const pinSession = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
-    const fromPin = await request(t.app, 'POST', '/api/v1/auth/totp', {
-      cookie: pinSession.cookie,
-    });
-    expect(fromPin.statusCode).toBe(403);
-    expect(fromPin.json().code).toBe('AUTH_REAUTH_REQUIRED');
-
+  it('refuses enrolment from outside, or without the current code once enabled', async () => {
     const secret = TOTP_SECRET;
     await createUser(t.db, {
       username: 'adm',
@@ -288,7 +280,6 @@ describe.skipIf(!TEST_DATABASE_URL)('self-service credentials (H20)', () => {
       ...remote,
       body: {
         username: 'adm',
-        role: 'admin',
         password: 'Admin-1234!',
         totp: generateTotpCode(TOTP_SECRET),
       },
