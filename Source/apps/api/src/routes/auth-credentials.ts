@@ -1,6 +1,5 @@
 import {
   changePasswordBodySchema,
-  changePinBodySchema,
   totpConfirmBodySchema,
   totpEnrolBodySchema,
 } from '@vente-web/shared';
@@ -9,11 +8,11 @@ import type { FastifyPluginAsync } from 'fastify';
 import type { Env } from '../env.js';
 import { AppError } from '../errors.js';
 import { actorOf, authOf, requireAuth } from '../plugins/session.js';
-import { changeOwnPassword, changeOwnPin } from '../services/credentials.js';
+import { changeOwnPassword } from '../services/credentials.js';
 import { confirmTotpEnrolment, startTotpEnrolment } from '../services/totp-enrolment.js';
 import { authRateLimit } from './rate-limit.js';
 
-/** Self-service credentials: own PIN / password, TOTP enrolment (H20). */
+/** Self-service credentials: own password, TOTP enrolment (H20). */
 export const authCredentialRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) => {
   // Every route here takes a secret or a code: same rate limit as the login (RG-USR-05).
   const guarded = { preHandler: requireAuth, ...authRateLimit };
@@ -26,12 +25,6 @@ export const authCredentialRoutes: FastifyPluginAsync<{ env: Env }> = async (app
       { userId: request.auth?.user.id, origin: request.accessOrigin, details: error.details },
       'attempt refused: account locked',
     );
-  });
-
-  app.put('/auth/pin', guarded, async (request, reply) => {
-    const { current, pin } = changePinBodySchema.parse(request.body);
-    await changeOwnPin(app.db, actorOf(authOf(request)), current, pin);
-    return reply.code(204).send();
   });
 
   app.put('/auth/password', guarded, async (request, reply) => {

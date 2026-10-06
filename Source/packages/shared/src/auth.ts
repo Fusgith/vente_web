@@ -32,8 +32,6 @@ export type AccessOrigin = (typeof ACCESS_ORIGINS)[number];
 export const AUTH_METHODS = ['PIN', 'PASSWORD', 'PASSWORD_TOTP'] as const;
 export type AuthMethod = (typeof AUTH_METHODS)[number];
 
-/** PIN of 4 to 6 digits (RG-USR-03). */
-export const PIN_PATTERN = /^\d{4,6}$/;
 /** Password length (decision H19). */
 export const PASSWORD_MIN_LENGTH = 10;
 export const PASSWORD_MAX_LENGTH = 128;
@@ -44,13 +42,12 @@ export const USERNAME_MAX_LENGTH = 64;
 export const roleSchema = z.enum(ROLES);
 export const accessOriginSchema = z.enum(ACCESS_ORIGINS);
 export const authMethodSchema = z.enum(AUTH_METHODS);
-export const pinSchema = z.string().regex(PIN_PATTERN);
 export const passwordSchema = z.string().min(PASSWORD_MIN_LENGTH).max(PASSWORD_MAX_LENGTH);
 export const totpCodeSchema = z.string().regex(TOTP_PATTERN);
 
 const usernameSchema = z.string().trim().min(1).max(USERNAME_MAX_LENGTH);
-/** A secret typed at login: validated for shape only, never for strength. */
-const typedSecretSchema = z.string().min(1).max(PASSWORD_MAX_LENGTH);
+/** A secret typed at login or to confirm one: validated for shape only, never for strength. */
+export const typedSecretSchema = z.string().min(1).max(PASSWORD_MAX_LENGTH);
 
 /**
  * Login everywhere: identifier and password, nothing else to choose (RG-USR-02, RG-USR-03, H57);
@@ -73,14 +70,10 @@ export const switchRoleBodySchema = z.object({ role: roleSchema }).strict();
 export type SwitchRoleBody = z.infer<typeof switchRoleBodySchema>;
 
 /** Self-service credential changes: the current secret is always re-verified (H20). */
-export const changePinBodySchema = z
-  .object({ current: typedSecretSchema, pin: pinSchema })
-  .strict();
 export const changePasswordBodySchema = z
   .object({ current: typedSecretSchema, password: passwordSchema })
   .strict();
-/** Admin-set credentials (annexe B: comptes, PIN — admin only). */
-export const setPinBodySchema = z.object({ pin: pinSchema }).strict();
+/** A password set by the admin (annexe B: comptes — admin only; H57). */
 export const setPasswordBodySchema = z.object({ password: passwordSchema }).strict();
 
 /** TOTP enrolment: a current code is required when TOTP is already active. */
@@ -107,19 +100,6 @@ export const authMeSchema = z.object({
   }),
 });
 export type AuthMe = z.infer<typeof authMeSchema>;
-
-/** Users selectable on a shared station before typing a PIN (RG-USR-03). */
-export const authUserDirectorySchema = z.object({
-  users: z.array(
-    z.object({
-      id: z.uuid(),
-      username: z.string(),
-      fullName: z.string(),
-      roles: z.array(z.enum(OPERATIONAL_ROLES)),
-    }),
-  ),
-});
-export type AuthUserDirectory = z.infer<typeof authUserDirectorySchema>;
 
 /** Result of `POST /auth/totp`: what the authenticator app needs (QR from `uri`). */
 export const totpEnrolmentSchema = z.object({ uri: z.string(), secret: z.string() });

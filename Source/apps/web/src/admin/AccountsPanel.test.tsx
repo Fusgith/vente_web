@@ -23,8 +23,7 @@ const account = (over: Partial<UserAccount>): UserAccount => ({
   roles: ['sales'],
   ticketLetter: 'A',
   isActive: true,
-  hasPin: true,
-  hasPassword: false,
+  hasPassword: true,
   passwordChangeRequired: false,
   totpEnabled: false,
   lockedUntil: null,
@@ -37,7 +36,6 @@ const ADMIN = account({
   fullName: 'Hery Admin',
   roles: ['admin'],
   ticketLetter: null,
-  hasPin: false,
   hasPassword: true,
   passwordChangeRequired: true,
   lockedUntil: '2999-01-01T00:00:00.000Z',
@@ -69,7 +67,7 @@ describe('AccountsPanel — the admin’s accounts (T-016e, annexe B, RG-USR-06)
 
     await panel().findByRole('table', { name: text.list });
     expect(rowOf('rija').getByText(text.state.active)).toBeInTheDocument();
-    expect(rowOf('rija').getByText(text.access.pin)).toBeInTheDocument();
+    expect(rowOf('rija').getByText(text.access.password)).toBeInTheDocument();
     expect(rowOf('admin').getByText(text.state.locked)).toBeInTheDocument();
     expect(rowOf('admin').getByText(text.access.passwordToChange)).toBeInTheDocument();
   });
@@ -80,7 +78,7 @@ describe('AccountsPanel — the admin’s accounts (T-016e, annexe B, RG-USR-06)
       username: 'lova',
       fullName: 'Lova Ranaivo',
       ticketLetter: 'B',
-      hasPin: false,
+      hasPassword: false,
     });
     const api = mount({
       'GET /users': ok({ users: [RIJA] }),
@@ -140,11 +138,10 @@ describe('AccountsPanel — the admin’s accounts (T-016e, annexe B, RG-USR-06)
 });
 
 describe('AccountsPanel — the ways in of an account (T-016f, H20, RG-USR-05)', () => {
-  it('sets a PIN and a password, lifts a lock, forgets the TOTP, closes the sessions', async () => {
+  it('sets a password, lifts a lock, forgets the TOTP, closes the sessions (H57)', async () => {
     const LOCKED = { ...RIJA, lockedUntil: '2999-01-01T00:00:00.000Z', totpEnabled: true };
     const api = mount({
       'GET /users': ok({ users: [LOCKED] }),
-      [`PUT /users/${RIJA_ID}/pin`]: NO_CONTENT,
       [`PUT /users/${RIJA_ID}/password`]: NO_CONTENT,
       [`POST /users/${RIJA_ID}/unlock`]: NO_CONTENT,
       [`DELETE /users/${RIJA_ID}/totp`]: NO_CONTENT,
@@ -154,15 +151,7 @@ describe('AccountsPanel — the ways in of an account (T-016f, H20, RG-USR-05)',
     fireEvent.click(panel().getByRole('button', { name: text.edit('Rija Rakoto') }));
     const ways = within(panel().getByRole('region', { name: text.secrets.title('Rija Rakoto') }));
 
-    const setPin = ways.getByRole('button', { name: text.secrets.setPin });
-    fireEvent.change(ways.getByLabelText(text.secrets.pin), { target: { value: '12a' } });
-    expect(setPin).toBeDisabled();
-    fireEvent.change(ways.getByLabelText(text.secrets.pin), { target: { value: '4821' } });
-    fireEvent.click(setPin);
-    expect(await within(band()).findByText(text.secrets.pinSet('Rija Rakoto'))).toBeInTheDocument();
-    expect(ways.getByLabelText(text.secrets.pin)).toHaveValue('');
-    expect(api.callsTo(`PUT /users/${RIJA_ID}/pin`)[0]?.body).toEqual({ pin: '4821' });
-
+    expect(ways.queryByText(/PIN/)).not.toBeInTheDocument();
     fireEvent.change(ways.getByLabelText(text.secrets.password), {
       target: { value: 'entree-magasin' },
     });
@@ -196,7 +185,7 @@ describe('AccountsPanel — the ways in of an account (T-016f, H20, RG-USR-05)',
       fullName: 'Fara Boss',
       roles: ['owner'],
       ticketLetter: null,
-      hasPin: false,
+      hasPassword: false,
     });
     mount({
       'GET /users': ok({ users: [BOSS] }),
@@ -210,7 +199,6 @@ describe('AccountsPanel — the ways in of an account (T-016f, H20, RG-USR-05)',
     const ways = within(panel().getByRole('region', { name: text.secrets.title('Fara Boss') }));
 
     expect(ways.queryByLabelText(text.secrets.password)).not.toBeInTheDocument();
-    expect(ways.queryByLabelText(text.secrets.pin)).not.toBeInTheDocument();
     fireEvent.click(ways.getByRole('button', { name: text.secrets.issueCode }));
     expect(await ways.findByText('K7P2M9QX4R8T')).toBeInTheDocument();
     expect(ways.getByText(text.secrets.codeUntil('06/10/2026', '12:30'))).toBeInTheDocument();

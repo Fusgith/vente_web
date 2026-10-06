@@ -121,32 +121,3 @@ describe.skipIf(!TEST_DATABASE_URL)('POST /api/v1/auth/switch-role', () => {
     expect(await auditActions(t.db)).toEqual(['auth.login']);
   });
 });
-
-describe.skipIf(!TEST_DATABASE_URL)('GET /api/v1/auth/users', () => {
-  let t: TestApp;
-
-  beforeAll(async () => {
-    t = await createTestApp();
-  });
-  afterAll(() => t.close());
-  beforeEach(() => t.reset());
-
-  it('lists shop accounts with a PIN, operational roles only, from the shop only', async () => {
-    await createUser(t.db, { username: 'vola', roles: ['sales', 'admin'], pin: '1234' });
-    await createUser(t.db, { username: 'nopin', roles: ['sales'] });
-    await createUser(t.db, { username: 'gone', roles: ['sales'], pin: '1234', isActive: false });
-    await createUser(t.db, { username: 'boss', roles: ['owner'], password: 'Boss-1234!' });
-
-    const response = await request(t.app, 'GET', '/api/v1/auth/users');
-    expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({
-      users: [
-        { id: expect.any(String), username: 'vola', fullName: 'User vola', roles: ['sales'] },
-      ],
-    });
-
-    const remote = await request(t.app, 'GET', '/api/v1/auth/users', { origin: 'REMOTE' });
-    expect(remote.statusCode).toBe(403);
-    expect(remote.json().code).toBe('AUTH_LAN_ONLY');
-  });
-});

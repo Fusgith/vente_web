@@ -42,14 +42,13 @@ async function seedPaymentMethods(db: Db): Promise<void> {
 async function seedUsers(db: Db): Promise<void> {
   for (const user of USERS) {
     const credentials = {
-      pinHash: user.pin ? await hashSecret(user.pin) : null,
-      passwordHash: user.password ? await hashSecret(user.password) : null,
+      passwordHash: await hashSecret(user.password),
       totpSecret: user.totpSecret ?? null,
       totpEnabledAt: user.totpSecret ? new Date() : null,
     };
     const existing = await db.user.findUnique({
       where: { username: user.username },
-      select: { id: true, pinHash: true, passwordHash: true },
+      select: { id: true, passwordHash: true },
     });
     if (!existing) {
       await db.user.create({
@@ -61,15 +60,10 @@ async function seedUsers(db: Db): Promise<void> {
           ...credentials,
         },
       });
-    } else if (existing.pinHash === null && existing.passwordHash === null) {
-      // An account that never had a secret gets the demo ones; a changed secret is never touched.
+    } else if (existing.passwordHash === null) {
+      // An account without a password (a former PIN-only one, H57) gets the demo secrets; a
+      // changed secret is never touched.
       await db.user.update({ where: { id: existing.id }, data: credentials });
-    } else if (existing.passwordHash === null && credentials.passwordHash !== null) {
-      // Shop accounts seeded with a PIN only get their demo password (H57); the PIN stays.
-      await db.user.update({
-        where: { id: existing.id },
-        data: { passwordHash: credentials.passwordHash },
-      });
     }
   }
 }

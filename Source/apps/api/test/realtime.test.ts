@@ -26,16 +26,21 @@ describe.skipIf(!TEST_DATABASE_URL)('realtime channel (CDC technique §6.1, T-01
   beforeEach(async () => {
     await t.reset();
     await seedDemoCatalog(t.db);
-    await createUser(t.db, { username: 'vola', roles: ['sales'], pin: '1234', ticketLetter: 'A' });
-    await createUser(t.db, { username: 'soa', roles: ['cashier', 'manager'], pin: '3456' });
-    await createUser(t.db, { username: 'feno', roles: ['warehouse'], pin: '4567' });
-    for (const [key, username, role, pin] of [
+    await createUser(t.db, {
+      username: 'vola',
+      roles: ['sales'],
+      password: '1234',
+      ticketLetter: 'A',
+    });
+    await createUser(t.db, { username: 'soa', roles: ['cashier', 'manager'], password: '3456' });
+    await createUser(t.db, { username: 'feno', roles: ['warehouse'], password: '4567' });
+    for (const [key, username, role, password] of [
       ['sales', 'vola', 'sales', '1234'],
       ['cashier', 'soa', 'cashier', '3456'],
       ['warehouse', 'feno', 'warehouse', '4567'],
       ['manager', 'responsable', 'manager', '1234'],
     ] as const)
-      cookies[key] = (await loginOk(t.app, { username, role, pin })).cookie;
+      cookies[key] = (await loginOk(t.app, { username, role, password })).cookie;
   });
 
   /** A browser tab of the shop's page: same Origin, the session cookie. */

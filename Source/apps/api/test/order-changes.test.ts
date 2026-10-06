@@ -32,24 +32,24 @@ describe.skipIf(!TEST_DATABASE_URL)(
       await createUser(t.db, {
         username: 'vola',
         roles: ['sales'],
-        pin: '1234',
+        password: '1234',
         ticketLetter: 'A',
       });
       await createUser(t.db, {
         username: 'hery',
         roles: ['sales'],
-        pin: '2345',
+        password: '2345',
         ticketLetter: 'B',
       });
-      await createUser(t.db, { username: 'soa', roles: ['cashier'], pin: '3456' });
-      await createUser(t.db, { username: 'rina', roles: ['cashier'], pin: '5678' });
-      for (const [key, username, role, pin] of [
+      await createUser(t.db, { username: 'soa', roles: ['cashier'], password: '3456' });
+      await createUser(t.db, { username: 'rina', roles: ['cashier'], password: '5678' });
+      for (const [key, username, role, password] of [
         ['sales', 'vola', 'sales', '1234'],
         ['otherSales', 'hery', 'sales', '2345'],
         ['cashier', 'soa', 'cashier', '3456'],
         ['otherCashier', 'rina', 'cashier', '5678'],
       ] as const)
-        cookies[key] = (await loginOk(t.app, { username, role, pin })).cookie;
+        cookies[key] = (await loginOk(t.app, { username, role, password })).cookie;
       const customer = await request(t.app, 'POST', '/api/v1/customers', {
         cookie: cookies.sales,
         body: { name: 'Rasoa Hanta', phone: '034 11 222 33' },

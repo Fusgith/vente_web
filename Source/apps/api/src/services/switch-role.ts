@@ -7,8 +7,8 @@ import { stationAcceptsRole } from './login.js';
 import { idleMinutesFor, toAuthMe, type AuthContext } from './sessions.js';
 
 /**
- * Changes the active role of the session without a new login. A PIN session never reaches
- * owner/admin (CDC technique §8) and a remote session never takes an operational role (T3).
+ * Changes the active role of the session without a new login. A PIN session (opened before
+ * H57, gone within 12 h) never reaches owner/admin (CDC technique §8) and a remote session never takes an operational role (T3).
  */
 export function switchRoleError(auth: AuthContext, role: Role): AppError | null {
   if (!auth.user.roles.includes(role)) return new AppError(403, 'AUTH_FORBIDDEN');

@@ -19,7 +19,6 @@ export function toUserAccount(user: User): UserAccount {
     roles: user.roles,
     ticketLetter: user.ticketLetter,
     isActive: user.isActive,
-    hasPin: user.pinHash !== null,
     hasPassword: user.passwordHash !== null,
     passwordChangeRequired: user.passwordChangeRequired,
     totpEnabled: user.totpEnabledAt !== null,
@@ -72,7 +71,7 @@ function snapshot(account: Tracked, keys: readonly (keyof Tracked)[]): AuditSnap
   return Object.fromEntries(keys.map((key) => [key, account[key]]));
 }
 
-/** The admin creates the account; PIN, password or activation code come next (annexe B). */
+/** The admin creates the account; a temporary password or the owner's activation code comes next (annexe B, H57). */
 export async function createUser(db: Db, actor: Actor, body: CreateUserBody): Promise<UserAccount> {
   const account: Tracked = {
     username: body.username,

@@ -286,7 +286,6 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
       )}
       {refunding && (
         <RefundSheet
-          userId={userId}
           onRefunded={(sale, done) =>
             say(
               // Delivered in part, the rest refunded; otherwise cancelled (H36, H37).

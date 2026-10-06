@@ -45,7 +45,7 @@ async function refuseReplay(db: Db, actor: Actor, user: User, slot: AttemptSlot)
   throw new AppError(401, 'AUTH_TOTP_INVALID');
 }
 
-/** Enrolment, start and confirmation alike: from the shop, with a password session (H20). */
+/** Enrolment, start and confirmation alike: from the shop, with a password session (H20; PIN sessions predate H57). */
 function assertCanEnrol(actor: Actor, requestOrigin: AccessOrigin): void {
   if (actor.authMethod === 'PIN') throw new AppError(403, 'AUTH_REAUTH_REQUIRED');
   if (requestOrigin !== 'LAN') throw new AppError(403, 'AUTH_LAN_ONLY');

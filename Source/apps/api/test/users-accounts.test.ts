@@ -38,8 +38,12 @@ describe.skipIf(!TEST_DATABASE_URL)(
       request(t.app, 'PATCH', `${USERS}/${id}`, { cookie: adminCookie, body });
 
     it('is reserved to the admin role', async () => {
-      await createUser(t.db, { username: 'chef', roles: ['manager'], pin: '1234' });
-      const { cookie } = await loginOk(t.app, { username: 'chef', role: 'manager', pin: '1234' });
+      await createUser(t.db, { username: 'chef', roles: ['manager'], password: '1234' });
+      const { cookie } = await loginOk(t.app, {
+        username: 'chef',
+        role: 'manager',
+        password: '1234',
+      });
       expect((await request(t.app, 'GET', USERS, { cookie })).statusCode).toBe(403);
       expect(
         (await create({ username: 'x', fullName: 'X', roles: ['cashier'] }, cookie)).statusCode,
@@ -60,7 +64,6 @@ describe.skipIf(!TEST_DATABASE_URL)(
         roles: ['sales', 'cashier'],
         ticketLetter: 'B',
         isActive: true,
-        hasPin: false,
         hasPassword: false,
         totpEnabled: false,
       });
@@ -91,14 +94,22 @@ describe.skipIf(!TEST_DATABASE_URL)(
     });
 
     it('changes the roles: the sessions of the account close, the change is audited', async () => {
-      const vola = await createUser(t.db, { username: 'vola', roles: ['cashier'], pin: '1234' });
-      const { cookie } = await loginOk(t.app, { username: 'vola', role: 'cashier', pin: '1234' });
+      const vola = await createUser(t.db, {
+        username: 'vola',
+        roles: ['cashier'],
+        password: '1234',
+      });
+      const { cookie } = await loginOk(t.app, {
+        username: 'vola',
+        role: 'cashier',
+        password: '1234',
+      });
       const response = await update(vola.id, {
         roles: ['cashier', 'warehouse'],
         fullName: 'Vola R.',
       });
       expect(response.statusCode).toBe(200);
-      expect(response.json()).toMatchObject({ roles: ['cashier', 'warehouse'], hasPin: true });
+      expect(response.json()).toMatchObject({ roles: ['cashier', 'warehouse'], hasPassword: true });
       expect((await request(t.app, 'GET', ME, { cookie })).statusCode).toBe(401);
       expect(await auditActions(t.db, vola.id)).toEqual(['user.updated', 'user.sessions_revoked']);
       const row = await t.db.auditLog.findFirstOrThrow({ where: { action: 'user.updated' } });
@@ -107,8 +118,16 @@ describe.skipIf(!TEST_DATABASE_URL)(
     });
 
     it('deactivates instead of deleting: no more login, history kept (RG-USR-06)', async () => {
-      const vola = await createUser(t.db, { username: 'vola', roles: ['cashier'], pin: '1234' });
-      const { cookie } = await loginOk(t.app, { username: 'vola', role: 'cashier', pin: '1234' });
+      const vola = await createUser(t.db, {
+        username: 'vola',
+        roles: ['cashier'],
+        password: '1234',
+      });
+      const { cookie } = await loginOk(t.app, {
+        username: 'vola',
+        role: 'cashier',
+        password: '1234',
+      });
       const response = await update(vola.id, { isActive: false });
       expect(response.json().isActive).toBe(false);
       expect((await request(t.app, 'GET', ME, { cookie })).statusCode).toBe(401);

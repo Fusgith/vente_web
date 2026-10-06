@@ -32,12 +32,17 @@ export async function discountScene(t: TestApp) {
   const vola = await createUser(t.db, {
     username: 'vola',
     roles: ['sales'],
-    pin: '1234',
+    password: '1234',
     ticketLetter: 'A',
   });
-  await createUser(t.db, { username: 'hery', roles: ['sales'], pin: '2345', ticketLetter: 'B' });
-  await createUser(t.db, { username: 'soa', roles: ['cashier'], pin: '3456' });
-  await createUser(t.db, { username: 'rina', roles: ['cashier'], pin: '5678' });
+  await createUser(t.db, {
+    username: 'hery',
+    roles: ['sales'],
+    password: '2345',
+    ticketLetter: 'B',
+  });
+  await createUser(t.db, { username: 'soa', roles: ['cashier'], password: '3456' });
+  await createUser(t.db, { username: 'rina', roles: ['cashier'], password: '5678' });
   const cookies = {
     owner: (await loginOk(t.app, { username: 'boss', role: 'owner', password: PASSWORD })).cookie,
     sales: '',
@@ -46,14 +51,14 @@ export async function discountScene(t: TestApp) {
     otherCashier: '',
     manager: '',
   };
-  for (const [key, username, role, pin] of [
+  for (const [key, username, role, password] of [
     ['sales', 'vola', 'sales', '1234'],
     ['otherSales', 'hery', 'sales', '2345'],
     ['cashier', 'soa', 'cashier', '3456'],
     ['otherCashier', 'rina', 'cashier', '5678'],
     ['manager', 'responsable', 'manager', '1234'],
   ] as const)
-    cookies[key] = (await loginOk(t.app, { username, role, pin })).cookie;
+    cookies[key] = (await loginOk(t.app, { username, role, password })).cookie;
   const customer = (
     await t.db.customer.create({ data: { name: 'Rasoa Hanta', phone: '034 11 222 33' } })
   ).id;

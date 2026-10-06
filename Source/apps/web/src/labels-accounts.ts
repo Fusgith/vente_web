@@ -32,7 +32,6 @@ export const accountsLabels = {
   },
   state: { active: 'Actif', inactive: 'Désactivé', locked: 'Verrouillé' },
   access: {
-    pin: 'PIN',
     password: 'Mot de passe',
     passwordToChange: 'Mot de passe à changer',
     totp: 'TOTP',
@@ -41,11 +40,7 @@ export const accountsLabels = {
   /** The ways in of one account (T-016f): set or reset, never shown. */
   secrets: {
     title: (name: string) => `Accès de ${name}`,
-    help: 'Vous fixez un secret sans jamais voir l’ancien ; chaque changement ferme les sessions ouvertes avec lui.',
-    pin: 'Nouveau PIN',
-    pinHint: '4 à 6 chiffres.',
-    setPin: 'Définir le PIN',
-    pinSet: (name: string) => `PIN de ${name} défini.`,
+    help: 'Vous fixez un mot de passe sans jamais voir l’ancien ; chaque changement ferme les sessions ouvertes avec lui.',
     password: 'Nouveau mot de passe',
     passwordHint: (min: number) =>
       `${min} caractères au moins ; la personne le remplacera à sa prochaine connexion.`,

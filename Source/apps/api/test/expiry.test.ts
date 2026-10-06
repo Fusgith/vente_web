@@ -22,12 +22,19 @@ describe.skipIf(!TEST_DATABASE_URL)('orders expired at the day end (RG-CMD-08, R
     await t.reset();
     await seedDemoCatalog(t.db);
     ids.vola = (
-      await createUser(t.db, { username: 'vola', roles: ['sales'], pin: '1234', ticketLetter: 'A' })
+      await createUser(t.db, {
+        username: 'vola',
+        roles: ['sales'],
+        password: '1234',
+        ticketLetter: 'A',
+      })
     ).id;
-    await createUser(t.db, { username: 'soa', roles: ['cashier'], pin: '3456' });
-    cookies.sales = (await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' })).cookie;
+    await createUser(t.db, { username: 'soa', roles: ['cashier'], password: '3456' });
+    cookies.sales = (
+      await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' })
+    ).cookie;
     cookies.cashier = (
-      await loginOk(t.app, { username: 'soa', role: 'cashier', pin: '3456' })
+      await loginOk(t.app, { username: 'soa', role: 'cashier', password: '3456' })
     ).cookie;
     const customer = await request(t.app, 'POST', '/api/v1/customers', {
       cookie: cookies.sales,

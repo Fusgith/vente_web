@@ -23,8 +23,13 @@ describe.skipIf(!TEST_DATABASE_URL)('stock rows locked in one order (RG-STK-01)'
   beforeEach(async () => {
     await t.reset();
     await seedDemoCatalog(t.db);
-    await createUser(t.db, { username: 'vola', roles: ['sales'], pin: '1234', ticketLetter: 'A' });
-    cookie = (await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' })).cookie;
+    await createUser(t.db, {
+      username: 'vola',
+      roles: ['sales'],
+      password: '1234',
+      ticketLetter: 'A',
+    });
+    cookie = (await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' })).cookie;
   });
 
   const post = (url: string, body: unknown) =>

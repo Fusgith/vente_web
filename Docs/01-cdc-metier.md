@@ -454,7 +454,7 @@ Accessible à distance sur téléphone et PC, actualisé en temps réel. *(Déci
 
 | Lot | Contenu |
 |---|---|
-| **[MVP]** — première mise en service | Comptes et rôles, PIN, 2FA boss/admin · Postes paramétrables · Import articles en quatre temps (ENTRÉE et INVENTAIRE, une ligne par article × unité) · Catalogue, **unités de vente et grille de prix, historique des prix** (consultation sur la fiche article, export), disponibilité en unité de base, réservation jusqu'à fin de journée, expiration · Répertoire clients (nom + téléphone) · Devis (recherche et saisie rapides, scan en rafale), commande, ticket · Remises plafonnées (ligne et total, % ou montant) + demande au boss + codes de remise, notification du boss · Borne de commande en libre-service · Files caisse et livraison, écran public optionnel ou appel verbal, supervision et réordonnancement · Paiement multi-moyens, facture PDF A4, avoir total/partiel · Sessions et clôture de caisse simple · Livraison multi-comptoirs, sortie de stock, anomalies · Exports (mouvements, ventes, encaissements, stock, remises, codes, audit) · Tableau de bord boss (RG-DSH-01 à 04, horaire → mensuel) · Journal d'audit · Déploiement magasin (serveur local, tunnel, DNS, sauvegardes, onduleur) |
+| **[MVP]** — première mise en service | Comptes et rôles, connexion par identifiant et mot de passe (H57), 2FA boss/admin · Postes paramétrables · Import articles en quatre temps (ENTRÉE et INVENTAIRE, une ligne par article × unité) · Catalogue, **unités de vente et grille de prix, historique des prix** (consultation sur la fiche article, export), disponibilité en unité de base, réservation jusqu'à fin de journée, expiration · Répertoire clients (nom + téléphone) · Devis (recherche et saisie rapides, scan en rafale), commande, ticket · Remises plafonnées (ligne et total, % ou montant) + demande au boss + codes de remise, notification du boss · Borne de commande en libre-service · Files caisse et livraison, écran public optionnel ou appel verbal, supervision et réordonnancement · Paiement multi-moyens, facture PDF A4, avoir total/partiel · Sessions et clôture de caisse simple · Livraison multi-comptoirs, sortie de stock, anomalies · Exports (mouvements, ventes, encaissements, stock, remises, codes, audit) · Tableau de bord boss (RG-DSH-01 à 04, horaire → mensuel) · Journal d'audit · Déploiement magasin (serveur local, tunnel, DNS, sauvegardes, onduleur) |
 | **[V1.1]** | Prix à date d'effet future (RG-ART-07) · Retours après livraison · Bon de livraison · Ticket 80 mm et impression thermique directe · Mini-ticket d'appel imprimé · Paiement partiel / acompte · Validation des clôtures par le responsable · Autres notifications au boss (fin de journée, écarts, stock) · Fiche client enrichie (historique détaillé, notes) |
 | **[V2]** | Réplique cloud en lecture seule (tableau de bord même magasin hors ligne) · Multi-magasins · Articles à variantes · Fidélité · Application APK/TWA si un besoin réel apparaît |
 
@@ -678,7 +678,7 @@ La **date d'entrée** n'est pas une colonne : elle est choisie à l'import pour 
 | Tableau de bord | siens | siens | — | L | L | L |
 | Exports | — | ses clôtures | — | L | L | L (audit) |
 | Journal d'audit | — | — | — | L | L | L |
-| Comptes, rôles, PIN, postes | — | — | — | — | — | C, M |
+| Comptes, rôles, mots de passe, postes | — | — | — | — | — | C, M |
 | Paramètres | — | — | — | L | L, M (plafond général, durée de réservation) | M |
 | Corrections assistées | — | — | — | — | — | C |
 | Sauvegardes, restauration | — | — | — | — | — | C |

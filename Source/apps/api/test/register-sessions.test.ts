@@ -23,14 +23,18 @@ describe.skipIf(!TEST_DATABASE_URL)('register sessions opened (RG-CAI-01/02, H32
   afterAll(() => t.close());
   beforeEach(async () => {
     await t.reset();
-    await createUser(t.db, { username: 'soa', roles: ['cashier'], pin: '3456' });
-    await createUser(t.db, { username: 'rina', roles: ['cashier'], pin: '5678' });
-    await createUser(t.db, { username: 'vola', roles: ['sales'], pin: '1234' });
-    cookies.soa = (await loginOk(t.app, { username: 'soa', role: 'cashier', pin: '3456' })).cookie;
-    cookies.rina = (
-      await loginOk(t.app, { username: 'rina', role: 'cashier', pin: '5678' })
+    await createUser(t.db, { username: 'soa', roles: ['cashier'], password: '3456' });
+    await createUser(t.db, { username: 'rina', roles: ['cashier'], password: '5678' });
+    await createUser(t.db, { username: 'vola', roles: ['sales'], password: '1234' });
+    cookies.soa = (
+      await loginOk(t.app, { username: 'soa', role: 'cashier', password: '3456' })
     ).cookie;
-    cookies.sales = (await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' })).cookie;
+    cookies.rina = (
+      await loginOk(t.app, { username: 'rina', role: 'cashier', password: '5678' })
+    ).cookie;
+    cookies.sales = (
+      await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' })
+    ).cookie;
     stations.one = (await createStation(t.db, 'REGISTER')).id;
     stations.two = (await createStation(t.db, 'REGISTER')).id;
     stations.counter = (await createStation(t.db, 'DELIVERY')).id;

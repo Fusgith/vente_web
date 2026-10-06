@@ -2,6 +2,25 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 06/10/2026 — T-017d : le PIN disparaît partout — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Remboursement à la caisse : le responsable valide en tapant **son identifiant et son mot de passe** sur l'écran du caissier. Plus de liste de noms ni de PIN. Un mot de passe faux compte comme un échec de connexion (RG-USR-05) et le champ se vide.
+- Écran Comptes de l'admin : le formulaire « Nouveau PIN » est retiré. L'admin pose un **mot de passe provisoire**, changé à la première connexion (H20). La colonne « Accès » ne montre plus « PIN ».
+- API : routes `PUT /auth/pin`, `PUT /users/:id/pin` et `GET /auth/users` supprimées (404). La validation du responsable vérifie le mot de passe.
+- Base : migration `20261006120000_drop_user_pin` (colonne `pin_hash` supprimée), appliquée à la base de dev, seed relancé.
+- Contrat partagé : la validation est `{ username, password }` ; libellés d'erreur du PIN retirés.
+- CDC métier : lot MVP et annexe B disent « mot de passe » au lieu de « PIN ».
+- Vérifié : tests API 321, web 268, shared 94 ; lint, typecheck et Prettier propres.
+
+**Reste** : rien sur la connexion. Prochaine tâche du backlog à choisir (T-013 permissions, T-014 audit, T-015 postes…).
+
+**Décisions** :
+- La valeur `PIN` reste dans l'énumération `auth_method` : elle décrit les sessions ouvertes avant H57 (historique, audit). Aucune nouvelle session ne la reçoit.
+- Un test web (`OrderCode.test.tsx`) a échoué une fois sous charge puis est passé 4 fois de suite : instabilité de minutage, sans lien avec le PIN.
+
+**Questions** : aucune.
+
 ## 06/10/2026 — T-017c : connexion par identifiant et mot de passe — agent : Claude Code (Opus 5.5)
 
 **Fait** :

@@ -18,9 +18,9 @@ describe.skipIf(!TEST_DATABASE_URL)('favorites and categories of the search (RG-
   beforeEach(async () => {
     await t.reset();
     await seedDemoCatalog(t.db);
-    vola = (await createUser(t.db, { username: 'vola', roles: ['sales'], pin: '1234' })).id;
-    hery = (await createUser(t.db, { username: 'hery', roles: ['sales'], pin: '1234' })).id;
-    ({ cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' }));
+    vola = (await createUser(t.db, { username: 'vola', roles: ['sales'], password: '1234' })).id;
+    hery = (await createUser(t.db, { username: 'hery', roles: ['sales'], password: '1234' })).id;
+    ({ cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' }));
   });
 
   async function favorites(extra = ''): Promise<string[]> {

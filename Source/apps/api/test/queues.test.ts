@@ -28,19 +28,26 @@ describe.skipIf(!TEST_DATABASE_URL)('register queue (RG-FIL-01 à 05)', () => {
     await t.reset();
     await seedDemoCatalog(t.db);
     ids.vola = (
-      await createUser(t.db, { username: 'vola', roles: ['sales'], pin: '1234', ticketLetter: 'A' })
+      await createUser(t.db, {
+        username: 'vola',
+        roles: ['sales'],
+        password: '1234',
+        ticketLetter: 'A',
+      })
     ).id;
-    ids.soa = (await createUser(t.db, { username: 'soa', roles: ['cashier'], pin: '3456' })).id;
-    await createUser(t.db, { username: 'rina', roles: ['cashier'], pin: '5678' });
-    await createUser(t.db, { username: 'feno', roles: ['warehouse'], pin: '4567' });
-    for (const [key, username, role, pin] of [
+    ids.soa = (
+      await createUser(t.db, { username: 'soa', roles: ['cashier'], password: '3456' })
+    ).id;
+    await createUser(t.db, { username: 'rina', roles: ['cashier'], password: '5678' });
+    await createUser(t.db, { username: 'feno', roles: ['warehouse'], password: '4567' });
+    for (const [key, username, role, password] of [
       ['sales', 'vola', 'sales', '1234'],
       ['cashier', 'soa', 'cashier', '3456'],
       ['otherCashier', 'rina', 'cashier', '5678'],
       ['manager', 'responsable', 'manager', '1234'],
       ['warehouse', 'feno', 'warehouse', '4567'],
     ] as const)
-      cookies[key] = (await loginOk(t.app, { username, role, pin })).cookie;
+      cookies[key] = (await loginOk(t.app, { username, role, password })).cookie;
     const customer = await request(t.app, 'POST', '/api/v1/customers', {
       cookie: cookies.sales,
       body: { name: 'Rasoa Hanta', phone: '034 11 222 33' },

@@ -1,15 +1,7 @@
-import {
-  activateBodySchema,
-  OPERATIONAL_ROLES,
-  isOperationalRole,
-  loginBodySchema,
-  switchRoleBodySchema,
-  type AuthUserDirectory,
-} from '@vente-web/shared';
+import { activateBodySchema, loginBodySchema, switchRoleBodySchema } from '@vente-web/shared';
 import type { FastifyPluginAsync } from 'fastify';
 
 import type { Env } from '../env.js';
-import { AppError } from '../errors.js';
 import { authOf, requireAuth, sessionCookieOptions } from '../plugins/session.js';
 import { login } from '../services/login.js';
 import { activateOwner } from '../services/owner-activation.js';
@@ -57,18 +49,5 @@ export const authRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env })
   app.post('/auth/switch-role', { preHandler: requireAuth }, async (request) => {
     const { role } = switchRoleBodySchema.parse(request.body);
     return switchRole(app.db, authOf(request), role);
-  });
-
-  /** Names to pick from on a shared station before typing a PIN (RG-USR-03); shop only. */
-  app.get('/auth/users', authRateLimit, async (request): Promise<AuthUserDirectory> => {
-    if (request.accessOrigin !== 'LAN') throw new AppError(403, 'AUTH_LAN_ONLY');
-    const users = await app.db.user.findMany({
-      where: { isActive: true, pinHash: { not: null }, roles: { hasSome: [...OPERATIONAL_ROLES] } },
-      select: { id: true, username: true, fullName: true, roles: true },
-      orderBy: { fullName: 'asc' },
-    });
-    return {
-      users: users.map((user) => ({ ...user, roles: user.roles.filter(isOperationalRole) })),
-    };
   });
 };

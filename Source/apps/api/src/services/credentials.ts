@@ -1,4 +1,4 @@
-import { isOperationalRole, type AccessOrigin } from '@vente-web/shared';
+import type { AccessOrigin } from '@vente-web/shared';
 
 import type { Db } from '../db.js';
 import { AppError } from '../errors.js';
@@ -8,10 +8,6 @@ import { recordAudit, type AuditTx } from './audit.js';
 import { clearLoginFailures, recordLoginFailure, reserveAttemptOrThrow } from './lockout.js';
 import { hashSecret, verifySecret } from './password-hash.js';
 import { revokeSessions } from './sessions.js';
-
-function assertCanHoldPin(user: User): void {
-  if (!user.roles.some(isOperationalRole)) throw new AppError(400, 'PIN_REQUIRES_OPERATIONAL_ROLE');
-}
 
 /** A secret change drops the sessions opened with the old secret (whoever held it). */
 export async function revokeAndAudit(
@@ -28,22 +24,6 @@ export async function revokeAndAudit(
     entityType: 'user',
     entityId: target.id,
     after: { count },
-  });
-}
-
-async function storePin(db: Db, actor: Actor, target: User, pin: string): Promise<void> {
-  const pinHash = await hashSecret(pin);
-  await db.$transaction(async (tx) => {
-    await tx.user.update({ where: { id: target.id }, data: { pinHash } });
-    await recordAudit(tx, {
-      ...by(actor),
-      action: 'user.pin_set',
-      entityType: 'user',
-      entityId: target.id,
-      before: { hasPin: target.pinHash !== null },
-      after: { hasPin: true },
-    });
-    await revokeAndAudit(tx, actor, target, { exceptId: actor.sessionId });
   });
 }
 
@@ -76,26 +56,13 @@ async function storePassword(
   });
 }
 
-// ---- Admin operations (annexe B: comptes, PIN — admin only; H20) ----
+// ---- Admin operations (annexe B: comptes — admin only; H20) ----
 
 /**
- * Sets or resets the PIN of any account — the way back from a forgotten secret. The admin never
- * sees the old one; the audit row records whether one existed (H20).
- */
-export async function adminSetPin(
-  db: Db,
-  actor: Actor,
-  targetId: string,
-  pin: string,
-): Promise<void> {
-  const target = await loadUser(db, targetId);
-  assertCanHoldPin(target);
-  await storePin(db, actor, target, pin);
-}
-
-/**
- * Same for the password, never the owner's: only the owner knows and chooses it (RG-USR-10,
- * decision H20); a one-time activation code will let them set it (T-016).
+ * Sets or resets the password of any account — the way back from a forgotten one, and the
+ * temporary password of a new account (H57). The admin never sees the old one; the audit row
+ * records whether one existed. Never the owner's: only the owner chooses it, with a one-time
+ * activation code (RG-USR-10, H20).
  */
 export async function adminSetPassword(
   db: Db,
@@ -159,39 +126,16 @@ async function verifyCurrentOrFail(
   db: Db,
   actor: Actor,
   user: User,
-  hashes: (string | null)[],
   current: string,
   reason: string,
 ): Promise<void> {
   const slot = await reserveAttemptOrThrow(db, user.id);
-  for (const storedHash of hashes) {
-    if (await verifySecret(storedHash, current)) {
-      await clearLoginFailures(db, user.id);
-      return;
-    }
+  if (await verifySecret(user.passwordHash, current)) {
+    await clearLoginFailures(db, user.id);
+    return;
   }
   await recordLoginFailure(db, user.id, slot, failureContext(actor, reason));
   throw new AppError(401, 'AUTH_INVALID_CREDENTIALS');
-}
-
-/** The current PIN or the current password unlocks a PIN change. */
-export async function changeOwnPin(
-  db: Db,
-  actor: Actor,
-  current: string,
-  pin: string,
-): Promise<void> {
-  const user = await loadUser(db, actor.userId);
-  assertCanHoldPin(user);
-  await verifyCurrentOrFail(
-    db,
-    actor,
-    user,
-    [user.pinHash, user.passwordHash],
-    current,
-    'pin_change',
-  );
-  await storePin(db, actor, user, pin);
 }
 
 export async function changeOwnPassword(
@@ -201,6 +145,6 @@ export async function changeOwnPassword(
   password: string,
 ): Promise<void> {
   const user = await loadUser(db, actor.userId);
-  await verifyCurrentOrFail(db, actor, user, [user.passwordHash], current, 'password_change');
+  await verifyCurrentOrFail(db, actor, user, current, 'password_change');
   await storePassword(db, actor, user, password, false);
 }

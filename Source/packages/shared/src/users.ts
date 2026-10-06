@@ -27,7 +27,6 @@ export const userAccountSchema = z.object({
   roles: z.array(roleSchema),
   ticketLetter: z.string().nullable(),
   isActive: z.boolean(),
-  hasPin: z.boolean(),
   hasPassword: z.boolean(),
   /** Set by the admin: replaced by the user's own at the next login (H20). */
   passwordChangeRequired: z.boolean(),
@@ -39,7 +38,7 @@ export type UserAccount = z.infer<typeof userAccountSchema>;
 export const userAccountListSchema = z.object({ users: z.array(userAccountSchema) });
 export type UserAccountList = z.infer<typeof userAccountListSchema>;
 
-/** A new account: its secrets are set afterwards (PIN, password, or the owner's activation code). */
+/** A new account: its secret is set afterwards (a temporary password, or the owner's activation code). */
 export const createUserBodySchema = z
   .object({
     username: usernameSchema,

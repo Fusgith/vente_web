@@ -27,7 +27,7 @@ import { shopDate } from './shop-time.js';
  * decision froze, in one method, from the caller's open register. In the same operation, a
  * partial credit note on the same gap-free counter as the whole one — the lines not handed over,
  * their causes and credits, the manager who decided — and the invoice « partially credited »,
- * never changed otherwise (RG-ANN-05). No PIN: the manager already decided.
+ * never changed otherwise (RG-ANN-05). No password: the manager already decided.
  */
 export async function refundPartly(
   db: Db,

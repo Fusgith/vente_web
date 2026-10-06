@@ -15,8 +15,8 @@ describe('switchableRoles (RG-USR-02, RG-USR-04)', () => {
     ]);
   });
 
-  it('keeps owner and admin out of reach of a PIN session', () => {
-    const me = meFor({ user: EVERYTHING, activeRole: 'manager' });
+  it('keeps owner and admin out of reach of a PIN session opened before H57', () => {
+    const me = meFor({ user: EVERYTHING, activeRole: 'manager', authMethod: 'PIN' });
     expect(switchableRoles(me)).toEqual(['manager', 'cashier']);
   });
 

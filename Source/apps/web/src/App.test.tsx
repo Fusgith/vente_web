@@ -40,7 +40,6 @@ describe('login: identifier and password, nothing else (RG-USR-02, RG-USR-03, H5
       username: 'hery',
       password: 'correct horse',
     });
-    expect(api.callsTo('GET /auth/users')).toHaveLength(0);
   });
 
   it('clears the password on failure and tells how long a lock lasts (RG-USR-05)', async () => {

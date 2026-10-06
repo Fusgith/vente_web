@@ -50,7 +50,11 @@ describe.skipIf(!TEST_DATABASE_URL)('the owner activation code (RG-USR-10, H20, 
     expect(row.activationCodeHash).not.toContain(code);
     expect(await auditActions(t.db, boss.id)).toEqual(['user.activation_issued']);
 
-    const cashier = await createUser(t.db, { username: 'vola', roles: ['cashier'], pin: '1234' });
+    const cashier = await createUser(t.db, {
+      username: 'vola',
+      roles: ['cashier'],
+      password: '1234',
+    });
     const refused = await issue(cashier.id);
     expect([refused.statusCode, refused.json().code]).toEqual([400, 'ACTIVATION_OWNER_ONLY']);
   });

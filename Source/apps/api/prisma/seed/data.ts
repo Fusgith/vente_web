@@ -48,7 +48,6 @@ export const PAYMENT_METHODS = [
 ] as const;
 
 /** Demo credentials (development only; the seed refuses NODE_ENV=production). */
-export const DEMO_PIN = '1234';
 export const DEMO_PASSWORDS = {
   admin: 'Admin-1234!',
   boss: 'Boss-1234!',
@@ -63,14 +62,13 @@ export interface DemoUser {
   fullName: string;
   roles: Role[];
   ticketLetter?: string;
-  pin?: string;
-  password?: string;
+  password: string;
   totpSecret?: string;
 }
 
 /**
  * One account per role, all logging in by identifier and password (RG-USR-03, H57); owner/admin
- * add a TOTP code outside the shop. The PIN stays for the manager's validation until T-017d.
+ * add a TOTP code outside the shop.
  */
 export const USERS: DemoUser[] = [
   {
@@ -84,7 +82,6 @@ export const USERS: DemoUser[] = [
     username: 'responsable',
     fullName: 'Rakoto Responsable',
     roles: ['manager'],
-    pin: DEMO_PIN,
     password: DEMO_PASSWORDS.shop,
   },
   {
@@ -92,7 +89,6 @@ export const USERS: DemoUser[] = [
     fullName: 'Vola Commerciale',
     roles: ['sales'],
     ticketLetter: 'A',
-    pin: DEMO_PIN,
     password: DEMO_PASSWORDS.shop,
   },
   {
@@ -100,28 +96,24 @@ export const USERS: DemoUser[] = [
     fullName: 'Hery Commercial',
     roles: ['sales'],
     ticketLetter: 'B',
-    pin: DEMO_PIN,
     password: DEMO_PASSWORDS.shop,
   },
   {
     username: 'caisse1',
     fullName: 'Soa Caissière',
     roles: ['cashier'],
-    pin: DEMO_PIN,
     password: DEMO_PASSWORDS.shop,
   },
   {
     username: 'magasin1',
     fullName: 'Feno Magasinier',
     roles: ['warehouse'],
-    pin: DEMO_PIN,
     password: DEMO_PASSWORDS.shop,
   },
   {
     username: 'magasin2',
     fullName: 'Tahina Magasinière',
     roles: ['warehouse'],
-    pin: DEMO_PIN,
     password: DEMO_PASSWORDS.shop,
   },
   {

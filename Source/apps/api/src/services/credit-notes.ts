@@ -120,7 +120,7 @@ export async function nextCreditNote(tx: Prisma.TransactionClient, prefix: unkno
 }
 
 /**
- * Cancels a paid order before delivery (RG-ANN-02, H36): the manager's PIN checked first;
+ * Cancels a paid order before delivery (RG-ANN-02, H36): the manager's password checked first;
  * then, all or nothing, a credit note numbered without a gap for the whole invoice, its refund
  * paid back from the caller's open register, the reservation freed, the order REFUNDED, the
  * invoice CREDITED — never changed otherwise (RG-ANN-05) — and the audit trail.

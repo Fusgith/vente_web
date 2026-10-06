@@ -25,37 +25,15 @@ describe.skipIf(!TEST_DATABASE_URL)('self-service credentials (H20)', () => {
   afterAll(() => t.close());
   beforeEach(async () => {
     await t.reset();
-    await createUser(t.db, { username: 'vola', roles: ['sales'], pin: '1234' });
+    await createUser(t.db, { username: 'vola', roles: ['sales'], password: '1234' });
     await createUser(t.db, { username: 'boss', roles: ['owner'], password: 'Boss-1234!' });
   });
 
-  it('changes the PIN with the current one, keeps the session, audits no secret', async () => {
-    // The PIN no longer opens a session (H57); it stays for the manager's approval until T-017d.
-    const { cookie } = await loginOk(t.app, { username: 'vola', pin: '1234' });
-    const before = await t.db.user.findUniqueOrThrow({ where: { username: 'vola' } });
-
-    const response = await request(t.app, 'PUT', '/api/v1/auth/pin', {
+  it('counts a wrong current password as a login failure (RG-USR-05)', async () => {
+    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' });
+    const response = await request(t.app, 'PUT', '/api/v1/auth/password', {
       cookie,
-      body: { current: '1234', pin: '5678' },
-    });
-    expect(response.statusCode).toBe(204);
-
-    expect((await request(t.app, 'GET', ME, { cookie })).statusCode).toBe(200);
-    const after = await t.db.user.findUniqueOrThrow({ where: { username: 'vola' } });
-    expect(after.pinHash).not.toBe(before.pinHash);
-    expect(after.passwordHash).toBe(before.passwordHash);
-
-    const rows = await t.db.auditLog.findMany({ where: { action: 'user.pin_set' } });
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ before: { hasPin: true }, after: { hasPin: true } });
-    expect(JSON.stringify(rows)).not.toMatch(/1234|5678/);
-  });
-
-  it('counts a wrong current secret as a login failure (RG-USR-05)', async () => {
-    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
-    const response = await request(t.app, 'PUT', '/api/v1/auth/pin', {
-      cookie,
-      body: { current: '0000', pin: '5678' },
+      body: { current: '0000', password: 'Vola-5678-new' },
     });
     expect(response.statusCode).toBe(401);
     expect(response.json().code).toBe('AUTH_INVALID_CREDENTIALS');
@@ -64,18 +42,14 @@ describe.skipIf(!TEST_DATABASE_URL)('self-service credentials (H20)', () => {
     expect(user.failedLoginCount).toBe(1);
   });
 
-  it('refuses a PIN on an account without operational role', async () => {
-    const { cookie } = await loginOk(t.app, {
-      username: 'boss',
-      role: 'owner',
-      password: 'Boss-1234!',
-    });
-    const response = await request(t.app, 'PUT', '/api/v1/auth/pin', {
+  it('has no PIN route left (H57)', async () => {
+    const { cookie } = await loginOk(t.app, { username: 'vola', password: '1234' });
+    const pin = await request(t.app, 'PUT', '/api/v1/auth/pin', {
       cookie,
-      body: { current: 'Boss-1234!', pin: '5678' },
+      body: { current: '1234', pin: '5678' },
     });
-    expect(response.statusCode).toBe(400);
-    expect(response.json().code).toBe('PIN_REQUIRES_OPERATIONAL_ROLE');
+    expect(pin.statusCode).toBe(404);
+    expect((await request(t.app, 'GET', '/api/v1/auth/users', { cookie })).statusCode).toBe(404);
   });
 
   it('changes the password and enforces its length', async () => {
@@ -295,7 +269,6 @@ describe.skipIf(!TEST_DATABASE_URL)('self-service credentials (H20)', () => {
         { current: 'nope', password: 'New-Admin-5678!' },
         [401, 423],
       ],
-      ['/api/v1/auth/pin', 'PUT', { current: 'nope', pin: '5678' }, [400]],
       ['/api/v1/auth/totp', 'POST', {}, [403]],
       ['/api/v1/auth/totp/confirm', 'POST', { code: '000000' }, [403]],
     ];

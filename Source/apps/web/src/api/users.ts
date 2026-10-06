@@ -24,10 +24,7 @@ export const usersApi = {
       await apiRequest(`/users/${id}`, { method: 'PATCH', body }),
     );
   },
-  // The secrets, set apart from the account: the admin sets them, never reads them (H20).
-  async setPin(id: string, pin: string): Promise<void> {
-    await apiRequest(`/users/${id}/pin`, { method: 'PUT', body: { pin } });
-  },
+  // The password, set apart from the account: the admin sets it, never reads it (H20).
   async setPassword(id: string, password: string): Promise<void> {
     await apiRequest(`/users/${id}/password`, { method: 'PUT', body: { password } });
   },

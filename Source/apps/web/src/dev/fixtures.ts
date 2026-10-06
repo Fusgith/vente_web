@@ -5,7 +5,6 @@ import {
   type Queue,
   type QueueItem,
   type AuthMe,
-  type AuthUserDirectory,
   type CategorySummary,
   type ProductHit,
 } from '@vente-web/shared';
@@ -197,17 +196,6 @@ export const FAVORITES = [
   PRODUCTS.piles,
 ];
 
-export const DIRECTORY: AuthUserDirectory = {
-  users: [
-    { id: id(1), username: 'vola', fullName: 'Vola Commerciale', roles: ['sales'] },
-    { id: id(2), username: 'hery', fullName: 'Hery Commercial', roles: ['sales'] },
-    { id: id(3), username: 'rakoto', fullName: 'Rakoto Responsable', roles: ['manager', 'sales'] },
-    { id: id(4), username: 'soa', fullName: 'Soa Caissière', roles: ['cashier'] },
-    { id: id(5), username: 'feno', fullName: 'Feno Magasinier', roles: ['warehouse'] },
-    { id: id(6), username: 'tahina', fullName: 'Tahina Magasinière', roles: ['warehouse'] },
-  ],
-};
-
 export function demoMe(role: AuthMe['session']['activeRole']): AuthMe {
   const rakoto = role === 'manager';
   const soa = role === 'cashier';
@@ -222,7 +210,7 @@ export function demoMe(role: AuthMe['session']['activeRole']): AuthMe {
     session: {
       activeRole: role,
       origin: 'LAN',
-      authMethod: 'PIN',
+      authMethod: 'PASSWORD',
       stationId: null,
       expiresAt: '2026-09-25T20:00:00.000Z',
       idleMinutes: 5,

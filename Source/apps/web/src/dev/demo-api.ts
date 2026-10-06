@@ -10,7 +10,6 @@ import {
   CATEGORIES,
   DEMO_METHODS,
   DEMO_SESSION,
-  DIRECTORY,
   demoOrderAtRegister,
   demoRegisterQueue,
   FAVORITES,
@@ -41,8 +40,6 @@ function search(term: string, categoryId: string | null): ProductSearchResult {
 function answer(url: URL): unknown {
   const categoryId = url.searchParams.get('categoryId');
   switch (url.pathname.slice(API_BASE.length)) {
-    case '/auth/users':
-      return DIRECTORY;
     case '/categories':
       return { items: CATEGORIES };
     case '/products/favorites':
@@ -65,7 +62,7 @@ function answer(url: URL): unknown {
   }
 }
 
-/** Answers the catalog and directory calls from the fixtures; everything else fails as offline. */
+/** Answers the catalog and register calls from the fixtures; everything else fails as offline. */
 export function installDemoApi(): void {
   window.fetch = (input) => {
     const href = input instanceof Request ? input.url : String(input);

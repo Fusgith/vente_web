@@ -22,7 +22,7 @@ export const creditNotesApi = {
     return parseResponse(refundedOrderSchema, data);
   },
 
-  /** What a partial delivery left (H37): the manager decided, no PIN here. */
+  /** What a partial delivery left (H37): the manager decided, no approval here. */
   async partialRefund(orderId: string, input: PartialRefund): Promise<RefundedOrder> {
     const data = await apiRequest(`/orders/${orderId}/partial-refund`, {
       method: 'POST',

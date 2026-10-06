@@ -29,7 +29,7 @@ enum SessionOrigin {
   @@map("session_origin")
 }
 
-/// How the session was opened; a PIN session never reaches owner/admin (CDC technique §8).
+/// How the session was opened; `PIN` only on sessions opened before H57, which never reach owner/admin.
 enum SessionAuthMethod {
   PIN
   PASSWORD
@@ -39,52 +39,51 @@ enum SessionAuthMethod {
 }
 
 model User {
-  id                String    @id @default(uuid(7)) @db.Uuid
-  username          String    @unique @db.VarChar(64)
-  fullName          String    @map("full_name") @db.VarChar(120)
-  roles             Role[]
-  /// argon2id hashes (RG-USR-03); PIN for shared stations, password for remote access.
-  pinHash           String?   @map("pin_hash")
-  passwordHash      String?   @map("password_hash")
+  id                     String    @id @default(uuid(7)) @db.Uuid
+  username               String    @unique @db.VarChar(64)
+  fullName               String    @map("full_name") @db.VarChar(120)
+  roles                  Role[]
+  /// argon2id hash (RG-USR-03): identifier and password everywhere, no PIN (H57).
+  passwordHash           String?   @map("password_hash")
   /// A password set by the admin is replaced by the user's own at the next login (H20).
-  passwordChangeRequired Boolean @default(false) @map("password_change_required")
+  passwordChangeRequired Boolean   @default(false) @map("password_change_required")
   /// TOTP (RG-USR-04): `totpSecret` is active once `totpEnabledAt` is set; enrolment writes the pending secret first.
-  totpSecret        String?   @map("totp_secret")
-  totpPendingSecret String?   @map("totp_pending_secret")
-  totpEnabledAt     DateTime? @map("totp_enabled_at") @db.Timestamptz(6)
+  totpSecret             String?   @map("totp_secret")
+  totpPendingSecret      String?   @map("totp_pending_secret")
+  totpEnabledAt          DateTime? @map("totp_enabled_at") @db.Timestamptz(6)
   /// Last accepted TOTP time step: a code is single-use (RG-USR-04, RFC 6238 §5.2).
-  totpLastStep      Int?      @map("totp_last_step")
+  totpLastStep           Int?      @map("totp_last_step")
   /// Lockout after 5 failures within 15 min (RG-USR-05).
-  failedLoginCount  Int       @default(0) @map("failed_login_count")
-  lastFailedAt      DateTime? @map("last_failed_at") @db.Timestamptz(6)
-  lockedUntil       DateTime? @map("locked_until") @db.Timestamptz(6)
+  failedLoginCount       Int       @default(0) @map("failed_login_count")
+  lastFailedAt           DateTime? @map("last_failed_at") @db.Timestamptz(6)
+  lockedUntil            DateTime? @map("locked_until") @db.Timestamptz(6)
   /// The owner's one-time activation code (RG-USR-10): its hash, valid until `activationExpiresAt`.
-  activationCodeHash  String?   @map("activation_code_hash")
-  activationExpiresAt DateTime? @map("activation_expires_at") @db.Timestamptz(6)
+  activationCodeHash     String?   @map("activation_code_hash")
+  activationExpiresAt    DateTime? @map("activation_expires_at") @db.Timestamptz(6)
   /// Ticket letter of a sales user (RG-TKT-01); unique among active sales users (partial index).
-  ticketLetter      String?   @map("ticket_letter") @db.Char(1)
-  isActive          Boolean   @default(true) @map("is_active")
-  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  ticketLetter           String?   @map("ticket_letter") @db.Char(1)
+  isActive               Boolean   @default(true) @map("is_active")
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   sessions            Session[]
-  pricesSet           ProductPrice[]    @relation("PriceSetBy")
+  pricesSet           ProductPrice[]     @relation("PriceSetBy")
   stockMovements      StockMovement[]
   importBatches       ImportBatch[]
-  ordersAsSales       Order[]           @relation("OrderSalesUser")
-  ordersAsCashier     Order[]           @relation("OrderCashierUser")
-  discountRequests    DiscountRequest[] @relation("DiscountRequestedBy")
-  discountDecisions   DiscountRequest[] @relation("DiscountDecidedBy")
-  discountWithdrawals DiscountRequest[] @relation("DiscountWithdrawnBy")
+  ordersAsSales       Order[]            @relation("OrderSalesUser")
+  ordersAsCashier     Order[]            @relation("OrderCashierUser")
+  discountRequests    DiscountRequest[]  @relation("DiscountRequestedBy")
+  discountDecisions   DiscountRequest[]  @relation("DiscountDecidedBy")
+  discountWithdrawals DiscountRequest[]  @relation("DiscountWithdrawnBy")
   discountCodes       DiscountCode[]
-  registerSessions    RegisterSession[] @relation("RegisterCashier")
-  registerApprovals   RegisterSession[] @relation("RegisterValidatedBy")
+  registerSessions    RegisterSession[]  @relation("RegisterCashier")
+  registerApprovals   RegisterSession[]  @relation("RegisterValidatedBy")
   payments            Payment[]
-  creditNotesIssued   CreditNote[]      @relation("CreditNoteIssuedBy")
-  creditNotesApproved CreditNote[]      @relation("CreditNoteApprovedBy")
+  creditNotesIssued   CreditNote[]       @relation("CreditNoteIssuedBy")
+  creditNotesApproved CreditNote[]       @relation("CreditNoteApprovedBy")
   deliveries          Delivery[]
-  issuesReported      DeliveryIssue[]   @relation("DeliveryIssueReportedBy")
-  issuesDecided       DeliveryIssue[]   @relation("DeliveryIssueDecidedBy")
+  issuesReported      DeliveryIssue[]    @relation("DeliveryIssueReportedBy")
+  issuesDecided       DeliveryIssue[]    @relation("DeliveryIssueDecidedBy")
   auditEntries        AuditLog[]
   settingsUpdated     Setting[]
   pushSubscriptions   PushSubscription[]

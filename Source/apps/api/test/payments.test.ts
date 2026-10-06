@@ -38,17 +38,22 @@ describe.skipIf(!TEST_DATABASE_URL)('payment at the register (RG-PAY, H32)', () 
     await seedDemoCatalog(t.db);
     methods = await seedPaymentMethods(t.db);
     ids.vola = (
-      await createUser(t.db, { username: 'vola', roles: ['sales'], pin: '1234', ticketLetter: 'A' })
+      await createUser(t.db, {
+        username: 'vola',
+        roles: ['sales'],
+        password: '1234',
+        ticketLetter: 'A',
+      })
     ).id;
-    await createUser(t.db, { username: 'soa', roles: ['cashier'], pin: '3456' });
-    await createUser(t.db, { username: 'rina', roles: ['cashier'], pin: '5678' });
-    for (const [key, username, role, pin] of [
+    await createUser(t.db, { username: 'soa', roles: ['cashier'], password: '3456' });
+    await createUser(t.db, { username: 'rina', roles: ['cashier'], password: '5678' });
+    for (const [key, username, role, password] of [
       ['sales', 'vola', 'sales', '1234'],
       ['cashier', 'soa', 'cashier', '3456'],
       ['otherCashier', 'rina', 'cashier', '5678'],
       ['manager', 'responsable', 'manager', '1234'],
     ] as const)
-      cookies[key] = (await loginOk(t.app, { username, role, pin })).cookie;
+      cookies[key] = (await loginOk(t.app, { username, role, password })).cookie;
     const customer = await post('/customers', cookies.sales, {
       name: 'Rasoa Hanta',
       phone: '034 11 222 33',

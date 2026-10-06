@@ -22,7 +22,6 @@ const METHODS = {
   ],
 };
 const CREDIT_NOTE = '0192a4f0-0000-7000-8000-000000000951';
-const MANAGER = '0192a4f0-0000-7000-8000-000000000952';
 const entry = item(1);
 const LOOKUP = 'GET /invoices/lookup?number=f-2026-000001';
 const REFUND = `POST /orders/${entry.orderId}/refund`;
@@ -57,23 +56,6 @@ function mount(handlers: Parameters<typeof fakeApi>[0]) {
     ...OPENED,
     'GET /queues/register': ok(queueOf([])),
     'GET /payment-methods': ok(METHODS),
-    'GET /auth/users': ok({
-      users: [
-        {
-          id: HERY.id,
-          username: 'hery',
-          fullName: 'Hery Caissier',
-          roles: ['cashier', 'manager'],
-        },
-        {
-          id: MANAGER,
-          username: 'responsable',
-          fullName: 'Rakoto Responsable',
-          roles: ['manager'],
-        },
-        { id: CREDIT_NOTE, username: 'fara', fullName: 'Fara Responsable', roles: ['manager'] },
-      ],
-    }),
     ...handlers,
   });
   render(
@@ -100,7 +82,7 @@ async function find() {
 }
 
 describe('cancelling a paid sale at the register (RG-ANN-02, H36)', () => {
-  it('finds it by invoice, asks the manager’s PIN, then gives the credit note', async () => {
+  it('finds it by invoice, asks the manager’s identifier and password, then gives the credit note', async () => {
     const api = mount({
       [LOOKUP]: ok(sale('PAID')),
       [REFUND]: apiError(401, 'AUTH_INVALID_CREDENTIALS'),
@@ -120,24 +102,22 @@ describe('cancelling a paid sale at the register (RG-ANN-02, H36)', () => {
     fireEvent.change(method, { target: { value: MVOLA } });
     expect(within(sheet).getByLabelText(text.reference)).toBeVisible();
     fireEvent.change(method, { target: { value: CASH } });
-    // Picked by name among the managers only, never the cashier refunding (annexe B).
-    const manager = within(sheet).getByLabelText(text.manager);
-    expect(
-      within(manager)
-        .getAllByRole('option')
-        .map((option) => option.textContent),
-    ).toEqual([text.pickManager, 'Rakoto Responsable', 'Fara Responsable']);
-    fireEvent.change(manager, { target: { value: 'responsable' } });
-    const pin = within(sheet).getByLabelText(text.pin);
-    fireEvent.change(pin, { target: { value: '9999' } });
+    // Typed on the spot, like a login: no list of names (H57).
+    fireEvent.change(within(sheet).getByLabelText(text.manager), {
+      target: { value: ' responsable ' },
+    });
+    expect(confirm).toBeDisabled();
+    const password = within(sheet).getByLabelText(text.password);
+    expect(password).toHaveAttribute('type', 'password');
+    fireEvent.change(password, { target: { value: 'wrong one' } });
     expect(confirm).toBeEnabled();
 
-    // A wrong PIN: said, and typed again.
+    // A wrong password: said, and typed again.
     fireEvent.click(confirm);
     expect(await within(sheet).findByRole('alert')).toHaveTextContent(
       ERROR_LABELS.AUTH_INVALID_CREDENTIALS,
     );
-    expect(pin).toHaveValue('');
+    expect(password).toHaveValue('');
 
     api.on(
       REFUND,
@@ -146,7 +126,7 @@ describe('cancelling a paid sale at the register (RG-ANN-02, H36)', () => {
         creditNote: { id: CREDIT_NOTE, number: 'AV-2026-000001' },
       }),
     );
-    fireEvent.change(pin, { target: { value: '1234' } });
+    fireEvent.change(password, { target: { value: 'Shop-1234!' } });
     fireEvent.click(confirm);
     const link = await within(sheet).findByRole('link', { name: text.openCreditNote });
     expect(link).toHaveAttribute('href', `/api/v1/credit-notes/${CREDIT_NOTE}/pdf`);
@@ -157,7 +137,7 @@ describe('cancelling a paid sale at the register (RG-ANN-02, H36)', () => {
       version: 4,
       reason: 'Le client renonce',
       refund: { methodId: CASH, reference: null },
-      approval: { username: 'responsable', pin: '1234' },
+      approval: { username: 'responsable', password: 'Shop-1234!' },
     });
     const band = within(screen.getByRole('contentinfo')).getByRole('status');
     expect(band).toHaveTextContent(text.refunded('A1', 'Rasoa Hanta', 'AV-2026-000001'));
@@ -171,7 +151,7 @@ describe('cancelling a paid sale at the register (RG-ANN-02, H36)', () => {
     const sheet = await find();
     expect(within(sheet).getByRole('status')).toHaveTextContent(text.notRefundable('PREPARING'));
     expect(text.notRefundable('PREPARING')).not.toBe(text.notRefundable('PAID'));
-    expect(within(sheet).queryByLabelText(text.pin)).not.toBeInTheDocument();
+    expect(within(sheet).queryByLabelText(text.password)).not.toBeInTheDocument();
   });
 
   it('reprints the credit note of a sale already refunded, when the reply was lost', async () => {
@@ -186,7 +166,9 @@ describe('cancelling a paid sale at the register (RG-ANN-02, H36)', () => {
     fireEvent.change(within(sheet).getByLabelText(text.manager), {
       target: { value: 'responsable' },
     });
-    fireEvent.change(within(sheet).getByLabelText(text.pin), { target: { value: '1234' } });
+    fireEvent.change(within(sheet).getByLabelText(text.password), {
+      target: { value: 'Shop-1234!' },
+    });
     // The refund went through, its reply did not: the sale is looked up again.
     api.on(
       'GET /invoices/lookup?number=F-2026-000001',
@@ -215,7 +197,7 @@ describe('cancelling a paid sale at the register (RG-ANN-02, H36)', () => {
 });
 
 describe('refunding what a partial delivery left (RG-LIV-04, H37)', () => {
-  it('refunds the rest the manager decided, without reason nor PIN', async () => {
+  it('refunds the rest the manager decided, without reason nor approval', async () => {
     const ISSUE = '0192a4f0-0000-7000-8000-000000000961';
     const PARTIAL = `POST /orders/${entry.orderId}/partial-refund`;
     const delivered = (creditNote: { id: string; number: string } | null): InvoiceLookup => ({
@@ -241,7 +223,7 @@ describe('refunding what a partial delivery left (RG-LIV-04, H37)', () => {
     expect(sheet).toHaveTextContent(labels.issues.partialTitle('Rakoto Responsable'));
     expect(sheet).toHaveTextContent(labels.issues.partialAmount);
     expect(within(sheet).queryByLabelText(text.reason)).not.toBeInTheDocument();
-    expect(within(sheet).queryByLabelText(text.pin)).not.toBeInTheDocument();
+    expect(within(sheet).queryByLabelText(text.password)).not.toBeInTheDocument();
     expect(within(sheet).queryByRole('status')).not.toBeInTheDocument();
 
     fireEvent.click(

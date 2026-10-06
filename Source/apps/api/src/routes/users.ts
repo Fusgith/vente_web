@@ -1,7 +1,6 @@
 import {
   createUserBodySchema,
   setPasswordBodySchema,
-  setPinBodySchema,
   updateUserBodySchema,
   type ActivationCode,
   type UserAccount,
@@ -15,7 +14,6 @@ import {
   adminResetTotp,
   adminRevokeSessions,
   adminSetPassword,
-  adminSetPin,
   adminUnlock,
 } from '../services/credentials.js';
 import { issueActivationCode } from '../services/owner-activation.js';
@@ -53,13 +51,6 @@ export const userRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(201).send(code);
     },
   );
-
-  app.put('/users/:id/pin', adminOnly, async (request, reply) => {
-    const { id } = paramsSchema.parse(request.params);
-    const { pin } = setPinBodySchema.parse(request.body);
-    await adminSetPin(app.db, actorOf(authOf(request)), id, pin);
-    return reply.code(204).send();
-  });
 
   app.put('/users/:id/password', adminOnly, async (request, reply) => {
     const { id } = paramsSchema.parse(request.params);

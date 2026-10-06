@@ -12,7 +12,7 @@ export async function seedDemoCatalog(db: Db): Promise<{ managerId: string }> {
   const manager = await createUser(db, {
     username: 'responsable',
     roles: ['manager'],
-    pin: '1234',
+    password: '1234',
   });
   await seedCatalog(db, { categories: CATEGORIES, products: PRODUCTS, importedBy: 'responsable' });
   return { managerId: manager.id };

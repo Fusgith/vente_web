@@ -21,7 +21,7 @@ export interface FailureContext {
 
 /**
  * One attempt, taken before any secret is verified. It must end with `clearLoginFailures`
- * (the PIN or password was right), `releaseLoginAttempt` (a TOTP code alone was right) or
+ * (the password was right), `releaseLoginAttempt` (a TOTP code alone was right) or
  * `recordLoginFailure` (it was not).
  */
 export interface AttemptSlot {
@@ -181,9 +181,8 @@ export async function clearLoginFailures(
 }
 
 /**
- * The reserved attempt succeeded on a TOTP code alone, which proves neither the PIN nor the
- * password (H19): the attempt is handed back as if it had never been taken. The earlier
- * failures stand with their own window (`last_failed_at` put back, unless a later attempt has
+ * The reserved attempt succeeded on a TOTP code alone, which does not prove the password (H19):
+ * the attempt is handed back as if it had never been taken. The earlier failures stand with their own window (`last_failed_at` put back, unless a later attempt has
  * moved it since), and the lock this attempt set as the fifth slot is lifted; a lock set by
  * another attempt stays.
  */

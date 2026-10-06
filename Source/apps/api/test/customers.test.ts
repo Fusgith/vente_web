@@ -31,17 +31,17 @@ describe.skipIf(!TEST_DATABASE_URL)('customer directory (RG-DEV-04)', () => {
   afterAll(() => t.close());
   beforeEach(async () => {
     await t.reset();
-    salesId = (await createUser(t.db, { username: 'vola', roles: ['sales'], pin: '1234' })).id;
-    await createUser(t.db, { username: 'hery', roles: ['cashier'], pin: '2345' });
-    await createUser(t.db, { username: 'nirina', roles: ['manager'], pin: '3456' });
-    await createUser(t.db, { username: 'solo', roles: ['warehouse'], pin: '4567' });
-    for (const [username, role, pin] of [
+    salesId = (await createUser(t.db, { username: 'vola', roles: ['sales'], password: '1234' })).id;
+    await createUser(t.db, { username: 'hery', roles: ['cashier'], password: '2345' });
+    await createUser(t.db, { username: 'nirina', roles: ['manager'], password: '3456' });
+    await createUser(t.db, { username: 'solo', roles: ['warehouse'], password: '4567' });
+    for (const [username, role, password] of [
       ['vola', 'sales', '1234'],
       ['hery', 'cashier', '2345'],
       ['nirina', 'manager', '3456'],
       ['solo', 'warehouse', '4567'],
     ] as const)
-      cookies[role] = (await loginOk(t.app, { username, role, pin })).cookie;
+      cookies[role] = (await loginOk(t.app, { username, role, password })).cookie;
   });
 
   const create = (body: unknown, cookie = cookies.sales) =>

@@ -129,8 +129,6 @@ export function sessionCookie(
 export interface TestUserInput {
   username: string;
   roles: Role[];
-  /** Kept for the manager's approval until T-017d; also the password when none is given (H57). */
-  pin?: string;
   password?: string;
   /** Base32 secret, enabled right away. */
   totpSecret?: string;
@@ -145,9 +143,7 @@ export async function createUser(db: Db, input: TestUserInput): Promise<{ id: st
       username: input.username,
       fullName: `User ${input.username}`,
       roles: input.roles,
-      pinHash: input.pin ? await hashSecret(input.pin) : null,
-      passwordHash:
-        (input.password ?? input.pin) ? await hashSecret(input.password ?? input.pin ?? '') : null,
+      passwordHash: input.password ? await hashSecret(input.password) : null,
       totpSecret: input.totpSecret ?? null,
       totpEnabledAt: input.totpSecret ? new Date() : null,
       isActive: input.isActive ?? true,
@@ -175,8 +171,6 @@ export interface LoginInput {
    * reached by switch-role right after, as a user would.
    */
   role?: Role;
-  /** Shorthand for a user created with a PIN only, whose password it is (see `createUser`). */
-  pin?: string;
   password?: string;
   totp?: string;
   newPassword?: string;
@@ -191,10 +185,9 @@ export interface LoginResult {
 }
 
 export async function login(app: FastifyInstance, input: LoginInput): Promise<LoginResult> {
-  const { origin, role, pin, password, ...rest } = input;
-  const secret = password ?? pin;
+  const { origin, role, ...body } = input;
   const response = await request(app, 'POST', '/api/v1/auth/login', {
-    body: { ...rest, ...(secret !== undefined && { password: secret }) },
+    body,
     ...(origin ? { origin } : {}),
   });
   const cookie = sessionCookie(response) ?? '';

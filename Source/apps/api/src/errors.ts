@@ -39,7 +39,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
       return reply.code(error.status).send(errorBody(error.code, error.details));
     }
     if (error instanceof ZodError) {
-      // Paths and messages only: the rejected input (a PIN, a password) is never echoed.
+      // Paths and messages only: the rejected input (a password, a code) is never echoed.
       const issues = error.issues.map((issue) => ({
         path: issue.path.map(String).join('.'),
         message: issue.message,

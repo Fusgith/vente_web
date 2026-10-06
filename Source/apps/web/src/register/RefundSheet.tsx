@@ -1,14 +1,12 @@
 import {
   CASH_METHOD,
   formatMga,
-  type AuthUserDirectory,
   type InvoiceLookup,
   type PaymentMethod,
   type RefundedOrder,
 } from '@vente-web/shared';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 
-import { authApi } from '../api/auth.js';
 import { ApiError } from '../api/client.js';
 import { creditNotesApi } from '../api/credit-notes.js';
 import { errorMessage } from '../api/error-message.js';
@@ -24,7 +22,6 @@ const FIELD =
   'h-12 min-w-0 rounded-control border border-rule-strong bg-white px-3 text-18 text-ink';
 /** RG-ANN-01: a reason of three characters at least, as the API checks. */
 const REASON_MIN = 3;
-const PIN = /^\d{4,6}$/;
 
 /** Refusals after which the sale is looked up again. */
 const REFRESH_ON = new Set([
@@ -34,11 +31,7 @@ const REFRESH_ON = new Set([
   'NETWORK_ERROR',
 ]);
 
-type Manager = AuthUserDirectory['users'][number];
-
 interface RefundSheetProps {
-  /** The one refunding: never among the managers validating it (annexe B). */
-  userId: string;
   /** Once cancelled and refunded: the sale and its credit note, for the status line. */
   onRefunded: (sale: InvoiceLookup, done: RefundedOrder) => void;
   onClose: () => void;
@@ -63,45 +56,37 @@ function defaultMethod(sale: InvoiceLookup, methods: PaymentMethod[]): string {
 /**
  * Cancelling a paid sale before delivery (RG-ANN-02, H36): found by the number of its
  * invoice, cancelled with a reason and refunded whole by one method from this register, on the
- * manager's name, picked from the list, and PIN typed on the spot. The credit note, numbered, is then at hand.
+ * manager's identifier and password typed on the spot (H57). The credit note, numbered, is then
+ * at hand.
  * Delivered in part (H37): what is left is refunded by one method, the manager having decided.
  */
-export function RefundSheet({ userId, onRefunded, onClose }: RefundSheetProps) {
+export function RefundSheet({ onRefunded, onClose }: RefundSheetProps) {
   const id = useId();
   const field = useRef<HTMLInputElement>(null);
   const [number, setNumber] = useState('');
   const [sale, setSale] = useState<InvoiceLookup | null>(null);
   const [methods, setMethods] = useState<PaymentMethod[]>([]);
-  const [managers, setManagers] = useState<Manager[]>([]);
   const [methodId, setMethodId] = useState('');
   const [reference, setReference] = useState('');
   const [reason, setReason] = useState('');
   const [username, setUsername] = useState('');
-  const [pin, setPin] = useState('');
+  const [password, setPassword] = useState('');
   const [failure, setFailure] = useState<string | null>(null);
-  // Methods or managers not loaded: stays in view, a search does not hide it.
+  // Methods not loaded: stays in view, a search does not hide it.
   const [loadFailure, setLoadFailure] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<RefundedOrder | null>(null);
 
   useEffect(() => {
     let live = true;
-    Promise.all([paymentsApi.methods(), authApi.users()]).then(
-      ([list, directory]) => {
-        if (!live) return;
-        setMethods(list);
-        const found = directory.users.filter(
-          (user) => user.roles.includes('manager') && user.id !== userId,
-        );
-        setManagers(found);
-        if (found.length === 1) setUsername(found[0]!.username);
-      },
+    paymentsApi.methods().then(
+      (list) => live && setMethods(list),
       (error: unknown) => live && setLoadFailure(errorMessage(error)),
     );
     return () => {
       live = false;
     };
-  }, [userId]);
+  }, []);
 
   const lookup = (value: string) =>
     creditNotesApi.lookup(value).then((found) => {
@@ -132,8 +117,8 @@ export function RefundSheet({ userId, onRefunded, onClose }: RefundSheetProps) {
     : refundable &&
       refunded &&
       reason.trim().length >= REASON_MIN &&
-      username !== '' &&
-      PIN.test(pin);
+      username.trim() !== '' &&
+      password !== '';
 
   const confirm = () => {
     if (!ready || !sale || !method) return;
@@ -146,7 +131,7 @@ export function RefundSheet({ userId, onRefunded, onClose }: RefundSheetProps) {
           version: sale.order.version,
           reason: reason.trim(),
           refund,
-          approval: { username, pin },
+          approval: { username: username.trim(), password },
         })
     )
       .then(
@@ -156,8 +141,8 @@ export function RefundSheet({ userId, onRefunded, onClose }: RefundSheetProps) {
         },
         (error: unknown) => {
           setFailure(errorMessage(error));
-          // The PIN is typed again, never kept after a refusal.
-          setPin('');
+          // The password is typed again, never kept after a refusal.
+          setPassword('');
           // Changed elsewhere, or the reply lost after the refund: the sale as it now stands,
           // with its credit note to reprint when it went through.
           if (error instanceof ApiError && REFRESH_ON.has(error.code)) {
@@ -336,31 +321,27 @@ export function RefundSheet({ userId, onRefunded, onClose }: RefundSheetProps) {
           <legend className="float-left mb-1 w-full font-semibold">{text.approval}</legend>
           <label htmlFor={`${id}-manager`} className="flex min-w-0 flex-1 flex-col gap-1">
             <span className="text-14 text-ink-2">{text.manager}</span>
-            <select
+            <input
               id={`${id}-manager`}
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              maxLength={64}
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               className={FIELD}
-            >
-              {managers.length !== 1 && <option value="">{text.pickManager}</option>}
-              {managers.map((user) => (
-                <option key={user.id} value={user.username}>
-                  {user.fullName}
-                </option>
-              ))}
-            </select>
+            />
           </label>
-          <label htmlFor={`${id}-pin`} className="flex w-40 flex-col gap-1">
-            <span className="text-14 text-ink-2">{text.pin}</span>
+          <label htmlFor={`${id}-password`} className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="text-14 text-ink-2">{text.password}</span>
             <input
-              id={`${id}-pin`}
+              id={`${id}-password`}
               type="password"
-              inputMode="numeric"
               autoComplete="off"
-              maxLength={6}
-              value={pin}
-              onChange={(event) => setPin(event.target.value.replace(/\D/g, ''))}
-              className={`${FIELD} figures tracking-[0.3em]`}
+              maxLength={128}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className={FIELD}
             />
           </label>
         </fieldset>

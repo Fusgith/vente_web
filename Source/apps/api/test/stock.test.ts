@@ -27,7 +27,7 @@ describe.skipIf(!TEST_DATABASE_URL)('stock adjustments and alerts (RG-STK-05 à 
   beforeEach(async () => {
     await t.reset();
     await seedDemoCatalog(t.db);
-    manager = (await loginOk(t.app, { username: 'responsable', role: 'manager', pin: '1234' }))
+    manager = (await loginOk(t.app, { username: 'responsable', role: 'manager', password: '1234' }))
       .cookie;
     soap = await productId(t.db, 'SAV-001');
     piece = await unitId(t.db, 'SAV-001', 'pièce');
@@ -110,8 +110,8 @@ describe.skipIf(!TEST_DATABASE_URL)('stock adjustments and alerts (RG-STK-05 à 
     expect(unknown.json()).toMatchObject({ code: 'ADJUSTMENT_REASON_UNKNOWN' });
     expect((await out('1', await unitId(t.db, 'RIZ-001', 'kg'))).statusCode).toBe(404);
 
-    await createUser(t.db, { username: 'soa', roles: ['cashier'], pin: '3456' });
-    const cashier = (await loginOk(t.app, { username: 'soa', role: 'cashier', pin: '3456' }))
+    await createUser(t.db, { username: 'soa', roles: ['cashier'], password: '3456' });
+    const cashier = (await loginOk(t.app, { username: 'soa', role: 'cashier', password: '3456' }))
       .cookie;
     expect((await stockOf(cashier)).statusCode).toBe(403);
     const refused = await adjust(

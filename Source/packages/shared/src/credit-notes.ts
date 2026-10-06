@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { pinSchema } from './auth.js';
+import { typedSecretSchema } from './auth.js';
 import { deliveryIssueSchema } from './delivery-issues.js';
 import { orderSchema } from './orders.js';
 import { paymentSchema } from './payments.js';
@@ -23,7 +23,7 @@ export type InvoiceLookup = z.infer<typeof invoiceLookupSchema>;
 
 /**
  * Cancelling a paid order before delivery (RG-ANN-02, H36): the reason, the one refund
- * method, and the manager's validation on the spot — their name and PIN.
+ * method, and the manager's validation on the spot — their identifier and password (H57).
  */
 export const orderRefundSchema = z.object({
   version: z.int().positive(),
@@ -39,7 +39,7 @@ export const orderRefundSchema = z.object({
   }),
   approval: z.object({
     username: z.string().min(1).max(64),
-    pin: pinSchema,
+    password: typedSecretSchema,
   }),
 });
 export type OrderRefund = z.infer<typeof orderRefundSchema>;
@@ -52,7 +52,7 @@ export type RefundedOrder = z.infer<typeof refundedOrderSchema>;
 
 /**
  * Refunding what a partial delivery left (RG-ANN-03, H37): the amount frozen by the manager's
- * decision, so no reason and no PIN — only the one refund method.
+ * decision, so no reason and no password — only the one refund method.
  */
 export const partialRefundSchema = z.object({
   issueId: z.uuid(),

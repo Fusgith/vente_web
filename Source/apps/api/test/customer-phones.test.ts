@@ -16,8 +16,8 @@ describe.skipIf(!TEST_DATABASE_URL)('customer directory: a second phone (RG-DEV-
   afterAll(() => t.close());
   beforeEach(async () => {
     await t.reset();
-    await createUser(t.db, { username: 'vola', roles: ['sales'], pin: '1234' });
-    cookie = (await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' })).cookie;
+    await createUser(t.db, { username: 'vola', roles: ['sales'], password: '1234' });
+    cookie = (await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' })).cookie;
   });
 
   const create = (body: unknown) => request(t.app, 'POST', CUSTOMERS, { cookie, body });

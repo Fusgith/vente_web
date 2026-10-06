@@ -34,7 +34,7 @@ export const creditNoteRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { 
 
   app.post(
     '/orders/:id/refund',
-    // The manager's PIN is guessed here like at login (CDC technique §8).
+    // The manager's password is guessed here like at login (CDC technique §8).
     { preHandler: requireRole(...TAKERS), ...authRateLimit },
     async (request): Promise<RefundedOrder> => {
       const { id } = idParams.parse(request.params);
@@ -52,7 +52,7 @@ export const creditNoteRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { 
     },
   );
 
-  // What a partial delivery left (H37): frozen by the manager's decision, no PIN here.
+  // What a partial delivery left (H37): frozen by the manager's decision, no password here.
   app.post(
     '/orders/:id/partial-refund',
     { preHandler: requireRole(...TAKERS) },

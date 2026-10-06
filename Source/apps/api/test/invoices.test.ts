@@ -37,10 +37,10 @@ describe.skipIf(!TEST_DATABASE_URL)('invoice issued with the payment (RG-FAC-01 
     await createUser(t.db, {
       username: 'vola',
       roles: ['sales'],
-      pin: '1234',
+      password: '1234',
       ticketLetter: 'A',
     });
-    sales = (await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' })).cookie;
+    sales = (await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' })).cookie;
     const customer = await post('/customers', sales, {
       name: 'Rasoa Hanta',
       phone: '034 11 222 33',
@@ -62,8 +62,8 @@ describe.skipIf(!TEST_DATABASE_URL)('invoice issued with the payment (RG-FAC-01 
   async function atRegister() {
     cashiers += 1;
     const username = `caisse${cashiers}`;
-    await createUser(t.db, { username, roles: ['cashier'], pin: '3456' });
-    const cookie = (await loginOk(t.app, { username, role: 'cashier', pin: '3456' })).cookie;
+    await createUser(t.db, { username, roles: ['cashier'], password: '3456' });
+    const cookie = (await loginOk(t.app, { username, role: 'cashier', password: '3456' })).cookie;
     const stationId = (await createStation(t.db, 'REGISTER')).id;
     await post('/register-sessions', cookie, { stationId, openingFloat: '0' });
     const quote = await post('/quotes', sales, {

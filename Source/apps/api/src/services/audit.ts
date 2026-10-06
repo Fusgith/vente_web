@@ -15,7 +15,7 @@ export interface AuditEntry {
   activeRole?: Role | null;
   stationId?: string | null;
   origin?: AccessOrigin | null;
-  /** Dotted verb, e.g. `auth.login`, `user.pin_set`. */
+  /** Dotted verb, e.g. `auth.login`, `user.password_set`. */
   action: string;
   entityType: string;
   entityId?: string | null;
@@ -28,7 +28,7 @@ const SENSITIVE_KEY = /pin|password|secret|hash|token|totp|code/i;
 
 /**
  * Guards RG-AUD-01 against leaking credentials: a key that smells like a secret may only carry
- * a flag (`{ hasPin: true }`, `{ totpEnabled: false }`), never a value.
+ * a flag (`{ hasPassword: true }`, `{ totpEnabled: false }`), never a value.
  */
 function assertNoSecret(snapshot: AuditSnapshot | undefined, path: string): void {
   if (!snapshot) return;

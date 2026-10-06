@@ -31,7 +31,7 @@ describe.skipIf(!TEST_DATABASE_URL)('refund after payment, credit note (RG-ANN-0
   const ids = { customer: '', nails: '', nailsUnit: '', manager: '' };
   let methods: Record<string, string> = {};
   const year = shopYear(new Date());
-  const approval = { username: 'responsable', pin: '1234' };
+  const approval = { username: 'responsable', password: '1234' };
 
   beforeAll(async () => {
     t = await createTestApp();
@@ -41,14 +41,23 @@ describe.skipIf(!TEST_DATABASE_URL)('refund after payment, credit note (RG-ANN-0
     await t.reset();
     ids.manager = (await seedDemoCatalog(t.db)).managerId;
     methods = await seedPaymentMethods(t.db);
-    await createUser(t.db, { username: 'vola', roles: ['sales'], pin: '1234', ticketLetter: 'A' });
-    await createUser(t.db, { username: 'soa', roles: ['cashier'], pin: '3456' });
-    await createUser(t.db, { username: 'rina', roles: ['cashier'], pin: '5678' });
-    await createUser(t.db, { username: 'feno', roles: ['warehouse'], pin: '4567' });
-    cookies.sales = (await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' })).cookie;
-    cookies.soa = (await loginOk(t.app, { username: 'soa', role: 'cashier', pin: '3456' })).cookie;
+    await createUser(t.db, {
+      username: 'vola',
+      roles: ['sales'],
+      password: '1234',
+      ticketLetter: 'A',
+    });
+    await createUser(t.db, { username: 'soa', roles: ['cashier'], password: '3456' });
+    await createUser(t.db, { username: 'rina', roles: ['cashier'], password: '5678' });
+    await createUser(t.db, { username: 'feno', roles: ['warehouse'], password: '4567' });
+    cookies.sales = (
+      await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' })
+    ).cookie;
+    cookies.soa = (
+      await loginOk(t.app, { username: 'soa', role: 'cashier', password: '3456' })
+    ).cookie;
     cookies.warehouse = (
-      await loginOk(t.app, { username: 'feno', role: 'warehouse', pin: '4567' })
+      await loginOk(t.app, { username: 'feno', role: 'warehouse', password: '4567' })
     ).cookie;
     const customer = await post('/customers', cookies.sales, {
       name: 'Rasoa Hanta',
@@ -129,7 +138,7 @@ describe.skipIf(!TEST_DATABASE_URL)('refund after payment, credit note (RG-ANN-0
     );
   });
 
-  it('cancels a paid order with the manager’s PIN: credit note, refund, stock freed', async () => {
+  it('cancels a paid order with the manager’s password: credit note, refund, stock freed', async () => {
     const sale = await paid();
     expect(await reserved()).toBe('1.00');
     const response = await refund(sale.id);
@@ -182,13 +191,13 @@ describe.skipIf(!TEST_DATABASE_URL)('refund after payment, credit note (RG-ANN-0
     ]);
   });
 
-  it('refuses a wrong PIN, a non-manager, a missing reference, an order taken to a counter', async () => {
+  it('refuses a wrong password, a non-manager, a missing reference, an order taken to a counter', async () => {
     const sale = await paid();
-    const wrong = await refund(sale.id, { approval: { ...approval, pin: '9999' } });
+    const wrong = await refund(sale.id, { approval: { ...approval, password: '9999' } });
     expect(await code(wrong)).toEqual([401, 'AUTH_INVALID_CREDENTIALS']);
     expect(await auditActions(t.db, ids.manager)).toContain('auth.login_failed');
     expect(
-      await code(await refund(sale.id, { approval: { username: 'rina', pin: '5678' } })),
+      await code(await refund(sale.id, { approval: { username: 'rina', password: '5678' } })),
     ).toEqual([403, 'APPROVAL_NOT_MANAGER']);
     expect(
       await code(
@@ -206,15 +215,16 @@ describe.skipIf(!TEST_DATABASE_URL)('refund after payment, credit note (RG-ANN-0
 
   it('never lets the one refunding validate their own refund (annexe B)', async () => {
     const sale = await paid();
-    await createUser(t.db, { username: 'hery', roles: ['cashier', 'manager'], pin: '6789' });
-    const hery = (await loginOk(t.app, { username: 'hery', role: 'cashier', pin: '6789' })).cookie;
+    await createUser(t.db, { username: 'hery', roles: ['cashier', 'manager'], password: '6789' });
+    const hery = (await loginOk(t.app, { username: 'hery', role: 'cashier', password: '6789' }))
+      .cookie;
     const register = (await createStation(t.db, 'REGISTER')).id;
     await post('/register-sessions', hery, { stationId: register, openingFloat: '0' });
     const self = await post(`/orders/${sale.id}/refund`, hery, {
       version: 4,
       reason: 'Le client renonce',
       refund: { methodId: methods['CASH'], reference: null },
-      approval: { username: 'hery', pin: '6789' },
+      approval: { username: 'hery', password: '6789' },
     });
     expect(await code(self)).toEqual([403, 'APPROVAL_SELF']);
     expect(await t.db.creditNote.count()).toBe(0);
@@ -222,7 +232,7 @@ describe.skipIf(!TEST_DATABASE_URL)('refund after payment, credit note (RG-ANN-0
 
   it('numbers the credit notes without a gap (RG-FAC-05)', async () => {
     const [first, second] = [await paid(), await paid()];
-    await refund(first.id, { approval: { ...approval, pin: '0000' } });
+    await refund(first.id, { approval: { ...approval, password: '0000' } });
     const one = refundedOrderSchema.parse((await refund(first.id)).json());
     const two = refundedOrderSchema.parse((await refund(second.id)).json());
     expect([one.creditNote.number, two.creditNote.number]).toEqual([

@@ -18,8 +18,8 @@ describe.skipIf(!TEST_DATABASE_URL)('GET /api/v1/products/search (RG-DEV-06)', (
   beforeEach(async () => {
     await t.reset();
     await seedDemoCatalog(t.db);
-    await createUser(t.db, { username: 'vola', roles: ['sales', 'warehouse'], pin: '1234' });
-    ({ cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' }));
+    await createUser(t.db, { username: 'vola', roles: ['sales', 'warehouse'], password: '1234' });
+    ({ cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' }));
   });
 
   async function search(q: string, extra = '', as = cookie): Promise<ProductSearchResult> {
@@ -187,7 +187,7 @@ describe.skipIf(!TEST_DATABASE_URL)('GET /api/v1/products/search (RG-DEV-06)', (
     ['sales', true],
     ['warehouse', false],
   ])('shows discount caps to the %s role: %s (annexe B)', async (role, shown) => {
-    const session = await loginOk(t.app, { username: 'vola', role, pin: '1234' });
+    const session = await loginOk(t.app, { username: 'vola', role, password: '1234' });
     const cap = (await search('SAV-001', '', session.cookie)).items[0]?.units[0]?.maxDiscountPct;
     expect(cap).toBe(shown ? '5' : null);
   });

@@ -1,4 +1,4 @@
-import type { AuthMe, AuthUserDirectory, Role } from '@vente-web/shared';
+import type { AuthMe, Role } from '@vente-web/shared';
 import { vi } from 'vitest';
 
 export interface FakeResponse {
@@ -56,16 +56,14 @@ export const RIJA = {
   username: 'rija',
   fullName: 'Rija Rakoto',
   roles: ['sales'],
-} satisfies AuthUserDirectory['users'][number];
+} satisfies MeOptions['user'];
 
 export const HERY = {
   id: '0192a4f0-0000-7000-8000-000000000002',
   username: 'hery',
   fullName: 'Hery Rabe',
   roles: ['manager', 'cashier'],
-} satisfies AuthUserDirectory['users'][number];
-
-export const DIRECTORY: AuthUserDirectory = { users: [HERY, RIJA] };
+} satisfies MeOptions['user'];
 
 interface MeOptions {
   user: { id: string; username: string; fullName: string; roles: Role[] };
@@ -78,7 +76,7 @@ interface MeOptions {
 export function meFor({
   user,
   activeRole,
-  authMethod = 'PIN',
+  authMethod = 'PASSWORD',
   origin = 'LAN',
   idleMinutes = 5,
 }: MeOptions): AuthMe {

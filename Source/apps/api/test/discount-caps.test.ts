@@ -30,7 +30,7 @@ describe.skipIf(!TEST_DATABASE_URL)('discount caps set by the owner (RG-REM-01, 
     await seedDemoCatalog(t.db);
     await createUser(t.db, { username: 'boss', roles: ['owner'], password: PASSWORD });
     owner = (await loginOk(t.app, { username: 'boss', role: 'owner', password: PASSWORD })).cookie;
-    manager = (await loginOk(t.app, { username: 'responsable', role: 'manager', pin: '1234' }))
+    manager = (await loginOk(t.app, { username: 'responsable', role: 'manager', password: '1234' }))
       .cookie;
     soap = await productId(t.db, 'SAV-001');
     carton = await unitId(t.db, 'SAV-001', 'carton');
@@ -96,9 +96,10 @@ describe.skipIf(!TEST_DATABASE_URL)('discount caps set by the owner (RG-REM-01, 
     expect((await put(`/products/${soap}/discount-cap`, '100.5')).statusCode).toBe(400);
     expect((await put('/discount-caps/default', null)).statusCode).toBe(400);
 
-    await createUser(t.db, { username: 'lova', roles: ['warehouse'], pin: '4567' });
-    const warehouse = (await loginOk(t.app, { username: 'lova', role: 'warehouse', pin: '4567' }))
-      .cookie;
+    await createUser(t.db, { username: 'lova', roles: ['warehouse'], password: '4567' });
+    const warehouse = (
+      await loginOk(t.app, { username: 'lova', role: 'warehouse', password: '4567' })
+    ).cookie;
     expect(
       (await request(t.app, 'GET', '/api/v1/discount-caps', { cookie: warehouse })).statusCode,
     ).toBe(403);

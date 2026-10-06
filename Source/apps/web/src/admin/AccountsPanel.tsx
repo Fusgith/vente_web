@@ -25,7 +25,6 @@ function stateOf(account: UserAccount, now: number): string {
 /** Which ways in exist, never the secrets themselves. */
 function accessOf(account: UserAccount): string {
   const ways = [
-    account.hasPin && text.access.pin,
     account.hasPassword &&
       (account.passwordChangeRequired ? text.access.passwordToChange : text.access.password),
     account.totpEnabled && text.access.totp,

@@ -1,7 +1,7 @@
 import { hash, verify } from '@node-rs/argon2';
 
 /**
- * PINs and passwords are stored as argon2id hashes (RG-USR-03, CDC technique §8).
+ * Passwords are stored as argon2id hashes (RG-USR-03, CDC technique §8).
  * The only module touching the hashing library: swapping it (e.g. for Node's built-in
  * argon2 once the runtime target allows it) changes nothing elsewhere.
  * OWASP minimum parameters: 19 MiB, 2 iterations, 1 lane.
@@ -16,7 +16,7 @@ const ARGON2_OPTIONS = {
 } as const;
 
 /**
- * Hash of a random value, verified when the account has no hash (unknown user, no PIN…) so
+ * Hash of a random value, verified when the account has no hash (unknown user, no password…) so
  * that every login path costs one argon2 verification — no timing oracle on account existence.
  */
 export const DUMMY_HASH =

@@ -26,9 +26,8 @@ export const refundLabels = {
   method: 'Remboursé en',
   reference: 'Référence du remboursement (obligatoire)',
   approval: 'Validation du responsable, sur place',
-  manager: 'Responsable',
-  pickManager: 'Choisir…',
-  pin: 'Code PIN du responsable',
+  manager: 'Identifiant du responsable',
+  password: 'Mot de passe du responsable',
   confirm: (amount: string) => `Annuler la vente et rembourser ${amount}`,
   refunding: 'Annulation…',
   done: (creditNote: string, amount: string, method: string) =>

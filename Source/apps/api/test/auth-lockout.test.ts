@@ -20,8 +20,8 @@ describe.skipIf(!TEST_DATABASE_URL)('account lockout (RG-USR-05, H19)', () => {
   let t: TestApp;
   let volaId: string;
 
-  const wrongPin = () => login(t.app, { username: 'vola', role: 'sales', pin: '0000' });
-  const rightPin = () => login(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+  const wrongPassword = () => login(t.app, { username: 'vola', role: 'sales', password: '0000' });
+  const rightPassword = () => login(t.app, { username: 'vola', role: 'sales', password: '1234' });
   const vola = () => t.db.user.findUniqueOrThrow({ where: { id: volaId } });
 
   const warnings = (msg: string) => t.logs.filter((line) => line.msg === msg);
@@ -32,14 +32,14 @@ describe.skipIf(!TEST_DATABASE_URL)('account lockout (RG-USR-05, H19)', () => {
   afterAll(() => t.close());
   beforeEach(async () => {
     await t.reset();
-    volaId = (await createUser(t.db, { username: 'vola', roles: ['sales'], pin: '1234' })).id;
+    volaId = (await createUser(t.db, { username: 'vola', roles: ['sales'], password: '1234' })).id;
   });
 
   it('locks the account after 5 failures for 15 minutes, visibly in the shop only', async () => {
     await t.db.user.update({ where: { id: volaId }, data: { totpPendingSecret: TOTP_SECRET } });
-    for (let i = 0; i < 5; i += 1) expect((await wrongPin()).response.statusCode).toBe(401);
+    for (let i = 0; i < 5; i += 1) expect((await wrongPassword()).response.statusCode).toBe(401);
 
-    const locked = await rightPin();
+    const locked = await rightPassword();
     expect(locked.response.statusCode).toBe(423);
     expect(locked.response.json()).toMatchObject({ code: 'AUTH_LOCKED' });
     expect(locked.response.json().details.retryAfterSeconds).toBeGreaterThan(14 * 60);
@@ -92,8 +92,8 @@ describe.skipIf(!TEST_DATABASE_URL)('account lockout (RG-USR-05, H19)', () => {
   });
 
   it('lets a right fifth secret through: the lock is only taken while it is checked', async () => {
-    for (let i = 0; i < 4; i += 1) await wrongPin();
-    expect((await rightPin()).response.statusCode).toBe(200);
+    for (let i = 0; i < 4; i += 1) await wrongPassword();
+    expect((await rightPassword()).response.statusCode).toBe(200);
 
     const user = await vola();
     expect(user.lockedUntil).toBeNull();
@@ -102,31 +102,31 @@ describe.skipIf(!TEST_DATABASE_URL)('account lockout (RG-USR-05, H19)', () => {
   });
 
   it('lifts the lock after its delay and starts a new window', async () => {
-    for (let i = 0; i < 5; i += 1) await wrongPin();
+    for (let i = 0; i < 5; i += 1) await wrongPassword();
     await t.db.user.update({
       where: { id: volaId },
       data: { lockedUntil: new Date(Date.now() - MINUTE) },
     });
 
-    expect((await wrongPin()).response.statusCode).toBe(401);
+    expect((await wrongPassword()).response.statusCode).toBe(401);
     let user = await vola();
     expect(user.failedLoginCount).toBe(1);
     expect(user.lockedUntil).toBeNull();
 
-    expect((await rightPin()).response.statusCode).toBe(200);
+    expect((await rightPassword()).response.statusCode).toBe(200);
     user = await vola();
     expect(user.failedLoginCount).toBe(0);
     expect(user.lastFailedAt).toBeNull();
   });
 
   it('forgets the failures after 15 minutes without any (H19)', async () => {
-    for (let i = 0; i < 4; i += 1) await wrongPin();
+    for (let i = 0; i < 4; i += 1) await wrongPassword();
     await t.db.user.update({
       where: { id: volaId },
       data: { lastFailedAt: new Date(Date.now() - 16 * MINUTE) },
     });
 
-    expect((await wrongPin()).response.statusCode).toBe(401);
+    expect((await wrongPassword()).response.statusCode).toBe(401);
     const user = await vola();
     expect(user.failedLoginCount).toBe(1);
     expect(user.lockedUntil).toBeNull();
@@ -134,7 +134,7 @@ describe.skipIf(!TEST_DATABASE_URL)('account lockout (RG-USR-05, H19)', () => {
 
   it('keeps counting while each failure follows the previous one within 15 minutes (H19)', async () => {
     for (let i = 0; i < 4; i += 1) {
-      await wrongPin();
+      await wrongPassword();
       // 14 minutes between failures: 56 minutes in all, never 15 without a failure.
       await t.db.user.update({
         where: { id: volaId },
@@ -142,14 +142,14 @@ describe.skipIf(!TEST_DATABASE_URL)('account lockout (RG-USR-05, H19)', () => {
       });
     }
 
-    expect((await wrongPin()).response.statusCode).toBe(401);
+    expect((await wrongPassword()).response.statusCode).toBe(401);
     const user = await vola();
     expect(user.failedLoginCount).toBe(5);
     expect(user.lockedUntil).not.toBeNull();
   });
 
   it('never verifies more than five secrets per window, however many requests race', async () => {
-    const results = await Promise.all(Array.from({ length: 8 }, () => wrongPin()));
+    const results = await Promise.all(Array.from({ length: 8 }, () => wrongPassword()));
     const statuses = results.map((r) => r.response.statusCode).sort();
     expect(statuses).toEqual([401, 401, 401, 401, 401, 423, 423, 423]);
     expect((await vola()).failedLoginCount).toBe(5);

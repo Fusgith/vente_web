@@ -34,7 +34,7 @@ export function buttonClass(
   return `${BASE} ${SIZE[size]} ${VARIANT[variant]} ${extra}`.trim();
 }
 
-/** A white sheet on the cotton field (the quote, the PIN panel, a placeholder workspace). */
+/** A white sheet on the cotton field (the quote, the login panel, a placeholder workspace). */
 export const sheetClass = 'rounded-sheet border border-rule bg-white';
 
 /** A product code (SAV-001): a small tag, Asap 600 with tabular figures, never monospace. */

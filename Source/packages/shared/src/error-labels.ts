@@ -13,7 +13,6 @@ export const ERROR_LABELS = {
   AUTH_FORBIDDEN: 'Accès refusé pour ce rôle.',
   AUTH_INVALID_CREDENTIALS: 'Identifiants incorrects.',
   AUTH_LOCKED: 'Compte verrouillé après plusieurs échecs ; réessayez plus tard.',
-  AUTH_PIN_LAN_ONLY: 'Le code PIN n’est accepté que dans le magasin.',
   AUTH_ROLE_REMOTE_FORBIDDEN: 'Ce rôle n’est pas accessible à distance.',
   AUTH_LAN_ONLY: 'Cette fonction n’est disponible que dans le magasin.',
   AUTH_TOTP_REQUIRED: 'Code de validation (application d’authentification) requis.',
@@ -27,8 +26,6 @@ export const ERROR_LABELS = {
   AUTH_ORIGIN_MISMATCH: 'Session ouverte dans le magasin : inutilisable à distance.',
   AUTH_SESSION_EXPIRED: 'Session expirée, reconnectez-vous.',
   AUTH_SESSION_IDLE: 'Session fermée après inactivité, reconnectez-vous.',
-  PIN_REQUIRES_OPERATIONAL_ROLE:
-    'Un PIN ne sert qu’aux rôles de terrain (vente, caisse, magasin, responsable).',
   STATION_INVALID: 'Poste inconnu, inactif ou incompatible avec le rôle.',
   OWNER_PASSWORD_SELF_ONLY:
     'Seul le boss choisit son mot de passe : l’admin ne peut ni le poser ni le réinitialiser.',

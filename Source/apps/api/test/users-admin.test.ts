@@ -28,41 +28,49 @@ describe.skipIf(!TEST_DATABASE_URL)('admin credential management (/users/:id/*, 
   beforeEach(async () => {
     await t.reset();
     await createUser(t.db, { username: 'adm', roles: ['admin'], password: 'Admin-1234!' });
-    vola = await createUser(t.db, { username: 'vola', roles: ['sales'], pin: '1234' });
+    vola = await createUser(t.db, { username: 'vola', roles: ['sales'], password: '1234' });
     adminCookie = (
       await loginOk(t.app, { username: 'adm', role: 'admin', password: 'Admin-1234!' })
     ).cookie;
   });
 
   it('is reserved to the admin role', async () => {
-    await createUser(t.db, { username: 'chef', roles: ['manager'], pin: '1234' });
-    const { cookie } = await loginOk(t.app, { username: 'chef', role: 'manager', pin: '1234' });
-    const response = await request(t.app, 'PUT', `/api/v1/users/${vola.id}/pin`, {
+    await createUser(t.db, { username: 'chef', roles: ['manager'], password: '1234' });
+    const { cookie } = await loginOk(t.app, {
+      username: 'chef',
+      role: 'manager',
+      password: '1234',
+    });
+    const response = await request(t.app, 'PUT', `/api/v1/users/${vola.id}/password`, {
       cookie,
-      body: { pin: '9999' },
+      body: { password: 'Vola-9999-new' },
     });
     expect(response.statusCode).toBe(403);
     expect(response.json().code).toBe('AUTH_FORBIDDEN');
     expect(
-      (await request(t.app, 'PUT', `/api/v1/users/${vola.id}/pin`, { body: { pin: '9999' } }))
-        .statusCode,
+      (
+        await request(t.app, 'PUT', `/api/v1/users/${vola.id}/password`, {
+          body: { password: 'Vola-9999-new' },
+        })
+      ).statusCode,
     ).toBe(401);
   });
 
-  it('sets a PIN (manager approval until T-017d): the target loses its sessions; audited', async () => {
-    const before = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
-    const response = await request(t.app, 'PUT', `/api/v1/users/${vola.id}/pin`, {
+  it('sets a password: the target loses its sessions, changes it at login; audited (H57)', async () => {
+    const before = await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' });
+    const response = await request(t.app, 'PUT', `/api/v1/users/${vola.id}/password`, {
       cookie: adminCookie,
-      body: { pin: '9999' },
+      body: { password: 'Vola-9999-new' },
     });
     expect(response.statusCode).toBe(204);
     expect((await request(t.app, 'GET', ME, { cookie: before.cookie })).statusCode).toBe(401);
     expect((await request(t.app, 'GET', ME, { cookie: adminCookie })).statusCode).toBe(200);
     const target = await t.db.user.findUniqueOrThrow({ where: { id: vola.id } });
-    expect(await verifySecret(target.pinHash, '9999')).toBe(true);
+    expect(await verifySecret(target.passwordHash, 'Vola-9999-new')).toBe(true);
+    expect(target.passwordChangeRequired).toBe(true);
 
     const adm = await t.db.user.findUniqueOrThrow({ where: { username: 'adm' } });
-    const row = await t.db.auditLog.findFirstOrThrow({ where: { action: 'user.pin_set' } });
+    const row = await t.db.auditLog.findFirstOrThrow({ where: { action: 'user.password_set' } });
     expect(row).toMatchObject({
       userId: adm.id,
       activeRole: 'admin',
@@ -72,18 +80,18 @@ describe.skipIf(!TEST_DATABASE_URL)('admin credential management (/users/:id/*, 
   });
 
   it('validates the id and reports an unknown account', async () => {
-    const bad = await request(t.app, 'PUT', '/api/v1/users/not-a-uuid/pin', {
+    const bad = await request(t.app, 'PUT', '/api/v1/users/not-a-uuid/password', {
       cookie: adminCookie,
-      body: { pin: '9999' },
+      body: { password: 'Vola-9999-new' },
     });
     expect(bad.statusCode).toBe(400);
     const missing = await request(
       t.app,
       'PUT',
-      '/api/v1/users/00000000-0000-7000-8000-000000000000/pin',
+      '/api/v1/users/00000000-0000-7000-8000-000000000000/password',
       {
         cookie: adminCookie,
-        body: { pin: '9999' },
+        body: { password: 'Vola-9999-new' },
       },
     );
     expect(missing.statusCode).toBe(404);
@@ -92,9 +100,10 @@ describe.skipIf(!TEST_DATABASE_URL)('admin credential management (/users/:id/*, 
 
   it('unlocks a locked account before the delay (RG-USR-05)', async () => {
     for (let i = 0; i < 5; i += 1)
-      await login(t.app, { username: 'vola', role: 'sales', pin: '0000' });
+      await login(t.app, { username: 'vola', role: 'sales', password: '0000' });
     expect(
-      (await login(t.app, { username: 'vola', role: 'sales', pin: '1234' })).response.statusCode,
+      (await login(t.app, { username: 'vola', role: 'sales', password: '1234' })).response
+        .statusCode,
     ).toBe(423);
 
     const response = await request(t.app, 'POST', `/api/v1/users/${vola.id}/unlock`, {
@@ -102,7 +111,8 @@ describe.skipIf(!TEST_DATABASE_URL)('admin credential management (/users/:id/*, 
     });
     expect(response.statusCode).toBe(204);
     expect(
-      (await login(t.app, { username: 'vola', role: 'sales', pin: '1234' })).response.statusCode,
+      (await login(t.app, { username: 'vola', role: 'sales', password: '1234' })).response
+        .statusCode,
     ).toBe(200);
     expect(await auditActions(t.db, vola.id)).toContain('user.unlocked');
   });
@@ -143,7 +153,7 @@ describe.skipIf(!TEST_DATABASE_URL)('admin credential management (/users/:id/*, 
   });
 
   it('revokes the session of an account', async () => {
-    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' });
     const response = await request(t.app, 'DELETE', `/api/v1/users/${vola.id}/sessions`, {
       cookie: adminCookie,
     });
@@ -155,15 +165,8 @@ describe.skipIf(!TEST_DATABASE_URL)('admin credential management (/users/:id/*, 
     expect(row.after).toEqual({ count: 1 });
   });
 
-  it('sets a password, refusing a PIN on a non-operational account', async () => {
+  it('sets the password of a non-operational account too', async () => {
     const other = await createUser(t.db, { username: 'adm2', roles: ['admin'] });
-    const pin = await request(t.app, 'PUT', `/api/v1/users/${other.id}/pin`, {
-      cookie: adminCookie,
-      body: { pin: '1234' },
-    });
-    expect(pin.statusCode).toBe(400);
-    expect(pin.json().code).toBe('PIN_REQUIRES_OPERATIONAL_ROLE');
-
     const password = await request(t.app, 'PUT', `/api/v1/users/${other.id}/password`, {
       cookie: adminCookie,
       body: { password: 'Admin2-1234!' },

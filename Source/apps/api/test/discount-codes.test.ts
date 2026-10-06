@@ -35,9 +35,14 @@ describe.skipIf(!TEST_DATABASE_URL)('discount codes issued by the owner (RG-REM-
     await t.reset();
     await seedDemoCatalog(t.db);
     await createUser(t.db, { username: 'boss', roles: ['owner'], password: PASSWORD });
-    await createUser(t.db, { username: 'vola', roles: ['sales'], pin: '1234', ticketLetter: 'A' });
+    await createUser(t.db, {
+      username: 'vola',
+      roles: ['sales'],
+      password: '1234',
+      ticketLetter: 'A',
+    });
     owner = (await loginOk(t.app, { username: 'boss', role: 'owner', password: PASSWORD })).cookie;
-    sales = (await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' })).cookie;
+    sales = (await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' })).cookie;
     customer = (
       await t.db.customer.create({ data: { name: 'Rasoa Hanta', phone: '034 11 222 33' } })
     ).id;

@@ -25,7 +25,7 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
   afterAll(() => t.close());
   beforeEach(async () => {
     await t.reset();
-    await createUser(t.db, { username: 'vola', roles: ['sales', 'cashier'], pin: '1234' });
+    await createUser(t.db, { username: 'vola', roles: ['sales', 'cashier'], password: '1234' });
   });
 
   it('needs a cookie, and clears an unknown one', async () => {
@@ -39,7 +39,7 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
   });
 
   it('logs out: the row is deleted, the cookie cleared, the logout audited (RG-AUD-02)', async () => {
-    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' });
 
     const logout = await request(t.app, 'POST', '/api/v1/auth/logout', { cookie });
     expect(logout.statusCode).toBe(204);
@@ -52,7 +52,7 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
   });
 
   it('audits a double logout once (RG-AUD-01)', async () => {
-    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' });
     const logout = () => request(t.app, 'POST', '/api/v1/auth/logout', { cookie });
 
     await Promise.all([logout(), logout()]);
@@ -61,8 +61,8 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
   });
 
   it('keeps one session per person: a new login closes the previous one (RG-USR-09)', async () => {
-    const first = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
-    const second = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+    const first = await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' });
+    const second = await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' });
 
     expect((await request(t.app, 'GET', ME, { cookie: first.cookie })).statusCode).toBe(401);
     expect((await request(t.app, 'GET', ME, { cookie: second.cookie })).statusCode).toBe(200);
@@ -76,7 +76,7 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
 
   it('leaves a single session when two logins of one person race (RG-USR-09)', async () => {
     const logins = await Promise.all(
-      [1, 2, 3].map(() => loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' })),
+      [1, 2, 3].map(() => loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' })),
     );
     expect(await t.db.session.count()).toBe(1);
     const alive = await Promise.all(
@@ -86,7 +86,7 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
   });
 
   it('logs out everywhere', async () => {
-    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' });
 
     const response = await request(t.app, 'POST', '/api/v1/auth/logout-all', { cookie });
     expect(response.statusCode).toBe(200);
@@ -96,7 +96,7 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
   });
 
   it('ends a session past its absolute lifetime and audits it (H19, RG-AUD-01)', async () => {
-    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' });
     await t.db.session.updateMany({ data: { expiresAt: new Date(Date.now() - 1000) } });
 
     const response = await request(t.app, 'GET', ME, { cookie });
@@ -110,11 +110,11 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
   });
 
   it('audits the expired sessions a new login sweeps away (H19, RG-AUD-01)', async () => {
-    await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+    await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' });
     const expired = await t.db.session.findFirstOrThrow();
     await t.db.session.updateMany({ data: { expiresAt: new Date(Date.now() - 1000) } });
 
-    await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+    await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' });
     expect(await t.db.session.count()).toBe(1);
     expect(await auditEntries(t.db)).toEqual([
       ['auth.login', null],
@@ -133,7 +133,7 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
   });
 
   it('ends an idle session server-side, one touch interval past the limit (H19)', async () => {
-    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' });
     const seenAgo = (ms: number) =>
       t.db.session.updateMany({ data: { lastSeenAt: new Date(Date.now() - ms) } });
 
@@ -160,12 +160,12 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
     });
     const tablet = await createStation(t.db, 'SALES');
     const register = await createStation(t.db, 'REGISTER');
-    await createUser(t.db, { username: 'soa', roles: ['cashier'], pin: '1234' });
+    await createUser(t.db, { username: 'soa', roles: ['cashier'], password: '1234' });
 
     const sales = await loginOk(t.app, {
       username: 'vola',
       role: 'sales',
-      pin: '1234',
+      password: '1234',
       stationId: tablet.id,
     });
     expect(sales.me.session.idleMinutes).toBe(7);
@@ -177,7 +177,7 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
     const cashier = await loginOk(t.app, {
       username: 'soa',
       role: 'cashier',
-      pin: '1234',
+      password: '1234',
       stationId: register.id,
     });
     expect(cashier.me.session.idleMinutes).toBe(20);
@@ -186,7 +186,7 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
   });
 
   it('refreshes last_seen_at at most once a minute', async () => {
-    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' });
     const stale = new Date(Date.now() - 2 * 60_000);
     await t.db.session.updateMany({ data: { lastSeenAt: stale } });
 
@@ -202,7 +202,7 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
   });
 
   it('rejects a shop session presented from outside and destroys it', async () => {
-    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+    const { cookie } = await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' });
 
     const response = await request(t.app, 'GET', ME, { cookie, origin: 'REMOTE' });
     expect(response.statusCode).toBe(401);
@@ -212,14 +212,18 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
   });
 
   it('drops the session of a role no longer held, or of a deactivated account', async () => {
-    const roleLost = await loginOk(t.app, { username: 'vola', role: 'sales', pin: '1234' });
+    const roleLost = await loginOk(t.app, { username: 'vola', role: 'sales', password: '1234' });
     await t.db.user.updateMany({ where: { username: 'vola' }, data: { roles: ['cashier'] } });
     const response = await request(t.app, 'GET', ME, { cookie: roleLost.cookie });
     expect(response.statusCode).toBe(401);
     expect(response.json().code).toBe('AUTH_REQUIRED');
     expect(await t.db.session.count()).toBe(0);
 
-    const deactivated = await loginOk(t.app, { username: 'vola', role: 'cashier', pin: '1234' });
+    const deactivated = await loginOk(t.app, {
+      username: 'vola',
+      role: 'cashier',
+      password: '1234',
+    });
     await t.db.user.updateMany({ where: { username: 'vola' }, data: { isActive: false } });
     expect((await request(t.app, 'GET', ME, { cookie: deactivated.cookie })).statusCode).toBe(401);
     expect(await t.db.session.count()).toBe(0);
@@ -243,7 +247,7 @@ describe.skipIf(!TEST_DATABASE_URL)('cookie flags with COOKIE_SECURE', () => {
     const t = await createTestApp({ COOKIE_SECURE: 'true' });
     try {
       await t.reset();
-      await createUser(t.db, { username: 'vola', roles: ['sales'], pin: '1234' });
+      await createUser(t.db, { username: 'vola', roles: ['sales'], password: '1234' });
       const response = await request(t.app, 'POST', '/api/v1/auth/login', {
         body: { username: 'vola', password: '1234' },
       });

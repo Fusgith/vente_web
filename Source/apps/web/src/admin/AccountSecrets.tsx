@@ -1,10 +1,8 @@
 import {
   formatDate,
   formatTime,
-  isOperationalRole,
   PASSWORD_MIN_LENGTH,
   passwordSchema,
-  PIN_PATTERN,
   type ActivationCode,
   type UserAccount,
 } from '@vente-web/shared';
@@ -27,14 +25,14 @@ interface AccountSecretsProps {
 }
 
 /**
- * The ways in of one account (T-016f, annexe B): the admin sets a PIN or a password without ever
- * seeing the old one (H20), hands the owner a one-time code instead of a password (RG-USR-10),
- * lifts a lock (RG-USR-05), forgets a TOTP, closes the sessions.
+ * The ways in of one account (T-016f, annexe B): the admin sets a password without ever seeing
+ * the old one (H20) — the temporary one of a new account too (H57) —, hands the owner a one-time
+ * code instead of a password (RG-USR-10), lifts a lock (RG-USR-05), forgets a TOTP, closes the
+ * sessions.
  */
 export function AccountSecrets({ account, locked, onChanged }: AccountSecretsProps) {
   const id = useId();
   const { say } = useStatusLine();
-  const [pin, setPin] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState<ActivationCode | null>(null);
   const [busy, setBusy] = useState(false);
@@ -60,16 +58,6 @@ export function AccountSecrets({ account, locked, onChanged }: AccountSecretsPro
     }
   };
 
-  const submitPin = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const sent = await run(
-      () => usersApi.setPin(account.id, pin),
-      { hasPin: true },
-      text.pinSet(name),
-    );
-    if (sent) setPin('');
-  };
-
   const submitPassword = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const sent = await run(
@@ -91,37 +79,7 @@ export function AccountSecrets({ account, locked, onChanged }: AccountSecretsPro
         </h3>
         <p className="text-14 text-ink-2">{text.help}</p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        {account.roles.some(isOperationalRole) && (
-          <form onSubmit={submitPin} aria-label={text.setPin} className="flex flex-col gap-1.5">
-            <label htmlFor={`${id}-pin`} className="font-semibold">
-              {text.pin}
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <input
-                id={`${id}-pin`}
-                type="password"
-                inputMode="numeric"
-                autoComplete="off"
-                maxLength={6}
-                aria-describedby={`${id}-pin-hint`}
-                value={pin}
-                onChange={(event) => setPin(event.target.value)}
-                className={`${inputClass} figures w-32`}
-              />
-              <button
-                type="submit"
-                disabled={busy || !PIN_PATTERN.test(pin)}
-                className={buttonClass('secondary', 'md')}
-              >
-                {text.setPin}
-              </button>
-            </div>
-            <span id={`${id}-pin-hint`} className="text-14 text-ink-2">
-              {text.pinHint}
-            </span>
-          </form>
-        )}
+      <div className="max-w-xl">
         {owner ? (
           <div className="flex flex-col items-start gap-2">
             <p className="text-14 text-ink-2">{text.ownerHelp}</p>
