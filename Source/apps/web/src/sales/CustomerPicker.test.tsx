@@ -15,6 +15,7 @@ const RAKOTO: Customer = {
   name: 'Rakoto Jean',
   phone: '0341234567',
   secondPhone: null,
+  category: 'Divers',
   isActive: true,
   mergedIntoId: null,
 };
@@ -44,7 +45,10 @@ describe('CustomerPicker (RG-DEV-04)', () => {
 
     type('03');
     type('034 12');
-    fireEvent.click(await screen.findByRole('button', { name: /Rakoto Jean/ }));
+    const rakoto = await screen.findByRole('button', { name: /Rakoto Jean/ });
+    // H49 a: the category helps to choose the right customer.
+    expect(rakoto).toHaveTextContent('Divers');
+    fireEvent.click(rakoto);
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     const trigger = screen.getByRole('button', { name: text.change('Rakoto Jean') });

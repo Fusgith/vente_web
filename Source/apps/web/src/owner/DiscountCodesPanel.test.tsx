@@ -19,6 +19,7 @@ const RASOA: Customer = {
   name: 'Rasoa Hanta',
   phone: '0341122233',
   secondPhone: null,
+  category: 'Divers',
   isActive: true,
   mergedIntoId: null,
 };

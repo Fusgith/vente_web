@@ -2,6 +2,36 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 06/10/2026 — T-029b : catégorie de client — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Chaque client a une catégorie ; un nouveau client est « Divers » (H43, H49 a, RG-DEV-04).
+- Sur la tablette, le choix du client montre la catégorie sous le nom.
+- Nouveau panneau « Clients » chez le responsable :
+  - chercher par nom ou téléphone, et/ou filtrer par catégorie ;
+  - changer la catégorie d'un client dans sa ligne, journalisé avant → après (RG-AUD-01) ;
+  - une catégorie retirée de la liste reste visible sur les clients qui la portent.
+- La liste des catégories est le paramètre `customer_categories` ; par défaut « Divers », « Régulier », « Gros contrat ».
+- API :
+  - `GET /customers?category=` (seul ou avec `q`) ;
+  - `GET /customers/categories` ;
+  - `POST /customers/:id/category` (responsable seul ; catégorie hors liste refusée).
+- Migration `add_customer_category` : colonne `category`, « Divers » par défaut pour les clients existants.
+- Vérifié :
+  - tests API (3 nouveaux) et suite complète, web et shared ; lint, typecheck et Prettier propres ;
+  - navigateur : en commercial `hery`, la catégorie s'affiche dans le choix du client ; en `responsable`, filtre « Divers » puis Rasoanaivo Hanta classée « Régulier », retrouvée avec le filtre « Régulier ».
+
+**Reste** :
+- L'admin ne peut pas encore modifier la liste des catégories à l'écran : il faut l'écran des paramètres (à créer).
+- Sur une base déjà remplie, le seed ne reclasse pas les clients existants : ils restent « Divers » jusqu'au classement par le responsable.
+
+**Décisions** :
+- La catégorie s'affiche au choix du client, pas sur le devis imprimé : le devis ne change pas.
+- Aucune dépendance ajoutée.
+
+**Questions** :
+- Aucune nouvelle. H58 (historique : 30 lignes ou 12 mois) attend toujours votre réponse.
+
 ## 06/10/2026 — T-038 : derniers achats du client sur la tablette — agent : Claude Code (Opus 5.5)
 
 **Fait** :

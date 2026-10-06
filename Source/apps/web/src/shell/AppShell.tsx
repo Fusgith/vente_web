@@ -10,6 +10,7 @@ import { DeliveryWorkspace } from '../delivery/DeliveryWorkspace.js';
 import { labels } from '../labels.js';
 import { RealtimeProvider } from '../realtime/RealtimeProvider.js';
 import { AuditLogPanel } from '../manager/AuditLogPanel.js';
+import { CustomersPanel } from '../manager/CustomersPanel.js';
 import { DeliveryIssuesPanel } from '../manager/DeliveryIssuesPanel.js';
 import { RegisterSessionsPanel } from '../manager/RegisterSessionsPanel.js';
 import { StockPanel } from '../manager/StockPanel.js';
@@ -142,6 +143,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         <StockPanel />
         {/* RG-REM-01 (H15): the caps the owner set, read-only. */}
         <DiscountCapsPanel editable={false} />
+        {/* RG-DEV-04 (H49 a): the manager classes the customers. */}
+        <CustomersPanel />
         {/* RG-AUD-01: who did what, read only. */}
         <AuditLogPanel />
       </div>

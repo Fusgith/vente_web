@@ -26,6 +26,7 @@ export const SETTINGS: Record<string, unknown> = {
   quote_validity_days: 7,
   default_max_discount_pct: 0,
   'discount_code.length': 8,
+  customer_categories: ['Divers', 'Régulier', 'Gros contrat'],
   discount_reasons: ['Client fidèle', 'Achat en volume', 'Article abîmé', 'Geste commercial'],
   adjustment_reasons: ['Casse', 'Vol', 'Erreur de comptage', 'Périmé', 'Retour fournisseur'],
   allow_partial_payment: false,
@@ -277,13 +278,14 @@ export const PRODUCTS: DemoProduct[] = [
 ];
 
 export const CUSTOMERS = [
-  { name: 'Rasoanaivo Hanta', phone: '034 12 345 67' },
+  { name: 'Rasoanaivo Hanta', phone: '034 12 345 67', category: 'Régulier' },
   { name: 'Randriamanantena Jean', phone: '033 98 765 43' },
   { name: 'Épicerie Tsara Be', phone: '032 11 222 33' },
   { name: 'Ravelojaona Miora', phone: '034 55 666 77' },
   {
     name: 'Coopérative Fanantenana',
     phone: '020 22 333 44',
+    category: 'Gros contrat',
     notes: 'Commande en gros chaque mois',
   },
 ];

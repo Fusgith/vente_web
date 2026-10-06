@@ -11,6 +11,7 @@ export const CUSTOMER_SEARCH_MAX_RESULTS = 8;
 export const CUSTOMER_NAME_MIN_LENGTH = 2;
 export const CUSTOMER_PHONE_MIN_DIGITS = 3;
 export const CUSTOMER_NAME_MAX_LENGTH = 120;
+export const CUSTOMER_CATEGORY_MAX_LENGTH = 40;
 
 const MG_COUNTRY = '261';
 /** Separators people type in a phone number; anything else makes it invalid. */
@@ -96,7 +97,20 @@ export type CustomerUpdate = z.infer<typeof customerUpdateSchema>;
 /** The record `:id` is merged into `intoId`, which keeps living (RG-DEV-04). */
 export const customerMergeSchema = z.object({ intoId: z.uuid() });
 
-export const customerSearchQuerySchema = z.object({ q: z.string().trim().min(1).max(100) });
+const categorySchema = z.string().trim().min(1).max(CUSTOMER_CATEGORY_MAX_LENGTH);
+
+/** By phone or name, by category (H49 a), or both; at least one. */
+export const customerSearchQuerySchema = z
+  .object({ q: z.string().trim().max(100).optional(), category: categorySchema.optional() })
+  .refine((query) => !!query.q || !!query.category, 'nothing_to_search');
+export type CustomerSearchQuery = z.input<typeof customerSearchQuerySchema>;
+
+/** The manager classes a customer in one of the shop's categories (H49 a). */
+export const customerCategoryBodySchema = z.object({ category: categorySchema });
+
+/** The shop's categories, kept by the admin (H49 a); « Divers » for a new customer. */
+export const customerCategoriesSchema = z.object({ categories: z.array(z.string()) });
+export type CustomerCategories = z.infer<typeof customerCategoriesSchema>;
 
 export const customerSchema = z.object({
   id: z.uuid(),
@@ -104,6 +118,8 @@ export const customerSchema = z.object({
   /** Stored form (`normalizePhone`); shown with `formatPhone`; printed on quotes and invoices. */
   phone: z.string(),
   secondPhone: z.string().nullable(),
+  /** Classes the customer, who stays identified by name and phone (H43, H49 a). */
+  category: z.string(),
   /** False once deactivated or merged: never offered for a new quote. */
   isActive: z.boolean(),
   /** The record that replaced this one after a merge. */

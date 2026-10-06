@@ -40,6 +40,7 @@ describe('signed-in shell', () => {
       'POST /auth/switch-role': apiError(403, 'AUTH_ROLE_REMOTE_FORBIDDEN'),
       'GET /register-sessions': ok({ sessions: [] }),
       'GET /audit': ok({ entries: [], more: false }),
+      'GET /customers/categories': ok({ categories: ['Divers'] }),
       'GET /deliveries/issues': ok([]),
       'GET /stock/alerts': ok({ items: [] }),
       'GET /discount-caps': ok({ defaultPct: '0.00', categories: [] }),

@@ -199,7 +199,11 @@ function CustomerSheet({ chosenId, onPick, onClose }: CustomerSheetProps) {
                 onClick={() => onPick(customer)}
                 className="flex min-h-14 w-full items-center gap-3 rounded-control border border-rule-strong bg-white px-3 text-left transition-colors duration-100 active:bg-indigo-soft"
               >
-                <span className="min-w-0 flex-1 truncate font-semibold">{customer.name}</span>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate font-semibold">{customer.name}</span>
+                  {/* H49 a: the customer's category, seen when choosing it. */}
+                  <span className="text-14 text-ink-2">{customer.category}</span>
+                </span>
                 <span className="flex flex-col items-end text-ink-2 figures">
                   <span>{formatPhone(customer.phone)}</span>
                   {customer.secondPhone && (

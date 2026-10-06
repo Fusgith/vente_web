@@ -53,6 +53,8 @@ model Customer {
   phone        String   @db.VarChar(32)
   /// Optional; never equal to `phone` (CHECK in the migration).
   secondPhone  String?  @map("second_phone") @db.VarChar(32)
+  /// Classes the customer (H43, H49 a): one of the `customer_categories` setting.
+  category     String   @default("Divers") @db.VarChar(40)
   notes        String?
   isActive     Boolean  @default(true) @map("is_active")
   /// Set when this record was merged into another one (deduplication).

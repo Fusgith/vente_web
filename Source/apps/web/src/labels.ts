@@ -4,6 +4,7 @@ import { accountsLabels } from './labels-accounts.js';
 import { auditLabels } from './labels-audit.js';
 import { capsLabels } from './labels-caps.js';
 import { codesLabels } from './labels-codes.js';
+import { customersLabels } from './labels-customers.js';
 import { closingLabels } from './labels-closing.js';
 import { deliveryLabels } from './labels-delivery.js';
 import { issueLabels } from './labels-issues.js';
@@ -326,6 +327,7 @@ export const labels = {
   caps: capsLabels,
   accounts: accountsLabels,
   audit: auditLabels,
+  customers: customersLabels,
   codes: codesLabels,
   requests: requestsLabels,
   push: pushLabels,

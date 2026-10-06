@@ -15,12 +15,14 @@ import { AppError } from '../errors.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit } from './audit.js';
+import { readSetting } from './settings.js';
 
 const CUSTOMER_FIELDS = {
   id: true,
   name: true,
   phone: true,
   secondPhone: true,
+  category: true,
   isActive: true,
   mergedIntoId: true,
 } as const;
@@ -58,6 +60,18 @@ async function phoneTaken(db: Db, phones: readonly string[], exceptId?: string) 
   return new AppError(409, 'CUSTOMER_PHONE_TAKEN', taken ?? undefined);
 }
 
+/** The seed's list, while the admin has not set `customer_categories` (H49 a). */
+const DEFAULT_CATEGORIES = ['Divers', 'Régulier', 'Gros contrat'];
+
+export async function customerCategories(db: Db): Promise<string[]> {
+  const value = await readSetting(db, 'customer_categories');
+  return Array.isArray(value) &&
+    value.length > 0 &&
+    value.every((category) => typeof category === 'string')
+    ? (value as string[])
+    : DEFAULT_CATEGORIES;
+}
+
 export async function findCustomer(db: Db, id: string): Promise<Customer> {
   const customer = await db.customer.findUnique({ where: { id }, select: CUSTOMER_FIELDS });
   if (!customer) throw new AppError(404, 'NOT_FOUND');
@@ -67,29 +81,34 @@ export async function findCustomer(db: Db, id: string): Promise<Customer> {
 /**
  * Active customers by phone digits anywhere in the number (`034 12`, `345 67`), or by word
  * prefixes of the name, any order, case and accents ignored (same `search_normalize` as the
- * catalog). An exact phone comes first, then names in alphabetical order.
+ * catalog). An exact phone comes first, then names in alphabetical order. `category` narrows the
+ * search, or alone lists that category (H49 a).
  */
-export async function searchCustomers(db: Db, term: string): Promise<CustomerSearchResult> {
-  const digits = phoneSearchDigits(term);
+export async function searchCustomers(
+  db: Db,
+  term: string,
+  category?: string,
+): Promise<CustomerSearchResult> {
+  const digits = term ? phoneSearchDigits(term) : null;
   const tokens = term.length >= CUSTOMER_NAME_MIN_LENGTH ? searchTokens(term) : [];
-  if (digits === null && tokens.length === 0) return { items: [], more: false };
+  if (term ? digits === null && tokens.length === 0 : !category) return { items: [], more: false };
   // Digits and tokens hold letters and digits only: they never inject LIKE wildcards.
-  const match =
-    digits === null
-      ? Prisma.join(
-          tokens.map(
-            (token) =>
-              Prisma.sql`(' ' || search_normalize(c."name")) LIKE '% ' || search_normalize(${token}) || '%'`,
-          ),
-          ' AND ',
-        )
-      : Prisma.sql`(replace(c."phone", '+', '') LIKE '%' || ${digits} || '%'
-           OR replace(coalesce(c."second_phone", ''), '+', '') LIKE '%' || ${digits} || '%')`;
+  const conditions = [Prisma.sql`c."is_active"`];
+  if (digits !== null) {
+    conditions.push(Prisma.sql`(replace(c."phone", '+', '') LIKE '%' || ${digits} || '%'
+           OR replace(coalesce(c."second_phone", ''), '+', '') LIKE '%' || ${digits} || '%')`);
+  }
+  for (const token of digits === null ? tokens : []) {
+    conditions.push(
+      Prisma.sql`(' ' || search_normalize(c."name")) LIKE '% ' || search_normalize(${token}) || '%'`,
+    );
+  }
+  if (category) conditions.push(Prisma.sql`c."category" = ${category}`);
   const exact = digits ?? '';
   const rows = await db.$queryRaw<{ id: string }[]>`
     SELECT c."id"
       FROM "customers" c
-     WHERE c."is_active" AND ${match}
+     WHERE ${Prisma.join(conditions, ' AND ')}
      ORDER BY (replace(c."phone", '+', '') = ${exact}
                OR replace(coalesce(c."second_phone", ''), '+', '') = ${exact}) DESC,
               lower(c."name"), c."id"
@@ -182,6 +201,37 @@ export async function updateCustomer(
     if (isUniqueViolation(error)) throw await phoneTaken(db, added, id);
     throw error;
   }
+}
+
+/** The manager classes an active customer in one of the shop's categories (H49 a), audited. */
+export async function setCustomerCategory(
+  db: Db,
+  actor: Actor,
+  id: string,
+  category: string,
+): Promise<Customer> {
+  if (!(await customerCategories(db)).includes(category)) {
+    throw new AppError(400, 'CUSTOMER_CATEGORY_UNKNOWN');
+  }
+  const current = await findCustomer(db, id);
+  if (!current.isActive) throw new AppError(409, 'CUSTOMER_INACTIVE');
+  if (current.category === category) return current;
+  return db.$transaction(async (tx) => {
+    const { count } = await tx.customer.updateMany({
+      where: { id, isActive: true },
+      data: { category },
+    });
+    if (count === 0) throw new AppError(409, 'CUSTOMER_INACTIVE');
+    await recordAudit(tx, {
+      ...by(actor),
+      action: 'customer.updated',
+      entityType: 'customer',
+      entityId: id,
+      before: { category: current.category },
+      after: { category },
+    });
+    return { ...current, category };
+  });
 }
 
 /** A customer is never deleted: the manager deactivates it (RG-DEV-04); its history stays. */

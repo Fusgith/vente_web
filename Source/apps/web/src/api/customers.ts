@@ -1,4 +1,5 @@
 import {
+  customerCategoriesSchema,
   customerPhoneTakenSchema,
   customerPurchasesSchema,
   customerSchema,
@@ -7,6 +8,7 @@ import {
   type CustomerCreateInput,
   type CustomerPhoneTaken,
   type CustomerPurchases,
+  type CustomerSearchQuery,
   type CustomerSearchResult,
 } from '@vente-web/shared';
 
@@ -20,6 +22,26 @@ export const customersApi = {
       signal ? { signal } : {},
     );
     return parseResponse(customerSearchResultSchema, data);
+  },
+
+  /** The directory by name or phone and/or category (H49 a), as the manager reads it. */
+  async directory(query: CustomerSearchQuery): Promise<CustomerSearchResult> {
+    const params = new URLSearchParams(query as Record<string, string>).toString();
+    return parseResponse(customerSearchResultSchema, await apiRequest(`/customers?${params}`));
+  },
+
+  async categories(): Promise<string[]> {
+    const data = await apiRequest('/customers/categories');
+    return parseResponse(customerCategoriesSchema, data).categories;
+  },
+
+  /** Only the manager classes a customer (H49 a). */
+  async setCategory(id: string, category: string): Promise<Customer> {
+    const data = await apiRequest(`/customers/${id}/category`, {
+      method: 'POST',
+      body: { category },
+    });
+    return parseResponse(customerSchema, data);
   },
 
   async create(body: CustomerCreateInput): Promise<Customer> {

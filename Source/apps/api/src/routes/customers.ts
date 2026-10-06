@@ -1,9 +1,11 @@
 import {
+  customerCategoryBodySchema,
   customerCreateSchema,
   customerMergeSchema,
   customerSearchQuerySchema,
   customerUpdateSchema,
   type Customer,
+  type CustomerCategories,
   type CustomerPurchases,
   type CustomerSearchResult,
   type Role,
@@ -15,10 +17,12 @@ import { actorOf, authOf, requireRole } from '../plugins/session.js';
 import { customerPurchases } from '../services/customer-purchases.js';
 import {
   createCustomer,
+  customerCategories,
   deactivateCustomer,
   findCustomer,
   mergeCustomer,
   searchCustomers,
+  setCustomerCategory,
   updateCustomer,
 } from '../services/customers.js';
 
@@ -38,9 +42,14 @@ export const customerRoutes: FastifyPluginAsync = async (app) => {
   const manager = { preHandler: requireRole('manager') };
 
   app.get('/customers', readers, async (request): Promise<CustomerSearchResult> => {
-    const { q } = customerSearchQuerySchema.parse(request.query);
-    return searchCustomers(app.db, q);
+    const { q, category } = customerSearchQuerySchema.parse(request.query);
+    return searchCustomers(app.db, q ?? '', category);
   });
+
+  /** The shop's categories (H49 a): a filter of the directory, a choice for the manager. */
+  app.get('/customers/categories', readers, async (): Promise<CustomerCategories> => ({
+    categories: await customerCategories(app.db),
+  }));
 
   app.get('/customers/:id', readers, async (request): Promise<Customer> => {
     const { id } = paramsSchema.parse(request.params);
@@ -63,6 +72,13 @@ export const customerRoutes: FastifyPluginAsync = async (app) => {
     const { id } = paramsSchema.parse(request.params);
     const body = customerUpdateSchema.parse(request.body);
     return updateCustomer(app.db, actorOf(authOf(request)), id, body);
+  });
+
+  /** Only the manager classes a customer (H49 a). */
+  app.post('/customers/:id/category', manager, async (request): Promise<Customer> => {
+    const { id } = paramsSchema.parse(request.params);
+    const { category } = customerCategoryBodySchema.parse(request.body);
+    return setCustomerCategory(app.db, actorOf(authOf(request)), id, category);
   });
 
   app.post('/customers/:id/deactivate', manager, async (request, reply) => {
