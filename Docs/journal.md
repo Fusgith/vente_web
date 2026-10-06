@@ -2,6 +2,23 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 06/10/2026 — T-011b : CDC technique §5 aligné sur la base réelle — agent : Claude Code (Opus 5.5)
+
+**Fait** (documentation seulement) :
+- `users` : plus de `pin_hash` (H57, T-017d) ; `sessions` : `PIN` ne reste que sur les sessions ouvertes avant H57.
+- Tables ajoutées : `product_promotions` (T-037) et `discount_code_items` (T-034), avec leurs contraintes.
+- Colonnes ajoutées : `customers.category` (T-029b) ; `reservations.created_at` et `closed_at`.
+- `order_lines.product_price_id` : nul tant que la commande est au brouillon.
+- `audit_log` : pas encore partitionnée (volume du MVP faible).
+- Immutabilité : des triggers protègent déjà les tables en ajout seul, quel que soit le rôle (vérifié dans les migrations) ; le retrait des droits SQL du rôle de l'API est ajouté à T-080.
+- Déjà à jour, rien à changer : `discount_codes.request_id` (lien unique avec la demande) et `order_lines.position`.
+
+**Reste** : rien pour T-011b.
+
+**Décisions** : aucune nouvelle ; aucune dépendance ajoutée.
+
+**Questions** : aucune nouvelle. H58 (historique : 30 lignes ou 12 mois) attend toujours votre réponse.
+
 ## 06/10/2026 — T-037 : articles à proposer — agent : Claude Code (Opus 5.5)
 
 **Fait** :
