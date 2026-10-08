@@ -43,7 +43,23 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 | Demande de remise exceptionnelle | `discount_request` | Demande adressée au boss pour dépasser le plafond ; accordée ou refusée par lui seul. |
 | Notification push | `push` | Message que le serveur fait parvenir au téléphone du boss par le service de push du navigateur, application fermée (RG-DSH-05, H55). |
 | Abonnement (aux notifications) | `push_subscription` | Appareil sur lequel le boss a activé les notifications push : adresse du service de push et clés de chiffrement ; 10 au plus par compte. |
-| Code de remise | `discount_code` | Code à usage unique émis par le boss, qui applique une remise au-delà du plafond ; expire en fin de journée. |
+| Code de remise | `discount_code` | Code à usage unique émis par le boss, qui applique une remise au-delà du plafond ; expire en fin de journée. Depuis H64 (⚠️ hypothèse), celui d'un accord n'est plus affiché. |
+| Code promo | `promo_code` | ⚠️ H63 : code de remise émis par le boss pour un prochain achat d'un client, valable jusqu'à une date choisie ; saisi à la caisse (`discount_code` de genre `PROMO`). |
+| Remises du commercial (paramètre) | `sales_discount_enabled` | ⚠️ H60 : l'admin autorise ou non le commercial à remiser ; désactivé par défaut. |
+| Règle de remise | `discount_rule` | ⚠️ H62 : remise prévue par le boss (quantité, catégorie de client, type de client, promotion), en %, sur tout, une catégorie d'articles ou un article. |
+| Remise prévue | `suggested_discount` | ⚠️ H62 : taux de la meilleure règle qui concerne une ligne ; appliquée par le caissier à la demande du client. |
+| Type de client | `customer_type` | ⚠️ H66 : Grossiste (`WHOLESALER`), Semi-grossiste (`SEMI_WHOLESALER`), Détaillant (`RETAILER`), Particulier (`INDIVIDUAL`) ; fixe le prix. |
+| Prix de base | `base_price` | ⚠️ H66 : prix d'une unité de vente sans type de client ; s'applique à défaut de prix pour le type. |
+| Conditions de crédit | `credit_terms` | ⚠️ H67 : plafond d'encours et durée, par type, catégorie ou client. |
+| Vente à crédit | `credit_sale` | ⚠️ H67 : vente conclue (facture, livraison) dont tout ou partie reste dû. |
+| Créance | `receivable` | ⚠️ H67 : reste dû d'une vente, avec échéance ; réglée ensuite à la caisse. |
+| Encours | `outstanding` | ⚠️ H67 : total des créances ouvertes d'un client. |
+| Règlement (d'une créance) | `settlement` | ⚠️ H67 : paiement ultérieur d'une créance, avec reçu numéroté. |
+| Traite | `bill_of_exchange` | ⚠️ H68 : titre de paiement à échéance (numéro, tiré, échéance). |
+| Chèque post-daté | `postdated_check` | ⚠️ H68 : chèque à encaisser à sa date. |
+| Titre (à encaisser) | `payment_instrument` | ⚠️ H68 : traite ou chèque post-daté reçu : REMIS, ENCAISSÉ ou IMPAYÉ. |
+| Remplacé (devis, commande) | `REPLACED` / `replaced_by` | ⚠️ H69 : devis remis ou commande validée modifié(e), refait(e) sous un nouveau numéro. |
+| Remis (devis) | `handed_over_at` | ⚠️ H69 : devis dont le PDF a été ouvert ; il ne se modifie plus. |
 | Poste | `station` | Point physique déclaré par l'admin : tablette, caisse, comptoir de livraison, écran public, borne ; nombre libre. |
 | Caisse | `register` | Poste d'encaissement. |
 | Session de caisse | `register_session` | Période ouverte par un caissier sur une caisse, avec fond de caisse. |
@@ -53,7 +69,7 @@ Le code utilise les termes anglais de la colonne « Code » (ADR-0004). L'interf
 | Session oubliée | `forgotten` | Session de caisse encore ouverte, ouverte un jour précédent (RG-CAI-05). |
 | Paiement | `payment` | Règlement total d'une commande, composé d'une ou plusieurs lignes. |
 | Ligne de paiement | `payment_line` | Un moyen × un montant × une référence. |
-| Moyen de paiement | `payment_method` | Espèces, MVola, Orange Money, Airtel Money, carte, virement, chèque… |
+| Moyen de paiement | `payment_method` | Espèces, MVola, Orange Money, Airtel Money, carte, virement, chèque, traite et chèque post-daté (⚠️ H68)… |
 | Rendu monnaie | `change` | Montant rendu au client sur un paiement en espèces. |
 | Fond de caisse | `opening_float` | Espèces dans le tiroir à l'ouverture de la session de caisse. |
 | Montant reçu | `cash_received` | Espèces remises par le client ; rendu = reçu − part en espèces. |

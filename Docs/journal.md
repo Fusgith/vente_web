@@ -2,6 +2,29 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 09/10/2026 — Commentaires du client : hypothèses H60 à H69 — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- CDC métier v0.18 : les commentaires du client sont inscrits comme hypothèses H60 à H69 (§16.2), avec les marques ⚠️ HYPOTHÈSE dans toutes les règles touchées (§1 à §15, annexes A et B).
+  - H60 : le commercial ne remise plus par défaut ; paramètre `sales_discount_enabled` de l'admin.
+  - H61 : le caissier (ou le responsable) applique les remises dans les plafonds, sans le boss.
+  - H62 : règles de remise du boss (quantité, catégorie de client, type de client, promotion), meilleure règle par ligne, sans cumul.
+  - H63 : code promo pour un prochain achat, saisi à la caisse.
+  - H64 : l'accord du boss s'applique directement à la commande, sans code affiché.
+  - H65 : trois unités de vente actives au plus par article ; création d'article à l'écran par le boss ou le responsable.
+  - H66 : type de client (grossiste, semi-grossiste, détaillant, particulier) et prix par type ; la catégorie ne donne que des remises.
+  - H67 : vente à crédit au MVP (remplace H44) ; H68 : traite et chèque post-daté.
+  - H69 : un devis remis ou une commande validée qui change se refait sous un nouveau numéro.
+- Glossaire : termes anglais de ces notions (`customer_type`, `discount_rule`, `credit_terms`, `receivable`, `REPLACED`…).
+- Backlog : T-001d (validation), T-087 à T-096 ; T-029c remplacée par T-095 ; T-019 et T-020 annotées.
+- Point 4 d) du client (réserver des articles pour un paiement ultérieur) : déjà fait (RG-STK-02, H45, T-022b).
+
+**Reste** : coder T-087 à T-096 dans cet ordre ; T-056 ; T-010c attend le logo.
+
+**Décisions** : aucune définitive ; chaque point est codé selon la formulation écrite de son hypothèse.
+
+**Questions** : H60 à H69 à valider par l'utilisateur et son client (T-001d) ; H58, H59 toujours à confirmer.
+
 ## 06/10/2026 — ADR-0008 : cloud chez OVH, partagé entre les clients — agent : Claude Code (Opus 5.5)
 
 **Fait** :
