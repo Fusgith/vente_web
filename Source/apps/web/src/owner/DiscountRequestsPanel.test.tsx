@@ -103,7 +103,7 @@ describe('DiscountRequestsPanel — the owner answers (T-033c, RG-REM-03, H53)',
     expect(panel().getByText(text.recentEmpty)).toBeVisible();
   });
 
-  it('grants the soap as asked and the total at another value, then shows the code', async () => {
+  it('grants the soap as asked and the total at another value, applied without a code (H64)', async () => {
     const api = await mount({
       [LIST]: ok({ pending: [request()], recent: [] }),
       [GRANT]: ok(granted),
@@ -117,23 +117,26 @@ describe('DiscountRequestsPanel — the owner answers (T-033c, RG-REM-03, H53)',
     fireEvent.change(value, { target: { value: '3 000' } });
     fireEvent.click(card().getByRole('button', { name: text.grant }));
 
-    await waitFor(() => expect(band()).toHaveTextContent(text.granted('R7K4-29QP', 'Rasoa Hanta')));
+    const number = granted.order.number;
+    await waitFor(() => expect(band()).toHaveTextContent(text.granted('Rasoa Hanta', number)));
     expect(api.callsTo(GRANT)[0]!.body).toEqual({
       items: [
         { itemId: requestOf(SOAP).items[0]!.id, discount: { kind: 'pct', value: '12.00' } },
         { itemId: TOTAL_ITEM, discount: { kind: 'amount', value: '3000' } },
       ],
     });
-    expect(panel().getByRole('status', { name: text.toGive })).toHaveTextContent('R7K4-29QP');
-    // The card gone with its button, the focus goes to the code to give. An effect moves it once
+    const applied = panel().getByText(text.appliedTo(number));
+    expect(panel().queryByText('R7K4-29QP')).toBeNull();
+    // The card gone with its button, the focus goes to the order granted. An effect moves it once
     // the band is shown: on a loaded machine, React runs it a slice later.
-    await waitFor(() => expect(panel().getByRole('status', { name: text.toGive })).toHaveFocus());
+    await waitFor(() => expect(applied).toHaveFocus());
     expect(panel().queryByRole('article')).toBeNull();
     expect(panel().getByText(text.pendingEmpty)).toBeVisible();
     const recent = within(panel().getByRole('table', { name: text.recent }));
     expect(
       recent.getByText(`${text.status.GRANTED} ${text.closedBy(OWNER.fullName)}`),
     ).toBeVisible();
+    expect(recent.getByText(number)).toBeVisible();
   });
 
   it('grants nothing without one element at least, nor an invalid other value', async () => {
@@ -172,9 +175,9 @@ describe('DiscountRequestsPanel — the owner answers (T-033c, RG-REM-03, H53)',
 
     await waitFor(() => expect(band()).toHaveTextContent(text.rejected('Rasoa Hanta')));
     expect(api.callsTo(REJECT)).toHaveLength(1);
-    expect(panel().queryByRole('status', { name: text.toGive })).toBeNull();
+    expect(panel().queryByText(text.appliedTo(granted.order.number))).toBeNull();
     expect(panel().getByText(text.pendingEmpty)).toBeVisible();
-    // Moved by an effect after the band is shown, as for the code to give.
+    // Moved by an effect after the band is shown, as for the order granted.
     await waitFor(() => expect(panel().getByRole('heading', { name: text.pending })).toHaveFocus());
   });
 
@@ -281,7 +284,9 @@ describe('DiscountRequestsPanel — the manager reads (RG-DSH-05, H54)', () => {
     expect(panel().queryByRole('button', { name: text.grant })).toBeNull();
     expect(panel().queryByRole('radio')).toBeNull();
     const recent = within(panel().getByRole('table', { name: text.recent }));
-    expect(recent.getByText('R7K4-29QP')).toBeVisible();
+    // The order it went on, never its code (H64).
+    expect(recent.getByText(granted.order.number)).toBeVisible();
+    expect(recent.queryByText('R7K4-29QP')).toBeNull();
     // What was granted, the element left out said so.
     expect(
       recent.getByText(

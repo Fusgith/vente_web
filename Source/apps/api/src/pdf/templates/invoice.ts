@@ -82,10 +82,13 @@ export function invoiceDocument(snapshot: InvoiceSnapshot): TDocumentDefinitions
       [text.order, snapshot.order.number],
       [text.salesUser, snapshot.salesUser],
       [text.cashier, snapshot.cashier],
-      // The discounts the owner granted beyond the caps, traced to their code (RG-REM-07).
-      ...(snapshot.discountCode
-        ? [[text.discountCode, snapshot.discountCode] satisfies [string, string]]
-        : []),
+      // The discounts the owner granted beyond the caps (RG-REM-07): his answer to a request is
+      // printed without its code (H64), a code typed in with it.
+      ...(snapshot.discountGranted
+        ? [[text.ownerDiscount, text.grantedByOwner] satisfies [string, string]]
+        : snapshot.discountCode
+          ? [[text.discountCode, snapshot.discountCode] satisfies [string, string]]
+          : []),
     ],
     customer: snapshot.customer,
     lines: snapshot.lines,

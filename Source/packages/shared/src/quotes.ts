@@ -67,6 +67,11 @@ export type QuoteLine = z.infer<typeof quoteLineSchema>;
 /** The owner's code attached to a quote (RG-REM-04, T-034b): what it grants replaces the caps. */
 export const quoteCodeSchema = z.object({
   code: z.string(),
+  /**
+   * The owner's answer to a request (H64): applied straight to the order, shown as « Remise
+   * accordée par le boss », its code never; false for a code typed in.
+   */
+  granted: z.boolean(),
   items: z.array(z.object({ productId: z.uuid().nullable(), discount: discountEntrySchema })),
 });
 export type QuoteCode = z.infer<typeof quoteCodeSchema>;

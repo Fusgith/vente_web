@@ -41,7 +41,8 @@ export const requestsLabels = {
 
   /** The answer, told in the band (H53, H54). */
   decided: {
-    GRANTED: (code: string) => `Le boss a accordé la remise : code ${code} appliqué.`,
+    // H64: applied straight to the order, its code never shown.
+    GRANTED: 'Le boss a accordé la remise : elle est appliquée à la commande.',
     REJECTED: 'Le boss a refusé la remise : les remises restent dans les plafonds.',
     WITHDRAWN: 'La demande de remise a été retirée : les remises restent dans les plafonds.',
     EXPIRED: 'La demande de remise a expiré sans réponse du boss.',
@@ -93,7 +94,7 @@ export const requestsLabels = {
       customer: 'Client',
       items: 'Remises (accordées, sinon demandées)',
       status: 'État',
-      code: 'Code',
+      order: 'Commande',
     },
     total: 'Total',
     answers: { asked: 'Comme demandé', other: 'Autre valeur', none: 'Rien' },
@@ -106,10 +107,11 @@ export const requestsLabels = {
     nothingGranted: 'Accordez au moins un élément, ou refusez la demande.',
     otherInvalid:
       'Une autre valeur n’est pas valable : un pourcentage au-dessus de 0 et jusqu’à 100, ou un montant au-dessus de 0.',
-    granted: (code: string, name: string) =>
-      `Remise accordée à ${name} : code ${code}, appliqué à la commande.`,
+    granted: (name: string, number: string) =>
+      `Remise accordée à ${name} : appliquée à la commande ${number}.`,
     rejected: (name: string) => `Demande de remise pour ${name} refusée.`,
-    toGive: 'Code appliqué à la commande',
+    /** H64: nothing to pass on, the order already carries it. */
+    appliedTo: (number: string) => `Appliquée à la commande ${number}`,
     status: {
       PENDING: 'En attente',
       GRANTED: 'Accordée',

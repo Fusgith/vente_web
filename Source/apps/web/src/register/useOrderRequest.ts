@@ -58,12 +58,7 @@ export function useOrderRequest({
       return;
     }
     if (request.status === 'WITHDRAWN' && withdrawnHere.current === request.id) return;
-    say(
-      request.status === 'GRANTED'
-        ? text.decided.GRANTED(order.discountCode?.code ?? '')
-        : text.decided[request.status],
-      'info',
-    );
+    say(text.decided[request.status], 'info');
   }, [order, say]);
 
   // An order set aside, waiting in the queue: its answer is told by its ticket, the cashier who

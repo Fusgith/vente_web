@@ -50,6 +50,7 @@ function attachedQuote(version: number): Quote {
     ),
     discountCode: {
       code: 'R7K4-29QP',
+      granted: false,
       items: [{ productId: SAVON.id, discount: { kind: 'amount', value: '1700.00' } }],
     },
   };

@@ -141,10 +141,16 @@ export async function issueDiscountCode(
   }
 }
 
-/** The codes issued this shop day and those still active from before, newest first (RG-REM-07). */
+/**
+ * The codes issued this shop day and those still active from before, newest first (RG-REM-07);
+ * not those answering a request, applied at once and never shown (H64).
+ */
 export async function listDiscountCodes(db: Db, now = new Date()): Promise<DiscountCode[]> {
   const rows = await db.discountCode.findMany({
-    where: { OR: [{ issuedAt: { gte: shopDayStart(now) } }, { status: 'ACTIVE' }] },
+    where: {
+      requestId: null,
+      OR: [{ issuedAt: { gte: shopDayStart(now) } }, { status: 'ACTIVE' }],
+    },
     orderBy: [{ issuedAt: 'desc' }, { id: 'desc' }],
     take: 200,
     select,

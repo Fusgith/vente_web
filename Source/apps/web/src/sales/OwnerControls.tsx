@@ -63,7 +63,7 @@ export function OwnerControls({
     return (
       <span ref={mark} tabIndex={-1} className={`${MARK} border-indigo bg-indigo-soft figures`}>
         <Icon name="key" className="size-5 text-indigo" />
-        {labels.sales.code.tag(draft.code.code)}
+        {draft.code.granted ? labels.sales.code.granted : labels.sales.code.tag(draft.code.code)}
       </span>
     );
   }

@@ -145,7 +145,7 @@ describe.skipIf(!TEST_DATABASE_URL)(
         orderDiscount: '5000.00',
         discountTotal: '17000.00',
         total: '102500.00',
-        discountCode: { code: code.code },
+        discountCode: { code: code.code, granted: false },
       });
       expect(attached.lines).toMatchObject([
         { qty: '4', discountPct: '12.00', discountAmount: '12000.00', discountSource: 'CODE' },
@@ -188,6 +188,7 @@ describe.skipIf(!TEST_DATABASE_URL)(
       const frozen = await t.db.invoice.findUniqueOrThrow({ where: { id: invoice.id } });
       expect(frozen.snapshot).toMatchObject({
         discountCode: code.code,
+        discountGranted: false,
         totals: { discountTotal: '17000.00', total: '102500.00' },
       });
     });

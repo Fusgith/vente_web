@@ -236,6 +236,7 @@ describe('draftReducer: the owner’s code attached (T-034b, H42)', () => {
       orderDiscountPct: '10.00',
       discountCode: {
         code: 'R7K4-29QP',
+        granted: false,
         items: [
           { productId: SAVON.id, discount: { kind: 'amount', value: '2150.00' } },
           { productId: null, discount: { kind: 'pct', value: '10' } },
@@ -345,7 +346,7 @@ describe('draftReducer: the owner’s code attached (T-034b, H42)', () => {
       subtotal: '28950.00',
       orderDiscount: '500.00',
       orderDiscountPct: null,
-      discountCode: { code: 'R7K4-29QP', items: quote.discountCode!.items.slice(0, 1) },
+      discountCode: { ...quote.discountCode!, items: quote.discountCode!.items.slice(0, 1) },
     };
     const state = draftReducer(typed, { type: 'codeAttached', quote: productsOnly, sent: typed });
     expect(orderBroughtDown(typed, productsOnly)).toBe(false);
@@ -365,7 +366,7 @@ describe('draftReducer: the owner’s code attached (T-034b, H42)', () => {
       subtotal: '28950.00',
       orderDiscount: '0.00',
       orderDiscountPct: null,
-      discountCode: { code: 'R7K4-29QP', items: quote.discountCode!.items.slice(0, 1) },
+      discountCode: { ...quote.discountCode!, items: quote.discountCode!.items.slice(0, 1) },
     };
     const state = draftReducer(typed, { type: 'codeAttached', quote: lowered, sent: typed });
     expect(orderBroughtDown(typed, lowered)).toBe(true);

@@ -53,6 +53,9 @@ export const INVOICE_PDF = {
   cashier: 'Caissier',
   /** RG-REM-07. */
   discountCode: 'Code de remise',
+  /** H64: the owner's answer to a request, without its code. */
+  ownerDiscount: 'Remise',
+  grantedByOwner: 'Accordée par le boss',
   /** RG-FAC-03, VAT-inclusive prices. */
   vatBase: 'Total HT',
   vat: (rate: string) => `TVA ${rate} %`,

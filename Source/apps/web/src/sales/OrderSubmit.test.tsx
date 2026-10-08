@@ -189,6 +189,7 @@ describe('quote screen: validating the order (T-032, RG-CMD-03/05)', () => {
         ...savedQuote(soap, NUMBER, 2),
         discountCode: {
           code: 'R7K4-29QP',
+          granted: false,
           items: [{ productId: SAVON.id, discount: { kind: 'pct', value: '100' } }],
         },
       },

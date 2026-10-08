@@ -66,6 +66,7 @@ function grantedQuote(): Quote {
     ),
     discountCode: {
       code: 'R7K4-29QP',
+      granted: true,
       items: [{ productId: SAVON.id, discount: { kind: 'pct', value: '12' } }],
     },
     discountRequest: requestOf(SAVON, {
@@ -291,9 +292,11 @@ describe('quote screen: the owner’s answer (T-033b, H53, H54)', () => {
       }),
     );
 
-    await waitFor(() => expect(band()).toHaveTextContent(text.decided.GRANTED('R7K4-29QP')));
+    await waitFor(() => expect(band()).toHaveTextContent(text.decided.GRANTED));
     expect(api.callsTo(READ)).toHaveLength(1);
-    expect(screen.getByText(labels.sales.code.tag('R7K4-29QP'))).toBeVisible();
+    // Applied without its code shown (H64).
+    expect(screen.getByText(labels.sales.code.granted)).toBeVisible();
+    expect(screen.queryByText(/R7K4-29QP/)).toBeNull();
     expect(screen.queryByText(text.pending)).toBeNull();
     // The screen matches the quote as saved: nothing left to save.
     expect(screen.getByRole('link', { name: labels.sales.draft.openPdf })).toBeVisible();

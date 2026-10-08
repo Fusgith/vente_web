@@ -55,6 +55,8 @@ export const invoiceSnapshotSchema = z.object({
   }),
   /** The owner's code used on the order (RG-REM-07); absent from invoices issued before it. */
   discountCode: z.string().nullable().default(null),
+  /** The code answered a request: printed « Remise accordée par le boss », never the code (H64). */
+  discountGranted: z.boolean().default(false),
   vat: z.object({ rate: z.string(), base: z.string(), vat: z.string() }).nullable(),
   vatNotice: z.string(),
   payment: z.object({
@@ -139,6 +141,7 @@ export async function issueInvoice(
       total: order.total,
     },
     discountCode: order.discountCode?.code ?? null,
+    discountGranted: order.discountCode?.granted ?? false,
     vat: settings.vatRate
       ? { rate: settings.vatRate, ...pickVat(order.total, settings.vatRate) }
       : null,

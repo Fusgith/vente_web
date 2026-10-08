@@ -2,6 +2,21 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 09/10/2026 — T-088 : accord du boss sans code visible (H64) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Le code d'un accord reste en base (traçabilité, RG-AUD-01) mais n'est plus montré : la vue de la commande porte `discountCode.granted` (vrai pour la réponse à une demande).
+- Boss : l'accord affiche « Appliquée à la commande D-… », la colonne Code devient Commande ; les codes d'accord sortent de sa liste des codes.
+- Tablette et caisse : « Le boss a accordé la remise : elle est appliquée à la commande. », puis « Remise accordée par le boss » au lieu du code.
+- Facture : « Remise : Accordée par le boss » au lieu de « Code de remise : … » (`discountGranted` dans l'instantané ; les factures déjà émises gardent leur code).
+- Tests : délais Vitest de l'API portés à 30 s : vider la base de test (TRUNCATE) prend environ 5 s sur le disque de Docker Desktop, 10 s ne suffisaient plus.
+
+**Reste** : T-089 à T-096 dans l'ordre ; T-056 ; T-010c attend le logo.
+
+**Décisions** : aucune nouvelle (H64 codée selon sa formulation).
+
+**Questions** : H60 à H69 à valider (T-001d).
+
 ## 09/10/2026 — T-087 : remises du commercial au choix de l'admin (H60) — agent : Claude Code (Opus 5.5)
 
 **Fait** :

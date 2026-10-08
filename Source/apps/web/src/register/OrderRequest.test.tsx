@@ -43,6 +43,7 @@ function granted(): Order {
     ...order,
     discountCode: {
       code: 'R7K4-29QP',
+      granted: true,
       items: [{ productId: SOAP.id, discount: { kind: 'pct', value: '12' } }],
     },
   };
@@ -183,8 +184,10 @@ describe('register: an order whose request awaits the owner (T-033d, RG-REM-05, 
       }),
     );
 
-    await waitFor(() => expect(band()).toHaveTextContent(text.decided.GRANTED('R7K4-29QP')));
-    expect(screen.getByText(labels.sales.code.tag('R7K4-29QP'))).toBeVisible();
+    await waitFor(() => expect(band()).toHaveTextContent(text.decided.GRANTED));
+    // Applied without its code shown (H64).
+    expect(screen.getByText(labels.sales.code.granted)).toBeVisible();
+    expect(screen.queryByText(/R7K4-29QP/)).toBeNull();
     expect(payButton()).toBeEnabled();
   });
 
@@ -196,7 +199,7 @@ describe('register: an order whose request awaits the owner (T-033d, RG-REM-05, 
     });
     fireEvent.click(await screen.findByRole('button', { name: text.withdraw }));
 
-    await waitFor(() => expect(screen.getByText(labels.sales.code.tag('R7K4-29QP'))).toBeVisible());
+    await waitFor(() => expect(screen.getByText(labels.sales.code.granted)).toBeVisible());
     expect(payButton()).toBeEnabled();
   });
 });

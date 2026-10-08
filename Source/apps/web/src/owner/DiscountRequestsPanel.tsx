@@ -36,8 +36,8 @@ function statusOf(request: DiscountRequest): string {
 
 /**
  * The exceptional discount requests (T-033c, RG-REM-03, RG-DSH-05, H53, H54): those waiting, each
- * decided element by element — the grant becomes a code applied to the order at once, shown here
- * to be told if need be —, then those closed this shop day. Read only for the manager. A card
+ * decided element by element — the grant is applied to the order at once, its code never shown
+ * (H64): the order it went on is named —, then those closed this shop day. Read only for the manager. A card
  * follows its order: changed at the register or on the tablet, it is read again.
  */
 export function DiscountRequestsPanel({ editable }: { editable: boolean }) {
@@ -53,8 +53,8 @@ export function DiscountRequestsPanel({ editable }: { editable: boolean }) {
   const known = useRef<Set<string> | null>(null);
   const orders = useRef<Set<string>>(new Set());
   /** The card decided from here, and where the focus goes once it is gone. */
-  const leaving = useRef<{ id: string; to: 'code' | 'list' } | null>(null);
-  const given = useRef<HTMLOutputElement>(null);
+  const leaving = useRef<{ id: string; to: 'applied' | 'list' } | null>(null);
+  const applied = useRef<HTMLOutputElement>(null);
   const waitingTitle = useRef<HTMLHeadingElement>(null);
 
   /** Read again; a request not seen before is told in the band (the owner may be elsewhere). */
@@ -90,14 +90,14 @@ export function DiscountRequestsPanel({ editable }: { editable: boolean }) {
   useRealtimeEvent('queue.changed', follow);
   useRealtimeEvent('order.status_changed', follow);
 
-  // The card decided gone, its focused button with it: the focus goes to the code to give, or
+  // The card decided gone, its focused button with it: the focus goes to the order granted, or
   // to the list, so a screen reader says what came of it.
   useEffect(() => {
     const gone = leaving.current;
     if (!gone || pending?.some((request) => request.id === gone.id)) return;
     leaving.current = null;
     const lost = !document.activeElement || document.activeElement === document.body;
-    if (lost) (gone.to === 'code' ? given : waitingTitle).current?.focus();
+    if (lost) (gone.to === 'applied' ? applied : waitingTitle).current?.focus();
   }, [pending]);
 
   const decide = async (
@@ -117,10 +117,10 @@ export function DiscountRequestsPanel({ editable }: { editable: boolean }) {
       setRecent((list) => [closed, ...list.filter((kept) => kept.id !== closed.id)]);
       setFailure(null);
       const name = closed.order.customer.name;
-      if (closed.code) {
-        leaving.current = { id: request.id, to: 'code' };
+      if (closed.status === 'GRANTED') {
+        leaving.current = { id: request.id, to: 'applied' };
         setLatest(closed);
-        say(text.granted(closed.code, name), 'check');
+        say(text.granted(name, closed.order.number), 'check');
       } else say(text.rejected(name), 'check');
     } catch (error) {
       // Withdrawn or expired meanwhile: the list read again shows how it ended.
@@ -148,16 +148,10 @@ export function DiscountRequestsPanel({ editable }: { editable: boolean }) {
           {unread ?? failure}
         </p>
       )}
-      {latest?.code && (
+      {latest && (
         <div className="mx-4 flex flex-col gap-1 rounded-control border border-indigo bg-indigo-soft px-4 py-3">
-          <span className="font-semibold">{text.toGive}</span>
-          <output
-            ref={given}
-            tabIndex={-1}
-            aria-label={text.toGive}
-            className="type-title figures tracking-wider"
-          >
-            {latest.code}
+          <output ref={applied} tabIndex={-1} className="font-semibold">
+            {text.appliedTo(latest.order.number)}
           </output>
           <span className="text-ink-2">{latest.order.customer.name}</span>
         </div>
@@ -188,7 +182,7 @@ export function DiscountRequestsPanel({ editable }: { editable: boolean }) {
                 <th className={`${HEAD} w-40`}>{text.head.customer}</th>
                 <th className={HEAD}>{text.head.items}</th>
                 <th className={`${HEAD} w-44`}>{text.head.status}</th>
-                <th className={`${HEAD} w-32`}>{text.head.code}</th>
+                <th className={`${HEAD} w-40`}>{text.head.order}</th>
               </tr>
             </thead>
             <tbody>
@@ -200,7 +194,7 @@ export function DiscountRequestsPanel({ editable }: { editable: boolean }) {
                   <td className={ROW}>{request.order.customer.name}</td>
                   <td className={ROW}>{itemsOf(request)}</td>
                   <td className={ROW}>{statusOf(request)}</td>
-                  <td className={`${ROW} figures font-semibold`}>{request.code}</td>
+                  <td className={`${ROW} figures`}>{request.order.number}</td>
                 </tr>
               ))}
             </tbody>

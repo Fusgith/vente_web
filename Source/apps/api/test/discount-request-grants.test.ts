@@ -1,6 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
-import { orderSchema, paidOrderSchema, quoteSchema } from '@vente-web/shared';
+import {
+  discountCodeListSchema,
+  orderSchema,
+  paidOrderSchema,
+  quoteSchema,
+} from '@vente-web/shared';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { TEST_DATABASE_URL } from './db.js';
@@ -67,7 +72,8 @@ describe.skipIf(!TEST_DATABASE_URL)(
         subtotal: '104500.00',
         orderDiscount: '5000.00',
         total: '99500.00',
-        discountCode: { code: granted.code },
+        // H64: the order says the owner granted it; the code stays in the base, never shown.
+        discountCode: { code: granted.code, granted: true },
         discountRequest: { status: 'GRANTED' },
       });
       expect(granted.order.lines).toMatchObject([
@@ -82,6 +88,11 @@ describe.skipIf(!TEST_DATABASE_URL)(
         orderId: quote.id,
       });
       expect(await t.db.discountCodeItem.count({ where: { codeId: code.id } })).toBe(2);
+      // Never shown, not even in the owner's list of codes (H64).
+      const codes = await request(t.app, 'GET', '/api/v1/discount-codes', {
+        cookie: s.cookies.owner,
+      });
+      expect(discountCodeListSchema.parse(codes.json()).items).toEqual([]);
       expect(await auditActions(t.db, code.id)).toEqual([
         'discount_code.issued',
         'discount_code.used',
@@ -155,6 +166,7 @@ describe.skipIf(!TEST_DATABASE_URL)(
       const frozen = await t.db.invoice.findUniqueOrThrow({ where: { id: invoice.id } });
       expect(frozen.snapshot).toMatchObject({
         discountCode: granted.code,
+        discountGranted: true,
         totals: { discountTotal: '12000.00', total: '107500.00' },
       });
     });

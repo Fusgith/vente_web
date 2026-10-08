@@ -15,6 +15,7 @@ import type { AuditTx } from './audit.js';
 export const CODE_SELECT = {
   id: true,
   code: true,
+  requestId: true,
   items: { select: { productId: true, pct: true, amount: true } },
 } satisfies Prisma.DiscountCodeSelect;
 export type StoredCode = Prisma.DiscountCodeGetPayload<{ select: typeof CODE_SELECT }>;
@@ -156,7 +157,9 @@ export function toQuote(order: StoredOrder): Quote {
     orderDiscountPct: order.orderDiscountPct?.toFixed(2) ?? null,
     orderDiscount: order.orderDiscountAmount.toFixed(2),
     discountTotal: order.discountTotal.toFixed(2),
-    discountCode: code ? { code: code.code, items: grantsOf(code) } : null,
+    discountCode: code
+      ? { code: code.code, granted: code.requestId !== null, items: grantsOf(code) }
+      : null,
     discountRequest: request ? toRequestSummary(request) : null,
     total: order.total.toFixed(2),
     createdAt: order.createdAt.toISOString(),

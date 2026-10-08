@@ -42,6 +42,7 @@ function coded(before: Order = orderWithLines(entry)): Order {
     total: '107500.00',
     discountCode: {
       code: 'R7K4-29QP',
+      granted: false,
       items: [{ productId: SOAP, discount: { kind: 'pct', value: '12' } }],
     },
   };

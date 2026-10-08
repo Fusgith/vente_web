@@ -306,10 +306,12 @@ export const labels = {
         'Un prix a changé depuis l’enregistrement : le devis est passé au nouveau prix. Vérifiez-le avec le client, puis appliquez le code.',
       /** In place of the button once attached: one code per quote, for good (H42). */
       tag: (code: string) => `Code du boss ${code}`,
+      /** In its place for the owner's answer to a request: applied, its code never shown (H64). */
+      granted: 'Remise accordée par le boss',
       /** On the discount of a line the code covers, for screen readers. */
-      onLine: 'accordée par le code du boss',
+      onLine: 'accordée par le boss',
       /** The picker once a code is attached: the customer no longer changes (H42). */
-      customerLocked: (name: string) => `Client : ${name}. Fixé par le code du boss`,
+      customerLocked: (name: string) => `Client : ${name}. Fixé par la remise du boss`,
     },
   },
 

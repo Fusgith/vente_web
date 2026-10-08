@@ -70,7 +70,7 @@ export function RegisterOwnerControls({
     return (
       <span ref={mark} tabIndex={-1} className={`${MARK} border-indigo bg-indigo-soft figures`}>
         <Icon name="key" className="size-5 text-indigo" />
-        {labels.sales.code.tag(code.code)}
+        {code.granted ? labels.sales.code.granted : labels.sales.code.tag(code.code)}
       </span>
     );
   }

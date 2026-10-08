@@ -55,6 +55,7 @@ function snapshot(overrides: Partial<InvoiceSnapshot> = {}): InvoiceSnapshot {
       total: '65000.00',
     },
     discountCode: null,
+    discountGranted: false,
     vat: null,
     vatNotice: '',
     payment: {
@@ -117,6 +118,18 @@ describe('invoice PDF (RG-FAC-02, H33)', () => {
     expect(header(invoiceDocument(snapshot()))).not.toContain('Code de remise');
     const coded = header(invoiceDocument(snapshot({ discountCode: 'R7K4-29QP' })));
     expect(coded).toEqual(expect.arrayContaining(['Code de remise', 'R7K4-29QP']));
+  });
+
+  it('prints the owner’s answer to a request without its code (H64)', () => {
+    const header = texts(
+      (
+        invoiceDocument(snapshot({ discountCode: 'R7K4-29QP', discountGranted: true }))
+          .content as unknown[]
+      )[0],
+    );
+    expect(header).toEqual(expect.arrayContaining(['Remise', 'Accordée par le boss']));
+    expect(header).not.toContain('R7K4-29QP');
+    expect(header).not.toContain('Code de remise');
   });
 
   it('renders to a PDF', async () => {

@@ -1,4 +1,3 @@
-import type { DiscountRequestStatus, Quote } from '@vente-web/shared';
 import { useEffect, useRef, type Dispatch } from 'react';
 
 import { quotesApi } from '../api/quotes.js';
@@ -9,15 +8,9 @@ import type { DraftAction, DraftState } from './draft.js';
 
 const text = labels.requests;
 
-/** The owner's answer, or the end of the wait, told in the band (H53, H54). */
-function decision(status: Exclude<DiscountRequestStatus, 'PENDING'>, quote: Quote): string {
-  if (status !== 'GRANTED') return text.decided[status];
-  return text.decided.GRANTED(quote.discountCode?.code ?? '');
-}
-
 /**
  * The quote on screen follows its request to the owner (T-033b): told of a decision, the tablet
- * reads the quote again — granted, the code applies at once (H53) — and the band says what came
+ * reads the quote again — granted, the discount applies at once (H53, H64) — and the band says what came
  * of it. Back on line, a request still waiting is read again: an answer may have been missed.
  * Once validated, the order is told by its ticket (`OrderNotices`).
  */
@@ -37,7 +30,8 @@ export function useRequestDecisions(draft: DraftState, dispatch: Dispatch<DraftA
         // Already known here (withdrawn from this tablet), or not this request's end.
         if (!after || after.status === 'PENDING' || after.id !== before?.id) return;
         if (after.status === before.status) return;
-        say(decision(after.status, quote), after.status === 'GRANTED' ? 'check' : 'info');
+        // The owner's answer, or the end of the wait (H53, H54); granted, no code is told (H64).
+        say(text.decided[after.status], after.status === 'GRANTED' ? 'check' : 'info');
       },
       () => undefined,
     );
