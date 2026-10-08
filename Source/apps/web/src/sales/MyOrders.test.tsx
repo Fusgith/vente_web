@@ -67,7 +67,7 @@ function mount(handlers: Parameters<typeof fakeApi>[0], initialDraft: DraftState
   render(
     <StatusLineProvider>
       <Frame workspace="sales" name={labels.workspaces.sales.title}>
-        <SalesWorkspace initialDraft={initialDraft} />
+        <SalesWorkspace initialDraft={initialDraft} discounts />
       </Frame>
     </StatusLineProvider>,
   );

@@ -184,6 +184,19 @@ export function saveBody(draft: DraftState): QuoteSave | null {
 
 export const saveSignature = (draft: DraftState) => JSON.stringify(saveBody(draft));
 
+/**
+ * The quote without any discount, for a salesperson who gives none (H60): the saved body stays,
+ * so the screen shows it changed and saving it again drops the discounts. Unchanged if none.
+ */
+export function withoutDiscounts(draft: DraftState): DraftState {
+  if (!draft.orderDiscount && draft.lines.every((line) => !line.discount)) return draft;
+  return {
+    ...draft,
+    lines: draft.lines.map((line) => ({ ...line, discount: null })),
+    orderDiscount: null,
+  };
+}
+
 /** Saved once, and changed since: the screen no longer matches the saved quote. */
 export const unsavedChanges = (draft: DraftState) =>
   !!draft.saved && saveSignature(draft) !== draft.saved.body;

@@ -25,6 +25,8 @@ export const SETTINGS: Record<string, unknown> = {
   day_end_time: '23:59',
   quote_validity_days: 7,
   default_max_discount_pct: 0,
+  // H60: the salesperson gives no discount until the admin allows it.
+  sales_discount_enabled: false,
   'discount_code.length': 8,
   customer_categories: ['Divers', 'Régulier', 'Gros contrat'],
   discount_reasons: ['Client fidèle', 'Achat en volume', 'Article abîmé', 'Geste commercial'],

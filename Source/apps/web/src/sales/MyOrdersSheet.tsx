@@ -27,8 +27,11 @@ const BACK_TO_QUOTE = new Set([
 interface MyOrdersSheetProps {
   /** The screen's quote has changes not saved: taking up another asks first. */
   unsaved: boolean;
-  /** Puts the quote on the screen; rejects when it could not be read. */
-  onTakeUp: (id: string) => Promise<void>;
+  /**
+   * Puts the quote on the screen; rejects when it could not be read. Resolves with the sentence to
+   * say when it differs from the usual one (discounts removed, H60).
+   */
+  onTakeUp: (id: string) => Promise<string | void>;
   onClose: () => void;
 }
 
@@ -75,8 +78,8 @@ export function MyOrdersSheet({ unsaved, onTakeUp, onClose }: MyOrdersSheetProps
     setReplacing(null);
     setBusy(true);
     try {
-      await onTakeUp(row.id);
-      say(text.takenUp(row.number), 'check');
+      const note = await onTakeUp(row.id);
+      say(note || text.takenUp(row.number), 'check');
       onClose();
     } catch (error) {
       sayError(errorMessage(error));

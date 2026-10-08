@@ -22,6 +22,7 @@ import { recordAudit, type AuditSnapshot, type AuditTx } from './audit.js';
 import { findCustomer } from './customers.js';
 import { CODE_SELECT, findOrder, grantsOf, toQuote } from './order-view.js';
 import { defaultDiscountCap, inForceAt, unitCap } from './product-hits.js';
+import { assertSalesDiscount } from './sales-discount.js';
 import { nextSequenceValue } from './sequences.js';
 import { readSetting } from './settings.js';
 import { shopYear } from './shop-time.js';
@@ -246,6 +247,7 @@ export async function createQuote(db: Db, actor: Actor, input: QuoteSave): Promi
   await assertActiveCustomer(db, input.customerId);
   const lines = await priceLines(db, input.lines);
   const totals = totalsWithinCaps(lines, input.orderDiscount);
+  if (totals.discountTotal !== '0.00') await assertSalesDiscount(db, actor);
   const prefix = await quotePrefix(db);
   return db.$transaction(async (tx) => {
     const { id } = await tx.order.create({
@@ -314,6 +316,7 @@ export async function updateQuote(
   }
   const codeId = code?.id ?? null;
   const totals = totalsWithinCaps(lines, input.orderDiscount, grantsOf(code));
+  if (totals.discountTotal !== '0.00') await assertSalesDiscount(db, actor);
   return db.$transaction(async (tx) => {
     const before = await loadQuote(tx, id);
     // Guarded on the version read and on DRAFT: a save or a validation committed meanwhile wins.

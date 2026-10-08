@@ -31,7 +31,7 @@ function mount(
   render(
     <StatusLineProvider>
       <Frame workspace="sales" name={labels.workspaces.sales.title}>
-        <SalesWorkspace initialDraft={initialDraft} />
+        <SalesWorkspace initialDraft={initialDraft} discounts />
       </Frame>
     </StatusLineProvider>,
   );

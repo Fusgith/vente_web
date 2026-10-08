@@ -20,7 +20,7 @@ function mount() {
   render(
     <StatusLineProvider>
       <Frame workspace="sales" name={labels.workspaces.sales.title}>
-        <SalesWorkspace />
+        <SalesWorkspace discounts />
       </Frame>
     </StatusLineProvider>,
   );

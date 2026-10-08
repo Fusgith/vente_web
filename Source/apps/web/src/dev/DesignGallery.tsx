@@ -209,7 +209,7 @@ function Sales({ draft, search, news = null }: SalesProps) {
   return (
     <DemoAuth state={{ status: 'authenticated', me }}>
       <AppShell me={me} realtime={false}>
-        <SalesWorkspace initialDraft={draft} />
+        <SalesWorkspace initialDraft={draft} discounts />
         <DemoNews news={news} />
       </AppShell>
     </DemoAuth>

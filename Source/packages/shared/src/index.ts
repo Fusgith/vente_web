@@ -28,6 +28,7 @@ export * from './orders.js';
 export * from './payments.js';
 export * from './promotions.js';
 export * from './reservation-days.js';
+export * from './sales-discount.js';
 export * from './push.js';
 export * from './queues.js';
 export * from './quotes.js';

@@ -15,6 +15,7 @@ import { measureLine } from './discount-entry.js';
 import { DiscountEntryField, EntryField, FieldMessage, KindToggle } from './DiscountInput.js';
 import { followsGrant, grantedDiscount, type DraftLine } from './draft.js';
 import { entryToQuantity, nextEntry, type PadKey } from './pad-entry.js';
+import { useSalesDiscount } from './sales-discount.js';
 import { useDiscountTyping } from './useDiscountTyping.js';
 
 interface QuantityPadProps {
@@ -35,7 +36,8 @@ interface QuantityPadProps {
  * Big-button pad of the line just added or tapped, in the tool pane (RG-DEV-06 §4): the quantity
  * shows selected, the first key replaces it; the sale unit is chosen by buttons, never a
  * drop-down, each with its price and its stock in that unit. The discount is typed on the same
- * keys, in % or in MGA, its maximum shown and never passed (RG-REM-02/06). Everything fits the
+ * keys, in % or in MGA, its maximum shown and never passed (RG-REM-02/06) — when the admin lets the
+ * salesperson discount (H60). Everything fits the
  * tool pane of the tablet held landscape (1280 × 800). « Valider » is the tall key on the right,
  * « Supprimer la ligne » far from it, in the header.
  */
@@ -54,6 +56,7 @@ export function QuantityPad({
   const [field, setField] = useState<'qty' | 'discount'>('qty');
   const pad = labels.sales.pad;
   const text = labels.sales.discount;
+  const discounts = useSalesDiscount();
 
   // The cap applies to the gross of the quantity being typed (RG-REM-06).
   const pendingQty = (entry === null ? line.qty : entryToQuantity(entry)) ?? line.qty;
@@ -96,6 +99,10 @@ export function QuantityPad({
     if (qty === null) {
       setField('qty');
       return setInvalid(true);
+    }
+    if (!discounts) {
+      onConfirm(qty, null);
+      return onClose();
     }
     // Fewer items, a smaller maximum: an amount typed before may no longer fit.
     if (!measureLine(sized, qty, discount.value).withinLimit) {
@@ -176,21 +183,27 @@ export function QuantityPad({
               }
               onActivate={() => setField('qty')}
             />
-            <DiscountEntryField
-              typing={discount}
-              active={field === 'discount'}
-              onActivate={() => setField('discount')}
-              disabled={closed && discount.value === null}
-            />
-            <FieldMessage
-              hint={hint}
-              alert={invalid ? pad.invalid : discount.refused ? beyond : null}
-            />
-            <KindToggle
-              typing={discount}
-              onActivate={() => setField('discount')}
-              disabled={closed && discount.value === null}
-            />
+            {discounts ? (
+              <>
+                <DiscountEntryField
+                  typing={discount}
+                  active={field === 'discount'}
+                  onActivate={() => setField('discount')}
+                  disabled={closed && discount.value === null}
+                />
+                <FieldMessage
+                  hint={hint}
+                  alert={invalid ? pad.invalid : discount.refused ? beyond : null}
+                />
+                <KindToggle
+                  typing={discount}
+                  onActivate={() => setField('discount')}
+                  disabled={closed && discount.value === null}
+                />
+              </>
+            ) : (
+              <FieldMessage hint="" alert={invalid ? pad.invalid : null} />
+            )}
           </div>
         </div>
 

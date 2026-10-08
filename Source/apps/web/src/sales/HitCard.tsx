@@ -11,6 +11,7 @@ import { useId } from 'react';
 import { labels } from '../labels.js';
 import { tagClass } from '../ui/button.js';
 import { capSummary } from './cap-summary.js';
+import { useSalesDiscount } from './sales-discount.js';
 
 /** The mark of a product the owner wants proposed today (RG-DEV-06 §6). */
 const PROMOTED_TAG =
@@ -30,7 +31,8 @@ interface HitProps {
  * up in columns; a third unit goes on a second line, under the second one.
  */
 export function HitRow({ hit, onPick }: HitProps) {
-  const cap = capSummary(hit.units);
+  // The cap is no talking point when the salesperson gives no discount (H60).
+  const cap = useSalesDiscount() ? capSummary(hit.units) : null;
   const nameId = useId();
   return (
     <li className="flex flex-col gap-2 border-b border-rule py-2 last:border-b-0 @md:flex-row @md:items-center @md:gap-3 @md:py-1">

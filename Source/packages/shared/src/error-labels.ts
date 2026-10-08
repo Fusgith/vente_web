@@ -45,6 +45,8 @@ export const ERROR_LABELS = {
   QUOTE_DISCOUNT_BEYOND_CAP:
     'Une remise dépasse son plafond : corrigez-la, ou demandez un code au boss.',
   QUOTE_CHANGED: 'Ce devis a été modifié entre-temps : rouvrez-le avant de l’enregistrer.',
+  SALES_DISCOUNT_DISABLED:
+    'Le commercial n’accorde pas de remise : le client peut en demander une à la caisse, avant de payer.',
   DISCOUNT_CODE_NOT_ACTIVE: 'Ce code n’est plus actif : il a été utilisé, révoqué, ou il a expiré.',
   DISCOUNT_CODE_UNKNOWN: 'Ce code de remise n’existe pas : vérifiez sa saisie.',
   DISCOUNT_CODE_OTHER_CUSTOMER: 'Ce code de remise a été émis pour un autre client.',

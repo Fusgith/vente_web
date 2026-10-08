@@ -2,6 +2,7 @@ import { ROLE_LABELS, type AuthMe, type Role } from '@vente-web/shared';
 import { useState, type ReactNode } from 'react';
 
 import { AccountsPanel } from '../admin/AccountsPanel.js';
+import { SalesDiscountPanel } from '../admin/SalesDiscountPanel.js';
 import { errorMessage } from '../api/error-message.js';
 import { useAuth } from '../auth/context.js';
 import { switchableRoles } from '../auth/roles.js';
@@ -162,6 +163,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         <AccountsPanel />
         {/* RG-STK-02 (H45): how long a validated order keeps its goods. */}
         <ReservationDaysPanel />
+        {/* H60: whether the salesperson discounts at all. */}
+        <SalesDiscountPanel />
         {/* RG-AUD-01: who did what, read only. */}
         <AuditLogPanel />
       </div>

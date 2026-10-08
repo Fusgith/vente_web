@@ -2,6 +2,21 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 09/10/2026 — T-087 : remises du commercial au choix de l'admin (H60) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Paramètre `sales_discount_enabled` (désactivé par défaut, seed compris) : lu par tous (`GET /sales-discount`), modifié par l'admin seul (`PUT`), journalisé `sales_discount.set` (avant → après).
+- API : désactivé, le commercial ne peut ni enregistrer un devis remisé (ligne ou total), ni saisir un code du boss, ni demander une remise (`403 SALES_DISCOUNT_DISABLED`) ; le responsable remise toujours, le caissier demande toujours.
+- Page admin : case « Le commercial peut accorder des remises ».
+- Tablette : désactivé, ni colonne Remise, ni remise sur le total, ni boutons du boss, ni plafond sur les résultats ou le pavé. Un devis remisé repris revient sans ses remises (« Devis D-… repris sans ses remises »), à enregistrer.
+- Tests : API 4 (`sales-discount.test.ts` ; les autres suites activent le paramètre dans `reset()`), web 5 (panneau admin, tablette sans remise).
+
+**Reste** : T-088 à T-096 dans l'ordre ; T-056 ; T-010c attend le logo.
+
+**Décisions** : aucune nouvelle (H60 codée selon sa formulation).
+
+**Questions** : H60 à H69 à valider (T-001d).
+
 ## 09/10/2026 — Commentaires du client : hypothèses H60 à H69 — agent : Claude Code (Opus 5.5)
 
 **Fait** :

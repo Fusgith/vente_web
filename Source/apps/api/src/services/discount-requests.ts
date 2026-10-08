@@ -23,6 +23,7 @@ import {
   type StoredOrder,
 } from './order-view.js';
 import { dayEndTime, loadOrder } from './orders.js';
+import { assertSalesDiscount } from './sales-discount.js';
 import { readSetting } from './settings.js';
 import { nextShopTime, shopDayStart } from './shop-time.js';
 
@@ -105,6 +106,7 @@ export async function createDiscountRequest(
   input: DiscountRequestCreate,
   now = new Date(),
 ): Promise<{ order: Order; requestId: string }> {
+  await assertSalesDiscount(db, actor);
   if (!(await discountReasons(db)).includes(input.reason)) {
     throw new AppError(400, 'DISCOUNT_REASON_UNKNOWN');
   }

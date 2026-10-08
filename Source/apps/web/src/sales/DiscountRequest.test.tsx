@@ -86,7 +86,7 @@ function mount(handlers: Parameters<typeof fakeApi>[0], initialDraft: DraftState
     <RealtimeProvider me={meFor({ user: RIJA, activeRole: 'sales' })}>
       <StatusLineProvider>
         <Frame workspace="sales" name={labels.workspaces.sales.title}>
-          <SalesWorkspace initialDraft={initialDraft} />
+          <SalesWorkspace initialDraft={initialDraft} discounts />
         </Frame>
       </StatusLineProvider>
     </RealtimeProvider>,

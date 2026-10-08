@@ -18,6 +18,7 @@ import { quoteInput } from './discount-entry.js';
 import { unsavedChanges, type DraftState } from './draft.js';
 import { OrderDiscountSheet } from './OrderDiscountSheet.js';
 import { OwnerControls } from './OwnerControls.js';
+import { useSalesDiscount } from './sales-discount.js';
 import type { QuoteBusy, RequestInput } from './useQuoteActions.js';
 
 interface DraftTableProps {
@@ -87,6 +88,8 @@ export function DraftTable({
   mine,
 }: DraftTableProps) {
   const { lines, selected } = draft;
+  // No discount column when the salesperson gives none (H60).
+  const discounts = useSalesDiscount();
   const quote = computeQuote(quoteInput(draft));
   // Lines of the products the last validation found short of stock (RG-CMD-02).
   const short = new Set(draft.shortages?.map((shortage) => shortage.productId));
@@ -133,7 +136,7 @@ export function DraftTable({
                   <th className={HEAD + ' w-22 text-right'}>{text.quantity}</th>
                   <th className={HEAD + ' w-24'}>{text.unit}</th>
                   <AmountHead label={text.unitPrice} width="w-28" />
-                  <AmountHead label={text.discount} width="w-28" />
+                  {discounts && <AmountHead label={text.discount} width="w-28" />}
                   <AmountHead label={text.netAmount} width="w-34" />
                 </tr>
               </thead>
@@ -192,26 +195,28 @@ export function DraftTable({
                       <td className={row + ' text-right figures'}>
                         {formatAmount(line.unit.price)}
                       </td>
-                      <td
-                        className={`${row} text-right leading-5 figures ${totals.withinLimit ? '' : 'text-madder'}`}
-                      >
-                        {!isZero(totals.discount) && (
-                          <>
-                            <span className="block font-semibold">
-                              {text.minus(formatAmount(totals.discount))}
-                            </span>
-                            <span className="flex items-center justify-end gap-1 text-14 text-ink-2">
-                              {totals.source === 'CODE' && (
-                                <>
-                                  <Icon name="key" className="size-4 text-indigo" />
-                                  <span className="sr-only">{labels.sales.code.onLine}</span>
-                                </>
-                              )}
-                              {text.pct(formatQty(totals.discountPct))}
-                            </span>
-                          </>
-                        )}
-                      </td>
+                      {discounts && (
+                        <td
+                          className={`${row} text-right leading-5 figures ${totals.withinLimit ? '' : 'text-madder'}`}
+                        >
+                          {!isZero(totals.discount) && (
+                            <>
+                              <span className="block font-semibold">
+                                {text.minus(formatAmount(totals.discount))}
+                              </span>
+                              <span className="flex items-center justify-end gap-1 text-14 text-ink-2">
+                                {totals.source === 'CODE' && (
+                                  <>
+                                    <Icon name="key" className="size-4 text-indigo" />
+                                    <span className="sr-only">{labels.sales.code.onLine}</span>
+                                  </>
+                                )}
+                                {text.pct(formatQty(totals.discountPct))}
+                              </span>
+                            </>
+                          )}
+                        </td>
+                      )}
                       <td className={row + ' text-right font-semibold figures'}>
                         {formatAmount(totals.net)}
                       </td>
@@ -263,27 +268,30 @@ function Totals({
   busy,
 }: TotalsProps) {
   const [ordering, setOrdering] = useState(false);
+  const discounts = useSalesDiscount();
   const upToDate = !!draft.saved && !unsavedChanges(draft);
   return (
     <div className="flex shrink-0 flex-wrap items-end gap-x-6 gap-y-2 border-t-2 border-ink px-4 py-2">
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          aria-haspopup="dialog"
-          onClick={() => setOrdering(true)}
-          className={buttonClass('secondary', 'md', 'shrink-0')}
-        >
-          <Icon name="percent" className="size-5" />
-          {labels.sales.discount.order}
-        </button>
-        <OwnerControls
-          draft={draft}
-          busy={busy}
-          onAttachCode={onAttachCode}
-          onAsk={onAsk}
-          onWithdraw={onWithdraw}
-        />
-      </div>
+      {discounts && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            onClick={() => setOrdering(true)}
+            className={buttonClass('secondary', 'md', 'shrink-0')}
+          >
+            <Icon name="percent" className="size-5" />
+            {labels.sales.discount.order}
+          </button>
+          <OwnerControls
+            draft={draft}
+            busy={busy}
+            onAttachCode={onAttachCode}
+            onAsk={onAsk}
+            onWithdraw={onWithdraw}
+          />
+        </div>
+      )}
       {/* The amount due, and under it the save: the last step, at the right hand's reach. */}
       <div className="ml-auto flex flex-col items-end gap-2">
         <TotalsList totals={quote} orderDiscountWrong={!quote.orderWithinLimit} />

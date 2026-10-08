@@ -76,6 +76,9 @@ export async function createTestApp(
       logs.length = 0;
       clearSettingsCache();
       await resetDb(db);
+      // The suites written before H60 discount as the salesperson: the setting is on for them,
+      // `sales-discount.test.ts` turns it off.
+      await db.setting.create({ data: { key: 'sales_discount_enabled', value: true } });
     },
     close: async () => {
       await app.close();

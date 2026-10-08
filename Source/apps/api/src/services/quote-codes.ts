@@ -29,6 +29,7 @@ import {
   totalsWithinCaps,
   type PricedLine,
 } from './quotes.js';
+import { assertSalesDiscount } from './sales-discount.js';
 
 /** The quote the code goes on: a draft of this salesperson (or any for the manager), unchanged. */
 async function draftToCode(db: Db, actor: Actor, id: string, version: number) {
@@ -125,6 +126,7 @@ export async function attachDiscountCode(
   { code: typed, version }: DiscountCodeAttach,
   now = new Date(),
 ): Promise<Quote> {
+  await assertSalesDiscount(db, actor);
   const order = await draftToCode(db, actor, id, version);
   const code = await usableCode(db, typed, order, now);
   const grants = grantsOf(code);

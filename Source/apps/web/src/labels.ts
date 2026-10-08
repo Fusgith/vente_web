@@ -5,6 +5,7 @@ import { auditLabels } from './labels-audit.js';
 import { capsLabels } from './labels-caps.js';
 import { codesLabels } from './labels-codes.js';
 import { reservationLabels } from './labels-reservation.js';
+import { salesDiscountLabels } from './labels-sales-discount.js';
 import { customersLabels } from './labels-customers.js';
 import { promotionsLabels } from './labels-promotions.js';
 import { closingLabels } from './labels-closing.js';
@@ -331,6 +332,8 @@ export const labels = {
   caps: capsLabels,
   /** Reservation duration, general and per customer (T-022b, H45). */
   reservation: reservationLabels,
+  /** The salesperson's discounts, allowed by the admin (T-087, H60). */
+  salesDiscount: salesDiscountLabels,
   accounts: accountsLabels,
   audit: auditLabels,
   customers: customersLabels,
