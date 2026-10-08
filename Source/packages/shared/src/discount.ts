@@ -35,8 +35,8 @@ export const discountEntrySchema = z.discriminatedUnion('kind', [
 ]);
 export type DiscountEntry = z.infer<typeof discountEntrySchema>;
 
-/** Stored on lines and orders as `discount_source`. */
-export type DiscountSource = 'NONE' | 'WITHIN_CAP' | 'CODE';
+/** Stored on lines and orders as `discount_source`: RULE, a suggested discount (H62). */
+export type DiscountSource = 'NONE' | 'WITHIN_CAP' | 'RULE' | 'CODE';
 
 const money = (value: bigint) => fromScaled(value, 2);
 const sum = (values: readonly bigint[]) => values.reduce((total, value) => total + value, 0n);
@@ -165,6 +165,8 @@ export interface QuoteLineInput {
   discount: DiscountEntry | null;
   /** Discount granted on this line by the owner's code (RG-REM-04): it replaces the cap. */
   granted?: DiscountEntry | null;
+  /** Rate of the line's suggested discount (H62): the limit is the larger of it and the cap. */
+  suggestedPct?: string | null;
 }
 
 export interface QuoteInput {
@@ -181,10 +183,10 @@ export interface QuoteLineTotals {
   discount: string;
   /** Rate shown in the Remise column: as typed, or the equivalent of an amount. */
   discountPct: string;
-  /** Largest discount allowed on this line: its cap, or the code's grant. */
+  /** Largest discount allowed on this line: its cap or its suggested discount, or the code's grant. */
   maxDiscount: string;
   net: string;
-  /** Room left under the cap once the line discount is taken (glossary: discount headroom). */
+  /** Room left under the line's limit once its discount is taken (glossary: discount headroom). */
   headroom: string;
   /** Part of the order discount carried by this line; not printed (RG-REM-06). */
   orderDiscountShare: string;
@@ -213,17 +215,24 @@ export interface QuoteTotals {
   withinLimits: boolean;
 }
 
-function sourceOf(discount: bigint, granted: DiscountEntry | null | undefined): DiscountSource {
+/** A code's grant first; then the suggested discount when it covers the discount (H62). */
+function sourceOf(
+  discount: bigint,
+  granted: DiscountEntry | null | undefined,
+  ruled = 0n,
+): DiscountSource {
   if (discount === 0n) return 'NONE';
-  return granted ? 'CODE' : 'WITHIN_CAP';
+  if (granted) return 'CODE';
+  return discount <= ruled ? 'RULE' : 'WITHIN_CAP';
 }
 
 /**
  * Totals of a quote with its line and order discounts (RG-REM-06, RG-DEV-05).
  *
  * A line discount is checked against the cap turned into an amount of the gross the same way
- * as a typed rate, so the cap typed as a rate and the maximum shown in MGA always agree. The
- * order discount is bounded by the headroom — the cap of each line, in MGA, minus its line
+ * as a typed rate, so the cap typed as a rate and the maximum shown in MGA always agree; a
+ * suggested discount larger than the cap takes its place (H62). The order discount is bounded by
+ * the headroom — the limit of each line, in MGA, minus its line
  * discount, never below zero — and spread over the lines pro rata of that headroom, so that no
  * product ends beyond its cap (H23). A code covering the total replaces that bound, and its
  * discount is spread pro rata of the line nets.
@@ -232,15 +241,18 @@ export function computeQuote(input: QuoteInput): QuoteTotals {
   const lines = input.lines.map((line) => {
     const gross = toScaled(lineGross(line.quantity, line.unitPrice), 2);
     const capped = rateOf(gross, rate(line.capPct));
-    const limit = line.granted ? min(entryCents(line.granted, gross), gross) : capped;
+    const ruled = line.suggestedPct ? rateOf(gross, rate(line.suggestedPct)) : 0n;
+    const ceiling = capped > ruled ? capped : ruled;
+    const limit = line.granted ? min(entryCents(line.granted, gross), gross) : ceiling;
     const discount = line.discount ? entryCents(line.discount, gross) : 0n;
     return {
       line,
       gross,
       limit,
+      ruled,
       discount,
       net: gross - discount,
-      headroom: floorZero(capped - discount),
+      headroom: floorZero(ceiling - discount),
     };
   });
 
@@ -257,7 +269,7 @@ export function computeQuote(input: QuoteInput): QuoteTotals {
   const weights = granted ? nets : lines.map((line) => line.headroom);
   const shares = splitProRata(orderDiscount, sum(weights) > 0n ? weights : nets);
 
-  const totals = lines.map(({ line, gross, limit, discount, net, headroom }, index) => ({
+  const totals = lines.map(({ line, gross, limit, ruled, discount, net, headroom }, index) => ({
     gross: money(gross),
     discount: money(discount),
     discountPct:
@@ -268,7 +280,7 @@ export function computeQuote(input: QuoteInput): QuoteTotals {
     net: money(net),
     headroom: money(headroom),
     orderDiscountShare: money(shares[index] ?? 0n),
-    source: sourceOf(discount, line.granted),
+    source: sourceOf(discount, line.granted, ruled),
     withinLimit: discount <= limit,
   }));
   const orderWithinLimit = orderDiscount <= maxOrderDiscount;

@@ -22,6 +22,7 @@ export * from './discount-caps.js';
 export * from './discount-codes.js';
 export * from './discount-request-list.js';
 export * from './discount-requests.js';
+export * from './discount-rules.js';
 export * from './discount.js';
 export * from './invoices.js';
 export * from './orders.js';

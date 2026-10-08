@@ -19,6 +19,7 @@ import { SupervisionWorkspace } from '../manager/SupervisionWorkspace.js';
 import { DiscountCapsPanel } from '../owner/DiscountCapsPanel.js';
 import { ReservationDaysPanel } from '../owner/ReservationDaysPanel.js';
 import { DiscountCodesPanel } from '../owner/DiscountCodesPanel.js';
+import { DiscountRulesPanel } from '../owner/DiscountRulesPanel.js';
 import { PromotionsPanel } from '../owner/PromotionsPanel.js';
 import { DiscountRequestsPanel } from '../owner/DiscountRequestsPanel.js';
 import { RegisterWorkspace } from '../register/RegisterWorkspace.js';
@@ -146,6 +147,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         <StockPanel />
         {/* RG-REM-01 (H15): the caps the owner set, read-only. */}
         <DiscountCapsPanel editable={false} />
+        {/* H62: the owner's discount rules, read-only. */}
+        <DiscountRulesPanel editable={false} />
         {/* RG-DEV-04 (H49 a): the manager classes the customers. */}
         <CustomersPanel />
         {/* RG-AUD-01: who did what, read only. */}
@@ -191,6 +194,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
       {owner && <RegisterSessionsPanel />}
       {/* RG-REM-01 (H15): the owner sets the discount caps. */}
       {owner && <DiscountCapsPanel editable />}
+      {/* H62: the owner's discount rules, which the register applies beyond the caps. */}
+      {owner && <DiscountRulesPanel editable />}
       {/* RG-REM-04 (H41): the owner issues and revokes the discount codes. */}
       {owner && <DiscountCodesPanel />}
       {/* RG-STK-02 (H45): how long a validated order keeps its goods. */}

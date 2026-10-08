@@ -4,6 +4,7 @@ import { accountsLabels } from './labels-accounts.js';
 import { auditLabels } from './labels-audit.js';
 import { capsLabels } from './labels-caps.js';
 import { codesLabels } from './labels-codes.js';
+import { discountRulesLabels } from './labels-discount-rules.js';
 import { reservationLabels } from './labels-reservation.js';
 import { salesDiscountLabels } from './labels-sales-discount.js';
 import { customersLabels } from './labels-customers.js';
@@ -332,6 +333,8 @@ export const labels = {
   supervision: supervisionLabels,
   stock: stockLabels,
   caps: capsLabels,
+  /** The owner's discount rules (T-090, H62). */
+  discountRules: discountRulesLabels,
   /** Reservation duration, general and per customer (T-022b, H45). */
   reservation: reservationLabels,
   /** The salesperson's discounts, allowed by the admin (T-087, H60). */

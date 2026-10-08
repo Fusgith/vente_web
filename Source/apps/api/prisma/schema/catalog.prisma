@@ -16,7 +16,8 @@ model Category {
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  products Product[]
+  products      Product[]
+  discountRules DiscountRule[]
 
   @@map("categories")
 }
@@ -40,15 +41,16 @@ model Product {
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  category     Category?             @relation(fields: [categoryId], references: [id])
-  units        ProductUnit[]
-  stock        ProductStock?
-  movements    StockMovement[]
-  reservations Reservation[]
-  orderLines   OrderLine[]
-  codeItems    DiscountCodeItem[]
-  requestItems DiscountRequestItem[]
-  promotions   ProductPromotion[]
+  category      Category?             @relation(fields: [categoryId], references: [id])
+  units         ProductUnit[]
+  stock         ProductStock?
+  movements     StockMovement[]
+  reservations  Reservation[]
+  orderLines    OrderLine[]
+  codeItems     DiscountCodeItem[]
+  requestItems  DiscountRequestItem[]
+  promotions    ProductPromotion[]
+  discountRules DiscountRule[]
 
   @@index([categoryId])
   @@index([name])
@@ -134,4 +136,43 @@ model ProductPromotion {
   @@index([productId])
   @@index([endsOn])
   @@map("product_promotions")
+}
+
+enum DiscountRuleKind {
+  QUANTITY
+  CUSTOMER_CATEGORY
+  PROMOTION
+
+  @@map("discount_rule_kind")
+}
+
+/// A discount the owner plans (H62): by quantity, by customer category or over a promotion
+/// period, on one product, one category of products or, both null, every product. Never applied
+/// by itself: the cashier applies it at the customer's request (H61); it widens the line's limit.
+model DiscountRule {
+  id               String           @id @default(uuid(7)) @db.Uuid
+  kind             DiscountRuleKind
+  /// At most one of the two (CHECK in the migration).
+  productId        String?          @map("product_id") @db.Uuid
+  categoryId       String?          @map("category_id") @db.Uuid
+  /// In base units of one product (RG-ART-06), for QUANTITY only.
+  minQty           Decimal?         @map("min_qty") @db.Decimal(12, 2)
+  /// One of the shop's customer categories (H49 a), for CUSTOMER_CATEGORY only.
+  customerCategory String?          @map("customer_category") @db.VarChar(40)
+  /// More than 0, 100 at most (CHECK in the migration).
+  pct              Decimal          @db.Decimal(5, 2)
+  /// Shop days, both included; both set for PROMOTION, ends not before starts.
+  startsOn         DateTime?        @map("starts_on") @db.Date
+  endsOn           DateTime?        @map("ends_on") @db.Date
+  isActive         Boolean          @default(true) @map("is_active")
+  createdById      String           @map("created_by") @db.Uuid
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  product   Product?  @relation(fields: [productId], references: [id])
+  category  Category? @relation(fields: [categoryId], references: [id])
+  createdBy User      @relation(fields: [createdById], references: [id])
+
+  @@index([isActive])
+  @@map("discount_rules")
 }

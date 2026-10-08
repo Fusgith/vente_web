@@ -11,6 +11,7 @@ import { by, type Actor } from './actor.js';
 import { recordAudit, type AuditTx } from './audit.js';
 import { codeLength, drawCode, DRAWS, stored } from './discount-codes.js';
 import { findRequest, lockOrder } from './discount-requests.js';
+import { suggestedOn } from './discount-rules.js';
 import { snapshot as orderSnapshot, withCode, writeGrants } from './order-changes.js';
 import { findOrder, toOrder, toQuote, usedCode, type StoredOrder } from './order-view.js';
 import { dayEndTime } from './orders.js';
@@ -111,7 +112,12 @@ export async function grantDiscountRequest(
       const discount = answers.get(item.id);
       return discount ? [{ productId: item.productId, discount }] : [];
     });
-    const applied = withCode(order, grants, 'DISCOUNT_REQUEST_NOTHING_COVERED');
+    const applied = withCode(
+      order,
+      grants,
+      'DISCOUNT_REQUEST_NOTHING_COVERED',
+      await suggestedOn(tx, order, now),
+    );
     assertNotFree(applied.totals, 'DISCOUNT_REQUEST_FREE_ORDER');
 
     const codeId = await insertCode(tx, actor, order, id, { length, expiresAt, now });

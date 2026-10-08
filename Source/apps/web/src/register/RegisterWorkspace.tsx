@@ -4,6 +4,7 @@ import {
   ticketLabel,
   type DiscountEntry,
   type Order,
+  type OrderDiscounts,
   type PaymentInput,
   type QueueItem,
   type QuoteLine,
@@ -17,9 +18,9 @@ import { paymentsApi } from '../api/payments.js';
 import { queuesApi } from '../api/queues.js';
 import { labels } from '../labels.js';
 import { useStatusLine } from '../shell/status-line.js';
-import { isZero } from '../ui/document-table.js';
 import { CloseRegisterSheet } from './CloseRegisterSheet.js';
 import { OpenRegisterPanel } from './OpenRegisterPanel.js';
+import { broughtDown } from './order-discounts.js';
 import { OrderControl } from './OrderControl.js';
 import { QueueSummary } from './QueueSummary.js';
 import { QueueTable } from './QueueTable.js';
@@ -57,15 +58,6 @@ const attachedMeanwhile = (order: Order, typed: string, sent: Order) =>
   !!order.discountCode &&
   order.version === sent.version + 1 &&
   normalizeDiscountCode(order.discountCode.code) === normalizeDiscountCode(typed);
-
-/** The total's discount, which the code does not cover, brought down to the headroom (H42). */
-function broughtDown(sent: Order, order: Order): boolean {
-  const covered = order.discountCode?.items.some((item) => item.productId === null) ?? false;
-  if (covered || isZero(sent.orderDiscount)) return false;
-  return sent.orderDiscountPct !== null
-    ? order.orderDiscountPct !== sent.orderDiscountPct
-    : order.orderDiscount !== sent.orderDiscount;
-}
 
 /**
  * The cashier's screen. Without a customer: the register queue live, and the call of the next
@@ -189,26 +181,29 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
   };
 
   /**
-   * A discount within the caps at the customer's request (H61): a line by its position, the total
-   * for null; a line raised may bring the total down to the headroom left (H23), the band says so.
+   * Discounts within the caps at the customer's request (H61), or the rules' suggested ones in one
+   * go (H62); a line raised may bring the total down to the headroom left (H23), the band says so.
    */
-  const discount = (position: number | null, entry: DiscountEntry | null) => {
+  const discountWith = (body: Omit<OrderDiscounts, 'version'>, said: string) => {
     const sent = atRegister.order;
     if (!sent) return Promise.resolve(false);
     return act(
-      () =>
-        ordersApi.discount(sent.id, {
-          version: sent.version,
-          lines: position === null ? [] : [{ position, discount: entry }],
-          ...(position === null ? { orderDiscount: entry } : {}),
-        }),
+      () => ordersApi.discount(sent.id, { version: sent.version, ...body }),
       (order) =>
-        (entry ? text.discountApplied(position) : text.discountRemoved(position)) +
-        (position !== null && broughtDown(sent, order)
+        said +
+        (body.lines.length > 0 && broughtDown(sent, order)
           ? text.totalLowered(formatMga(order.orderDiscount))
           : ''),
     );
   };
+  /** A line by its position, the total for null. */
+  const discount = (position: number | null, entry: DiscountEntry | null) =>
+    discountWith(
+      position === null
+        ? { lines: [], orderDiscount: entry }
+        : { lines: [{ position, discount: entry }] },
+      entry ? text.discountApplied(position) : text.discountRemoved(position),
+    );
 
   /** The code on the order: the screen shows what it grants; the band says so. */
   const codeAttached = (order: Order, sent: Order) => {
@@ -349,6 +344,9 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
                 onLower={(line, qty) => adjust(line, qty)}
                 onRemove={(line) => adjust(line, null)}
                 onDiscount={discount}
+                onApplySuggested={(lines) =>
+                  discountWith({ lines }, text.suggestedApplied(lines.length))
+                }
                 onCancel={(reason) => {
                   const order = atRegister.order;
                   if (!order) return Promise.resolve(false);

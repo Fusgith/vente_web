@@ -13,6 +13,7 @@ import type { Db } from '../db.js';
 import { AppError } from '../errors.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit } from './audit.js';
+import { suggestedOn } from './discount-rules.js';
 import {
   amount,
   atMyRegister,
@@ -35,9 +36,10 @@ import { assertNotFree, orderAmounts } from './quotes.js';
  * (RG-CMD-04): a line changed takes its new discount, the others keep theirs to the cent; a line
  * the owner granted is bounded by the grant (RG-REM-04). The total takes the discount typed when
  * one is given, bounded by the headroom; left as it was, it is brought down to the headroom the
- * new line discounts leave (H23). Beyond a cap the change is refused: the owner decides (RG-REM-03).
+ * new line discounts leave (H23). A line's suggested discount widens its limit (H62). Beyond, the
+ * change is refused: the owner decides (RG-REM-03).
  */
-function discounted(order: StoredOrder, input: OrderDiscounts) {
+function discounted(order: StoredOrder, input: OrderDiscounts, suggested: (string | null)[]) {
   const changed = new Map(input.lines.map((line) => [line.position, line.discount]));
   for (const position of changed.keys()) {
     if (!order.lines.some((line) => line.position === position)) {
@@ -58,6 +60,7 @@ function discounted(order: StoredOrder, input: OrderDiscounts) {
       unitPrice: line.unitPrice.toFixed(2),
       capPct: line.maxDiscountPct.toFixed(),
       granted: granted.lines[index] ?? null,
+      suggestedPct: suggested[index] ?? null,
       discount: changed.has(line.position)
         ? (changed.get(line.position) ?? null)
         : amount(line.discountAmount.toFixed(2)),
@@ -83,7 +86,7 @@ function discounted(order: StoredOrder, input: OrderDiscounts) {
 /**
  * Discounts applied at the register before payment, without the owner (H61, RG-REM-02/06): by the
  * cashier who called the order, or the manager, on its lines and its total, in % or in MGA, within
- * the caps — or what the owner granted. Articles and quantities stay: the order keeps its number,
+ * the caps or the suggested discounts (H62) — or what the owner granted. Articles and quantities stay: the order keeps its number,
  * its reservation and its ticket (H69). No reason asked; audited before → after (RG-AUD-01).
  */
 export async function discountOrder(
@@ -95,7 +98,7 @@ export async function discountOrder(
   const order = await atMyRegister(db, actor, id, input.version);
   // The owner's answer would land on discounts changed meanwhile (RG-REM-05).
   if (pendingRequest(order)) throw new AppError(409, 'DISCOUNT_REQUEST_PENDING');
-  const { changed, totals } = discounted(order, input);
+  const { changed, totals } = discounted(order, input, await suggestedOn(db, order));
   assertNotFree(totals);
   const codeId = usedCode(order)?.id ?? null;
 

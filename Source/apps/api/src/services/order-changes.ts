@@ -20,6 +20,7 @@ import { AppError } from '../errors.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit, type AuditSnapshot, type AuditTx } from './audit.js';
 import { withdrawWithOrder } from './discount-requests.js';
+import { suggestedFor, suggestedOn } from './discount-rules.js';
 import {
   findOrder,
   grantsOf,
@@ -113,9 +114,11 @@ export function withinHeadroom(
  * keeps its discount to the cent; a lowered one keeps its rate, the discount following the
  * quantity. The order discount keeps its rate when typed as one, its amount otherwise — brought
  * down to the headroom when the remaining lines no longer cover it. Caps are the ones frozen
- * on the lines at validation (RG-CMD-04), or the owner's code used on the order (RG-REM-04).
+ * on the lines at validation (RG-CMD-04), or the owner's code used on the order (RG-REM-04); the
+ * suggested discounts are those of the quantities left (H62): a line beyond its limit once its
+ * suggested discount is gone comes down to that limit.
  */
-function recompute(order: StoredOrder, kept: KeptLine[]) {
+function recompute(order: StoredOrder, kept: KeptLine[], suggested: (string | null)[]) {
   const granted = grantsFor(
     grantsOf(usedCode(order)),
     kept.map(({ line, lowered }) => ({
@@ -124,23 +127,34 @@ function recompute(order: StoredOrder, kept: KeptLine[]) {
       unitPrice: line.unitPrice.toFixed(2),
     })),
   );
-  const input = (orderDiscount: DiscountEntry | null): QuoteInput => ({
-    lines: kept.map(({ line, lowered }, index) => ({
-      quantity: lowered ?? line.qty.toFixed(),
-      unitPrice: line.unitPrice.toFixed(2),
-      capPct: line.maxDiscountPct.toFixed(),
-      granted: granted.lines[index] ?? null,
-      discount:
-        lowered === null
-          ? amount(line.discountAmount.toFixed(2))
-          : line.discountPct.isZero()
-            ? null
-            : { kind: 'pct', value: line.discountPct.toFixed(2) },
-    })),
-    orderDiscount,
-    orderGranted: granted.order,
+  const typed = kept.map(({ line, lowered }): DiscountEntry | null =>
+    lowered === null
+      ? amount(line.discountAmount.toFixed(2))
+      : line.discountPct.isZero()
+        ? null
+        : { kind: 'pct', value: line.discountPct.toFixed(2) },
+  );
+  const input =
+    (discounts: (DiscountEntry | null)[]) =>
+    (orderDiscount: DiscountEntry | null): QuoteInput => ({
+      lines: kept.map(({ line, lowered }, index) => ({
+        quantity: lowered ?? line.qty.toFixed(),
+        unitPrice: line.unitPrice.toFixed(2),
+        capPct: line.maxDiscountPct.toFixed(),
+        granted: granted.lines[index] ?? null,
+        suggestedPct: suggested[index] ?? null,
+        discount: discounts[index] ?? null,
+      })),
+      orderDiscount,
+      orderGranted: granted.order,
+    });
+  const first = computeQuote(input(typed)(null));
+  const limited = typed.map((discount, index) => {
+    const line = first.lines[index];
+    // A grant keeps its own bound (RG-REM-04).
+    return line && !line.withinLimit && !granted.lines[index] ? amount(line.maxDiscount) : discount;
   });
-  return withinHeadroom(input, typedOrderDiscount(order));
+  return withinHeadroom(input(limited), typedOrderDiscount(order));
 }
 
 /**
@@ -155,7 +169,16 @@ export async function adjustOrder(
 ): Promise<Order> {
   const order = await atMyRegister(db, actor, id, version);
   const kept = keptLines(order, changes);
-  const totals = recompute(order, kept);
+  const suggested = await suggestedFor(
+    db,
+    order.customerId,
+    kept.map(({ line, lowered }) => ({
+      productId: line.productId,
+      qty: lowered ?? line.qty.toFixed(),
+      factor: line.factor.toFixed(),
+    })),
+  );
+  const totals = recompute(order, kept, suggested);
   // The lines left all given away by the owner's code: the order would be free (H50).
   assertNotFree(totals);
   const rows = kept.map(({ line, lowered }, index) => ({
@@ -178,19 +201,22 @@ export async function adjustOrder(
     for (const { line, lowered, position, computed } of rows) {
       if (!computed) continue;
       const qty = lowered ?? line.qty.toFixed();
+      // Lowered, or brought down to its limit with a suggested discount gone (H62).
+      const redone = lowered !== null || computed.discount !== line.discountAmount.toFixed(2);
       await tx.orderLine.update({
         where: { id: line.id },
         data: {
           position,
           qty,
           baseQty: baseQuantity(qty, line.factor.toFixed()),
-          ...(lowered === null
-            ? {}
-            : {
+          ...(redone
+            ? {
                 discountPct: computed.discountPct,
                 discountAmount: computed.discount,
+                discountSource: computed.source,
                 lineTotal: computed.net,
-              }),
+              }
+            : {}),
           orderDiscountShare: computed.orderDiscountShare,
         },
       });
@@ -224,7 +250,8 @@ export async function adjustOrder(
  * validation (RG-CMD-04): a line it covers takes its grant — an amount beyond its gross comes down
  * to it —, the others keep theirs to the cent; the total takes the code's grant when covered,
  * else keeps its own, brought down to the headroom the grants leave. The owner's grant on a request
- * goes on the same way, a quote's saved prices included (H53).
+ * goes on the same way, a quote's saved prices included (H53). A line's suggested discount still
+ * widens the limit of the lines the code leaves (H62).
  */
 export function withCode(
   order: StoredOrder,
@@ -232,6 +259,7 @@ export function withCode(
   nothing:
     | 'DISCOUNT_CODE_NOTHING_COVERED'
     | 'DISCOUNT_REQUEST_NOTHING_COVERED' = 'DISCOUNT_CODE_NOTHING_COVERED',
+  suggested: readonly (string | null)[] = [],
 ) {
   const granted = grantsFor(
     grants,
@@ -254,6 +282,7 @@ export function withCode(
         unitPrice,
         capPct: line.maxDiscountPct.toFixed(),
         granted: grant,
+        suggestedPct: suggested[index] ?? null,
         discount: grant
           ? grantOn(grant, lineGross(quantity, unitPrice))
           : amount(line.discountAmount.toFixed(2)),
@@ -322,7 +351,12 @@ export async function attachOrderCode(
   // The owner's answer brings its own code (H52, H53).
   if (pendingRequest(order)) throw new AppError(409, 'DISCOUNT_REQUEST_PENDING');
   const code = await usableCode(db, typed, order, now);
-  const applied = withCode(order, grantsOf(code));
+  const applied = withCode(
+    order,
+    grantsOf(code),
+    'DISCOUNT_CODE_NOTHING_COVERED',
+    await suggestedOn(db, order, now),
+  );
   // Refused before it is used: the code stays active for another try (H50).
   assertNotFree(applied.totals, 'DISCOUNT_CODE_FREE_ORDER');
 

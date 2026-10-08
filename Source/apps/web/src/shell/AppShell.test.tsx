@@ -44,6 +44,7 @@ describe('signed-in shell', () => {
       'GET /deliveries/issues': ok([]),
       'GET /stock/alerts': ok({ items: [] }),
       'GET /discount-caps': ok({ defaultPct: '0.00', categories: [] }),
+      'GET /discount-rules': ok({ items: [] }),
       'GET /discount-requests': ok({ pending: [], recent: [] }),
       'GET /queues/register': ok({ queue: 'register', serving: [], waiting: [] }),
       'GET /queues/delivery': ok({ queue: 'delivery', serving: [], waiting: [] }),
@@ -76,6 +77,9 @@ describe('signed-in shell', () => {
       'GET /discount-caps': ok({ defaultPct: '0.00', categories: [] }),
       'GET /discount-codes': ok({ items: [] }),
       'GET /promotions': ok({ items: [] }),
+      'GET /discount-rules': ok({ items: [] }),
+      'GET /categories': ok({ items: [] }),
+      'GET /customers/categories': ok({ categories: [] }),
     });
     render(<App />);
 

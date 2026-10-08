@@ -16,6 +16,8 @@ interface RegisterDiscountSheetProps {
   order: Order;
   /** The line by its position, or null for the discount on the total. */
   position: number | null;
+  /** The suggested discount of each line, in the order of the lines (H62). */
+  suggested: readonly (string | null)[];
   busy: boolean;
   onApply: (discount: DiscountEntry | null) => void;
   onClose: () => void;
@@ -23,12 +25,14 @@ interface RegisterDiscountSheetProps {
 
 /**
  * A discount the cashier applies at the customer's request, on a line or on the total, in % or in
- * MGA (H61, RG-REM-06): its maximum shown before anything is typed (RG-REM-02) — the cap, or what
- * the owner granted —, a key beyond refused; beyond, the owner is asked (RG-REM-03).
+ * MGA (H61, RG-REM-06): its maximum shown before anything is typed (RG-REM-02) — the cap, the
+ * line's suggested discount when larger (H62), or what the owner granted —, a key beyond refused;
+ * beyond, the owner is asked (RG-REM-03).
  */
 export function RegisterDiscountSheet({
   order,
   position,
+  suggested,
   busy,
   onApply,
   onClose,
@@ -39,7 +43,7 @@ export function RegisterDiscountSheet({
     ? typedDiscount(line.discountPct, line.discountAmount, line.gross)
     : typedTotal(order);
   const measure = (discount: DiscountEntry | null) => {
-    const totals = discountedTotals(order, line ? line.position : null, discount);
+    const totals = discountedTotals(order, line ? line.position : null, discount, suggested);
     const at = line ? totals.lines[index] : null;
     return {
       totals,
@@ -55,6 +59,10 @@ export function RegisterDiscountSheet({
   const granted = line
     ? line.discountSource === 'CODE'
     : (order.discountCode?.items.some((item) => item.productId === null) ?? false);
+  // The line's suggested discount, shown when it goes beyond the cap (H62).
+  const ruled = line ? (suggested[index] ?? null) : null;
+  // Rates of 2 decimals at most 100: exact as numbers, for a hint the API checks anyway.
+  const byRule = !!line && !!ruled && Number(ruled) > Number(line.capPct);
 
   const apply = () => {
     if (!within) return typing.refuse();
@@ -91,9 +99,11 @@ export function RegisterDiscountSheet({
             ? text.discountNoRoom
             : granted
               ? text.discountMaxGranted(shown)
-              : line
-                ? text.discountMaxCap(formatQty(line.capPct), shown)
-                : text.discountMax(shown)
+              : byRule && ruled
+                ? text.discountMaxRule(formatQty(ruled), shown)
+                : line
+                  ? text.discountMaxCap(formatQty(line.capPct), shown)
+                  : text.discountMax(shown)
         }
         alert={typing.refused ? text.discountBeyond(shown) : null}
       />

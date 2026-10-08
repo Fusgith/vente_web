@@ -2,6 +2,24 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 09/10/2026 — T-090 : règles de remise du boss, remises prévues à la caisse (H62) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Modèle `DiscountRule` (migration `20261009120000_add_discount_rules`) : type (quantité achetée en unité de base, catégorie de client, période de promotion), portée (tous les articles, une catégorie, un article), taux, dates facultatives (obligatoires pour une promotion), active ou désactivée. Jamais supprimée : désactivée, journalisée `discount_rule.created` / `discount_rule.updated` (avant → après).
+- API : `GET /discount-rules` (boss, responsable, caissier, commercial, admin), `POST` et `PUT /discount-rules/:id` (boss seul) ; `GET /orders/:id/suggested-discounts` : la remise prévue de chaque ligne, sur la version lue (meilleure règle en vigueur ce jour, jamais un cumul).
+- La remise prévue élargit la limite d'une ligne au-delà de son plafond (H61) : source `RULE` tant qu'elle ne dépasse pas la règle ; au-delà de la règle mais dans le plafond, `WITHIN_CAP` ; au-delà des deux, `422` (le boss décide). Une baisse de quantité qui fait perdre une règle ramène la remise à la nouvelle limite (sauf les lignes accordées par le boss).
+- Boss : panneau « Règles de remise » (ajout, modification, désactivation, réactivation ; recherche d'article). Responsable : le même panneau en lecture seule.
+- Caisse : « Prévue : 10 % » sous chaque ligne en dessous de sa règle, bouton « Appliquer les remises prévues » (les lignes accordées par le boss restent telles quelles), « Remise prévue 8 % : au plus … » dans la feuille de remise ; une lecture des remises prévues qui échoue n'en suggère aucune.
+- Tests : shared 22, API 5 (`discount-rules.test.ts`), web 8 (`DiscountRulesPanel.test.tsx`, `RegisterDiscount.test.tsx`).
+
+**Reste** : T-090b (remises prévues sur la tablette quand le commercial remise) ; T-091 à T-096 dans l'ordre ; T-056 ; T-010c attend le logo.
+
+**Décisions** :
+- Le type de client (grossiste, semi-grossiste…) viendra comme quatrième type de règle avec T-093, qui crée ce type.
+- Les remises prévues sont calculées par le serveur (route dédiée), pas ajoutées à la vue de la commande : la caisse ne les lit que pour la commande qu'elle tient.
+
+**Questions** : H60 à H69 à valider (T-001d).
+
 ## 09/10/2026 — T-089 : remises à la caisse dans les plafonds (H61) — agent : Claude Code (Opus 5.5)
 
 **Fait** :

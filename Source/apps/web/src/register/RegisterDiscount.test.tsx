@@ -120,3 +120,64 @@ describe('register: discounts within the caps, without the owner (T-089, H61)', 
     expect(screen.getByRole('button', { name: text.totalDiscount })).toBeDisabled();
   });
 });
+
+describe('register: the owner’s rules suggested on each line (T-090, H62)', () => {
+  const SUGGESTED = `GET ${ORDER}/suggested-discounts`;
+  const nails = orderWithLines(entry).lines[1]!;
+
+  it('shows a line under its rule and applies it at the customer’s request', async () => {
+    const api = mount(order(), {
+      [SUGGESTED]: ok({
+        version: 2,
+        lines: [
+          { position: 1, pct: null },
+          { position: 2, pct: '10' },
+        ],
+      }),
+      [DISCOUNTS]: ok(
+        order({
+          version: 3,
+          lines: [
+            order().lines[0]!,
+            { ...nails, discountPct: '10.00', discountAmount: '1950.00', discountSource: 'RULE' },
+          ],
+        }),
+      ),
+    });
+    expect(await screen.findByText(text.suggestedPct('10'))).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: text.applySuggested }));
+
+    await waitFor(() => expect(band()).toHaveTextContent(text.suggestedApplied(1)));
+    expect(api.callsTo(DISCOUNTS)[0]!.body).toEqual({
+      version: 2,
+      lines: [{ position: 2, discount: { kind: 'pct', value: '10' } }],
+    });
+    expect(screen.getByRole('button', { name: text.lineDiscount(2) })).toHaveTextContent(
+      text.byRule,
+    );
+    expect(screen.queryByRole('button', { name: text.applySuggested })).toBeNull();
+  });
+
+  it('widens a line’s limit to its rule beyond the cap', async () => {
+    mount(order(), {
+      [SUGGESTED]: ok({
+        version: 2,
+        lines: [
+          { position: 1, pct: '8' },
+          { position: 2, pct: null },
+        ],
+      }),
+    });
+    await screen.findByText(text.suggestedPct('8'));
+    const sheet = await open(text.lineDiscount(1));
+    expect(sheet).toHaveTextContent(shown(text.discountMaxRule('8', formatMga('8000'))));
+  });
+
+  it('suggests nothing on an answer for another version', async () => {
+    const api = mount(order(), {
+      [SUGGESTED]: ok({ version: 1, lines: [{ position: 2, pct: '10' }] }),
+    });
+    await waitFor(() => expect(api.callsTo(SUGGESTED)).toHaveLength(1));
+    expect(screen.queryByRole('button', { name: text.applySuggested })).toBeNull();
+  });
+});

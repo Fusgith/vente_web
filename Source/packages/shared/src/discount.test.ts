@@ -116,6 +116,25 @@ describe('computeQuote: line discounts (RG-REM-01/02/06)', () => {
     expect(quote(amount('1000')).withinLimits).toBe(false);
   });
 
+  it('widens the limit to the suggested discount, the larger of the two (H62)', () => {
+    const at = (discount: DiscountEntry, suggestedPct: string | null) =>
+      computeQuote({ lines: [line({ capPct: '5', discount, suggestedPct })], orderDiscount: null })
+        .lines[0];
+
+    expect(at(pct('10'), '10')).toMatchObject({
+      withinLimit: true,
+      maxDiscount: '1000.00',
+      source: 'RULE',
+    });
+    expect(at(pct('10.01'), '10')?.withinLimit).toBe(false);
+    // Covered by the rule, the discount is the rule's; beyond it, within the cap.
+    expect(at(pct('3'), '4')).toMatchObject({ maxDiscount: '500.00', source: 'RULE' });
+    expect(at(pct('5'), '4')).toMatchObject({ withinLimit: true, source: 'WITHIN_CAP' });
+    expect(at(pct('5'), null)?.source).toBe('WITHIN_CAP');
+    // The headroom left for the total is the rule's.
+    expect(at(pct('2'), '10')?.headroom).toBe('800.00');
+  });
+
   it('marks a line without discount NONE', () => {
     const quote = computeQuote({ lines: [line({ capPct: '5' })], orderDiscount: null });
     expect(quote.lines[0]).toMatchObject({ discount: '0.00', discountPct: '0.00', source: 'NONE' });

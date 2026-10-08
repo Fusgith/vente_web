@@ -1,9 +1,11 @@
 import {
+  discountAmount,
   formatAmount,
   formatQty,
   ticketLabel,
   type DiscountEntry,
   type Order,
+  type OrderDiscounts,
   type PaymentInput,
   type QuoteLine,
 } from '@vente-web/shared';
@@ -21,13 +23,34 @@ import { LineAdjustSheet } from './LineAdjustSheet.js';
 import { PaymentSheet } from './PaymentSheet.js';
 import { RegisterDiscountSheet } from './RegisterDiscountSheet.js';
 import { RegisterOwnerControls } from './RegisterOwnerControls.js';
+import { useSuggestedDiscounts } from './useSuggestedDiscounts.js';
 
 const text = labels.register;
 const draft = labels.sales.draft;
 
+/**
+ * The lines whose suggested discount goes beyond their discount (H62), as the API takes them; a
+ * line the owner's grant covers keeps it (RG-REM-04).
+ */
+function belowSuggested(
+  order: Order,
+  suggested: readonly (string | null)[],
+): OrderDiscounts['lines'] {
+  return order.lines.flatMap((line, index) => {
+    const pct = suggested[index];
+    if (!pct || line.discountSource === 'CODE') return [];
+    const discount = { kind: 'pct', value: pct } as const;
+    // Amounts of 2 decimals: exact as numbers at a shop's scale, and the API checks anyway.
+    return Number(discountAmount(discount, line.gross)) > Number(line.discountAmount)
+      ? [{ position: line.position, discount }]
+      : [];
+  });
+}
+
 /** Where a line's discount comes from, as the cashier checks it (§5.6). */
 function origin(line: QuoteLine): string | null {
   if (line.discountSource === 'WITHIN_CAP') return text.withinCap;
+  if (line.discountSource === 'RULE') return text.byRule;
   if (line.discountSource === 'CODE') return text.byCode;
   return null;
 }
@@ -39,6 +62,8 @@ interface OrderControlProps {
   onRemove: (line: QuoteLine) => Promise<boolean>;
   /** A discount within the caps on a line by its position, or on the total for null (H61). */
   onDiscount: (position: number | null, discount: DiscountEntry | null) => Promise<boolean>;
+  /** The suggested discounts of the owner's rules, on the lines below them, in one go (H62). */
+  onApplySuggested: (lines: OrderDiscounts['lines']) => Promise<boolean>;
   onCancel: (reason: string) => Promise<boolean>;
   /** An article to add or a discount to change: the salesperson's, in one click (RG-CMD-05b). */
   onSendBack: () => void;
@@ -54,7 +79,9 @@ interface OrderControlProps {
 /**
  * The order at the register, checked with the customer before payment (§5.6): its lines as a
  * table (RG-DEV-05) with where each discount comes from, a quantity lowered or a line removed
- * (RG-CMD-05b), a discount applied within the caps on a line or the total (H61), the order sent back to its salesperson for an article to add or a discount to change
+ * (RG-CMD-05b), a discount applied within the caps on a line or the total (H61) — the owner's
+ * rules suggesting theirs, applied in one go (H62) —, the order sent back to its salesperson for
+ * an article to add or a discount to change
  * (H56), or the whole order cancelled with a reason (RG-ANN-01). The owner's code, typed
  * here before payment, grants its discounts beyond the caps (RG-CMD-05b, H42); else a discount is
  * asked of the owner (H51). While the request waits, the payment waits too (RG-REM-05).
@@ -65,6 +92,7 @@ export function OrderControl({
   onLower,
   onRemove,
   onDiscount,
+  onApplySuggested,
   onCancel,
   onSendBack,
   onPay,
@@ -82,6 +110,9 @@ export function OrderControl({
   const [paying, setPaying] = useState(false);
   const waitsId = useId();
   const waiting = requestPending(order.discountRequest);
+  const suggested = useSuggestedDiscounts(order);
+  const toApply = belowSuggested(order, suggested);
+  const below = new Set(toApply.map((item) => item.position));
   // A line removed meanwhile closes its discount sheet.
   const opened =
     discounting === null || order.lines.some((item) => item.position === discounting)
@@ -120,7 +151,8 @@ export function OrderControl({
             </tr>
           </thead>
           <tbody>
-            {order.lines.map((item) => {
+            {order.lines.map((item, index) => {
+              const ruled = below.has(item.position) ? (suggested[index] ?? null) : null;
               const row = `${CELL} h-14 border-b border-rule py-1`;
               const factor = formatQty(item.factor);
               const source = origin(item);
@@ -162,7 +194,7 @@ export function OrderControl({
                       className="min-h-12 w-full rounded-control border border-rule-strong bg-white px-2 text-right leading-5 figures transition-colors duration-100 active:bg-indigo-soft disabled:border-dashed"
                     >
                       {isZero(item.discountAmount) ? (
-                        <span className="text-ink-2">{text.noDiscount}</span>
+                        <span className="block text-ink-2">{text.noDiscount}</span>
                       ) : (
                         <>
                           <span className="block font-semibold">
@@ -173,6 +205,11 @@ export function OrderControl({
                             {source && ` · ${source}`}
                           </span>
                         </>
+                      )}
+                      {ruled && (
+                        <span className="block text-14 font-semibold text-indigo">
+                          {text.suggestedPct(formatQty(ruled))}
+                        </span>
                       )}
                     </button>
                   </td>
@@ -196,6 +233,16 @@ export function OrderControl({
             onWithdraw={onWithdraw}
             onSetAside={onSetAside}
           />
+          {toApply.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void onApplySuggested(toApply)}
+              disabled={busy || waiting}
+              className={buttonClass('primary', 'md', 'shrink-0')}
+            >
+              {text.applySuggested}
+            </button>
+          )}
           <button
             type="button"
             aria-haspopup="dialog"
@@ -253,6 +300,7 @@ export function OrderControl({
           key={opened ?? 'total'}
           order={order}
           position={opened}
+          suggested={suggested}
           busy={busy}
           onApply={(discount) =>
             void onDiscount(opened, discount).then((ok) => {

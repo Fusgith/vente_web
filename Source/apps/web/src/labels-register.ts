@@ -81,6 +81,13 @@ export const registerLabels = {
   close: 'Fermer',
   withinCap: 'dans le plafond',
   byCode: 'code du boss',
+  /** The owner's rules (T-090, H62): a suggested discount, applied at the customer's request. */
+  byRule: 'remise prévue',
+  suggestedPct: (pct: string) => `Prévue : ${pct} %`,
+  applySuggested: 'Appliquer les remises prévues',
+  suggestedApplied: (count: number) =>
+    count > 1 ? `${count} remises prévues appliquées.` : 'Remise prévue appliquée.',
+  discountMaxRule: (pct: string, amount: string) => `Remise prévue ${pct} % : au plus ${amount}`,
   /** Discounts applied at the register within the caps, at the customer's request (T-089, H61). */
   lineDiscount: (position: number) => `Remise de la ligne ${position}`,
   noDiscount: 'Aucune',
