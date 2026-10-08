@@ -75,6 +75,7 @@ export const auditLabels = {
     'order.submitted': 'Commande validée',
     'order.reactivated': 'Commande réactivée',
     'order.adjusted': 'Commande modifiée',
+    'order.discounted': 'Remise appliquée à la caisse',
     'order.reopened': 'Commande expirée redevenue devis',
     'order.expired': 'Commande expirée',
     'order.called': 'Client appelé',

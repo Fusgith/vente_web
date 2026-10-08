@@ -2,6 +2,21 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 09/10/2026 — T-089 : remises à la caisse dans les plafonds (H61) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- API : `POST /orders/:id/discounts` (caissier qui a appelé la commande, ou responsable) ; remise sur les lignes et/ou le total, en % ou en montant, sur la version lue. Limite d'une ligne : son plafond figé à la validation, ou l'accord du boss qui la couvre ; limite du total : la marge restante. Au-delà : `422 QUOTE_DISCOUNT_BEYOND_CAP` (lignes et total en cause) ; le boss décide.
+- Un total non retouché est ramené à la marge que laissent les nouvelles remises de ligne (H23) ; `null` retire une remise. Demande au boss en attente : `409 DISCOUNT_REQUEST_PENDING`. Commande jamais à 0,00 MGA (H50).
+- La commande garde son numéro, sa réservation et son ticket (ni article ni quantité ne changent) ; journalisé `order.discounted` (avant → après) ; les caisses sont prévenues.
+- Caisse : la cellule Remise de chaque ligne et le bouton « Remise sur le total » ouvrent une feuille : montant brut, net à payer, maximum affiché avant toute saisie (« Plafond 15 % : au plus … », « Accordée par le boss : au plus … »), touche au-delà refusée, « Retirer la remise » ; le bandeau dit quand la remise sur le total a été ramenée. Tout est bloqué pendant une demande au boss.
+- Tests : API 5 (`order-discounts.test.ts`), web 4 (`RegisterDiscount.test.tsx`).
+
+**Reste** : T-090 à T-096 dans l'ordre (les remises prévues élargiront la limite d'une ligne avec T-090) ; T-056 ; T-010c attend le logo.
+
+**Décisions** : aucune nouvelle (H61 codée selon sa formulation).
+
+**Questions** : H60 à H69 à valider (T-001d).
+
 ## 09/10/2026 — T-088 : accord du boss sans code visible (H64) — agent : Claude Code (Opus 5.5)
 
 **Fait** :

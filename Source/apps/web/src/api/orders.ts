@@ -3,6 +3,7 @@ import {
   stockUnavailableSchema,
   type Order,
   type OrderAdjust,
+  type OrderDiscounts,
   type StockShortage,
 } from '@vente-web/shared';
 
@@ -20,6 +21,15 @@ export const ordersApi = {
       method: 'POST',
       body: { version, changes },
     });
+    return parseResponse(orderSchema, data);
+  },
+
+  /**
+   * Discounts within the caps applied at the register (H61), over the version read: each line by
+   * its position, null removing its discount; the total only when given.
+   */
+  async discount(id: string, body: OrderDiscounts): Promise<Order> {
+    const data = await apiRequest(`/orders/${id}/discounts`, { method: 'POST', body });
     return parseResponse(orderSchema, data);
   },
 

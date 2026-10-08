@@ -89,17 +89,17 @@ function keptLines(order: StoredOrder, changes: OrderAdjust['changes']): KeptLin
 }
 
 /** A discount as the amount it came to; none when zero. */
-const amount = (value: string): DiscountEntry | null =>
+export const amount = (value: string): DiscountEntry | null =>
   value === '0.00' ? null : { kind: 'amount', value };
 
 /** The order discount as typed: its rate when typed as one, its amount otherwise. */
-const typedOrderDiscount = (order: StoredOrder): DiscountEntry | null =>
+export const typedOrderDiscount = (order: StoredOrder): DiscountEntry | null =>
   order.orderDiscountPct
     ? { kind: 'pct', value: order.orderDiscountPct.toFixed(2) }
     : amount(order.orderDiscountAmount.toFixed(2));
 
 /** Totals with the order discount kept, brought down to the headroom once it no longer fits. */
-function withinHeadroom(
+export function withinHeadroom(
   input: (orderDiscount: DiscountEntry | null) => QuoteInput,
   typed: DiscountEntry | null,
 ): QuoteTotals {

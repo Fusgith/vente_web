@@ -2,6 +2,7 @@ import {
   formatAmount,
   formatQty,
   ticketLabel,
+  type DiscountEntry,
   type Order,
   type PaymentInput,
   type QuoteLine,
@@ -18,6 +19,7 @@ import { Icon } from '../ui/Icon.js';
 import { CancelOrderSheet } from './CancelOrderSheet.js';
 import { LineAdjustSheet } from './LineAdjustSheet.js';
 import { PaymentSheet } from './PaymentSheet.js';
+import { RegisterDiscountSheet } from './RegisterDiscountSheet.js';
 import { RegisterOwnerControls } from './RegisterOwnerControls.js';
 
 const text = labels.register;
@@ -35,6 +37,8 @@ interface OrderControlProps {
   busy: boolean;
   onLower: (line: QuoteLine, qty: string) => Promise<boolean>;
   onRemove: (line: QuoteLine) => Promise<boolean>;
+  /** A discount within the caps on a line by its position, or on the total for null (H61). */
+  onDiscount: (position: number | null, discount: DiscountEntry | null) => Promise<boolean>;
   onCancel: (reason: string) => Promise<boolean>;
   /** An article to add or a discount to change: the salesperson's, in one click (RG-CMD-05b). */
   onSendBack: () => void;
@@ -50,7 +54,7 @@ interface OrderControlProps {
 /**
  * The order at the register, checked with the customer before payment (§5.6): its lines as a
  * table (RG-DEV-05) with where each discount comes from, a quantity lowered or a line removed
- * (RG-CMD-05b), the order sent back to its salesperson for an article to add or a discount to change
+ * (RG-CMD-05b), a discount applied within the caps on a line or the total (H61), the order sent back to its salesperson for an article to add or a discount to change
  * (H56), or the whole order cancelled with a reason (RG-ANN-01). The owner's code, typed
  * here before payment, grants its discounts beyond the caps (RG-CMD-05b, H42); else a discount is
  * asked of the owner (H51). While the request waits, the payment waits too (RG-REM-05).
@@ -60,6 +64,7 @@ export function OrderControl({
   busy,
   onLower,
   onRemove,
+  onDiscount,
   onCancel,
   onSendBack,
   onPay,
@@ -71,10 +76,17 @@ export function OrderControl({
   // The line open by its sale unit, one per order: a line removed elsewhere renumbers the others,
   // never the article the sheet was opened on; gone itself, the sheet closes.
   const [editing, setEditing] = useState<string | null>(null);
+  // The discount open: a line by its position, the total for null, none for undefined.
+  const [discounting, setDiscounting] = useState<number | null | undefined>(undefined);
   const [cancelling, setCancelling] = useState(false);
   const [paying, setPaying] = useState(false);
   const waitsId = useId();
   const waiting = requestPending(order.discountRequest);
+  // A line removed meanwhile closes its discount sheet.
+  const opened =
+    discounting === null || order.lines.some((item) => item.position === discounting)
+      ? discounting
+      : undefined;
   const line = order.lines.find((candidate) => candidate.productUnitId === editing) ?? null;
   const ticket = order.ticket ? ticketLabel(order.ticket) : order.number;
   const done = (ok: boolean) => {
@@ -140,18 +152,29 @@ export function OrderControl({
                     )}
                   </td>
                   <td className={`${row} text-right figures`}>{formatAmount(item.unitPrice)}</td>
-                  <td className={`${row} text-right leading-5 figures`}>
-                    {!isZero(item.discountAmount) && (
-                      <>
-                        <span className="block font-semibold">
-                          {draft.minus(formatAmount(item.discountAmount))}
-                        </span>
-                        <span className="block text-14 text-ink-2">
-                          {draft.pct(formatQty(item.discountPct))}
-                          {source && ` · ${source}`}
-                        </span>
-                      </>
-                    )}
+                  <td className={`${row} text-right`}>
+                    <button
+                      type="button"
+                      aria-label={text.lineDiscount(item.position)}
+                      aria-haspopup="dialog"
+                      onClick={() => setDiscounting(item.position)}
+                      disabled={busy || waiting}
+                      className="min-h-12 w-full rounded-control border border-rule-strong bg-white px-2 text-right leading-5 figures transition-colors duration-100 active:bg-indigo-soft disabled:border-dashed"
+                    >
+                      {isZero(item.discountAmount) ? (
+                        <span className="text-ink-2">{text.noDiscount}</span>
+                      ) : (
+                        <>
+                          <span className="block font-semibold">
+                            {draft.minus(formatAmount(item.discountAmount))}
+                          </span>
+                          <span className="block text-14 text-ink-2">
+                            {draft.pct(formatQty(item.discountPct))}
+                            {source && ` · ${source}`}
+                          </span>
+                        </>
+                      )}
+                    </button>
                   </td>
                   <td className={`${row} text-right font-semibold figures`}>
                     {formatAmount(item.net)}
@@ -173,6 +196,15 @@ export function OrderControl({
             onWithdraw={onWithdraw}
             onSetAside={onSetAside}
           />
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            onClick={() => setDiscounting(null)}
+            disabled={busy || waiting}
+            className={buttonClass('secondary', 'md', 'shrink-0')}
+          >
+            {text.totalDiscount}
+          </button>
           <button
             type="button"
             onClick={onSendBack}
@@ -214,6 +246,20 @@ export function OrderControl({
           onLower={(qty) => void onLower(line, qty).then(done)}
           onRemove={() => void onRemove(line).then(done)}
           onClose={() => setEditing(null)}
+        />
+      )}
+      {opened !== undefined && (
+        <RegisterDiscountSheet
+          key={opened ?? 'total'}
+          order={order}
+          position={opened}
+          busy={busy}
+          onApply={(discount) =>
+            void onDiscount(opened, discount).then((ok) => {
+              if (ok) setDiscounting(undefined);
+            })
+          }
+          onClose={() => setDiscounting(undefined)}
         />
       )}
       {paying && (

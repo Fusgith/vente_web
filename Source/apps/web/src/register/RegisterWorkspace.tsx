@@ -2,6 +2,7 @@ import {
   formatMga,
   normalizeDiscountCode,
   ticketLabel,
+  type DiscountEntry,
   type Order,
   type PaymentInput,
   type QueueItem,
@@ -187,6 +188,28 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
     );
   };
 
+  /**
+   * A discount within the caps at the customer's request (H61): a line by its position, the total
+   * for null; a line raised may bring the total down to the headroom left (H23), the band says so.
+   */
+  const discount = (position: number | null, entry: DiscountEntry | null) => {
+    const sent = atRegister.order;
+    if (!sent) return Promise.resolve(false);
+    return act(
+      () =>
+        ordersApi.discount(sent.id, {
+          version: sent.version,
+          lines: position === null ? [] : [{ position, discount: entry }],
+          ...(position === null ? { orderDiscount: entry } : {}),
+        }),
+      (order) =>
+        (entry ? text.discountApplied(position) : text.discountRemoved(position)) +
+        (position !== null && broughtDown(sent, order)
+          ? text.totalLowered(formatMga(order.orderDiscount))
+          : ''),
+    );
+  };
+
   /** The code on the order: the screen shows what it grants; the band says so. */
   const codeAttached = (order: Order, sent: Order) => {
     atRegister.replace(order);
@@ -325,6 +348,7 @@ export function RegisterWorkspace({ userId }: { userId: string }) {
                 busy={busy}
                 onLower={(line, qty) => adjust(line, qty)}
                 onRemove={(line) => adjust(line, null)}
+                onDiscount={discount}
                 onCancel={(reason) => {
                   const order = atRegister.order;
                   if (!order) return Promise.resolve(false);

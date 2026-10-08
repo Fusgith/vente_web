@@ -6,6 +6,7 @@
 import { z } from 'zod';
 
 import { fromScaled, isQuantity, toScaled } from './decimal.js';
+import { discountEntrySchema } from './discount.js';
 import { QUOTE_MAX_LINES, quoteSchema } from './quotes.js';
 
 /** Order lifecycle (CDC métier §5.2). */
@@ -193,6 +194,21 @@ export const orderAdjustSchema = z.object({
     .refine((changes) => new Set(changes.map((change) => change.position)).size === changes.length),
 });
 export type OrderAdjust = z.infer<typeof orderAdjustSchema>;
+
+/**
+ * Discounts applied at the register before payment, without the owner (H61): each line changed,
+ * by position, takes its discount — null removes it —, the others keep theirs; `orderDiscount`
+ * replaces the discount on the total when given, null removing it. Never a quantity changed.
+ */
+export const orderDiscountsSchema = z.object({
+  version: z.int().positive(),
+  lines: z
+    .array(z.object({ position: z.int().positive(), discount: discountEntrySchema.nullable() }))
+    .max(QUOTE_MAX_LINES)
+    .refine((lines) => new Set(lines.map((line) => line.position)).size === lines.length),
+  orderDiscount: discountEntrySchema.nullable().optional(),
+});
+export type OrderDiscounts = z.infer<typeof orderDiscountsSchema>;
 
 /** Cancelling before payment needs a reason (RG-ANN-01). */
 export const orderCancelSchema = z.object({

@@ -34,7 +34,11 @@ export async function loadQuote(id: string): Promise<DraftState> {
 const some = (value: string) => /[1-9]/.test(value);
 
 /** The discount as typed: its rate when the rate gives the amount saved, else the amount. */
-function typedDiscount(pct: string | null, amount: string, base: string): DiscountEntry | null {
+export function typedDiscount(
+  pct: string | null,
+  amount: string,
+  base: string,
+): DiscountEntry | null {
   if (!some(amount)) return null;
   const rate: DiscountEntry | null = pct && some(pct) ? { kind: 'pct', value: pct } : null;
   return rate && discountAmount(rate, base) === amount ? rate : { kind: 'amount', value: amount };

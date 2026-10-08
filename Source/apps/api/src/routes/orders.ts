@@ -2,6 +2,7 @@ import {
   discountCodeAttachSchema,
   orderAdjustSchema,
   orderCancelSchema,
+  orderDiscountsSchema,
   orderSubmitSchema,
   type Order,
   type OrderStatus,
@@ -13,6 +14,7 @@ import { z } from 'zod';
 import { AppError } from '../errors.js';
 import { actorOf, authOf, requireRole } from '../plugins/session.js';
 import { adjustOrder, attachOrderCode, cancelOrder } from '../services/order-changes.js';
+import { discountOrder } from '../services/order-discounts.js';
 import { sendBackOrder } from '../services/order-send-back.js';
 import { loadOrder, reactivateOrder, submitOrder } from '../services/orders.js';
 import {
@@ -115,6 +117,19 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
       const { id } = paramsSchema.parse(request.params);
       const body = orderAdjustSchema.parse(request.body);
       const order = await adjustOrder(app.db, actorOf(authOf(request)), id, body);
+      app.realtime.publish(orderAdjusted(id));
+      return order;
+    },
+  );
+
+  // Discounts within the caps applied at the register, without the owner (H61, annexe B).
+  app.post(
+    '/orders/:id/discounts',
+    { preHandler: requireRole('cashier', 'manager') },
+    async (request): Promise<Order> => {
+      const { id } = paramsSchema.parse(request.params);
+      const body = orderDiscountsSchema.parse(request.body);
+      const order = await discountOrder(app.db, actorOf(authOf(request)), id, body);
       app.realtime.publish(orderAdjusted(id));
       return order;
     },

@@ -81,6 +81,28 @@ export const registerLabels = {
   close: 'Fermer',
   withinCap: 'dans le plafond',
   byCode: 'code du boss',
+  /** Discounts applied at the register within the caps, at the customer's request (T-089, H61). */
+  lineDiscount: (position: number) => `Remise de la ligne ${position}`,
+  noDiscount: 'Aucune',
+  lineGross: 'Montant brut',
+  totalDiscount: 'Remise sur le total',
+  discountMax: (amount: string) => `Au plus ${amount}`,
+  discountMaxCap: (pct: string, amount: string) => `Plafond ${pct} % : au plus ${amount}`,
+  discountMaxGranted: (amount: string) => `Accordée par le boss : au plus ${amount}`,
+  discountNoRoom: 'Aucune marge de remise ici : au-delà des plafonds, demandez la remise au boss.',
+  discountBeyond: (amount: string) => `Au plus ${amount} : au-delà, demandez la remise au boss.`,
+  discountTotalAfter: 'Net à payer',
+  applyDiscount: 'Appliquer',
+  removeDiscount: 'Retirer la remise',
+  discountApplied: (position: number | null) =>
+    position === null
+      ? 'Remise sur le total appliquée.'
+      : `Remise de la ligne ${position} appliquée.`,
+  discountRemoved: (position: number | null) =>
+    position === null ? 'Remise sur le total retirée.' : `Remise de la ligne ${position} retirée.`,
+  /** A line's discount raised left the total less headroom: the API brought it down (H23). */
+  totalLowered: (amount: string) =>
+    ` La remise sur le total passe à ${amount} : les lignes ont moins de marge.`,
   /** The owner's code typed before payment (T-034c, RG-CMD-05b, H42). */
   codeHint:
     'Le code donné par le boss, comme R7K4-29QP. Il ne sert qu’une fois : appliqué, il reste sur cette commande.',
