@@ -200,7 +200,8 @@ export function OrderControl({
                           <span className="block font-semibold">
                             {draft.minus(formatAmount(item.discountAmount))}
                           </span>
-                          <span className="block text-14 text-ink-2">
+                          {/* Its origin wraps under the rate: the column is narrow (H63, H64). */}
+                          <span className="block text-14 whitespace-normal text-ink-2">
                             {draft.pct(formatQty(item.discountPct))}
                             {source && ` · ${source}`}
                           </span>

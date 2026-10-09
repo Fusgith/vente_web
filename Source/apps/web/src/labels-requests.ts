@@ -70,7 +70,7 @@ export const requestsLabels = {
   /** The owner's screen (T-033c, RG-DSH-05, H53, H54). */
   board: {
     title: 'Demandes de remise',
-    help: 'Au-delà des plafonds. Pour chaque élément : comme demandé, une autre valeur, ou rien. L’accord devient un code appliqué aussitôt à la commande.',
+    help: 'Au-delà des plafonds. Pour chaque élément : comme demandé, une autre valeur, ou rien. L’accord s’applique aussitôt à la commande.',
     readOnly: 'Les demandes au boss et ses réponses. Seul le boss décide.',
     pending: 'En attente',
     pendingEmpty: 'Aucune demande en attente.',

@@ -2,6 +2,20 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 09/10/2026 — T-091c : finitions vues en recette (carte du boss sur téléphone, caisse) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Boss, téléphone (H55) : la carte d’une demande de remise empile ses deux tableaux sous `sm` (désignation sur sa ligne, quantité et montant dessous ; élément et valeur demandée, puis les trois réponses) : plus de défilement latéral à 390 px ; les en-têtes perdent leur hauteur fixe pour rester alignés.
+- Boss : aide des demandes « L’accord s’applique aussitôt à la commande » (l’ancien texte parlait d’un code, faux depuis H64).
+- Caisse : l’origine d’une remise (« 12 % · accordée par le boss », « dans le plafond », « remise prévue ») passe à la ligne dans la colonne Remise au lieu de chevaucher le montant net.
+- Tests web + shared 387 verts, typecheck web, Prettier et ESLint.
+
+**Reste** : T-092 à T-096 dans l’ordre, puis T-097 (journal d’audit lisible, constaté pendant les captures) ; T-090b ; T-056 ; T-010c attend le logo.
+
+**Décisions** : aucune.
+
+**Questions** : H60 à H69 à valider (T-001d).
+
 ## 09/10/2026 — T-091b : code promo saisi à la caisse seulement (H63) — jalon « Remises complètes » — agent : Claude Code (Opus 5.5)
 
 **Fait** :

@@ -26,6 +26,14 @@ import {
 
 const text = labels.requests.board;
 const ROW = `${CELL} border-b border-rule py-2`;
+/**
+ * Below `sm` (the owner's phone, H55), a table and its row groups are blocks and each row a small
+ * grid: the name on its line, the figures under it — read without scrolling sideways.
+ */
+const STACK = 'max-sm:block';
+const STACK_ROW = 'max-sm:grid max-sm:grid-cols-[minmax(0,1fr)_auto]';
+/** A grid ignores `align-bottom`: the headers lose their fixed height and sit on one baseline. */
+const STACK_HEAD = `${STACK_ROW} max-sm:items-end max-sm:*:h-auto`;
 const CHOICE =
   'focus-within-ring inline-flex min-h-12 cursor-pointer items-center rounded-control border border-rule-strong bg-white px-3 font-semibold has-checked:border-indigo has-checked:bg-indigo-soft';
 
@@ -87,29 +95,31 @@ export function RequestCard({ request, onDecide, busy }: RequestCardProps) {
       <div className="overflow-x-auto">
         <table
           aria-label={text.lines}
-          className="w-full min-w-[32rem] table-fixed border-separate border-spacing-0 text-left"
+          className={`w-full table-fixed border-separate border-spacing-0 text-left sm:min-w-[32rem] ${STACK}`}
         >
-          <thead>
-            <tr>
+          <thead className={STACK}>
+            <tr className={STACK_HEAD}>
               <th className={HEAD}>{text.head.designation}</th>
-              <th className={`${HEAD} w-28 text-right`}>{text.head.quantity}</th>
+              <th className={`${HEAD} w-28 text-right max-sm:hidden`}>{text.head.quantity}</th>
               <AmountHead label={text.head.net} width="w-36" />
             </tr>
           </thead>
-          <tbody>
+          <tbody className={STACK}>
             {order.lines.map((line) => (
-              <tr key={line.position}>
-                <td className={ROW}>
+              <tr key={line.position} className={STACK_ROW}>
+                <td className={`${ROW} max-sm:col-span-2 max-sm:border-b-0 max-sm:pb-0`}>
                   <span className={tagClass}>{line.sku}</span> {line.name}
                 </td>
-                <td className={`${ROW} figures text-right`}>
+                <td
+                  className={`${ROW} figures text-right max-sm:pl-4 max-sm:text-left max-sm:text-ink-2`}
+                >
                   {formatQty(line.qty)} {line.unitLabel}
                 </td>
                 <td className={`${ROW} figures text-right`}>{formatAmount(line.net)}</td>
               </tr>
             ))}
-            <tr>
-              <td colSpan={2} className={`${CELL} py-2 text-right font-semibold`}>
+            <tr className={STACK_ROW}>
+              <td colSpan={2} className={`${CELL} py-2 text-right font-semibold max-sm:text-left`}>
                 {text.total}
               </td>
               <td className={`${CELL} figures py-2 text-right font-bold`}>
@@ -122,27 +132,29 @@ export function RequestCard({ request, onDecide, busy }: RequestCardProps) {
       <div className="overflow-x-auto">
         <table
           aria-label={labels.requests.wanted}
-          className="w-full min-w-[40rem] border-separate border-spacing-0 text-left"
+          className={`w-full border-separate border-spacing-0 text-left sm:min-w-[40rem] ${STACK}`}
         >
-          <thead>
-            <tr>
+          <thead className={STACK}>
+            <tr className={STACK_HEAD}>
               <th className={HEAD}>{text.head.item}</th>
-              <th className={`${HEAD} w-36 text-right`}>{text.head.asked}</th>
-              {onDecide && <th className={HEAD}>{text.head.answer}</th>}
+              <th className={`${HEAD} w-36 text-right max-sm:pr-4`}>{text.head.asked}</th>
+              {onDecide && <th className={`${HEAD} max-sm:hidden`}>{text.head.answer}</th>}
             </tr>
           </thead>
-          <tbody>
+          <tbody className={STACK}>
             {request.items.map((item) => {
               const answer = answers[item.id] ?? { choice: 'asked' };
               const name = itemName(item);
               return (
-                <tr key={item.id}>
-                  <td className={ROW}>{name}</td>
-                  <td className={`${ROW} figures text-right font-semibold`}>
+                <tr key={item.id} className={STACK_ROW}>
+                  <td className={`${ROW} max-sm:border-b-0`}>{name}</td>
+                  <td
+                    className={`${ROW} figures text-right font-semibold max-sm:border-b-0 max-sm:pr-4`}
+                  >
                     {entryText(item.requested)}
                   </td>
                   {onDecide && (
-                    <td className={ROW}>
+                    <td className={`${ROW} max-sm:col-span-2 max-sm:pl-4`}>
                       <fieldset className="flex flex-wrap items-center gap-2">
                         <legend className="sr-only">{text.answerOf(name)}</legend>
                         {ANSWERS.map((choice) => (
