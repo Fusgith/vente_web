@@ -42,7 +42,7 @@ export function SalesWorkspace({ initialDraft = emptyDraft, discounts }: SalesWo
   const [draft, dispatch] = useReducer(draftReducer, initialDraft);
   const position = draft.lines.findIndex((line) => line.key === draft.selected);
   const selected = draft.lines[position];
-  const { save, submit, attachCode, ask, withdraw, busy } = useQuoteActions(draft, dispatch);
+  const { save, submit, ask, withdraw, busy } = useQuoteActions(draft, dispatch);
   useRequestDecisions(draft, dispatch);
   const [mineOpen, setMineOpen] = useState(false);
   // Lines never saved, or changed since: taking up another quote would lose them.
@@ -83,7 +83,6 @@ export function SalesWorkspace({ initialDraft = emptyDraft, discounts }: SalesWo
           onOrderDiscount={(discount) => dispatch({ type: 'setOrderDiscount', discount })}
           onSave={() => void save()}
           onSubmit={() => void submit()}
-          onAttachCode={attachCode}
           onAsk={ask}
           onWithdraw={() => void withdraw()}
           busy={busy}

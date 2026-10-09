@@ -2,6 +2,20 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 09/10/2026 — T-091b : code promo saisi à la caisse seulement (H63) — jalon « Remises complètes » — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- API : la route `POST /quotes/{id}/discount-code` est retirée (404) ; `services/quote-codes.ts` devient `services/discount-code-use.ts`, réduit au contrôle du code tapé (`usableCode`) et à son usage unique (`useCode`), partagés par la caisse et l'accord du boss.
+- Tablette : plus de bouton « Code promo » ni de feuille ; sous le devis ne reste que « Demander au boss » (si l'admin laisse le commercial remiser, H60). L'étiquette « Remise accordée par le boss » reste après un accord (H64). La feuille de saisie du code passe dans `register/` (seule la caisse s'en sert).
+- Tests : `quote-codes.test.ts` et `DiscountCode.test.tsx` supprimés ; leur couverture utile passe à la caisse (`order-codes.test.ts` : code inconnu, d'un autre client, révoqué ; la route du devis répond 404) et à l'accord du boss (`discount-request-grants.test.ts` : un devis ramené à 0,00 après l'accord n'est jamais validé, H50 ; `discount-requests.test.ts` : pas de nouvelle demande sur un devis accordé). Web + shared 387, API ciblés 26 verts.
+- **Jalon « Remises complètes »** atteint (T-087 à T-091b, commentaires du client) : le commercial ne remise que si l'admin le permet ; le caissier applique plafonds et règles de remise du boss ; au-delà, l'accord du boss s'applique en direct, sans code ; le code promo d'un prochain achat se saisit à la caisse.
+
+**Reste** : T-092 à T-096 dans l'ordre ; T-090b ; T-056 ; T-010c attend le logo. Rapport d'aperçu pour le futur client (hors dépôt, `Autres/`).
+
+**Décisions** : aucune nouvelle (H63 codée selon sa formulation).
+
+**Questions** : H60 à H69 à valider (T-001d).
+
 ## 09/10/2026 — T-091 : code promo pour un prochain achat (H63) — agent : Claude Code (Opus 5.5)
 
 **Fait** :

@@ -3,11 +3,11 @@ import { useEffect, useRef, useState } from 'react';
 
 import { requestPending, requestProducts } from '../api/discount-requests.js';
 import { labels } from '../labels.js';
-import { DiscountCodeSheet } from '../sales/DiscountCodeSheet.js';
 import { DiscountRequestSheet } from '../sales/DiscountRequestSheet.js';
 import type { RequestInput } from '../sales/useQuoteActions.js';
 import { buttonClass } from '../ui/button.js';
 import { Icon } from '../ui/Icon.js';
+import { DiscountCodeSheet } from './DiscountCodeSheet.js';
 
 const text = labels.requests;
 const MARK = 'inline-flex min-h-12 items-center gap-2 rounded-control border px-4 font-semibold';

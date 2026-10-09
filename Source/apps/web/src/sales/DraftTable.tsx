@@ -27,12 +27,10 @@ interface DraftTableProps {
   onOrderDiscount: (discount: DiscountEntry | null) => void;
   onSave: () => void;
   onSubmit: () => void;
-  /** The owner's code typed in its sheet: null once attached, else why it was refused. */
-  onAttachCode: (code: string) => Promise<string | null>;
   /** A request to the owner from its sheet: null once sent, else why it was refused. */
   onAsk: (request: RequestInput) => Promise<string | null>;
   onWithdraw: () => void;
-  /** A save, a validation, a code or a request under way: the buttons wait. */
+  /** A save, a validation or a request under way: the buttons wait. */
   busy: QuoteBusy;
   /** The customer's picker, at the end of the header. */
   customer?: ReactNode;
@@ -80,7 +78,6 @@ export function DraftTable({
   onOrderDiscount,
   onSave,
   onSubmit,
-  onAttachCode,
   onAsk,
   onWithdraw,
   busy,
@@ -232,7 +229,6 @@ export function DraftTable({
             onOrderDiscount={onOrderDiscount}
             onSave={onSave}
             onSubmit={onSubmit}
-            onAttachCode={onAttachCode}
             onAsk={onAsk}
             onWithdraw={onWithdraw}
             busy={busy}
@@ -254,7 +250,8 @@ function saveLabel(draft: DraftState, busy: TotalsProps['busy']): string {
  * Under the table, the totals (RG-DEV-05). The order discount is typed from here; under the
  * amount due, the quote is saved — once saved and unchanged, its PDF opened instead, the PDF
  * being always the quote as saved — and validated into an order, the last step (T-032). Beyond
- * the caps, the owner's code is typed from here, or a discount asked of the owner (T-034b, T-033b).
+ * the caps, a discount is asked of the owner from here (T-033b); a promo code is typed at the
+ * register (H63).
  */
 function Totals({
   quote,
@@ -262,7 +259,6 @@ function Totals({
   onOrderDiscount,
   onSave,
   onSubmit,
-  onAttachCode,
   onAsk,
   onWithdraw,
   busy,
@@ -283,13 +279,7 @@ function Totals({
             <Icon name="percent" className="size-5" />
             {labels.sales.discount.order}
           </button>
-          <OwnerControls
-            draft={draft}
-            busy={busy}
-            onAttachCode={onAttachCode}
-            onAsk={onAsk}
-            onWithdraw={onWithdraw}
-          />
+          <OwnerControls draft={draft} busy={busy} onAsk={onAsk} onWithdraw={onWithdraw} />
         </div>
       )}
       {/* The amount due, and under it the save: the last step, at the right hand's reach. */}

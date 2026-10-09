@@ -29,7 +29,7 @@ import {
   usedCode,
   type StoredOrder,
 } from './order-view.js';
-import { usableCode, useCode } from './quote-codes.js';
+import { usableCode, useCode } from './discount-code-use.js';
 import { assertNotFree, orderAmounts } from './quotes.js';
 import { releaseReservations, shrinkReservations } from './stock-reservation.js';
 

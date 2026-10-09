@@ -10,21 +10,20 @@ import { Sheet } from '../ui/Sheet.js';
 const text = labels.sales.code;
 
 interface DiscountCodeSheetProps {
-  /** Under the field: where the code stays once applied, a quote or an order. */
-  hint?: string;
+  /** Under the field: what the code is, where it stays once applied. */
+  hint: string;
   /** Null once attached; else why the code was refused. */
   onAttach: (code: string) => Promise<string | null>;
   onClose: () => void;
 }
 
 /**
- * The owner's code typed on the quote (RG-REM-04, H42), or on the order at the register before
- * payment (RG-CMD-05b): the API checks it and uses it at once, and the lines and the total it
- * covers take what it grants. Case, spaces and hyphens do not
- * count (H41); a refusal stays under the field, to correct the code where it was typed — or goes
- * to the band if the sheet was closed meanwhile.
+ * The promo code typed on the order at the register before payment (RG-CMD-05b, H63): the API
+ * checks it and uses it at once, and the lines and the total it covers take what it grants. Case,
+ * spaces and hyphens do not count (H41); a refusal stays under the field, to correct the code
+ * where it was typed — or goes to the band if the sheet was closed meanwhile.
  */
-export function DiscountCodeSheet({ hint = text.hint, onAttach, onClose }: DiscountCodeSheetProps) {
+export function DiscountCodeSheet({ hint, onAttach, onClose }: DiscountCodeSheetProps) {
   const id = useId();
   const field = useRef<HTMLInputElement>(null);
   const [typed, setTyped] = useState('');

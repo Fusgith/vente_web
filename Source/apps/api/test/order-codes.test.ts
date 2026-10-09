@@ -250,6 +250,29 @@ describe.skipIf(!TEST_DATABASE_URL)(
         { productId: products.rice, discount: { kind: 'pct', value: '10' } },
       ]);
       await refused(await attach(order, rice.code), 422, 'DISCOUNT_CODE_NOTHING_COVERED');
+      // Unknown, another customer's, revoked: refused as typed.
+      await refused(await attach(order, 'ZZZZ-ZZZZ'), 422, 'DISCOUNT_CODE_UNKNOWN');
+      const rakoto = await t.db.customer.create({
+        data: { name: 'Rakoto', phone: '034 22 333 44' },
+      });
+      const theirs = await post('/discount-codes', cookies.owner, {
+        customerId: rakoto.id,
+        items: [{ productId: null, discount: { kind: 'amount', value: '1000' } }],
+      });
+      await refused(
+        await attach(order, discountCodeSchema.parse(theirs.json()).code),
+        409,
+        'DISCOUNT_CODE_OTHER_CUSTOMER',
+      );
+      const revoked = await issued();
+      await post(`/discount-codes/${revoked.id}/revoke`, cookies.owner);
+      await refused(await attach(order, revoked.code), 409, 'DISCOUNT_CODE_NOT_ACTIVE');
+      // The tablet no longer takes a code: typed at the register only (H63).
+      const onQuote = await post(`/quotes/${order.id}/discount-code`, cookies.sales, {
+        code: code.code,
+        version: order.version,
+      });
+      expect(onQuote.statusCode).toBe(404);
       // Refused, nothing is used.
       expect(await t.db.discountCode.count({ where: { status: 'USED' } })).toBe(0);
 

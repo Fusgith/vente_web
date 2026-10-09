@@ -153,7 +153,6 @@ describe('quote screen: a discount asked of the owner (T-033b, RG-REM-03, H51, H
     await waitFor(() => expect(screen.getByText(text.pending)).toHaveFocus());
     expect(screen.getByRole('button', { name: text.withdraw })).toBeEnabled();
     expect(screen.queryByRole('button', { name: text.ask })).toBeNull();
-    expect(screen.queryByRole('button', { name: labels.sales.code.open })).toBeNull();
     expect(screen.getByRole('button', { name: text.customerLocked(CUSTOMER.name) })).toBeDisabled();
   });
 
@@ -269,7 +268,8 @@ describe('quote screen: a discount asked of the owner (T-033b, RG-REM-03, H51, H
     expect(api.callsTo(WITHDRAW)).toHaveLength(1);
     expect(screen.queryByText(text.pending)).toBeNull();
     expect(screen.getByRole('button', { name: text.ask })).toBeEnabled();
-    expect(screen.getByRole('button', { name: labels.sales.code.open })).toBeEnabled();
+    // A promo code is typed at the register only (H63).
+    expect(screen.queryByRole('button', { name: labels.sales.code.open })).toBeNull();
   });
 });
 

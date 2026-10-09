@@ -284,26 +284,14 @@ export const labels = {
       close: 'Fermer',
     },
 
-    /** The promo code typed on the quote (T-034b, T-091, RG-REM-04, H42, H63). */
+    /** The promo code, typed at the register only (T-034c, T-091b, RG-REM-04, H42, H63). */
     code: {
       open: 'Code promo',
       title: 'Code promo',
       field: 'Code promo',
-      hint: 'Le code promo que le client présente, comme R7K4-29QP. Il ne sert qu’une fois : appliqué, il reste sur ce devis.',
       apply: 'Appliquer le code',
       applying: 'Vérification…',
       close: 'Fermer',
-      customerFirst: 'Choisissez le client avant de saisir le code promo.',
-      attached: (code: string) => `Code promo ${code} appliqué : ses remises sont sur le devis.`,
-      /** The total it does not cover lost headroom to the grants: the API brought it down (H42). */
-      attachedLowered: (code: string, amount: string) =>
-        `Code promo ${code} appliqué. La remise sur le total, qu’il ne couvre pas, passe à ${amount} : les lignes ont moins de marge.`,
-      /** A discount beyond its cap: the code cannot go on a quote that cannot be saved. */
-      beyondCap:
-        'Une remise dépasse son plafond : ramenez-la dans le plafond, appliquez le code, puis remontez-la jusqu’à ce qu’il accorde.',
-      /** A price changed since the save: the quote is saved again at the new price first. */
-      priceChanged:
-        'Un prix a changé depuis l’enregistrement : le devis est passé au nouveau prix. Vérifiez-le avec le client, puis appliquez le code.',
       /** In place of the button once attached: one code per quote, for good (H42). */
       tag: (code: string) => `Code promo ${code}`,
       /** In its place for the owner's answer to a request: applied, its code never shown (H64). */

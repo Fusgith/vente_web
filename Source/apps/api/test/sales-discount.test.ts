@@ -92,14 +92,9 @@ describe.skipIf(!TEST_DATABASE_URL)('the salesperson’s discounts, set by the a
     expect((await edit(s.cookies.manager)).statusCode).toBe(200);
   });
 
-  it('turned off, the salesperson neither asks the owner nor types a code; the cashier asks', async () => {
+  it('turned off, the salesperson does not ask the owner; the cashier asks', async () => {
     const quote = await s.quote();
     await turnOff();
-    const attach = await s.post(`/quotes/${quote.id}/discount-code`, s.cookies.sales, {
-      code: 'ABCD-EFGH',
-      version: quote.version,
-    });
-    expect(attach.statusCode).toBe(403);
     expect((await s.ask(quote, [[s.products.soap, 'pct', '10']])).statusCode).toBe(403);
 
     const order = await s.atRegister();

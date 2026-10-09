@@ -34,18 +34,6 @@ export const quotesApi = {
     return parseResponse(quoteSchema, data);
   },
 
-  /**
-   * The owner's code typed on the quote (T-034b, RG-REM-04, H42): used at once, and what it grants
-   * applied to the lines and the total it covers. `version`: the one last read, as on saving.
-   */
-  async attachCode(id: string, code: string, version: number): Promise<Quote> {
-    const data = await apiRequest(`/quotes/${id}/discount-code`, {
-      method: 'POST',
-      body: { code, version },
-    });
-    return parseResponse(quoteSchema, data);
-  },
-
   /** Opened in a tab, where the browser prints or shares it (RG-PDF-01). */
   pdfUrl(id: string): string {
     return `${API_BASE}/quotes/${id}/pdf`;

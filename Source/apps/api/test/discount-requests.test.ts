@@ -112,36 +112,19 @@ describe.skipIf(!TEST_DATABASE_URL)(
       const pending = await s.asked(quote, [soap]);
       refused(await s.ask(pending, [soap]), 409, 'DISCOUNT_REQUEST_PENDING');
 
-      // A code used: its grants are the owner's answer already (H42).
-      const other = await s.quote();
-      const code = await s.post('/discount-codes', s.cookies.owner, {
-        customerId: s.ids.customer,
-        items: [{ productId: s.products.soap, discount: { kind: 'pct', value: '10' } }],
-      });
-      const typed = await s.post(`/quotes/${other.id}/discount-code`, s.cookies.sales, {
-        code: (code.json() as { code: string }).code,
-        version: 1,
-      });
-      expect(typed.statusCode, typed.body).toBe(200);
-      refused(await s.ask({ id: other.id, version: 2 }, [soap]), 409, 'QUOTE_HAS_CODE');
-      expect(await t.db.discountRequest.count()).toBe(1);
+      // A request granted: its grants are the owner's answer already (H42, H53).
+      const other = await s.asked(await s.quote(), [soap]);
+      const [item] = other.discountRequest?.items ?? [];
+      const granted = s.decided(
+        await s.grant(other.discountRequest?.id ?? '', [[item?.id ?? '', soap]]),
+      );
+      refused(await s.ask(granted.order, [soap]), 409, 'QUOTE_HAS_CODE');
+      expect(await t.db.discountRequest.count()).toBe(2);
     });
 
-    it('keeps the quote from a code or another customer while the owner decides (H52)', async () => {
+    it('keeps the quote from another customer while the owner decides (H52)', async () => {
       const quote = await s.quote();
       const pending = await s.asked(quote, [[s.products.soap, 'pct', '20']]);
-      const code = await s.post('/discount-codes', s.cookies.owner, {
-        customerId: s.ids.customer,
-        items: [{ productId: null, discount: { kind: 'amount', value: '1000' } }],
-      });
-      refused(
-        await s.post(`/quotes/${quote.id}/discount-code`, s.cookies.sales, {
-          code: (code.json() as { code: string }).code,
-          version: pending.version,
-        }),
-        409,
-        'DISCOUNT_REQUEST_PENDING',
-      );
       const other = await t.db.customer.create({
         data: { name: 'Rakoto', phone: '034 22 333 44' },
       });

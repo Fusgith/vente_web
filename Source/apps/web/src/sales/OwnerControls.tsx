@@ -4,7 +4,6 @@ import { requestPending, requestProducts } from '../api/discount-requests.js';
 import { labels } from '../labels.js';
 import { buttonClass } from '../ui/button.js';
 import { Icon } from '../ui/Icon.js';
-import { DiscountCodeSheet } from './DiscountCodeSheet.js';
 import { DiscountRequestSheet } from './DiscountRequestSheet.js';
 import type { DraftState } from './draft.js';
 import type { QuoteBusy, RequestInput } from './useQuoteActions.js';
@@ -14,46 +13,35 @@ const MARK = 'inline-flex min-h-12 items-center gap-2 rounded-control border px-
 interface OwnerControlsProps {
   draft: DraftState;
   busy: QuoteBusy;
-  /** The owner's code typed in its sheet: null once attached, else why it was refused. */
-  onAttachCode: (code: string) => Promise<string | null>;
   /** The request from its sheet: null once sent, else why it was refused. */
   onAsk: (request: RequestInput) => Promise<string | null>;
   onWithdraw: () => void;
 }
 
 /**
- * Beyond the caps, under the quote: the owner's code typed (T-034b) or a discount asked of the
- * owner (T-033b). Once the code is attached, its tag takes the buttons' place; while a request
- * waits, its mark does, with the withdrawal agreed with the customer (H52, H54). Granted, the
- * request brings its code (H53).
+ * Beyond the caps, under the quote: a discount asked of the owner (T-033b). While it waits, its
+ * mark takes the button's place, with the withdrawal agreed with the customer (H52, H54); granted,
+ * the owner's answer is applied and its tag stays (H53, H64). A promo code is typed at the
+ * register only (H63).
  */
-export function OwnerControls({
-  draft,
-  busy,
-  onAttachCode,
-  onAsk,
-  onWithdraw,
-}: OwnerControlsProps) {
+export function OwnerControls({ draft, busy, onAsk, onWithdraw }: OwnerControlsProps) {
   const waiting = requestPending(draft.request);
   const state = draft.code ? `code:${draft.code.code}` : waiting ? 'request' : null;
-  // A sheet belongs to the state it was opened in: a code attached or a request made meanwhile
-  // (the owner's answer, another device) closes it.
-  const [opened, setOpened] = useState<{ sheet: 'code' | 'request'; on: string | null } | null>(
-    null,
-  );
+  // The sheet belongs to the state it was opened in: a request made or answered meanwhile (the
+  // owner's answer, another device) closes it.
+  const [opened, setOpened] = useState<{ on: string | null } | null>(null);
   // Left from a state since gone, the opening is dropped: a sheet never comes back on its own.
   if (opened && opened.on !== state) setOpened(null);
-  const open = opened?.on === state ? opened.sheet : null;
-  const setOpen = (sheet: 'code' | 'request') => setOpened({ sheet, on: state });
+  const open = opened?.on === state;
   const close = () => setOpened(null);
   const mark = useRef<HTMLSpanElement>(null);
   const askButton = useRef<HTMLButtonElement>(null);
   const shownState = useRef(state);
-  // The buttons give way to the code's tag or the request's mark, the mark to the buttons once
+  // The button gives way to the grant's tag or the request's mark, the mark to the button once
   // the request is closed: the focus, left on nothing, goes to what took the place, so a screen
   // reader says what changed.
   useEffect(() => {
-    if (open !== null || state === shownState.current) return;
+    if (open || state === shownState.current) return;
     shownState.current = state;
     const lost = !document.activeElement || document.activeElement === document.body;
     if (lost) (state ? mark : askButton).current?.focus();
@@ -89,28 +77,17 @@ export function OwnerControls({
   return (
     <>
       <button
-        type="button"
-        aria-haspopup="dialog"
-        onClick={() => setOpen('code')}
-        disabled={busy !== null}
-        className={buttonClass('secondary', 'md', 'shrink-0')}
-      >
-        <Icon name="key" className="size-5" />
-        {labels.sales.code.open}
-      </button>
-      <button
         ref={askButton}
         type="button"
         aria-haspopup="dialog"
-        onClick={() => setOpen('request')}
+        onClick={() => setOpened({ on: state })}
         disabled={busy !== null}
         className={buttonClass('secondary', 'md', 'shrink-0')}
       >
         <Icon name="user" className="size-5" />
         {labels.requests.ask}
       </button>
-      {open === 'code' && <DiscountCodeSheet onAttach={onAttachCode} onClose={close} />}
-      {open === 'request' && (
+      {open && (
         <DiscountRequestSheet
           products={requestProducts(draft.lines.map((line) => line.product))}
           onSend={onAsk}

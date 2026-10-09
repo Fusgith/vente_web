@@ -126,6 +126,45 @@ describe.skipIf(!TEST_DATABASE_URL)(
       refused(await s.ask(order, [[null, 'pct', '5']]), 409, 'ORDER_HAS_CODE');
     });
 
+    it('never validates a quote brought to 0,00 after the grant (H50)', async () => {
+      const quote = await s.quote();
+      const pending = await s.asked(quote, [[s.products.soap, 'pct', '100']]);
+      const [soap] = pending.discountRequest?.items ?? [];
+      // The soap given away, the nails paid: granted.
+      const granted = s.decided(
+        await s.grant(pending.discountRequest?.id ?? '', [
+          [soap?.id ?? '', [s.products.soap, 'pct', '100']],
+        ]),
+      );
+      // The nails removed, the draft saves at 0,00 — but never becomes an order.
+      const saved = await request(t.app, 'PUT', `/api/v1/quotes/${quote.id}`, {
+        cookie: s.cookies.sales,
+        body: {
+          version: granted.order.version,
+          customerId: s.ids.customer,
+          lines: [
+            { productUnitId: s.units.soapPack, qty: '4', discount: { kind: 'pct', value: '100' } },
+          ],
+          orderDiscount: null,
+        },
+      });
+      expect(saved.statusCode, saved.body).toBe(200);
+      const zero = quoteSchema.parse(saved.json());
+      expect(zero).toMatchObject({ total: '0.00' });
+      refused(
+        await s.post(`/orders/${quote.id}/submit`, s.cookies.sales, { version: zero.version }),
+        422,
+        'ORDER_TOTAL_ZERO',
+      );
+      const stored = await t.db.order.findUniqueOrThrow({ where: { id: quote.id } });
+      expect([stored.status, stored.ticketSeq, stored.version]).toEqual([
+        'DRAFT',
+        null,
+        zero.version,
+      ]);
+      expect(await t.db.reservation.count()).toBe(0);
+    });
+
     it('at the register: the order adjusted, the registers told, paid with the code named', async () => {
       const order = await s.atRegister();
       const pending = await s.asked(order, [[s.products.soap, 'pct', '12']], s.cookies.cashier);

@@ -3,7 +3,6 @@ import {
   ERROR_LABELS,
   formatMga,
   formatQty,
-  normalizeDiscountCode,
   ticketLabel,
   type DiscountRequestCreate,
   type Quote,
@@ -20,7 +19,6 @@ import { labels } from '../labels.js';
 import { useStatusLine } from '../shell/status-line.js';
 import { quoteInput } from './discount-entry.js';
 import {
-  orderBroughtDown,
   saveBody,
   saveSignature,
   unsavedChanges,
@@ -30,7 +28,6 @@ import {
 } from './draft.js';
 
 const text = labels.sales.draft;
-const codeText = labels.sales.code;
 const requestText = labels.requests;
 
 /** What the request sheet sends: the quote it goes on is the one saved (T-033b). */
@@ -45,25 +42,8 @@ function refusal(error: unknown, message = errorMessage(error)): string {
   return lines.length > 0 ? `${message} ${text.linesConcerned(lines.join(', '))}` : message;
 }
 
-const codeMessages: Partial<Record<string, string>> = {
-  QUOTE_DISCOUNT_BEYOND_CAP: codeText.beyondCap,
-  ORDER_PRICE_CHANGED: codeText.priceChanged,
-};
-
-/** A refusal while the code goes on, told for that step. */
-function codeRefusal(error: unknown): string {
-  const message = error instanceof ApiError ? codeMessages[error.code] : undefined;
-  return refusal(error, message);
-}
-
-/** The quote the code goes on: its id and the version read. */
+/** The quote the request goes on: its id and the version read. */
 type QuoteRef = Pick<SavedQuote, 'id' | 'version'>;
-
-/** The quote read again carries this very code, just put on over `target`: the answer was lost. */
-const attachedMeanwhile = (quote: Quote, typed: string, target: QuoteRef) =>
-  !!quote.discountCode &&
-  quote.version === target.version + 1 &&
-  normalizeDiscountCode(quote.discountCode.code) === normalizeDiscountCode(typed);
 
 /** RG-CMD-02: « SAV-001 : 432 disponibles, 433 demandés (pièce) », one product after another. */
 function shortageMessage(shortages: StockShortage[]): string {
@@ -78,8 +58,8 @@ function shortageMessage(shortages: StockShortage[]): string {
   return `${labels.sales.stock.title} — ${detail.join(' ; ')}.`;
 }
 
-/** A save, a validation or the owner's code under way: the buttons wait. */
-export type QuoteBusy = 'save' | 'submit' | 'code' | 'request' | null;
+/** A save, a validation or a request to the owner under way: the buttons wait. */
+export type QuoteBusy = 'save' | 'submit' | 'request' | null;
 
 /**
  * Saves the quote (T-030) and validates it into an order (T-032). The screen checks first what
@@ -91,9 +71,9 @@ export type QuoteBusy = 'save' | 'submit' | 'code' | 'request' | null;
  * anything is reserved (H28). A price changed after the save is refused by the API; the quote
  * is then saved again at the new price, for the same check.
  *
- * The owner's code (T-034b, H42) goes on a saved quote: the screen is saved first if it changed,
- * then the API attaches the code and applies what it grants. A request to the owner (T-033b, H51)
- * goes the same way; while it waits, it may be withdrawn with the customer's agreement (H54).
+ * A request to the owner (T-033b, H51) goes on a saved quote: the screen is saved first if it
+ * changed. While it waits, it may be withdrawn with the customer's agreement (H54). A promo code
+ * is typed at the register only (H63).
  */
 export function useQuoteActions(draft: DraftState, dispatch: Dispatch<DraftAction>) {
   const { say, sayError } = useStatusLine();
@@ -192,64 +172,6 @@ export function useQuoteActions(draft: DraftState, dispatch: Dispatch<DraftActio
       }
     });
 
-  /** The code on the quote: the screen takes what it grants; the band says so. */
-  function attached(quote: Quote) {
-    dispatch({ type: 'codeAttached', quote, sent: draft });
-    if (!quote.discountCode) return;
-    const { code } = quote.discountCode;
-    say(
-      orderBroughtDown(draft, quote)
-        ? codeText.attachedLowered(code, formatMga(quote.orderDiscount))
-        : codeText.attached(code),
-      'check',
-    );
-  }
-
-  /**
-   * A refusal of the code, for the sheet. The answer lost on the Wi-Fi (or a second try after it)
-   * may hide a code that went on: the quote read again tells. A price changed since the save: the
-   * quote is saved again at the new price, for the customer to agree first, as on validating.
-   */
-  async function attachRefused(error: unknown, typed: string, target: QuoteRef | null) {
-    if (!(error instanceof ApiError) || !target) return codeRefusal(error);
-    try {
-      if (error.code === 'NETWORK_ERROR' || error.code === 'QUOTE_CHANGED') {
-        const quote = await quotesApi.get(target.id);
-        if (attachedMeanwhile(quote, typed, target)) {
-          attached(quote);
-          return null;
-        }
-      }
-      if (error.code === 'ORDER_PRICE_CHANGED') await reprice(target.id, target.version);
-    } catch (again) {
-      // Still no answer, or the save at the new price refused: the first refusal stays.
-      if (error.code === 'ORDER_PRICE_CHANGED') return codeRefusal(again);
-    }
-    return codeRefusal(error);
-  }
-
-  /**
-   * The owner's code typed in its sheet: null once attached (the band says so), else why it was
-   * refused, for the sheet to show under the field.
-   */
-  async function attachCode(typed: string): Promise<string | null> {
-    const changed = !draft.saved || unsavedChanges(draft);
-    const refused = changed ? unsaveable(codeText.customerFirst, codeText.beyondCap) : null;
-    if (refused) return refused;
-    setBusy('code');
-    let target: QuoteRef | null = draft.saved ?? null;
-    try {
-      if (changed) target = await store();
-      if (!target) return codeText.customerFirst;
-      attached(await quotesApi.attachCode(target.id, typed, target.version));
-      return null;
-    } catch (error) {
-      return await attachRefused(error, typed, target);
-    } finally {
-      setBusy(null);
-    }
-  }
-
   /**
    * A refusal of the request, for the sheet. The answer lost on the Wi-Fi may hide a request that
    * went through, and a request made meanwhile holds the quote: the quote read again tells.
@@ -312,5 +234,5 @@ export function useQuoteActions(draft: DraftState, dispatch: Dispatch<DraftActio
       }
     });
 
-  return { save, submit, attachCode, ask, withdraw, busy };
+  return { save, submit, ask, withdraw, busy };
 }

@@ -15,7 +15,7 @@ import { suggestedOn } from './discount-rules.js';
 import { snapshot as orderSnapshot, withCode, writeGrants } from './order-changes.js';
 import { findOrder, toOrder, toQuote, usedCode, type StoredOrder } from './order-view.js';
 import { dayEndTime } from './orders.js';
-import { useCode } from './quote-codes.js';
+import { useCode } from './discount-code-use.js';
 import { assertNotFree, snapshot as quoteSnapshot } from './quotes.js';
 import { nextShopTime } from './shop-time.js';
 
