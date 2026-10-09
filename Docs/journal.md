@@ -2,6 +2,21 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 09/10/2026 — T-091 : code promo pour un prochain achat (H63) — agent : Claude Code (Opus 5.5)
+
+**Fait** :
+- Le code émis sans demande devient un **code promo** : le boss choisit le jour jusqu'auquel il vaut (champ « Valable jusqu’au », prérempli à aujourd'hui + `promo_code_days`, 30 par défaut, seed compris) ; il expire à l'heure `day_end_time` de ce jour. Une date passée est refusée (`422 DISCOUNT_CODE_EXPIRY_PAST`).
+- API : `POST /discount-codes` accepte `validUntil` (AAAA-MM-JJ, facultatif) ; `GET /discount-codes` renvoie aussi `defaultValidUntil` pour préremplir le formulaire. `shopIsoDate` et `shopTimeOn` (heure du magasin un jour donné) rejoignent `shop-time.ts`.
+- Boss : panneau « Codes promo » (actifs et du jour, colonne « Valable jusqu’au » en date) ; l'encart du code émis dit jusqu'à quand le remettre au client. Le panneau ne suit plus les accords des demandes (H64 : ils ne passent plus par lui).
+- Libellés : « code du boss » / « code de remise » deviennent « code promo » (tablette, caisse, journal d'audit, facture) ; à la caisse, une ligne remisée par un accord dit « accordée par le boss », par un code tapé « code promo » ; les plafonds affichent « Remise accordée : au plus … ».
+- Tests : API 2 (`discount-codes.test.ts`, dont la date choisie, refusée si passée, et `promo_code_days`), web (`DiscountCodesPanel.test.tsx`) ; web + shared 398, API ciblés 22 verts.
+
+**Reste** : T-091b (retirer la saisie du code sur la tablette, H63 : saisi à la caisse) ; T-092 à T-096 dans l'ordre ; T-090b ; T-056 ; T-010c attend le logo.
+
+**Décisions** : aucune nouvelle (H63 codée selon sa formulation). La saisie du code sur le devis reste en place jusqu'à T-091b, tâche à part pour garder ce changement lisible.
+
+**Questions** : H60 à H69 à valider (T-001d).
+
 ## 09/10/2026 — T-090 : règles de remise du boss, remises prévues à la caisse (H62) — agent : Claude Code (Opus 5.5)
 
 **Fait** :

@@ -47,11 +47,11 @@ function belowSuggested(
   });
 }
 
-/** Where a line's discount comes from, as the cashier checks it (§5.6). */
-function origin(line: QuoteLine): string | null {
+/** Where a line's discount comes from, as the cashier checks it (§5.6, H63, H64). */
+function origin(line: QuoteLine, granted: boolean): string | null {
   if (line.discountSource === 'WITHIN_CAP') return text.withinCap;
   if (line.discountSource === 'RULE') return text.byRule;
-  if (line.discountSource === 'CODE') return text.byCode;
+  if (line.discountSource === 'CODE') return granted ? text.byOwner : text.byCode;
   return null;
 }
 
@@ -155,7 +155,7 @@ export function OrderControl({
               const ruled = below.has(item.position) ? (suggested[index] ?? null) : null;
               const row = `${CELL} h-14 border-b border-rule py-1`;
               const factor = formatQty(item.factor);
-              const source = origin(item);
+              const source = origin(item, order.discountCode?.granted === true);
               return (
                 <tr key={item.productUnitId}>
                   <td className={`${row} figures`}>{item.position}</td>

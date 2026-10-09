@@ -80,7 +80,9 @@ export const registerLabels = {
   lastLine: 'Dernière ligne : pour tout retirer, annulez la commande.',
   close: 'Fermer',
   withinCap: 'dans le plafond',
-  byCode: 'code du boss',
+  /** H63, H64: a promo code typed, or the owner's answer to a request, applied without a code. */
+  byCode: 'code promo',
+  byOwner: 'accordée par le boss',
   /** The owner's rules (T-090, H62): a suggested discount, applied at the customer's request. */
   byRule: 'remise prévue',
   suggestedPct: (pct: string) => `Prévue : ${pct} %`,
@@ -110,14 +112,13 @@ export const registerLabels = {
   /** A line's discount raised left the total less headroom: the API brought it down (H23). */
   totalLowered: (amount: string) =>
     ` La remise sur le total passe à ${amount} : les lignes ont moins de marge.`,
-  /** The owner's code typed before payment (T-034c, RG-CMD-05b, H42). */
+  /** The promo code typed before payment (T-034c, T-091, RG-CMD-05b, H42, H63). */
   codeHint:
-    'Le code donné par le boss, comme R7K4-29QP. Il ne sert qu’une fois : appliqué, il reste sur cette commande.',
-  codeAttached: (code: string) =>
-    `Code ${code} appliqué : les remises du boss sont sur la commande.`,
+    'Le code promo que le client présente, comme R7K4-29QP. Il ne sert qu’une fois : appliqué, il reste sur cette commande.',
+  codeAttached: (code: string) => `Code promo ${code} appliqué : ses remises sont sur la commande.`,
   /** The total it does not cover lost headroom to the grants: the API brought it down (H42). */
   codeAttachedLowered: (code: string, amount: string) =>
-    `Code ${code} appliqué. La remise sur le total, qu’il ne couvre pas, passe à ${amount} : les lignes ont moins de marge.`,
+    `Code promo ${code} appliqué. La remise sur le total, qu’il ne couvre pas, passe à ${amount} : les lignes ont moins de marge.`,
   cancelOrder: 'Annuler la commande',
   cancelTitle: (ticket: string, name: string) => `Annuler la commande ${ticket} — ${name}`,
   cancelReason: 'Motif de l’annulation (obligatoire)',

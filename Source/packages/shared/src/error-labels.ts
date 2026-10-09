@@ -48,13 +48,13 @@ export const ERROR_LABELS = {
   SALES_DISCOUNT_DISABLED:
     'Le commercial n’accorde pas de remise : le client peut en demander une à la caisse, avant de payer.',
   DISCOUNT_CODE_NOT_ACTIVE: 'Ce code n’est plus actif : il a été utilisé, révoqué, ou il a expiré.',
-  DISCOUNT_CODE_UNKNOWN: 'Ce code de remise n’existe pas : vérifiez sa saisie.',
-  DISCOUNT_CODE_OTHER_CUSTOMER: 'Ce code de remise a été émis pour un autre client.',
-  DISCOUNT_CODE_NOTHING_COVERED: 'Ce code de remise ne couvre aucun de ces articles, ni le total.',
+  DISCOUNT_CODE_UNKNOWN: 'Ce code promo n’existe pas : vérifiez sa saisie.',
+  DISCOUNT_CODE_OTHER_CUSTOMER: 'Ce code promo a été émis pour un autre client.',
+  DISCOUNT_CODE_NOTHING_COVERED: 'Ce code promo ne couvre aucun de ces articles, ni le total.',
   DISCOUNT_CODE_FREE_ORDER:
     'Ce code mettrait le total à 0,00\u00a0MGA : une commande n’est jamais gratuite. Il reste actif ; le boss peut en émettre un autre.',
-  QUOTE_HAS_CODE: 'Un code de remise est déjà rattaché à ce devis.',
-  ORDER_HAS_CODE: 'Un code de remise est déjà rattaché à cette commande : un seul par commande.',
+  QUOTE_HAS_CODE: 'Un code promo est déjà rattaché à ce devis.',
+  ORDER_HAS_CODE: 'Un code promo est déjà rattaché à cette commande : un seul par commande.',
   DISCOUNT_REQUEST_PENDING:
     'Une demande de remise attend la réponse du boss : attendez sa décision, ou retirez la demande avec l’accord du client.',
   DISCOUNT_REQUEST_NOT_PENDING:
@@ -68,6 +68,8 @@ export const ERROR_LABELS = {
   DISCOUNT_REQUEST_FREE_ORDER:
     'Cet accord mettrait le total à 0,00\u00a0MGA : une commande n’est jamais gratuite. La demande reste en attente.',
   DISCOUNT_CODE_PRODUCT_UNAVAILABLE: 'Un article du code n’est plus en vente : retirez-le du code.',
+  DISCOUNT_CODE_EXPIRY_PAST:
+    'Cette date de validité est déjà passée : choisissez aujourd’hui ou un jour suivant.',
   QUOTE_NOT_DRAFT: 'Ce devis est déjà devenu une commande : il ne se modifie plus.',
   ORDER_PRICE_CHANGED:
     'Un prix a changé depuis l’enregistrement du devis : vérifiez-le avec le client, puis validez.',

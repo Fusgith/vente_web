@@ -1,7 +1,8 @@
 /**
  * Discount codes issued by the owner (RG-REM-04, decision H22, H41): each grants, beyond the caps,
- * a rate or an amount on products — all their sale units — and/or the order total; single use,
- * valid until the next day end.
+ * a rate or an amount on products — all their sale units — and/or the order total; single use.
+ * One issued without a request is a promo code for a next purchase, valid until the day the owner
+ * chooses (⚠️ H63).
  */
 import { z } from 'zod';
 
@@ -40,9 +41,13 @@ export const discountCodeItemInputSchema = z.object({
 });
 export type DiscountCodeItemInput = z.infer<typeof discountCodeItemInputSchema>;
 
-/** A code issued without a request names its customer (RG-REM-04); a product once, the total once. */
+/**
+ * A promo code names its customer (RG-REM-04, H63); a product once, the total once. Valid until
+ * the day end of `validUntil` (a shop day), `promo_code_days` from today without one.
+ */
 export const discountCodeIssueSchema = z.object({
   customerId: uuid,
+  validUntil: z.iso.date().optional(),
   items: z
     .array(discountCodeItemInputSchema)
     .min(1)
@@ -74,6 +79,10 @@ export const discountCodeSchema = z.object({
 });
 export type DiscountCode = z.infer<typeof discountCodeSchema>;
 
-/** The codes issued this shop day and those still active, newest first. */
-export const discountCodeListSchema = z.object({ items: z.array(discountCodeSchema) });
+/** The codes issued this shop day and those still active, newest first; the validity proposed. */
+export const discountCodeListSchema = z.object({
+  items: z.array(discountCodeSchema),
+  /** Today plus `promo_code_days`, at the shop (H63). */
+  defaultValidUntil: z.iso.date(),
+});
 export type DiscountCodeList = z.infer<typeof discountCodeListSchema>;

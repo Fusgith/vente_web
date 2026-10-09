@@ -112,12 +112,12 @@ describe('invoice PDF (RG-FAC-02, H33)', () => {
     expect(notice).toContain('TVA non applicable');
   });
 
-  it('names the owner’s code under which discounts went beyond the caps (RG-REM-07)', () => {
+  it('names the promo code under which discounts went beyond the caps (RG-REM-07, H63)', () => {
     const header = (doc: ReturnType<typeof invoiceDocument>) =>
       texts((doc.content as unknown[])[0]);
-    expect(header(invoiceDocument(snapshot()))).not.toContain('Code de remise');
+    expect(header(invoiceDocument(snapshot()))).not.toContain('Code promo');
     const coded = header(invoiceDocument(snapshot({ discountCode: 'R7K4-29QP' })));
-    expect(coded).toEqual(expect.arrayContaining(['Code de remise', 'R7K4-29QP']));
+    expect(coded).toEqual(expect.arrayContaining(['Code promo', 'R7K4-29QP']));
   });
 
   it('prints the owner’s answer to a request without its code (H64)', () => {
@@ -129,7 +129,7 @@ describe('invoice PDF (RG-FAC-02, H33)', () => {
     );
     expect(header).toEqual(expect.arrayContaining(['Remise', 'Accordée par le boss']));
     expect(header).not.toContain('R7K4-29QP');
-    expect(header).not.toContain('Code de remise');
+    expect(header).not.toContain('Code promo');
   });
 
   it('renders to a PDF', async () => {

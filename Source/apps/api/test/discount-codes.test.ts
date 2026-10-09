@@ -2,7 +2,8 @@ import { discountCodeListSchema, discountCodeSchema, type DiscountCode } from '@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { expireDiscountCodes, listDiscountCodes } from '../src/services/discount-codes.js';
-import { nextShopTime } from '../src/services/shop-time.js';
+import { clearSettingsCache } from '../src/services/settings.js';
+import { shopIsoDate, shopTimeOn } from '../src/services/shop-time.js';
 import { productId, seedDemoCatalog } from './catalog.js';
 import { TEST_DATABASE_URL } from './db.js';
 import {
@@ -19,7 +20,7 @@ const PASSWORD = 'Boss-1234!';
 const READABLE = /^[2-9A-HJKMNP-Z]{4}-[2-9A-HJKMNP-Z]{4}$/;
 const HOUR = 3_600_000;
 
-describe.skipIf(!TEST_DATABASE_URL)('discount codes issued by the owner (RG-REM-04, H41)', () => {
+describe.skipIf(!TEST_DATABASE_URL)('promo codes issued by the owner (RG-REM-04, H41, H63)', () => {
   let t: TestApp;
   let owner = '';
   let sales = '';
@@ -68,7 +69,7 @@ describe.skipIf(!TEST_DATABASE_URL)('discount codes issued by the owner (RG-REM-
     ],
   });
 
-  it('issues a readable code for a customer, valid until the day end, and lists it', async () => {
+  it('issues a readable code for a customer, valid 30 days by default, and lists it', async () => {
     const code = await issued(grants());
 
     expect(code.code).toMatch(READABLE);
@@ -79,7 +80,8 @@ describe.skipIf(!TEST_DATABASE_URL)('discount codes issued by the owner (RG-REM-
       usedAt: null,
       revokedAt: null,
     });
-    expect(code.expiresAt).toBe(nextShopTime(new Date(code.issuedAt), '23:59').toISOString());
+    const issuedAt = new Date(code.issuedAt);
+    expect(code.expiresAt).toBe(shopTimeOn(shopIsoDate(issuedAt, 30), '23:59').toISOString());
     expect(code.items.map((item) => [item.product?.sku ?? null, item.discount])).toEqual([
       ['CLO-001', { kind: 'amount', value: '1500.50' }],
       ['SAV-001', { kind: 'pct', value: '12.00' }],
@@ -89,15 +91,43 @@ describe.skipIf(!TEST_DATABASE_URL)('discount codes issued by the owner (RG-REM-
     expect(entry).toMatchObject({ action: 'discount_code.issued', entityType: 'discount_code' });
     expect(entry.after).toMatchObject({ customerId: customer, expiresAt: code.expiresAt });
 
-    const list = await request(t.app, 'GET', '/api/v1/discount-codes', { cookie: owner });
-    expect(discountCodeListSchema.parse(list.json()).items.map((item) => item.id)).toEqual([
-      code.id,
-    ]);
+    const list = discountCodeListSchema.parse(
+      (await request(t.app, 'GET', '/api/v1/discount-codes', { cookie: owner })).json(),
+    );
+    expect(list.items.map((item) => item.id)).toEqual([code.id]);
+    expect(list.defaultValidUntil).toBe(shopIsoDate(new Date(), 30));
     // The owner alone issues and reads them (annexe B).
     expect((await issue(grants(), sales)).statusCode).toBe(403);
     expect(
       (await request(t.app, 'GET', '/api/v1/discount-codes', { cookie: sales })).statusCode,
     ).toBe(403);
+  });
+
+  it('lasts until the day end of the day the owner chose, never a past one', async () => {
+    const today = shopIsoDate(new Date());
+    const tonight = await issued({ ...grants(), validUntil: today });
+    expect(tonight.expiresAt).toBe(shopTimeOn(today, '23:59').toISOString());
+    const later = await issued({ ...grants(), validUntil: '2099-12-31' });
+    expect(later.expiresAt).toBe(shopTimeOn('2099-12-31', '23:59').toISOString());
+
+    const yesterday = await issue({ ...grants(), validUntil: shopIsoDate(new Date(), -1) });
+    expect([yesterday.statusCode, yesterday.json().code]).toEqual([
+      422,
+      'DISCOUNT_CODE_EXPIRY_PAST',
+    ]);
+    expect((await issue({ ...grants(), validUntil: '31/12/2099' })).statusCode).toBe(400);
+
+    // The owner's setting proposes another validity (CDC métier §13).
+    await t.db.setting.create({ data: { key: 'promo_code_days', value: 7 } });
+    clearSettingsCache();
+    const week = await issued(grants());
+    expect(week.expiresAt).toBe(
+      shopTimeOn(shopIsoDate(new Date(week.issuedAt), 7), '23:59').toISOString(),
+    );
+    const list = await request(t.app, 'GET', '/api/v1/discount-codes', { cookie: owner });
+    expect(discountCodeListSchema.parse(list.json()).defaultValidUntil).toBe(
+      shopIsoDate(new Date(), 7),
+    );
   });
 
   it('refuses a code for nothing, twice the same product, or an unavailable one', async () => {
@@ -126,7 +156,7 @@ describe.skipIf(!TEST_DATABASE_URL)('discount codes issued by the owner (RG-REM-
     expect(await t.db.discountCode.count()).toBe(0);
   });
 
-  it('revokes an active code once, and expires the others at the day end', async () => {
+  it('revokes an active code once, and expires the others at their day end', async () => {
     const kept = await issued(grants());
     const withdrawn = await issued({
       customerId: customer,
@@ -151,7 +181,7 @@ describe.skipIf(!TEST_DATABASE_URL)('discount codes issued by the owner (RG-REM-
     });
     expect([expiry.userId, expiry.after]).toEqual([null, { status: 'EXPIRED' }]);
     expect((await revoke(kept.id)).statusCode).toBe(409);
-    // The next shop day, yesterday's codes are gone from the list: none is active any more.
+    // The next shop day, the old codes are gone from the list: none is active any more.
     expect(await listDiscountCodes(t.db, new Date(end.getTime() + 2 * HOUR))).toEqual([]);
   });
 });

@@ -28,6 +28,8 @@ export const SETTINGS: Record<string, unknown> = {
   // H60: the salesperson gives no discount until the admin allows it.
   sales_discount_enabled: false,
   'discount_code.length': 8,
+  // H63: a promo code is proposed valid for this many days.
+  promo_code_days: 30,
   customer_categories: ['Divers', 'Régulier', 'Gros contrat'],
   discount_reasons: ['Client fidèle', 'Achat en volume', 'Article abîmé', 'Geste commercial'],
   adjustment_reasons: ['Casse', 'Vol', 'Erreur de comptage', 'Périmé', 'Retour fournisseur'],

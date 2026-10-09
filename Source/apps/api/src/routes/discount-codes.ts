@@ -8,6 +8,7 @@ import { z } from 'zod';
 
 import { actorOf, authOf, requireRole } from '../plugins/session.js';
 import {
+  defaultValidUntil,
   issueDiscountCode,
   listDiscountCodes,
   revokeDiscountCode,
@@ -17,11 +18,16 @@ const params = z.object({ id: z.uuid() });
 /** Annexe B « émettre un code, révoquer »: the owner alone. */
 const owner = { preHandler: requireRole('owner') };
 
-/** Discount codes issued by the owner (T-034, RG-REM-04/07, H41). */
+/** Promo codes issued by the owner (T-034, T-091, RG-REM-04/07, H41, H63). */
 export const discountCodeRoutes: FastifyPluginAsync = async (app) => {
-  app.get('/discount-codes', owner, async (): Promise<DiscountCodeList> => ({
-    items: await listDiscountCodes(app.db),
-  }));
+  app.get('/discount-codes', owner, async (): Promise<DiscountCodeList> => {
+    const now = new Date();
+    const [items, validUntil] = await Promise.all([
+      listDiscountCodes(app.db, now),
+      defaultValidUntil(app.db, now),
+    ]);
+    return { items, defaultValidUntil: validUntil };
+  });
 
   app.post('/discount-codes', owner, async (request, reply): Promise<DiscountCode> => {
     const input = discountCodeIssueSchema.parse(request.body);

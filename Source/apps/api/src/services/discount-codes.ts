@@ -16,13 +16,15 @@ import { recordAudit } from './audit.js';
 import { dayEndTime } from './orders.js';
 import { assertActiveCustomer } from './quotes.js';
 import { readPositiveIntSetting } from './settings.js';
-import { nextShopTime, shopDayStart } from './shop-time.js';
+import { shopDayStart, shopIsoDate, shopTimeOn } from './shop-time.js';
 
 /** Default of `discount_code.length` (CDC métier §13). */
 const DEFAULT_LENGTH = 8;
 /** Under 6 characters a code is guessed; 12 and their hyphens fill `VARCHAR(16)`. */
 const MIN_LENGTH = 6;
 const MAX_LENGTH = 12;
+/** Default of `promo_code_days` (CDC métier §13, ⚠️ H63). */
+const DEFAULT_PROMO_DAYS = 30;
 /** A code drawn again when it happens to exist already: at most this many draws. */
 export const DRAWS = 5;
 
@@ -89,9 +91,16 @@ export const stored = (entry: DiscountEntry) =>
 const isTaken = (error: unknown) =>
   error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
 
+/** The validity a promo code is proposed with: today plus `promo_code_days`, at the shop (H63). */
+export async function defaultValidUntil(db: Db, now = new Date()): Promise<string> {
+  const days = await readPositiveIntSetting(db, 'promo_code_days', DEFAULT_PROMO_DAYS);
+  return shopIsoDate(now, days);
+}
+
 /**
- * Issues a code without a request (RG-REM-04, H41): for an active customer, on active products
- * and/or the total, valid until the next day end; journaled with what it grants.
+ * Issues a promo code (RG-REM-04, H41, ⚠️ H63): for an active customer, on active products and/or
+ * the total, valid until the day end of the day the owner chose — `promo_code_days` from today
+ * by default; journaled with what it grants.
  */
 export async function issueDiscountCode(
   db: Db,
@@ -103,8 +112,13 @@ export async function issueDiscountCode(
   const productIds = input.items.flatMap((item) => item.productId ?? []);
   const onSale = await db.product.count({ where: { id: { in: productIds }, isActive: true } });
   if (onSale !== productIds.length) throw new AppError(422, 'DISCOUNT_CODE_PRODUCT_UNAVAILABLE');
-  const [length, dayEnd] = await Promise.all([codeLength(db), dayEndTime(db)]);
-  const expiresAt = nextShopTime(now, dayEnd);
+  const [length, dayEnd, validUntil] = await Promise.all([
+    codeLength(db),
+    dayEndTime(db),
+    input.validUntil ?? defaultValidUntil(db, now),
+  ]);
+  const expiresAt = shopTimeOn(validUntil, dayEnd);
+  if (expiresAt.getTime() <= now.getTime()) throw new AppError(422, 'DISCOUNT_CODE_EXPIRY_PAST');
   const items = input.items.map((item) => ({
     productId: item.productId,
     ...stored(item.discount),
@@ -187,7 +201,7 @@ export async function revokeDiscountCode(
 }
 
 /**
- * Expires the codes past their day end (RG-REM-04), audited as the system's doing; run with the
+ * Expires the codes past their expiry (RG-REM-04, H63), audited as the system's doing; run with the
  * orders' sweep. A used or revoked code keeps its status.
  */
 export async function expireDiscountCodes(db: Db, now = new Date()): Promise<number> {

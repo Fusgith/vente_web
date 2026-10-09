@@ -75,7 +75,7 @@ describe('signed-in shell', () => {
       'GET /register-sessions': ok({ sessions: [] }),
       'GET /audit': ok({ entries: [], more: false }),
       'GET /discount-caps': ok({ defaultPct: '0.00', categories: [] }),
-      'GET /discount-codes': ok({ items: [] }),
+      'GET /discount-codes': ok({ items: [], defaultValidUntil: '2026-10-29' }),
       'GET /promotions': ok({ items: [] }),
       'GET /discount-rules': ok({ items: [] }),
       'GET /categories': ok({ items: [] }),

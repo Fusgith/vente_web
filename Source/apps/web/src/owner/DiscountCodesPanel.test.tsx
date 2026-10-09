@@ -1,5 +1,5 @@
 import { formatPhone, type Customer, type DiscountCode } from '@vente-web/shared';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { labels } from '../labels.js';
@@ -34,7 +34,7 @@ const code = (status: DiscountCode['status']): DiscountCode => ({
   customer: { id: RASOA.id, name: RASOA.name, phone: RASOA.phone },
   orderId: null,
   issuedAt: '2026-09-29T07:00:00.000Z',
-  expiresAt: '2026-09-29T20:59:00.000Z',
+  expiresAt: '2026-10-29T20:59:00.000Z',
   usedAt: null,
   revokedAt: status === 'REVOKED' ? '2026-09-29T08:00:00.000Z' : null,
   items: [
@@ -45,6 +45,9 @@ const code = (status: DiscountCode['status']): DiscountCode => ({
     { product: null, discount: { kind: 'amount', value: '5000.00' } },
   ],
 });
+/** Today plus 30 days, as the API proposes it (H63). */
+const PROPOSED = '2026-10-29';
+const listOf = (items: DiscountCode[]) => ok({ items, defaultValidUntil: PROPOSED });
 const soapHit = ok({
   exact: null,
   more: false,
@@ -87,10 +90,10 @@ function search(name: string, value: string) {
   fireEvent.click(within(form).getByRole('button', { name: text.searchGo }));
 }
 
-describe('DiscountCodesPanel — the owner’s codes (T-034, RG-REM-04, H41)', () => {
+describe('DiscountCodesPanel — the owner’s promo codes (T-034, T-091, RG-REM-04, H63)', () => {
   it('issues a code for a customer, on a product and on the total, and lists it', async () => {
     const api = await mount({
-      [LIST]: ok({ items: [] }),
+      [LIST]: listOf([]),
       'GET /customers?q=rasoa': ok({ items: [RASOA], more: false }),
       'GET /products/search?q=sav': soapHit,
       [ISSUE]: { status: 201, body: code('ACTIVE') },
@@ -121,60 +124,46 @@ describe('DiscountCodesPanel — the owner’s codes (T-034, RG-REM-04, H41)', (
     fireEvent.change(panel().getByRole('textbox', { name: text.grantOf(text.totalWhat) }), {
       target: { value: '5 000' },
     });
+    // Valid 30 days unless the owner chooses another day (H63).
+    expect(panel().getByLabelText(text.validUntil)).toHaveValue(PROPOSED);
+    fireEvent.change(panel().getByLabelText(text.validUntil), { target: { value: '' } });
+    expect(issue).toBeDisabled();
+    fireEvent.change(panel().getByLabelText(text.validUntil), {
+      target: { value: '2026-11-15' },
+    });
     expect(issue).toBeEnabled();
     fireEvent.click(issue);
 
     await waitFor(() => expect(band().textContent).toBe(text.issued('K7QM-3XWP', RASOA.name)));
     expect(api.callsTo(ISSUE)[0]?.body).toEqual({
       customerId: RASOA.id,
+      validUntil: '2026-11-15',
       items: [
         { productId: SOAP, discount: { kind: 'pct', value: '12' } },
         { productId: null, discount: { kind: 'amount', value: '5000' } },
       ],
     });
     expect(panel().getByRole('status', { name: text.toGive })).toHaveTextContent('K7QM-3XWP');
+    expect(panel().getByText(text.validTo('29/10/2026'), { exact: false })).toBeInTheDocument();
     const row = within(panel().getByRole('table', { name: text.list })).getAllByRole(
       'row',
     )[1] as HTMLElement;
     expect(row.textContent?.replace(/\s/g, ' ')).toContain('SAV-001 : 12 % ; Total : 5 000,00 MGA');
     expect(within(row).getByText(text.status.ACTIVE)).toBeInTheDocument();
+    expect(row).toHaveTextContent('29/10/2026');
     // The form is ready for the next code.
     expect(panel().queryByRole('textbox', { name: text.grantOf('SAV-001') })).toBeNull();
+    expect(panel().getByLabelText(text.validUntil)).toHaveValue(PROPOSED);
     expect(issue).toBeDisabled();
   });
 
   it('revokes an active code, then offers nothing more on it', async () => {
-    await mount({ [LIST]: ok({ items: [code('ACTIVE')] }), [REVOKE]: ok(code('REVOKED')) });
+    await mount({ [LIST]: listOf([code('ACTIVE')]), [REVOKE]: ok(code('REVOKED')) });
 
     fireEvent.click(await panel().findByRole('button', { name: text.revokeOf('K7QM-3XWP') }));
 
     await waitFor(() => expect(band().textContent).toBe(text.revoked('K7QM-3XWP')));
     expect(panel().getByText(text.status.REVOKED)).toBeInTheDocument();
     expect(panel().queryByRole('button', { name: text.revokeOf('K7QM-3XWP') })).toBeNull();
-  });
-
-  it('lists the code a request granted gives, the refusals left aside (H53)', async () => {
-    let granted = false;
-    const api = await mount({ [LIST]: () => ok({ items: granted ? [code('ACTIVE')] : [] }) });
-    expect(await panel().findByText(text.empty)).toBeVisible();
-    await waitFor(() =>
-      expect(fakeRealtime.sockets[0]?.listeners.get('discount.request_decided')?.size).toBe(1),
-    );
-    const reads = api.callsTo(LIST).length;
-    const decided = (status: 'GRANTED' | 'REJECTED') =>
-      act(() =>
-        fakeRealtime.emit('discount.request_decided', {
-          requestId: '0192a4f0-0000-7000-8000-000000000601',
-          orderId: '0192a4f0-0000-7000-8000-000000000402',
-          status,
-        }),
-      );
-
-    decided('REJECTED');
-    expect(api.callsTo(LIST)).toHaveLength(reads);
-    granted = true;
-    decided('GRANTED');
-
-    expect(await panel().findByText('K7QM-3XWP')).toBeVisible();
   });
 });

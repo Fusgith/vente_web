@@ -255,28 +255,27 @@ export const labels = {
       amountSign: 'MGA',
       /** Shown before anything is typed (RG-REM-02). */
       maxLine: (pct: string, amount: string) => `Au plus ${pct} %, soit ${amount}`,
-      noLineDiscount: 'Aucune remise sur cette ligne sans code du boss.',
+      noLineDiscount: 'Aucune remise sur cette ligne sans l’accord du boss.',
       /** In place of the maximum, when a key is refused. */
       beyondLine: (pct: string, amount: string) =>
-        `Au plus ${pct} %, soit ${amount} : au-delà, il faut un code du boss.`,
+        `Au plus ${pct} %, soit ${amount} : au-delà, il faut l’accord du boss.`,
       order: 'Remise sur le total',
       subtotal: 'Sous-total',
       maxOrder: (amount: string) => `Au plus ${amount}`,
       noOrderRoom:
-        'Plus aucune marge de remise sur ces lignes : une remise sur le total demande un code du boss.',
-      beyondOrder: (amount: string) => `Au plus ${amount} : au-delà, il faut un code du boss.`,
-      /** In place of the cap, on a line or a total the owner's code covers (H42). */
-      maxGranted: (amount: string) => `Code du boss : au plus ${amount}`,
-      beyondGranted: (amount: string) =>
-        `Au plus ${amount} : c’est ce que le code du boss accorde.`,
+        'Plus aucune marge de remise sur ces lignes : une remise sur le total demande l’accord du boss.',
+      beyondOrder: (amount: string) => `Au plus ${amount} : au-delà, il faut l’accord du boss.`,
+      /** In place of the cap, on a line or a total a promo code or the owner covers (H42, H64). */
+      maxGranted: (amount: string) => `Remise accordée : au plus ${amount}`,
+      beyondGranted: (amount: string) => `Au plus ${amount} : c’est ce qui est accordé.`,
       /** A code on the quote that does not cover this line or the total: one code per quote. */
-      noLineDiscountCoded: 'Aucune remise sur cette ligne : le code du boss ne la couvre pas.',
+      noLineDiscountCoded: 'Aucune remise sur cette ligne : la remise accordée ne la couvre pas.',
       beyondLineCoded: (pct: string, amount: string) =>
-        `Au plus ${pct} %, soit ${amount} : le code du boss ne couvre pas cette ligne.`,
+        `Au plus ${pct} %, soit ${amount} : la remise accordée ne couvre pas cette ligne.`,
       noOrderRoomCoded:
-        'Plus aucune marge de remise sur ces lignes, et le code du boss ne couvre pas le total.',
+        'Plus aucune marge de remise sur ces lignes, et la remise accordée ne couvre pas le total.',
       beyondOrderCoded: (amount: string) =>
-        `Au plus ${amount} : le code du boss ne couvre pas le total.`,
+        `Au plus ${amount} : la remise accordée ne couvre pas le total.`,
       /** Under the table, when lines changed after the order discount was typed. */
       orderTooHigh: (max: string) =>
         `La remise sur le total dépasse maintenant le maximum (${max}) : corrigez-la.`,
@@ -285,20 +284,20 @@ export const labels = {
       close: 'Fermer',
     },
 
-    /** The owner's code typed on the quote (T-034b, RG-REM-04, H42). */
+    /** The promo code typed on the quote (T-034b, T-091, RG-REM-04, H42, H63). */
     code: {
-      open: 'Code du boss',
-      title: 'Code du boss',
-      field: 'Code de remise',
-      hint: 'Le code donné par le boss, comme R7K4-29QP. Il ne sert qu’une fois : appliqué, il reste sur ce devis.',
+      open: 'Code promo',
+      title: 'Code promo',
+      field: 'Code promo',
+      hint: 'Le code promo que le client présente, comme R7K4-29QP. Il ne sert qu’une fois : appliqué, il reste sur ce devis.',
       apply: 'Appliquer le code',
       applying: 'Vérification…',
       close: 'Fermer',
-      customerFirst: 'Choisissez le client avant de saisir le code du boss.',
-      attached: (code: string) => `Code ${code} appliqué : les remises du boss sont sur le devis.`,
+      customerFirst: 'Choisissez le client avant de saisir le code promo.',
+      attached: (code: string) => `Code promo ${code} appliqué : ses remises sont sur le devis.`,
       /** The total it does not cover lost headroom to the grants: the API brought it down (H42). */
       attachedLowered: (code: string, amount: string) =>
-        `Code ${code} appliqué. La remise sur le total, qu’il ne couvre pas, passe à ${amount} : les lignes ont moins de marge.`,
+        `Code promo ${code} appliqué. La remise sur le total, qu’il ne couvre pas, passe à ${amount} : les lignes ont moins de marge.`,
       /** A discount beyond its cap: the code cannot go on a quote that cannot be saved. */
       beyondCap:
         'Une remise dépasse son plafond : ramenez-la dans le plafond, appliquez le code, puis remontez-la jusqu’à ce qu’il accorde.',
@@ -306,7 +305,7 @@ export const labels = {
       priceChanged:
         'Un prix a changé depuis l’enregistrement : le devis est passé au nouveau prix. Vérifiez-le avec le client, puis appliquez le code.',
       /** In place of the button once attached: one code per quote, for good (H42). */
-      tag: (code: string) => `Code du boss ${code}`,
+      tag: (code: string) => `Code promo ${code}`,
       /** In its place for the owner's answer to a request: applied, its code never shown (H64). */
       granted: 'Remise accordée par le boss',
       /** On the discount of a line the code covers, for screen readers. */

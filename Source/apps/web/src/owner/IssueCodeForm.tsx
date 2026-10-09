@@ -15,6 +15,7 @@ const text = labels.codes;
 const FIELD =
   'h-12 min-w-0 flex-1 rounded-control border border-rule-strong bg-white px-3 text-18 text-ink';
 const ROW = `${CELL} h-14 border-b border-rule py-1`;
+const DATE_FIELD = 'h-12 rounded-control border border-rule-strong bg-white px-3 text-18 text-ink';
 
 interface Line extends Grant {
   productId: string;
@@ -22,13 +23,16 @@ interface Line extends Grant {
 }
 
 /**
- * The owner's new code (T-034, RG-REM-04): a customer found by name or phone, products found in
- * the catalog and/or the total, each with a rate or an amount.
+ * The owner's new promo code (T-034, T-091, RG-REM-04, H63): a customer found by name or phone,
+ * products found in the catalog and/or the total, each with a rate or an amount, valid until the
+ * day chosen — `defaultValidUntil` proposed.
  */
 export function IssueCodeForm({
+  defaultValidUntil,
   onIssued,
   onFailure,
 }: {
+  defaultValidUntil: string;
   onIssued: (code: DiscountCode) => void;
   onFailure: (message: string) => void;
 }) {
@@ -40,6 +44,13 @@ export function IssueCodeForm({
   const [lines, setLines] = useState<Line[]>([]);
   const [total, setTotal] = useState<Grant | null>(null);
   const [busy, setBusy] = useState(false);
+  const [validUntil, setValidUntil] = useState(defaultValidUntil);
+  // The proposal arrives with the list: it fills the field until the owner chooses.
+  const [proposed, setProposed] = useState(defaultValidUntil);
+  if (proposed !== defaultValidUntil) {
+    setProposed(defaultValidUntil);
+    setValidUntil(defaultValidUntil);
+  }
 
   const findCustomers = (event: FormEvent) => {
     event.preventDefault();
@@ -60,13 +71,15 @@ export function IssueCodeForm({
     );
 
   const grants = [...lines, ...(total ? [total] : [])];
-  const ready = customer !== null && grants.length > 0 && grants.every(isGrant) && !busy;
+  const ready =
+    customer !== null && grants.length > 0 && grants.every(isGrant) && validUntil !== '' && !busy;
   const issue = () => {
     if (!customer || !ready) return;
     setBusy(true);
     discountCodesApi
       .issue({
         customerId: customer.id,
+        validUntil,
         items: [
           ...lines.map((line) => ({ productId: line.productId, discount: entryOf(line) })),
           ...(total ? [{ productId: null, discount: entryOf(total) }] : []),
@@ -81,6 +94,7 @@ export function IssueCodeForm({
         setProductQuery('');
         setLines([]);
         setTotal(null);
+        setValidUntil(defaultValidUntil);
       }, failed)
       .finally(() => setBusy(false));
   };
@@ -217,6 +231,16 @@ export function IssueCodeForm({
         </label>
         {total && <GrantField what={text.totalWhat} grant={total} onChange={setTotal} />}
       </div>
+      <label className="flex flex-wrap items-center gap-3 font-semibold">
+        {text.validUntil}
+        <input
+          type="date"
+          required
+          value={validUntil}
+          onChange={(event) => setValidUntil(event.target.value)}
+          className={DATE_FIELD}
+        />
+      </label>
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"

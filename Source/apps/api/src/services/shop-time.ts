@@ -79,6 +79,11 @@ export function shopDayStart(at: Date, days = 0): Date {
   return new Date(Date.UTC(clock.year, clock.month - 1, clock.day + days) - offset);
 }
 
+/** The shop's calendar day of an instant, `days` later, as a `date` input holds it: « 2026-10-09 ». */
+export function shopIsoDate(at: Date, days = 0): string {
+  return shopDay(at, days).toISOString().slice(0, 10);
+}
+
 /** `HH:MM` on the 24-hour clock, as the `day_end_time` setting holds it. */
 export const CLOCK_TIME = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
@@ -107,4 +112,9 @@ export function nextShopTime(now: Date, time: string, days = 0): Date {
         offset,
     );
   return at(at(0).getTime() > now.getTime() ? days : days + 1);
+}
+
+/** The instant the shop's clock reads `time` (`HH:MM`) on the shop's day `day` (`YYYY-MM-DD`). */
+export function shopTimeOn(day: string, time: string): Date {
+  return nextShopTime(shopDayStart(new Date(`${day}T12:00:00Z`)), time);
 }

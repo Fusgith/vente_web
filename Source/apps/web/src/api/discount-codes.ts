@@ -3,14 +3,15 @@ import {
   discountCodeSchema,
   type DiscountCode,
   type DiscountCodeIssue,
+  type DiscountCodeList,
 } from '@vente-web/shared';
 
 import { apiRequest, parseResponse } from './client.js';
 
-/** Discount codes issued by the owner (T-034, RG-REM-04, H41). */
+/** Promo codes issued by the owner (T-034, T-091, RG-REM-04, H41, H63). */
 export const discountCodesApi = {
-  async list(): Promise<DiscountCode[]> {
-    return parseResponse(discountCodeListSchema, await apiRequest('/discount-codes')).items;
+  async list(): Promise<DiscountCodeList> {
+    return parseResponse(discountCodeListSchema, await apiRequest('/discount-codes'));
   },
   async issue(input: DiscountCodeIssue): Promise<DiscountCode> {
     return parseResponse(

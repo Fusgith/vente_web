@@ -52,7 +52,8 @@ export const INVOICE_PDF = {
   order: 'Commande',
   cashier: 'Caissier',
   /** RG-REM-07. */
-  discountCode: 'Code de remise',
+  /** RG-REM-07, H63. */
+  discountCode: 'Code promo',
   /** H64: the owner's answer to a request, without its code. */
   ownerDiscount: 'Remise',
   grantedByOwner: 'Accordée par le boss',
