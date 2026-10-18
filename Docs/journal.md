@@ -2,6 +2,14 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 19/10/2026 — T-020 : import Excel du catalogue — agent : Claude Code (Opus 5.5)
+
+**Fait** : panneau « Import Excel » (responsable, admin) : modèle à télécharger, dépôt .xlsx ou .csv, visualisation ligne par ligne (stock avant → après, prix, erreurs), annulation ou validation tout ou rien, ou lignes valides seules ; mode inventaire réservé au responsable ; prix importés historisés, mouvements de stock et journal d'audit. Fichier envoyé en base64 dans le JSON (pas de dépendance multipart), archivé sous `imports/<id>/`. Tests API 7, web 389 verts.
+
+**Dépendance** : `exceljs` 4.4.0 (API), lecture et écriture des .xlsx exigées par le CDC technique §3 ; colonnes de prix par type (H66) ignorées tant que T-093 n'existe pas.
+
+**Reste** : T-070, T-071 ; T-056, T-041, T-015 ; T-080 (téléchargements à autoriser).
+
 ## 19/10/2026 — T-092, T-019, T-019b : articles, unités de vente et prix à l’écran — agent : Claude Code (Opus 5.5)
 
 **Fait** : panneau « Articles » (responsable, boss) : liste et recherche, création avec unité de base et premier prix, fiche (catégorie, seuil, désactivation), trois unités actives au plus (H65), contenu figé dès qu’une commande l’utilise, nouveau prix daté et historique en tableau avec variation (RG-ART-07) ; tout est journalisé. Tests API 4, web 388 verts.

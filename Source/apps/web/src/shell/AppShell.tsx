@@ -14,6 +14,7 @@ import { AuditLogPanel } from '../manager/AuditLogPanel.js';
 import { CustomersPanel } from '../manager/CustomersPanel.js';
 import { DeliveryIssuesPanel } from '../manager/DeliveryIssuesPanel.js';
 import { RegisterSessionsPanel } from '../manager/RegisterSessionsPanel.js';
+import { ImportsPanel } from '../manager/ImportsPanel.js';
 import { ProductsPanel } from '../manager/ProductsPanel.js';
 import { StockPanel } from '../manager/StockPanel.js';
 import { SupervisionWorkspace } from '../manager/SupervisionWorkspace.js';
@@ -148,6 +149,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         <StockPanel />
         {/* RG-ART-01 à 07 (H65): products, sale units and dated prices. */}
         <ProductsPanel />
+        {/* RG-IMP-01 à 08: the catalog from Excel; the inventory is the manager's alone. */}
+        <ImportsPanel canStocktake />
         {/* RG-REM-01 (H15): the caps the owner set, read-only. */}
         <DiscountCapsPanel editable={false} />
         {/* H62: the owner's discount rules, read-only. */}
@@ -167,6 +170,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         </header>
         {/* Annexe B, RG-USR-06: the admin manages the accounts, never deletes one. */}
         <AccountsPanel />
+        {/* RG-IMP-08: the admin imports the catalog too, never an inventory. */}
+        <ImportsPanel canStocktake={false} />
         {/* RG-STK-02 (H45): how long a validated order keeps its goods. */}
         <ReservationDaysPanel />
         {/* H60: whether the salesperson discounts at all. */}

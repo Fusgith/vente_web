@@ -87,6 +87,13 @@ export const ERROR_LABELS = {
     'Une commande utilise déjà cette unité : son facteur ne change plus, créez une nouvelle unité.',
   UNIT_BASE_FACTOR: 'L’unité de base vaut toujours 1 : son facteur ne change pas.',
   PRICE_UNCHANGED: 'C’est déjà le prix en vigueur.',
+  IMPORT_UNREADABLE: 'Fichier illisible : enregistrez-le au format .xlsx ou .csv (UTF-8).',
+  IMPORT_COLUMNS_MISSING:
+    'Colonnes obligatoires absentes : code, categorie, designation, unite, quantite.',
+  IMPORT_EMPTY: 'Le fichier ne contient aucune ligne d’article.',
+  IMPORT_HAS_ERRORS:
+    'Des lignes sont en erreur : corrigez le fichier ou importez uniquement les lignes valides.',
+  IMPORT_CLOSED: 'Cet import est déjà validé ou annulé.',
   QUEUE_EMPTY: 'Aucun client en attente dans cette file.',
   ORDER_CHANGED:
     'Cette commande a été modifiée entre-temps : elle vient d’être rechargée, recommencez.',

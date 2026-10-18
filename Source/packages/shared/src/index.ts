@@ -25,6 +25,7 @@ export * from './discount-requests.js';
 export * from './discount-rules.js';
 export * from './discount.js';
 export * from './invoices.js';
+export * from './imports.js';
 export * from './orders.js';
 export * from './payments.js';
 export * from './products.js';

@@ -13,6 +13,7 @@ import { closingLabels } from './labels-closing.js';
 import { deliveryLabels } from './labels-delivery.js';
 import { issueLabels } from './labels-issues.js';
 import { mineLabels } from './labels-mine.js';
+import { importsLabels } from './labels-imports.js';
 import { productsLabels } from './labels-products.js';
 import { pushLabels } from './labels-push.js';
 import { refundLabels } from './labels-refund.js';
@@ -322,6 +323,7 @@ export const labels = {
   stock: stockLabels,
   /** Products, sale units and dated prices (T-092, T-019, T-019b). */
   products: productsLabels,
+  imports: importsLabels,
   caps: capsLabels,
   /** The owner's discount rules (T-090, H62). */
   discountRules: discountRulesLabels,
