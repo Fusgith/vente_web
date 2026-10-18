@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { App } from '../App.js';
 import { labels } from '../labels.js';
+import { shopToday } from '../owner/dashboard-period.js';
+import { emptyDashboard } from '../test/dashboard.js';
 import { apiError, fakeApi, HERY, meFor, ok, RIJA } from '../test/fake-api.js';
 
 /** Lets pending fetch promises settle while intervals and Date are faked (setTimeout stays real). */
@@ -45,6 +47,7 @@ describe('signed-in shell', () => {
       'GET /customers/categories': ok({ categories: ['Divers'] }),
       'GET /deliveries/issues': ok([]),
       'GET /stock/alerts': ok({ items: [] }),
+      [`GET /dashboard?from=${shopToday()}&to=${shopToday()}`]: ok(emptyDashboard(shopToday())),
       'GET /discount-caps': ok({ defaultPct: '0.00', categories: [] }),
       'GET /discount-rules': ok({ items: [] }),
       'GET /discount-requests': ok({ pending: [], recent: [] }),

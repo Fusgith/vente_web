@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 19/10/2026 — T-070 : tableau de bord du boss — agent : Claude Code (Opus 5.5)
+
+**Fait** : `GET /dashboard?from&to` (boss, responsable) ; écran avec Aujourd'hui, Hier, Cette semaine, Ce mois, Période libre ; encaissé, factures, panier moyen, ventes, remises (dans plafond, par règle, par code, % du brut), avoirs, comparés à la période précédente et à une semaine avant ; détail par moyen, commercial, heure, jour, catégorie ; top 20 avec disponible ; modifications de prix ; files en direct et articles sous seuil chez le boss. Tests API 3, web 292 verts.
+
+**Reste** : T-071 ; T-056, T-041, T-015 ; T-080 (téléchargements à autoriser) ; ventes à crédit (H67) et courbe de prix hors T-070.
+
 ## 19/10/2026 — T-020 : import Excel du catalogue — agent : Claude Code (Opus 5.5)
 
 **Fait** : panneau « Import Excel » (responsable, admin) : modèle à télécharger, dépôt .xlsx ou .csv, visualisation ligne par ligne (stock avant → après, prix, erreurs), annulation ou validation tout ou rien, ou lignes valides seules ; mode inventaire réservé au responsable ; prix importés historisés, mouvements de stock et journal d'audit. Fichier envoyé en base64 dans le JSON (pas de dépendance multipart), archivé sous `imports/<id>/`. Tests API 7, web 389 verts.

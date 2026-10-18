@@ -24,9 +24,10 @@ import { DiscountCodesPanel } from '../owner/DiscountCodesPanel.js';
 import { DiscountRulesPanel } from '../owner/DiscountRulesPanel.js';
 import { PromotionsPanel } from '../owner/PromotionsPanel.js';
 import { DiscountRequestsPanel } from '../owner/DiscountRequestsPanel.js';
+import { Dashboard } from '../owner/Dashboard.js';
 import { RegisterWorkspace } from '../register/RegisterWorkspace.js';
 import { SalesWorkspace } from '../sales/SalesWorkspace.js';
-import { buttonClass, sheetClass } from '../ui/button.js';
+import { buttonClass } from '../ui/button.js';
 import { Icon } from '../ui/Icon.js';
 import { Frame } from './Frame.js';
 import { useStatusLine } from './status-line.js';
@@ -139,6 +140,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
     return (
       <div className="flex flex-col pb-8">
         <SupervisionWorkspace />
+        {/* RG-DSH-06: the owner's dashboard, the queues and the stock being shown above. */}
+        <Dashboard live={false} />
         {/* RG-DSH-05 (H54): the requests to the owner and the answers, read-only. */}
         <DiscountRequestsPanel editable={false} />
         {/* RG-LIV-04 (H37): the manager decides on each delivery issue. */}
@@ -181,39 +184,32 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
       </div>
     );
   }
-  const workspace = labels.workspaces[role];
-  const owner = role === 'owner';
-  // The page's title comes first, above the panels: the owner's requests then follow it.
-  const title = <h1 className="type-title">{workspace.title}</h1>;
+  // The owner: the requests first, then the dashboard and the settings only the owner sets.
   return (
-    <div className="flex flex-col">
-      {owner && <header className="mx-auto mt-8 w-full max-w-4xl px-4">{title}</header>}
+    <div className="flex flex-col pb-8">
+      <header className="mx-auto mt-8 w-full max-w-4xl px-4">
+        <h1 className="type-title">{labels.workspaces.owner.title}</h1>
+      </header>
       {/* RG-REM-03, RG-DSH-05 (H53): the owner answers the discount requests, first of all. */}
-      {owner && <DiscountRequestsPanel editable />}
-      <section className={`${sheetClass} mx-auto mt-8 flex w-full max-w-2xl flex-col gap-3 p-8`}>
-        {!owner && title}
-        <p className="text-18 text-ink">{workspace.summary}</p>
-        <p className="mt-3 flex items-center gap-3 border-t border-rule pt-5 text-ink-2">
-          <Icon name="info" className="size-5" />
-          {labels.shell.workspaceComing}
-        </p>
-      </section>
-      {/* RG-CAI-04/05: the day's registers, until the dashboard (T-070). */}
-      {owner && <RegisterSessionsPanel />}
+      <DiscountRequestsPanel editable />
+      {/* RG-DSH-01 à 04: the period's figures, the live queues, the products under threshold. */}
+      <Dashboard live />
+      {/* RG-CAI-04/05: the day's registers. */}
+      <RegisterSessionsPanel />
       {/* RG-ART-01 à 07 (H65): products, sale units and dated prices. */}
-      {owner && <ProductsPanel />}
+      <ProductsPanel />
       {/* RG-REM-01 (H15): the owner sets the discount caps. */}
-      {owner && <DiscountCapsPanel editable />}
+      <DiscountCapsPanel editable />
       {/* H62: the owner's discount rules, which the register applies beyond the caps. */}
-      {owner && <DiscountRulesPanel editable />}
+      <DiscountRulesPanel editable />
       {/* RG-REM-04 (H41): the owner issues and revokes the discount codes. */}
-      {owner && <DiscountCodesPanel />}
+      <DiscountCodesPanel />
       {/* RG-STK-02 (H45): how long a validated order keeps its goods. */}
-      {owner && <ReservationDaysPanel />}
+      <ReservationDaysPanel />
       {/* RG-DEV-06 §6 (H46, H49 b): the owner marks the products to propose. */}
-      {owner && <PromotionsPanel />}
+      <PromotionsPanel />
       {/* RG-AUD-01: who did what, read only. */}
-      {owner && <AuditLogPanel />}
+      <AuditLogPanel />
     </div>
   );
 }

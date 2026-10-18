@@ -39,6 +39,7 @@ export * from './realtime.js';
 export * from './register-sessions.js';
 export * from './stock.js';
 export * from './supervision.js';
+export * from './dashboard.js';
 export * from './users.js';
 export { ROLE_LABELS } from './role-labels.js';
 export { ERROR_LABELS, isErrorCode, type ApiErrorBody, type ErrorCode } from './error-labels.js';

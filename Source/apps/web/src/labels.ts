@@ -8,6 +8,7 @@ import { discountRulesLabels } from './labels-discount-rules.js';
 import { reservationLabels } from './labels-reservation.js';
 import { salesDiscountLabels } from './labels-sales-discount.js';
 import { customersLabels } from './labels-customers.js';
+import { dashboardLabels } from './labels-dashboard.js';
 import { promotionsLabels } from './labels-promotions.js';
 import { closingLabels } from './labels-closing.js';
 import { deliveryLabels } from './labels-delivery.js';
@@ -76,7 +77,6 @@ export const labels = {
     activeRole: 'Rôle actif',
     signOut: 'Se déconnecter',
     remote: 'À distance',
-    workspaceComing: 'Cet espace arrive avec les prochaines étapes du développement.',
   },
 
   /** Quick search and entry of the quote screen (RG-DEV-06). */
@@ -320,6 +320,8 @@ export const labels = {
   /** Delivery issues and partial credit (T-061, RG-LIV-04, RG-ANN-03). */
   issues: issueLabels,
   supervision: supervisionLabels,
+  /** The owner's dashboard (T-070, RG-DSH-01 à 04). */
+  dashboard: dashboardLabels,
   stock: stockLabels,
   /** Products, sale units and dated prices (T-092, T-019, T-019b). */
   products: productsLabels,
