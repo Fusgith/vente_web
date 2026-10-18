@@ -27,6 +27,7 @@ export * from './discount.js';
 export * from './invoices.js';
 export * from './orders.js';
 export * from './payments.js';
+export * from './products.js';
 export * from './promotions.js';
 export * from './reservation-days.js';
 export * from './sales-discount.js';

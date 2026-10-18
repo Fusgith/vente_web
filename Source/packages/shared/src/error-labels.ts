@@ -78,6 +78,15 @@ export const ERROR_LABELS = {
   ADJUSTMENT_TOO_LARGE:
     'Sortie trop grande : elle dépasse le stock disponible, les commandes validées gardent le leur.',
   ADJUSTMENT_REASON_UNKNOWN: 'Choisissez un motif de la liste.',
+  PRODUCT_SKU_TAKEN: 'Ce code est déjà celui d’un autre article.',
+  PRODUCT_BARCODE_TAKEN: 'Ce code-barres est déjà celui d’une autre unité de vente.',
+  UNIT_LABEL_TAKEN: 'Cet article a déjà une unité de vente de ce nom.',
+  UNIT_LIMIT_REACHED:
+    'Trois unités de vente actives au plus par article : désactivez-en une d’abord.',
+  UNIT_FACTOR_FROZEN:
+    'Une commande utilise déjà cette unité : son facteur ne change plus, créez une nouvelle unité.',
+  UNIT_BASE_FACTOR: 'L’unité de base vaut toujours 1 : son facteur ne change pas.',
+  PRICE_UNCHANGED: 'C’est déjà le prix en vigueur.',
   QUEUE_EMPTY: 'Aucun client en attente dans cette file.',
   ORDER_CHANGED:
     'Cette commande a été modifiée entre-temps : elle vient d’être rechargée, recommencez.',

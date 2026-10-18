@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 19/10/2026 — T-092, T-019, T-019b : articles, unités de vente et prix à l’écran — agent : Claude Code (Opus 5.5)
+
+**Fait** : panneau « Articles » (responsable, boss) : liste et recherche, création avec unité de base et premier prix, fiche (catégorie, seuil, désactivation), trois unités actives au plus (H65), contenu figé dès qu’une commande l’utilise, nouveau prix daté et historique en tableau avec variation (RG-ART-07) ; tout est journalisé. Tests API 4, web 388 verts.
+
+**Reste** : T-019b courbe, export et `catalog.changed` ; T-020 import Excel ; T-070, T-071 ; T-056, T-041, T-015 ; T-080 (téléchargements à autoriser).
+
 ## 09/10/2026 — T-091c : finitions vues en recette (carte du boss sur téléphone, caisse) — agent : Claude Code (Opus 5.5)
 
 **Fait** :

@@ -14,6 +14,7 @@ import { AuditLogPanel } from '../manager/AuditLogPanel.js';
 import { CustomersPanel } from '../manager/CustomersPanel.js';
 import { DeliveryIssuesPanel } from '../manager/DeliveryIssuesPanel.js';
 import { RegisterSessionsPanel } from '../manager/RegisterSessionsPanel.js';
+import { ProductsPanel } from '../manager/ProductsPanel.js';
 import { StockPanel } from '../manager/StockPanel.js';
 import { SupervisionWorkspace } from '../manager/SupervisionWorkspace.js';
 import { DiscountCapsPanel } from '../owner/DiscountCapsPanel.js';
@@ -145,6 +146,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         <RegisterSessionsPanel />
         {/* RG-STK-05 à 07: the products under their threshold, adjustments with a reason. */}
         <StockPanel />
+        {/* RG-ART-01 à 07 (H65): products, sale units and dated prices. */}
+        <ProductsPanel />
         {/* RG-REM-01 (H15): the caps the owner set, read-only. */}
         <DiscountCapsPanel editable={false} />
         {/* H62: the owner's discount rules, read-only. */}
@@ -192,6 +195,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
       </section>
       {/* RG-CAI-04/05: the day's registers, until the dashboard (T-070). */}
       {owner && <RegisterSessionsPanel />}
+      {/* RG-ART-01 à 07 (H65): products, sale units and dated prices. */}
+      {owner && <ProductsPanel />}
       {/* RG-REM-01 (H15): the owner sets the discount caps. */}
       {owner && <DiscountCapsPanel editable />}
       {/* H62: the owner's discount rules, which the register applies beyond the caps. */}
