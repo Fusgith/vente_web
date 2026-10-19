@@ -13,6 +13,7 @@ import { exportsLabels } from './labels-exports.js';
 import { promotionsLabels } from './labels-promotions.js';
 import { closingLabels } from './labels-closing.js';
 import { deliveryLabels } from './labels-delivery.js';
+import { displayLabels } from './labels-display.js';
 import { issueLabels } from './labels-issues.js';
 import { mineLabels } from './labels-mine.js';
 import { importsLabels } from './labels-imports.js';
@@ -314,6 +315,7 @@ export const labels = {
 
   /** The delivery counters (T-060, RG-LIV-01 à 03). */
   delivery: deliveryLabels,
+  display: displayLabels,
 
   /** Cancelling a paid sale (T-053, RG-ANN-02). */
   refund: refundLabels,

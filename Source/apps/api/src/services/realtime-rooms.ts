@@ -15,6 +15,8 @@ export const room = {
   station: (id: string) => `station:${id}`,
   user: (id: string) => `user:${id}`,
   queue: (queue: QueueName) => `queue:${queue}`,
+  /** The public display, joined with its station key (RG-DSP-01/03). */
+  display: 'display',
 };
 
 /** Who follows each queue live: those who call from it, the manager and the owner (RG-DSP-04). */
@@ -104,7 +106,7 @@ export function orderCalled(order: CalledOrder, verbal: boolean): Emission[] {
   return [
     ...queueChanged('register', order.id, 'called'),
     emission(
-      [room.queue('register'), ...(verbal ? [room.user(order.salesUserId)] : [])],
+      [room.queue('register'), room.display, ...(verbal ? [room.user(order.salesUserId)] : [])],
       'ticket.called',
       { queue: 'register', orderId: order.id },
     ),
@@ -170,7 +172,10 @@ export function orderTaken(order: CalledOrder): Emission[] {
 export function orderReady(order: CalledOrder): Emission[] {
   return [
     ...queueChanged('delivery', order.id, 'updated'),
-    emission([room.queue('delivery')], 'ticket.called', { queue: 'delivery', orderId: order.id }),
+    emission([room.queue('delivery'), room.display], 'ticket.called', {
+      queue: 'delivery',
+      orderId: order.id,
+    }),
     statusChanged(order, 'READY'),
   ];
 }

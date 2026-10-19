@@ -33,6 +33,7 @@ export * from './promotions.js';
 export * from './reservation-days.js';
 export * from './sales-discount.js';
 export * from './push.js';
+export * from './display.js';
 export * from './queues.js';
 export * from './quotes.js';
 export * from './realtime.js';

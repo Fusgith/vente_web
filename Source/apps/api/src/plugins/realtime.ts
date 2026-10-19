@@ -2,6 +2,7 @@ import type { IncomingMessage } from 'node:http';
 import type { TLSSocket } from 'node:tls';
 
 import {
+  DISPLAY_KEY_AUTH,
   REALTIME_PATH,
   type AccessOrigin,
   type ErrorCode,
@@ -15,20 +16,20 @@ import { Server, type Socket } from 'socket.io';
 
 import type { Env } from '../env.js';
 import { ACCESS_ORIGIN_HEADER, resolveAccessOrigin } from '../services/access-origin.js';
-import { roomsOf, type Emission } from '../services/realtime-rooms.js';
+import { findDisplay } from '../services/display.js';
+import { room, roomsOf, type Emission } from '../services/realtime-rooms.js';
 import { hashSessionToken, resolveSessionHash, sessionCookieName } from '../services/sessions.js';
 import { isSameOrigin } from './csrf.js';
 
 /** How often each open connection's session is checked again: at most this long after it ends. */
 export const REVALIDATE_MS = 30_000;
 
-/** What a connection keeps of its session: the token's hash, never the token (T5). */
-interface SocketData {
-  tokenHash: string;
-  origin: AccessOrigin;
-  userId: string;
-  role: Role;
-}
+/**
+ * What a connection keeps of its session: the token's hash, never the token (T5) — or, for the
+ * public display, its station key (RG-DSP-03).
+ */
+type SocketData =
+  { tokenHash: string; origin: AccessOrigin; userId: string; role: Role } | { displayKey: string };
 
 /** The server only speaks: the client sends nothing but its handshake. */
 type ServerEvents = Record<RealtimeEvent, (payload: RealtimeEvents[RealtimeEvent]) => void>;
@@ -118,6 +119,11 @@ export const realtimePlugin = fp<{ env: Env; revalidateMs?: number }>(
       running = true;
       try {
         for (const socket of await io.local.fetchSockets()) {
+          if ('displayKey' in socket.data) {
+            // Key changed, station off or display switched off: the screen stops.
+            if (!(await findDisplay(app.db, socket.data.displayKey))) socket.disconnect(true);
+            continue;
+          }
           const { tokenHash, origin, role } = socket.data;
           const result = await resolveSessionHash(app.db, tokenHash, origin, new Date(), {
             touch: false,
@@ -158,6 +164,13 @@ async function authenticate(
   socket: RealtimeSocket,
   cookieName: string,
 ): Promise<ErrorCode | null> {
+  const displayKey: unknown = socket.handshake.auth[DISPLAY_KEY_AUTH];
+  if (typeof displayKey === 'string') {
+    if (!(await findDisplay(app.db, displayKey))) return 'AUTH_REQUIRED';
+    socket.data = { displayKey };
+    await socket.join(room.display);
+    return null;
+  }
   const request = socket.request;
   const token = app.parseCookie(request.headers.cookie ?? '')[cookieName];
   if (!token) return 'AUTH_REQUIRED';

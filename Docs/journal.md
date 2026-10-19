@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 19/10/2026 — T-041 : écran public — agent : Claude Code (Opus 5.5)
+
+**Fait** : page `/ecran/<clé>` sans compte (clé du poste DISPLAY actif, `display.enabled`) : par file, les 5 derniers tickets appelés du jour (« A15 → Caisse 2 »), le dernier en très gros, jamais de nom de client ; temps réel (salle `display`), son optionnel (`display.sound`), reconnexion seule ; l'appel verbal (RG-DSP-05) existait déjà. Tests API 4 fichiers, web 8 verts.
+
+**Reste** : T-015 (déclarer le poste écran et sa clé à l'écran), T-013 (réglages) ; T-080 (téléchargements à autoriser).
+
 ## 19/10/2026 — T-056 : arrondi espèces — agent : Claude Code (Opus 5.5)
 
 **Fait** : paramètre `cash_rounding` (pas en MGA, aucun par défaut) : la part payée en espèces s'arrondit au pas le plus proche, à la caisse comme à l'API ; facture avec « Total de la facture », « Arrondi espèces » et net à payer ; le paiement enregistre le montant dû. Hypothèse H70 au CDC. Tests shared 6, API 15, web 396 verts.

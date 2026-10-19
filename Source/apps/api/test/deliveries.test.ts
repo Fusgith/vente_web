@@ -128,7 +128,7 @@ describe.skipIf(!TEST_DATABASE_URL)('delivery at the counters (RG-LIV-01 à 03, 
     const ready = await act(order, 'ready');
     expect(orderSchema.parse(ready.json())).toMatchObject({ status: 'READY', version: 6 });
     expect(published).toContainEqual({
-      rooms: ['queue:delivery'],
+      rooms: ['queue:delivery', 'display'],
       event: 'ticket.called',
       payload: { queue: 'delivery', orderId: order },
     });

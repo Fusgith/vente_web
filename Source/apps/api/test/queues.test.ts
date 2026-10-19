@@ -212,7 +212,7 @@ describe.skipIf(!TEST_DATABASE_URL)('register queue (RG-FIL-01 à 05)', () => {
     const [a1] = await validated(1);
     await callNext();
     expect(published).toContainEqual({
-      rooms: ['queue:register', `user:${ids.vola}`],
+      rooms: ['queue:register', 'display', `user:${ids.vola}`],
       event: 'ticket.called',
       payload: { queue: 'register', orderId: a1 },
     });
