@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 
 import { AccountsPanel } from '../admin/AccountsPanel.js';
 import { SalesDiscountPanel } from '../admin/SalesDiscountPanel.js';
+import { StationsPanel } from '../admin/StationsPanel.js';
 import { errorMessage } from '../api/error-message.js';
 import { useAuth } from '../auth/context.js';
 import { switchableRoles } from '../auth/roles.js';
@@ -186,6 +187,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         <AccountsPanel />
         {/* RG-IMP-08: the admin imports the catalog too, never an inventory. */}
         <ImportsPanel canStocktake={false} />
+        {/* RG-USR-09 (H71): the shop’s stations and the pairing of its devices. */}
+        <StationsPanel />
         {/* RG-STK-02 (H45): how long a validated order keeps its goods. */}
         <ReservationDaysPanel />
         {/* H60: whether the salesperson discounts at all. */}

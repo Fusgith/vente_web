@@ -4,10 +4,10 @@ import { TEST_DATABASE_URL } from './db.js';
 import {
   auditActions,
   auditEntries,
-  createStation,
   createTestApp,
   createUser,
   loginOk,
+  pairStation,
   request,
   sessionCookie,
   type TestApp,
@@ -158,15 +158,15 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
         { key: 'session.lock_minutes.register', value: 20 },
       ],
     });
-    const tablet = await createStation(t.db, 'SALES');
-    const register = await createStation(t.db, 'REGISTER');
+    const tablet = await pairStation(t.db, 'SALES');
+    const register = await pairStation(t.db, 'REGISTER');
     await createUser(t.db, { username: 'soa', roles: ['cashier'], password: '1234' });
 
     const sales = await loginOk(t.app, {
       username: 'vola',
       role: 'sales',
       password: '1234',
-      stationId: tablet.id,
+      stationKey: tablet.key,
     });
     expect(sales.me.session.idleMinutes).toBe(7);
     await t.db.session.updateMany({ data: { lastSeenAt: new Date(Date.now() - 9 * MINUTE) } });
@@ -178,7 +178,7 @@ describe.skipIf(!TEST_DATABASE_URL)('sessions (/auth/me, logout, expiry, origin)
       username: 'soa',
       role: 'cashier',
       password: '1234',
-      stationId: register.id,
+      stationKey: register.key,
     });
     expect(cashier.me.session.idleMinutes).toBe(20);
     await t.db.session.updateMany({ data: { lastSeenAt: new Date(Date.now() - 17 * MINUTE) } });

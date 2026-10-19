@@ -7,6 +7,7 @@ import { codesLabels } from './labels-codes.js';
 import { discountRulesLabels } from './labels-discount-rules.js';
 import { reservationLabels } from './labels-reservation.js';
 import { salesDiscountLabels } from './labels-sales-discount.js';
+import { stationsLabels } from './labels-stations.js';
 import { customersLabels } from './labels-customers.js';
 import { dashboardLabels } from './labels-dashboard.js';
 import { exportsLabels } from './labels-exports.js';
@@ -339,6 +340,8 @@ export const labels = {
   /** The salesperson's discounts, allowed by the admin (T-087, H60). */
   salesDiscount: salesDiscountLabels,
   accounts: accountsLabels,
+  /** The shop’s stations and the pairing of devices (T-015, H71). */
+  stations: stationsLabels,
   audit: auditLabels,
   customers: customersLabels,
   promotions: promotionsLabels,

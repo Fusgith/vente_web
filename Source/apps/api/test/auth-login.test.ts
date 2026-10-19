@@ -5,10 +5,10 @@ import { TEST_DATABASE_URL } from './db.js';
 import {
   auditActions,
   auditEntries,
-  createStation,
   createTestApp,
   createUser,
   login,
+  pairStation,
   request,
   type TestApp,
 } from './helpers.js';
@@ -184,15 +184,15 @@ describe.skipIf(!TEST_DATABASE_URL)('POST /api/v1/auth/login', () => {
   });
 
   it('binds the session to a station, which picks the role among those held (H21, H57)', async () => {
-    const register = await createStation(t.db, 'REGISTER');
-    const closed = await createStation(t.db, 'SALES', false);
+    const register = await pairStation(t.db, 'REGISTER');
+    const closed = await pairStation(t.db, 'SALES', false);
     await createUser(t.db, { username: 'soa', roles: ['cashier'], password: 'Shop-1234!' });
     await createUser(t.db, { username: 'chef', roles: ['manager'], password: 'Shop-1234!' });
 
     const wrongType = await login(t.app, {
       username: 'vola',
       password: 'Shop-1234!',
-      stationId: register.id,
+      stationKey: register.key,
     });
     expect(wrongType.response.statusCode).toBe(400);
     expect(wrongType.response.json().code).toBe('STATION_INVALID');
@@ -200,14 +200,15 @@ describe.skipIf(!TEST_DATABASE_URL)('POST /api/v1/auth/login', () => {
     const inactive = await login(t.app, {
       username: 'vola',
       password: 'Shop-1234!',
-      stationId: closed.id,
+      stationKey: closed.key,
     });
-    expect(inactive.response.json().code).toBe('STATION_INVALID');
+    // A key of an inactive station pairs nothing: the device counts as unpaired (H71).
+    expect(inactive.response.json().code).toBe('STATION_REQUIRED');
 
     const cashier = await login(t.app, {
       username: 'soa',
       password: 'Shop-1234!',
-      stationId: register.id,
+      stationKey: register.key,
     });
     expect(cashier.response.statusCode).toBe(200);
     expect(cashier.me.session.stationId).toBe(register.id);
@@ -215,7 +216,7 @@ describe.skipIf(!TEST_DATABASE_URL)('POST /api/v1/auth/login', () => {
     const manager = await login(t.app, {
       username: 'chef',
       password: 'Shop-1234!',
-      stationId: register.id,
+      stationKey: register.key,
     });
     expect(manager.response.statusCode).toBe(200);
 
@@ -228,7 +229,7 @@ describe.skipIf(!TEST_DATABASE_URL)('POST /api/v1/auth/login', () => {
     const both = await login(t.app, {
       username: 'hery',
       password: 'Shop-1234!',
-      stationId: register.id,
+      stationKey: register.key,
     });
     expect(both.me.session.activeRole).toBe('cashier');
   });

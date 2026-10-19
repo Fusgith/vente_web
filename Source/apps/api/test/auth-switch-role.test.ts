@@ -8,10 +8,10 @@ import { generateTotpCode } from '../src/services/totp.js';
 import { TEST_DATABASE_URL } from './db.js';
 import {
   auditActions,
-  createStation,
   createTestApp,
   createUser,
   loginOk,
+  pairStation,
   request,
   type TestApp,
 } from './helpers.js';
@@ -86,12 +86,12 @@ describe.skipIf(!TEST_DATABASE_URL)('POST /api/v1/auth/switch-role', () => {
   });
 
   it('respects the station type (H21)', async () => {
-    const tablet = await createStation(t.db, 'SALES');
+    const tablet = await pairStation(t.db, 'SALES');
     const { cookie } = await loginOk(t.app, {
       username: 'vola',
       role: 'sales',
       password: 'Shop-1234!',
-      stationId: tablet.id,
+      stationKey: tablet.key,
     });
     const response = await request(t.app, 'POST', SWITCH, { cookie, body: { role: 'cashier' } });
     expect(response.statusCode).toBe(400);

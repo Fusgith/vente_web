@@ -5,6 +5,7 @@ import { AppError } from '../errors.js';
 import { recordAudit } from './audit.js';
 import { stationAcceptsRole } from './login.js';
 import { idleMinutesFor, toAuthMe, type AuthContext } from './sessions.js';
+import { pairingRequired } from './stations.js';
 
 /**
  * Changes the active role of the session without a new login. A PIN session (opened before
@@ -27,6 +28,11 @@ export function switchRoleError(auth: AuthContext, role: Role): AppError | null 
 export async function switchRole(db: Db, auth: AuthContext, role: Role): Promise<AuthMe> {
   const error = switchRoleError(auth, role);
   if (error) throw error;
+  // A device left unpaired once pairing is on opens only the remote roles (RG-USR-09, H71).
+  const { origin, stationId } = auth.session;
+  if (origin === 'LAN' && !stationId && !isRemoteRole(role) && (await pairingRequired(db))) {
+    throw new AppError(400, 'STATION_REQUIRED');
+  }
   const previous = auth.session.activeRole;
   if (role !== previous) {
     await db.$transaction(async (tx) => {

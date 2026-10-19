@@ -60,8 +60,11 @@ export const loginBodySchema = z
     password: typedSecretSchema,
     totp: totpCodeSchema.optional(),
     newPassword: passwordSchema.optional(),
-    /** Optional until station pairing exists, then mandatory in the shop (T-015, H21). */
-    stationId: z.uuid().optional(),
+    /**
+     * The key this device received when the admin paired it to its station (T-015, RG-USR-09):
+     * the station is never taken from a bare id, which anyone could send.
+     */
+    stationKey: z.string().min(1).max(64).optional(),
   })
   .strict();
 export type LoginBody = z.infer<typeof loginBodySchema>;

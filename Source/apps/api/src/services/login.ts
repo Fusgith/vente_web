@@ -22,6 +22,7 @@ import {
   unspentTotpStep,
 } from './lockout.js';
 import { hashSecret, verifySecret } from './password-hash.js';
+import { pairingRequired, stationOfKey } from './stations.js';
 import {
   createSession,
   idleMinutesFor,
@@ -52,16 +53,18 @@ function isSupervisor(role: Role): boolean {
 
 /**
  * The role a login opens, nothing being chosen on the login screen (RG-USR-02, H57): outside the
- * shop a remote role (RG-USR-04, T3); on a paired station the work it serves, else a supervisor
- * role it accepts; otherwise the account's first role in `ROLES` order. Null: none fits.
+ * shop a remote role (RG-USR-04, T3), as on a device left unpaired once pairing is on (H71); on
+ * a paired station the work it serves, else a supervisor role it accepts; otherwise the
+ * account's first role in `ROLES` order. Null: none fits.
  */
 export function openingRole(
   roles: readonly Role[],
   origin: AccessOrigin,
   stationType: StationType | null,
+  unpaired = false,
 ): Role | null {
   const held = ROLES.filter((role) => roles.includes(role));
-  if (origin === 'REMOTE') return held.find(isRemoteRole) ?? null;
+  if (origin === 'REMOTE' || unpaired) return held.find(isRemoteRole) ?? null;
   if (stationType === null) return held[0] ?? null;
   const accepted = held.filter((role) => stationAcceptsRole(stationType, role));
   return accepted.find((role) => !isSupervisor(role)) ?? accepted[0] ?? null;
@@ -104,15 +107,9 @@ export async function login(
   // Decided from the request alone, before any account lookup (nothing to enumerate).
   if (origin === 'REMOTE' && body.totp === undefined) throw new AppError(401, 'AUTH_TOTP_REQUIRED');
 
-  const station = body.stationId
-    ? await db.station.findUnique({
-        where: { id: body.stationId },
-        select: { id: true, type: true, isActive: true },
-      })
-    : null;
-  if (body.stationId && (!station?.isActive || station.type === 'DISPLAY')) {
-    throw new AppError(400, 'STATION_INVALID');
-  }
+  // An unknown or stale key counts as none: the device is simply not paired (T-015).
+  const station = await stationOfKey(db, body.stationKey);
+  const unpaired = origin === 'LAN' && !station && (await pairingRequired(db));
 
   const invalid = new AppError(401, 'AUTH_INVALID_CREDENTIALS');
   const secret = body.password;
@@ -145,13 +142,13 @@ export async function login(
 
   if (!(await verifySecret(user.passwordHash, secret))) return fail('invalid_secret');
   if (!user.isActive) return fail('inactive');
-  const role = openingRole(user.roles, origin, station?.type ?? null);
+  const role = openingRole(user.roles, origin, station?.type ?? null, unpaired);
   if (role === null) {
     // Outside, the account stays indistinguishable from a wrong password; in the shop the
     // password was right and the station is the problem.
     if (origin === 'REMOTE') return fail('role_remote_forbidden');
     await clearLoginFailures(db, user.id);
-    throw new AppError(400, 'STATION_INVALID');
+    throw new AppError(400, unpaired ? 'STATION_REQUIRED' : 'STATION_INVALID');
   }
 
   let authMethod: AuthMethod = 'PASSWORD';

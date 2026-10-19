@@ -27,6 +27,10 @@ export const ERROR_LABELS = {
   AUTH_SESSION_EXPIRED: 'Session expirée, reconnectez-vous.',
   AUTH_SESSION_IDLE: 'Session fermée après inactivité, reconnectez-vous.',
   STATION_INVALID: 'Poste inconnu, inactif ou incompatible avec le rôle.',
+  STATION_REQUIRED:
+    'Cet appareil n’est appairé à aucun poste actif : demandez à l’admin de l’appairer.',
+  STATION_DISPLAY_EXISTS: 'Il y a déjà un écran public actif : désactivez-le d’abord.',
+  STATION_NOT_PAIRABLE: 'L’écran public ne s’appaire pas : il s’ouvre par son adresse.',
   OWNER_PASSWORD_SELF_ONLY:
     'Seul le boss choisit son mot de passe : l’admin ne peut ni le poser ni le réinitialiser.',
   USERNAME_TAKEN: 'Cet identifiant est déjà celui d’un autre compte.',

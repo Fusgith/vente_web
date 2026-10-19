@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 19/10/2026 — T-015 : postes et appairage — agent : Claude Code (Opus 5.5)
+
+**Fait** : panneau admin « Postes du magasin » (déclarer, renommer, désactiver ; lien de l'écran public) et appairage de l'appareil depuis lui-même (clé gardée par le navigateur, empreinte sha256 au serveur, un appareil par poste) ; la connexion envoie la clé, jamais un identifiant de poste ; poste obligatoire dans le magasin dès qu'un poste actif est appairé (`STATION_REQUIRED`, admin et boss exceptés). Hypothèse H71 au CDC. Tests API 50, web 26 verts.
+
+**Reste** : T-080 (téléchargements à autoriser) ; T-093 à T-096, T-090b, T-097, T-013, T-036.
+
 ## 19/10/2026 — T-041 : écran public — agent : Claude Code (Opus 5.5)
 
 **Fait** : page `/ecran/<clé>` sans compte (clé du poste DISPLAY actif, `display.enabled`) : par file, les 5 derniers tickets appelés du jour (« A15 → Caisse 2 »), le dernier en très gros, jamais de nom de client ; temps réel (salle `display`), son optionnel (`display.sound`), reconnexion seule ; l'appel verbal (RG-DSP-05) existait déjà. Tests API 4 fichiers, web 8 verts.

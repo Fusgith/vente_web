@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -12,6 +13,7 @@ import { loadEnv } from '../src/env.js';
 import type { StationType } from '../src/generated/prisma/enums.js';
 import { hashSecret } from '../src/services/password-hash.js';
 import { sessionCookieName } from '../src/services/sessions.js';
+import { hashPairingKey } from '../src/services/stations.js';
 import { clearSettingsCache } from '../src/services/settings.js';
 import { TEST_DATABASE_URL, createTestDb, resetDb } from './db.js';
 
@@ -167,6 +169,26 @@ export async function createStation(
   });
 }
 
+/** A station a device is paired to, with the key that device sends at login (T-015, H71). */
+export async function pairStation(
+  db: Db,
+  type: StationType,
+  isActive = true,
+): Promise<{ id: string; key: string }> {
+  const key = randomUUID();
+  const { id } = await db.station.create({
+    data: {
+      type,
+      name: `${type} test`,
+      isActive,
+      pairingHash: hashPairingKey(key),
+      pairedAt: new Date(),
+    },
+    select: { id: true },
+  });
+  return { id, key };
+}
+
 export interface LoginInput {
   username: string;
   /**
@@ -177,7 +199,7 @@ export interface LoginInput {
   password?: string;
   totp?: string;
   newPassword?: string;
-  stationId?: string;
+  stationKey?: string;
   origin?: AccessOrigin;
 }
 
