@@ -123,6 +123,24 @@ describe.skipIf(!TEST_DATABASE_URL)('the audit log, read only (T-014, RG-AUD-01)
     expect(ids).toEqual(Array.from({ length: 105 }, (_, n) => `p-${104 - n}`));
   });
 
+  it('names the records its ids point to, at any depth (T-097)', async () => {
+    const vola = await t.db.user.findUniqueOrThrow({ where: { username: 'vola' } });
+    const boss = await t.db.user.findUniqueOrThrow({ where: { username: 'boss' } });
+    const gone = '0192a4f0-0000-7000-8000-000000000999';
+    await t.db.auditLog.create({
+      data: {
+        userId: boss.id,
+        action: 'user.updated',
+        entityType: 'user',
+        entityId: vola.id,
+        after: { managerId: boss.id, lines: [{ productUnitId: gone }] },
+      },
+    });
+    const { refs } = await page('?subject=accounts');
+    expect(refs).toMatchObject({ [vola.id]: 'User vola', [boss.id]: 'User boss' });
+    expect(refs[gone]).toBeUndefined();
+  });
+
   it('refuses a filter it does not know', async () => {
     expect((await read('?subject=everything')).statusCode).toBe(400);
     expect((await read('?day=06/10/2026')).statusCode).toBe(400);

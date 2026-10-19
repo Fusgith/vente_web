@@ -49,5 +49,7 @@ export const auditPageSchema = z.object({
   entries: z.array(auditEntrySchema),
   /** Older entries remain on that day. */
   more: z.boolean(),
+  /** What the reader knows each id of the page by (T-097): an order's number, a customer's name… */
+  refs: z.record(z.string(), z.string()).default({}),
 });
 export type AuditPage = z.infer<typeof auditPageSchema>;

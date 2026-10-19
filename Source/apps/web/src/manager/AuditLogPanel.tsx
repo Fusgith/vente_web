@@ -12,7 +12,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { auditApi } from '../api/audit.js';
 import { errorMessage } from '../api/error-message.js';
 import { labels } from '../labels.js';
-import { changesOf } from './audit-changes.js';
+import { changesOf, subjectOf, type Refs } from './audit-changes.js';
 import { buttonClass, sheetClass } from '../ui/button.js';
 import { CELL, HEAD } from '../ui/document-table.js';
 
@@ -25,7 +25,7 @@ const ROW = `${CELL} border-b border-rule py-2 align-top`;
 const shopToday = () =>
   new Intl.DateTimeFormat('en-CA', { timeZone: SHOP_TIME_ZONE }).format(new Date());
 
-function Entry({ entry }: { entry: AuditLogEntry }) {
+function Entry({ entry, refs }: { entry: AuditLogEntry; refs: Refs }) {
   const role = entry.activeRole ? ROLE_LABELS[entry.activeRole] : null;
   const where = entry.origin === 'REMOTE' ? text.remote : null;
   return (
@@ -38,12 +38,12 @@ function Entry({ entry }: { entry: AuditLogEntry }) {
       <td className={ROW}>
         <span className="block font-semibold">{text.actions[entry.action] ?? entry.action}</span>
         <span className="block text-14 text-ink-2">
-          {text.entities[entry.entityType] ?? entry.entityType}
+          {subjectOf(entry.entityType, entry.entityId, refs)}
         </span>
       </td>
       <td className={`${ROW} text-14 break-words`}>
         {entry.reason && <span className="block font-semibold">{text.reason(entry.reason)}</span>}
-        {changesOf(entry.before, entry.after).map((change, index) => (
+        {changesOf(entry.before, entry.after, refs).map((change, index) => (
           <span key={index} className="block">
             {change}
           </span>
@@ -62,6 +62,7 @@ export function AuditLogPanel() {
   const [subject, setSubject] = useState<AuditSubject | ''>('');
   const [user, setUser] = useState('');
   const [entries, setEntries] = useState<AuditLogEntry[] | null>(null);
+  const [refs, setRefs] = useState<Refs>({});
   const [more, setMore] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const applied = useRef<AuditQuery>({});
@@ -73,6 +74,7 @@ export function AuditLogPanel() {
       (page) => {
         if (request !== latest.current) return;
         setEntries((list) => (append && list ? [...list, ...page.entries] : page.entries));
+        setRefs((known) => (append ? { ...known, ...page.refs } : page.refs));
         setMore(page.more);
         setFailure(null);
       },
@@ -165,7 +167,7 @@ export function AuditLogPanel() {
             </thead>
             <tbody>
               {entries.map((entry) => (
-                <Entry key={entry.id} entry={entry} />
+                <Entry key={entry.id} entry={entry} refs={refs} />
               ))}
             </tbody>
           </table>

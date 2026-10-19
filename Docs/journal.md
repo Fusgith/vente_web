@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 20/10/2026 — T-097 : journal d'audit lisible — agent : Claude Code (Opus 5.5)
+
+**Fait** : le détail du journal d'audit parle la langue du magasin : noms des champs, référence de l'élément (« Commande D-2026-… », client, article, compte…) au lieu des identifiants, dates et heures du magasin, montants en MGA, états en français, seules les lignes modifiées d'un devis ou d'une commande. Tests API 384, web 404 verts.
+
+**Reste** : T-080 (téléchargements à autoriser) ; T-013, T-036, T-019b, T-095b.
+
 ## 20/10/2026 — T-090b : remises prévues sur la tablette — agent : Claude Code (Opus 5.5)
 
 **Fait** : quand le commercial remise (H60), la tablette lit les règles du boss sur le brouillon : « Prévue : x % » sous la ligne en dessous de sa règle, bouton « Appliquer les remises prévues » ; la remise prévue élargit la limite de la ligne à l'écran comme à l'enregistrement, à la mise à jour et à la validation (H62). Tests API 383, web 403 verts.
