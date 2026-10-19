@@ -21,6 +21,7 @@ function rule(overrides: Partial<DiscountRule> = {}): DiscountRule {
     category: null,
     minQty: null,
     customerCategory: null,
+    customerType: null,
     pct: '5',
     startsOn: '2026-10-01',
     endsOn: '2026-10-31',
@@ -32,7 +33,11 @@ function rule(overrides: Partial<DiscountRule> = {}): DiscountRule {
 
 const soap = { productId: SOAP, categoryId: null, qty: '2', factor: '6' };
 const rice = { productId: RICE, categoryId: FOOD, qty: '1', factor: '1' };
-const context = { customerCategory: 'Régulier', day: '2026-10-09' };
+const context = {
+  customerCategory: 'Régulier',
+  customerType: 'WHOLESALER' as const,
+  day: '2026-10-09',
+};
 
 describe('suggestedDiscounts (H62)', () => {
   it('takes the best rule in force of each line, never a sum', () => {
@@ -48,6 +53,13 @@ describe('suggestedDiscounts (H62)', () => {
       rule({ category: { id: FOOD, name: 'Alimentation' }, pct: '9' }),
     ];
     expect(suggestedDiscounts(rules, [soap, rice], context)).toEqual(['7', '9']);
+  });
+
+  it('applies a rule of the customer’s type, not of another type (H66)', () => {
+    const typed = (customerType: DiscountRule['customerType'], pct: string) =>
+      rule({ kind: 'CUSTOMER_TYPE', customerType, pct, startsOn: null, endsOn: null });
+    expect(suggestedDiscounts([typed('RETAILER', '12')], [soap], context)).toEqual([null]);
+    expect(suggestedDiscounts([typed('WHOLESALER', '12')], [soap], context)).toEqual(['12']);
   });
 
   it('counts a quantity in base units over every line of the product', () => {
@@ -91,6 +103,7 @@ describe('discountRuleInputSchema (H62)', () => {
     categoryId: null,
     minQty: '12',
     customerCategory: null,
+    customerType: null,
     pct: '10',
     startsOn: null,
     endsOn: null,
@@ -105,6 +118,9 @@ describe('discountRuleInputSchema (H62)', () => {
     expect(ok({ minQty: null })).toBe(false);
     expect(ok({ kind: 'CUSTOMER_CATEGORY', minQty: null, customerCategory: 'Divers' })).toBe(true);
     expect(ok({ kind: 'CUSTOMER_CATEGORY', customerCategory: 'Divers' })).toBe(false);
+    expect(ok({ kind: 'CUSTOMER_TYPE', minQty: null, customerType: 'RETAILER' })).toBe(true);
+    expect(ok({ kind: 'CUSTOMER_TYPE', minQty: null })).toBe(false);
+    expect(ok({ customerType: 'RETAILER' })).toBe(false);
     expect(ok({ kind: 'PROMOTION', minQty: null, startsOn: '2026-10-01' })).toBe(false);
     expect(
       ok({ kind: 'PROMOTION', minQty: null, startsOn: '2026-10-01', endsOn: '2026-10-31' }),

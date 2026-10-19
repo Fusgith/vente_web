@@ -4,9 +4,9 @@ Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-c
 
 ## 19/10/2026 — T-093 : type de client et prix par type — agent : Claude Code (Opus 5.5)
 
-**Fait** : type de client (Grossiste, Semi-grossiste, Détaillant, Particulier par défaut) choisi par le responsable dans l'annuaire, audité ; prix facultatif par unité × type, daté comme le prix de base (fiche article, colonnes `prix_grossiste`… de l'import) ; le devis prend le prix du type du client, sinon le prix de base, et se revalorise au changement de client. Tests API et web verts.
+**Fait** : type de client (Grossiste, Semi-grossiste, Détaillant, Particulier par défaut) choisi par le responsable dans l'annuaire, audité ; prix facultatif par unité × type, daté comme le prix de base (fiche article, colonnes `prix_grossiste`… de l'import) ; le devis prend le prix du type du client, sinon le prix de base, et se revalorise au changement de client ; règle de remise « Type de client » chez le boss (H62). Tests API 377, web 401 verts (base de test en mémoire : le disque Docker répondait en ~0,5 s par fsync).
 
-**Reste** : règle de remise par type de client (H62) ; l'historique de prix du tableau de bord et des exports ne suit que le prix de base.
+**Reste** : l'historique de prix du tableau de bord et des exports ne suit que le prix de base.
 
 ## 19/10/2026 — T-015 : postes et appairage — agent : Claude Code (Opus 5.5)
 

@@ -144,6 +144,7 @@ enum DiscountRuleKind {
   QUANTITY
   CUSTOMER_CATEGORY
   PROMOTION
+  CUSTOMER_TYPE
 
   @@map("discount_rule_kind")
 }
@@ -161,6 +162,8 @@ model DiscountRule {
   minQty           Decimal?         @map("min_qty") @db.Decimal(12, 2)
   /// One of the shop's customer categories (H49 a), for CUSTOMER_CATEGORY only.
   customerCategory String?          @map("customer_category") @db.VarChar(40)
+  /// One of the customer types (H66), for CUSTOMER_TYPE only.
+  customerType     CustomerType?    @map("customer_type")
   /// More than 0, 100 at most (CHECK in the migration).
   pct              Decimal          @db.Decimal(5, 2)
   /// Shop days, both included; both set for PROMOTION, ends not before starts.

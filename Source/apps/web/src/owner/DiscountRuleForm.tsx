@@ -1,8 +1,10 @@
 import {
+  CUSTOMER_TYPES,
   DISCOUNT_RULE_KINDS,
   discountRuleInputSchema,
   formatQty,
   type CategorySummary,
+  type CustomerType,
   type DiscountRule,
   type DiscountRuleInput,
   type DiscountRuleKind,
@@ -59,6 +61,9 @@ export function DiscountRuleForm({
   const [found, setFound] = useState<ProductHit[] | null>(null);
   const [minQty, setMinQty] = useState(shown(rule?.minQty ?? null));
   const [customerCategory, setCustomerCategory] = useState(rule?.customerCategory ?? '');
+  const [customerType, setCustomerType] = useState<CustomerType>(
+    rule?.customerType ?? 'WHOLESALER',
+  );
   const [pct, setPct] = useState(shown(rule?.pct ?? null));
   const [startsOn, setStartsOn] = useState(rule?.startsOn ?? '');
   const [endsOn, setEndsOn] = useState(rule?.endsOn ?? '');
@@ -88,6 +93,7 @@ export function DiscountRuleForm({
       categoryId: scope === 'CATEGORY' && chosenCategory ? chosenCategory : null,
       minQty: kind === 'QUANTITY' ? typed(minQty) || null : null,
       customerCategory: kind === 'CUSTOMER_CATEGORY' ? chosenCustomers || null : null,
+      customerType: kind === 'CUSTOMER_TYPE' ? customerType : null,
       pct: typed(pct),
       startsOn: startsOn || null,
       endsOn: endsOn || null,
@@ -147,6 +153,22 @@ export function DiscountRuleForm({
               {customerCategories.map((name) => (
                 <option key={name} value={name}>
                   {name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {kind === 'CUSTOMER_TYPE' && (
+          <label className={LABEL}>
+            {text.customerType}
+            <select
+              value={customerType}
+              onChange={(event) => setCustomerType(event.target.value as CustomerType)}
+              className={FIELD}
+            >
+              {CUSTOMER_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {labels.customers.types[type]}
                 </option>
               ))}
             </select>

@@ -6,10 +6,15 @@
  */
 import { z } from 'zod';
 
+import { customerTypeSchema, type CustomerType } from './customers.js';
 import { baseQuantity, isQuantity, toScaled } from './decimal.js';
 
-/** The customer's type (H66) comes with T-093: its rules then join these kinds. */
-export const DISCOUNT_RULE_KINDS = ['QUANTITY', 'CUSTOMER_CATEGORY', 'PROMOTION'] as const;
+export const DISCOUNT_RULE_KINDS = [
+  'QUANTITY',
+  'CUSTOMER_CATEGORY',
+  'CUSTOMER_TYPE',
+  'PROMOTION',
+] as const;
 export type DiscountRuleKind = (typeof DISCOUNT_RULE_KINDS)[number];
 
 /** More than 0 %, 100 % at most, 2 decimals (H62). */
@@ -32,6 +37,8 @@ export const discountRuleInputSchema = z
     minQty: z.string().refine(isQuantity, 'quantity').nullable(),
     /** One of the shop's customer categories (CUSTOMER_CATEGORY, H49 a). */
     customerCategory: z.string().trim().min(1).max(40).nullable(),
+    /** One of the customer types (CUSTOMER_TYPE, H66). */
+    customerType: customerTypeSchema.nullable().default(null),
     pct: rateSchema,
     /** Shop days, both included; mandatory for a promotion, optional otherwise. */
     startsOn: z.iso.date().nullable(),
@@ -46,6 +53,9 @@ export const discountRuleInputSchema = z
     if ((rule.kind === 'CUSTOMER_CATEGORY') !== (rule.customerCategory !== null)) {
       issue('customerCategory', 'category_kind');
     }
+    if ((rule.kind === 'CUSTOMER_TYPE') !== (rule.customerType !== null)) {
+      issue('customerType', 'type_kind');
+    }
     if (rule.kind === 'PROMOTION' && (!rule.startsOn || !rule.endsOn)) issue('endsOn', 'dates');
     if (rule.startsOn && rule.endsOn && rule.endsOn < rule.startsOn) issue('endsOn', 'order');
   });
@@ -58,6 +68,7 @@ export const discountRuleSchema = z.object({
   category: z.object({ id: z.uuid(), name: z.string() }).nullable(),
   minQty: z.string().nullable(),
   customerCategory: z.string().nullable(),
+  customerType: customerTypeSchema.nullable(),
   pct: z.string(),
   startsOn: z.iso.date().nullable(),
   endsOn: z.iso.date().nullable(),
@@ -88,6 +99,8 @@ export interface RuleLine {
 export interface RuleContext {
   /** The order's customer category (H49 a). */
   customerCategory: string;
+  /** The order's customer type (H66). */
+  customerType: CustomerType;
   /** The shop's day, `YYYY-MM-DD`. */
   day: string;
 }
@@ -129,7 +142,9 @@ export function suggestedDiscounts(
           ? toScaled(rule.minQty ?? '0', 2) <= (quantities.get(line.productId) ?? 0n)
           : rule.kind === 'CUSTOMER_CATEGORY'
             ? rule.customerCategory === context.customerCategory
-            : true;
+            : rule.kind === 'CUSTOMER_TYPE'
+              ? rule.customerType === context.customerType
+              : true;
       const rate = toScaled(rule.pct, 2);
       if (scoped && met && (best === null || rate > best)) {
         best = rate;

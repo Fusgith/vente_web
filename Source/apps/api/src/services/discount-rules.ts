@@ -20,6 +20,7 @@ const select = {
   kind: true,
   minQty: true,
   customerCategory: true,
+  customerType: true,
   pct: true,
   startsOn: true,
   endsOn: true,
@@ -51,6 +52,7 @@ const audited = (rule: DiscountRule) => ({
   categoryId: rule.category?.id ?? null,
   minQty: rule.minQty,
   customerCategory: rule.customerCategory,
+  customerType: rule.customerType,
   pct: rule.pct,
   startsOn: rule.startsOn,
   endsOn: rule.endsOn,
@@ -102,7 +104,7 @@ export async function suggestedFor(
   // One query after the other: `db` may be a transaction.
   const customer = await db.customer.findUniqueOrThrow({
     where: { id: customerId },
-    select: { category: true },
+    select: { category: true, type: true },
   });
   const products = await db.product.findMany({
     where: { id: { in: lines.map((line) => line.productId) } },
@@ -112,7 +114,11 @@ export async function suggestedFor(
   return suggestedDiscounts(
     rules,
     lines.map((line) => ({ ...line, categoryId: categories.get(line.productId) ?? null })),
-    { customerCategory: customer.category, day: shopDateValue(now).toISOString().slice(0, 10) },
+    {
+      customerCategory: customer.category,
+      customerType: customer.type,
+      day: shopDateValue(now).toISOString().slice(0, 10),
+    },
   );
 }
 
@@ -157,6 +163,7 @@ async function checked(db: Db, input: RuleInput) {
     categoryId: input.categoryId,
     minQty: input.minQty,
     customerCategory: input.customerCategory,
+    customerType: input.customerType,
     pct: input.pct,
     // `YYYY-MM-DD` reads as midnight UTC, as the `date` column holds it.
     startsOn: input.startsOn ? new Date(input.startsOn) : null,

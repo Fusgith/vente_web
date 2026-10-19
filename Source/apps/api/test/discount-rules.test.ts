@@ -138,6 +138,17 @@ describe.skipIf(!TEST_DATABASE_URL)('discount rules (H62)', () => {
       });
     });
 
+    it('suggests a rule of the customer’s type, never one of another type (H66)', async () => {
+      const typed = { kind: 'CUSTOMER_TYPE', productId: null, minQty: null } as const;
+      await created(rule({ ...typed, customerType: 'INDIVIDUAL', pct: '12' }));
+      await created(rule({ ...typed, customerType: 'WHOLESALER', pct: '30' }));
+      const reply = await get(`/orders/${order.id}/suggested-discounts`, s.cookies.cashier);
+      expect(suggestedDiscountsSchema.parse(reply.json()).lines).toEqual([
+        { position: 1, pct: '12' },
+        { position: 2, pct: '12' },
+      ]);
+    });
+
     it('applies a suggested discount beyond the cap, as the rule’s; not beyond it', async () => {
       const beyond = await discount([[1, '10.5']]);
       expect(beyond.statusCode).toBe(422);

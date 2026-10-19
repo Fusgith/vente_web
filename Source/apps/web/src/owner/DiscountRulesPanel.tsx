@@ -35,7 +35,9 @@ const conditionOf = (rule: DiscountRule) =>
     ? text.fromQty(formatQty(rule.minQty))
     : rule.customerCategory
       ? text.customersOf(rule.customerCategory)
-      : '';
+      : rule.customerType
+        ? text.customersOf(labels.customers.types[rule.customerType])
+        : '';
 
 function periodOf({ startsOn, endsOn }: DiscountRule): string {
   if (startsOn && endsOn) return text.between(formatDate(startsOn), formatDate(endsOn));
@@ -50,6 +52,7 @@ const inputOf = (rule: DiscountRule): DiscountRuleInput => ({
   categoryId: rule.category?.id ?? null,
   minQty: rule.minQty,
   customerCategory: rule.customerCategory,
+  customerType: rule.customerType,
   pct: rule.pct,
   startsOn: rule.startsOn,
   endsOn: rule.endsOn,

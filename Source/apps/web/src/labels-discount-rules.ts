@@ -11,6 +11,7 @@ export const discountRulesLabels = {
   kinds: {
     QUANTITY: 'Quantité achetée',
     CUSTOMER_CATEGORY: 'Catégorie de client',
+    CUSTOMER_TYPE: 'Type de client',
     PROMOTION: 'Période de promotion',
   } satisfies Record<DiscountRuleKind, string>,
   scope: 'Articles concernés',
@@ -22,6 +23,7 @@ export const discountRulesLabels = {
   pick: (sku: string, name: string) => `${sku} ${name}`,
   minQty: 'À partir de (en unité de base)',
   customerCategory: 'Catégorie de client',
+  customerType: 'Type de client',
   pct: 'Remise (%)',
   from: 'Du',
   to: 'Au',
