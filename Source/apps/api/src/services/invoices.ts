@@ -68,8 +68,21 @@ export const invoiceSnapshotSchema = z.object({
     cashReceived: z.string(),
     change: z.string(),
   }),
-  /** A credit sale: « Reste dû : …, à régler avant le JJ/MM/AAAA » (RG-FAC-02, H67). */
-  credit: z.object({ amount: z.string(), dueOn: z.string() }).nullable().default(null),
+  /**
+   * A credit sale: « Reste dû : …, à régler avant le JJ/MM/AAAA » (RG-FAC-02, H67); paid by a
+   * title, its number and due day (H68).
+   */
+  credit: z
+    .object({
+      amount: z.string(),
+      dueOn: z.string(),
+      instrument: z
+        .object({ method: z.string(), number: z.string(), bank: z.string() })
+        .nullable()
+        .default(null),
+    })
+    .nullable()
+    .default(null),
 });
 export type InvoiceSnapshot = z.infer<typeof invoiceSnapshotSchema>;
 

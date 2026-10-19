@@ -182,6 +182,36 @@ describe('payment at the register (RG-PAY-01 à 04)', () => {
     expect(api.callsTo(PAY)[0]!.body).toMatchObject({ cashReceived: null });
   });
 
+  it('asks the bank and the day of a post-dated check (T-096, H73)', async () => {
+    const CHECK = '0192a4f0-0000-7000-8000-000000000703';
+    const check = { id: CHECK, code: 'POSTDATED_CHECK', label: 'Chèque post-daté' };
+    const api = atRegister({
+      'GET /payment-methods': ok({
+        methods: [...METHODS.methods, { ...check, requiresReference: true }],
+      }),
+      [PAY]: ok(paid('0.00')),
+    });
+    const sheet = await paySheet();
+    fireEvent.change(within(sheet).getByLabelText(text.method), { target: { value: CHECK } });
+    type(within(sheet).getByLabelText(text.reference), '1234567');
+    expect(confirm(sheet)).toBeDisabled();
+    type(within(sheet).getByLabelText(text.bank), 'BOA');
+    type(within(sheet).getByLabelText(text.instrumentDue), '2026-12-15');
+    fireEvent.click(confirm(sheet));
+    await waitFor(() => expect(api.callsTo(PAY)).toHaveLength(1));
+    expect(api.callsTo(PAY)[0]!.body).toMatchObject({
+      lines: [
+        {
+          methodId: CHECK,
+          amount: '114500',
+          reference: '1234567',
+          bank: 'BOA',
+          dueOn: '2026-12-15',
+        },
+      ],
+    });
+  });
+
   it('never sends a line at zero', async () => {
     atRegister({});
     const sheet = await paySheet();

@@ -48,6 +48,7 @@ model PaymentMethod {
   paymentLines PaymentLine[]
   creditNotes  CreditNote[]
   settlements  ReceivableSettlement[]
+  instruments  Receivable[]
 
   @@map("payment_methods")
 }

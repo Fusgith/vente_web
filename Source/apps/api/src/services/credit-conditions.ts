@@ -119,7 +119,7 @@ export async function updateCreditCondition(
 /**
  * The day a credit of `amount` falls due for the customer, or a refusal (H67, RG-PAY-02): the
  * customer's own active condition, else their category's, else their type's (⚠️ H72); no due
- * day already passed; their outstanding, this credit included, within its ceiling.
+ * day already passed, a title still to cash aside (H68); their outstanding, this credit included, within its ceiling.
  */
 export async function creditDueOn(
   tx: Prisma.TransactionClient,
@@ -155,7 +155,8 @@ export async function creditDueOn(
   const today = shopDateValue(now);
   const [open] = await tx.$queryRaw<{ outstanding: string; overdue: boolean }[]>`
     SELECT COALESCE(SUM("amount" - "paid"), 0)::text AS "outstanding",
-           COALESCE(BOOL_OR("due_on" < ${today}::date), false) AS "overdue"
+           COALESCE(BOOL_OR("due_on" < ${today}::date
+                            AND "instrument_status" IS DISTINCT FROM 'HANDED'), false) AS "overdue"
       FROM "receivables" WHERE "customer_id" = ${customerId}::uuid AND "status" = 'OPEN'`;
   const outstanding = open?.outstanding ?? '0';
   const details = { ceiling: condition.ceiling.toFixed(2), outstanding };

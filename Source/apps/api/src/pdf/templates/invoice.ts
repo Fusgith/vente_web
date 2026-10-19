@@ -93,8 +93,11 @@ export function invoiceDocument(snapshot: InvoiceSnapshot): TDocumentDefinitions
   }
   after.push(paymentBlock(snapshot));
   if (snapshot.credit) {
+    const { amount, dueOn, instrument } = snapshot.credit;
     after.push({
-      text: text.creditDue(formatMga(snapshot.credit.amount), snapshot.credit.dueOn),
+      text: instrument
+        ? text.instrumentDue(instrument, formatMga(amount), dueOn)
+        : text.creditDue(formatMga(amount), dueOn),
       bold: true,
       margin: [0, 8, 0, 0],
     });

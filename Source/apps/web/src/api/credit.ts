@@ -3,8 +3,11 @@ import {
   creditConditionSchema,
   receivableListSchema,
   receivablePaymentSchema,
+  receivableSchema,
   type CreditCondition,
   type CreditConditionInput,
+  type InstrumentOutcome,
+  type Receivable,
   type ReceivableList,
   type ReceivablePayment,
   type ReceivablePaymentInput,
@@ -37,6 +40,13 @@ export const creditApi = {
     return parseResponse(
       receivablePaymentSchema,
       await apiRequest(`/receivables/${id}/settlements`, { method: 'POST', body: input }),
+    );
+  },
+  /** T-096 (H73): the manager says what the bank did with a bill or a post-dated check. */
+  async markInstrument(id: string, outcome: InstrumentOutcome): Promise<Receivable> {
+    return parseResponse(
+      receivableSchema,
+      await apiRequest(`/receivables/${id}/instrument`, { method: 'POST', body: { outcome } }),
     );
   },
   receiptPdfUrl(settlementId: string): string {

@@ -128,6 +128,13 @@ export const ERROR_LABELS = {
     'Une condition de crédit existe déjà pour ce type, cette catégorie ou ce client.',
   RECEIVABLE_SETTLED: 'Cette créance est déjà soldée : la liste a été mise à jour.',
   SETTLEMENT_TOO_HIGH: 'Le montant dépasse le reste dû de cette créance.',
+  PAYMENT_TERM_SINGLE: 'Un seul paiement à terme par vente : crédit, traite ou chèque post-daté.',
+  PAYMENT_INSTRUMENT_DETAILS:
+    'Traite ou chèque post-daté : saisissez la banque ou le tiré et une échéance à venir.',
+  RECEIVABLE_COVERED:
+    'Cette créance est couverte par un titre : à son échéance, le responsable le marque encaissé ou impayé.',
+  INSTRUMENT_NOT_HANDED:
+    'Ce titre est déjà marqué encaissé ou impayé : la liste a été mise à jour.',
   IDEMPOTENCY_KEY_REQUIRED: 'Requête de paiement incomplète : rechargez la page.',
   COUNTER_BUSY:
     'Une commande est déjà à votre comptoir : livrez-la ou déclarez le client absent avant d’en prendre une autre.',

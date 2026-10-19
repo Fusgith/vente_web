@@ -70,6 +70,12 @@ export const INVOICE_PDF = {
   change: 'Rendu',
   /** RG-FAC-02, H67: a credit sale. */
   creditDue: (amount: string, day: string) => `Reste dû : ${amount}, à régler avant le ${day}`,
+  /** RG-FAC-02, H68: paid by a bill of exchange or a post-dated check. */
+  instrumentDue: (
+    title: { method: string; number: string; bank: string },
+    amount: string,
+    day: string,
+  ) => `${title.method} n° ${title.number} (${title.bank}) : ${amount}, échéance le ${day}`,
   page: (number: string, current: number, count: number) =>
     `Facture ${number} — page ${current} sur ${count}`,
 };

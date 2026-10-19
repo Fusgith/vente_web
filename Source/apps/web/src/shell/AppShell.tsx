@@ -162,8 +162,9 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         <DeliveryIssuesPanel />
         {/* RG-CAI-04/05: the day's registers. */}
         <RegisterSessionsPanel />
-        {/* H67: the manager follows the receivables and takes their payments (H32). */}
-        <ReceivablesPanel canSettle />
+        {/* H67: the manager follows the receivables and takes their payments (H32); T-096 (H73):
+            says whether the bank paid a bill or a post-dated check. */}
+        <ReceivablesPanel canSettle canMark />
         {/* RG-STK-05 à 07: the products under their threshold, adjustments with a reason. */}
         <StockPanel />
         {/* RG-ART-01 à 07 (H65): products, sale units and dated prices. */}

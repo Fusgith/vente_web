@@ -1,6 +1,6 @@
 import {
   CASH_METHOD,
-  CREDIT_METHOD,
+  isTermMethod,
   formatMga,
   type InvoiceLookup,
   type PaymentMethod,
@@ -82,7 +82,7 @@ export function RefundSheet({ onRefunded, onClose }: RefundSheetProps) {
     let live = true;
     paymentsApi.methods().then(
       // Money goes back: never on credit (H67).
-      (list) => live && setMethods(list.filter((item) => item.code !== CREDIT_METHOD)),
+      (list) => live && setMethods(list.filter((item) => !isTermMethod(item.code))),
       (error: unknown) => live && setLoadFailure(errorMessage(error)),
     );
     return () => {

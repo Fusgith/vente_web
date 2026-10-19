@@ -49,6 +49,8 @@ export const registerLabels = {
   reference: 'Référence de la transaction (obligatoire)',
   addMethod: 'Ajouter un moyen de paiement',
   removeMethod: (label: string) => `Retirer ${label}`,
+  bank: 'Banque (obligatoire)',
+  instrumentDue: 'Échéance (obligatoire)',
   cashReceived: 'Montant reçu en espèces (MGA)',
   change: 'Rendu',
   remaining: 'Reste à payer',

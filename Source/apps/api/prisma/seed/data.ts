@@ -52,6 +52,9 @@ export const PAYMENT_METHODS = [
   { code: 'CHEQUE', label: 'Chèque', requiresReference: true },
   // The part of a sale left to pay later (H67), within the customer's credit conditions.
   { code: 'CREDIT', label: 'À crédit', requiresReference: false },
+  // Paid later on a title, numbered, within the same conditions (H68).
+  { code: 'BILL_OF_EXCHANGE', label: 'Traite', requiresReference: true },
+  { code: 'POSTDATED_CHECK', label: 'Chèque post-daté', requiresReference: true },
 ] as const;
 
 /** Demo credentials (development only; the seed refuses NODE_ENV=production). */

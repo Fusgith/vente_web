@@ -1,8 +1,9 @@
 import {
-  CREDIT_METHOD,
   formatAmount,
   formatDate,
   formatMga,
+  isTermMethod,
+  type InstrumentOutcome,
   type PaymentMethod,
   type Receivable,
   type ReceivableList,
@@ -27,8 +28,16 @@ const FIELD = 'min-h-12 rounded-control border border-rule-strong bg-white px-3'
 /**
  * What the customers still owe on their credit sales (T-095, ⚠️ H67), the earliest due first.
  * At the register, a payment towards one is taken with a numbered receipt; the owner reads.
+ * A bill of exchange or a post-dated check (T-096, ⚠️ H73) is not taken at the register while
+ * in hand: the manager says whether the bank paid it (`canMark`).
  */
-export function ReceivablesPanel({ canSettle }: { canSettle: boolean }) {
+export function ReceivablesPanel({
+  canSettle,
+  canMark = false,
+}: {
+  canSettle: boolean;
+  canMark?: boolean;
+}) {
   const { say } = useStatusLine();
   const [list, setList] = useState<ReceivableList | null>(null);
   const [q, setQ] = useState('');
@@ -49,7 +58,7 @@ export function ReceivablesPanel({ canSettle }: { canSettle: boolean }) {
     load('');
     if (!canSettle) return;
     paymentsApi.methods().then((all) => {
-      const usable = all.filter((item) => item.code !== CREDIT_METHOD);
+      const usable = all.filter((item) => !isTermMethod(item.code));
       setMethods(usable);
       setMethodId(usable[0]?.id ?? '');
     }, fail);
@@ -74,6 +83,18 @@ export function ReceivablesPanel({ canSettle }: { canSettle: boolean }) {
         setSettling(null);
         setFailure(null);
         say(text.settled(payment.number), 'check');
+        load(q);
+      }, fail)
+      .finally(() => setBusy(false));
+  };
+
+  const mark = (receivable: Receivable, outcome: InstrumentOutcome) => {
+    setBusy(true);
+    creditApi
+      .markInstrument(receivable.id, outcome)
+      .then((marked) => {
+        setFailure(null);
+        say(text.marked(marked.customer.name, text.instrumentStatus[outcome]), 'check');
         load(q);
       }, fail)
       .finally(() => setBusy(false));
@@ -139,7 +160,7 @@ export function ReceivablesPanel({ canSettle }: { canSettle: boolean }) {
                 <th className={HEAD}>{text.invoice}</th>
                 <th className={HEAD}>{text.dueOn}</th>
                 <th className={`${HEAD} text-right`}>{text.remaining}</th>
-                {canSettle && <th className={HEAD} />}
+                {(canSettle || canMark) && <th className={HEAD} />}
               </tr>
             </thead>
             <tbody>
@@ -151,7 +172,19 @@ export function ReceivablesPanel({ canSettle }: { canSettle: boolean }) {
                       {receivable.customer.phone}
                     </span>
                   </td>
-                  <td className={`${ROW} figures`}>{receivable.invoice.number}</td>
+                  <td className={`${ROW} figures`}>
+                    {receivable.invoice.number}
+                    {receivable.instrument && (
+                      <span className="block text-14 text-ink-2">
+                        {text.instrument(
+                          receivable.instrument.method,
+                          receivable.instrument.number,
+                          receivable.instrument.bank,
+                        )}{' '}
+                        — {text.instrumentStatus[receivable.instrument.status]}
+                      </span>
+                    )}
+                  </td>
                   <td className={`${ROW} figures ${receivable.overdue ? 'text-madder' : ''}`}>
                     {formatDate(receivable.dueOn)}
                     {receivable.overdue && ` — ${text.overdue}`}
@@ -159,17 +192,42 @@ export function ReceivablesPanel({ canSettle }: { canSettle: boolean }) {
                   <td className={`${ROW} text-right figures`}>
                     {formatAmount(receivable.remaining)}
                   </td>
-                  {canSettle && (
-                    <td className={ROW}>
-                      <button
-                        type="button"
-                        aria-label={text.settleOf(receivable.customer.name)}
-                        disabled={busy}
-                        onClick={() => open(receivable)}
-                        className={buttonClass('secondary', 'md')}
-                      >
-                        {text.settle}
-                      </button>
+                  {(canSettle || canMark) && (
+                    <td className={`${ROW} whitespace-nowrap`}>
+                      {receivable.instrument?.status === 'HANDED'
+                        ? canMark && (
+                            <span className="flex gap-2">
+                              <button
+                                type="button"
+                                aria-label={text.cashedOf(receivable.customer.name)}
+                                disabled={busy}
+                                onClick={() => mark(receivable, 'CASHED')}
+                                className={buttonClass('secondary', 'md')}
+                              >
+                                {text.cashed}
+                              </button>
+                              <button
+                                type="button"
+                                aria-label={text.unpaidOf(receivable.customer.name)}
+                                disabled={busy}
+                                onClick={() => mark(receivable, 'UNPAID')}
+                                className={buttonClass('destructive', 'md')}
+                              >
+                                {text.unpaid}
+                              </button>
+                            </span>
+                          )
+                        : canSettle && (
+                            <button
+                              type="button"
+                              aria-label={text.settleOf(receivable.customer.name)}
+                              disabled={busy}
+                              onClick={() => open(receivable)}
+                              className={buttonClass('secondary', 'md')}
+                            >
+                              {text.settle}
+                            </button>
+                          )}
                     </td>
                   )}
                 </tr>

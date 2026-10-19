@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 20/10/2026 — T-096 : traite et chèque post-daté — agent : Claude Code (Opus 5.5)
+
+**Fait** : moyens « Traite » et « Chèque post-daté » à la caisse (numéro, banque, échéance), dans les conditions de crédit ; créance « en attente » imprimée sur la facture, non échue et non encaissable tant que le titre est en main ; le responsable marque « Encaissé » ou « Impayé » dans « Créances clients », journalisé. Hypothèse H73. Tests API 382, web 402 verts.
+
+**Reste** : T-095b ; T-080 (téléchargements à autoriser) ; T-090b, T-097, T-013, T-036.
+
 ## 20/10/2026 — T-095 : vente à crédit — agent : Claude Code (Opus 5.5)
 
 **Fait** : conditions de crédit du boss (type ou catégorie de client ; par client dans l'API), part « Crédit » à la caisse dans les conditions (plafond, échéance passée), créance avec échéance et « Reste dû » sur la facture ; panneau « Créances clients » (caisse, responsable, boss), règlement à la caisse avec reçu PDF numéroté, compté dans la clôture ; jamais de remboursement à crédit. Hypothèse H72. Tests API 2 nouveaux, web 401 verts.

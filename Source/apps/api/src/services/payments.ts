@@ -1,6 +1,7 @@
 import {
   CASH_METHOD,
   CREDIT_METHOD,
+  isTermMethod,
   settle,
   sumAmounts,
   type PaidOrder,
@@ -20,7 +21,7 @@ import { issueInvoice, readInvoiceSettings } from './invoices.js';
 import { loadOrder } from './orders.js';
 import { lockOpenSession } from './register-sessions.js';
 import { nextSequenceValue } from './sequences.js';
-import { shopDate } from './shop-time.js';
+import { shopDate, shopDateValue } from './shop-time.js';
 
 /** The methods offered at the register, in their order (RG-PAY-01). */
 export async function paymentMethods(db: Db): Promise<PaymentMethod[]> {
@@ -152,11 +153,28 @@ export async function payOrder(
     if (settled.issue) throw new AppError(422, ISSUE_CODE[settled.issue]);
 
     const now = new Date();
-    // The part left to pay later, within the customer's credit conditions (RG-PAY-02, H67).
-    const onCredit = checked.filter((line) => line.method.code === CREDIT_METHOD);
-    const creditAmount = onCredit.length ? sumAmounts(onCredit.map((line) => line.amount)) : null;
-    const dueOn = creditAmount ? await creditDueOn(tx, order.customer_id, creditAmount, now) : null;
-    const credit = creditAmount && dueOn ? { amount: creditAmount, dueOn: shopDate(dueOn) } : null;
+    // The part left to pay later (RG-PAY-02), one per sale: on credit, or on a title due on its
+    // day (H68); either within the customer's credit conditions (H67).
+    const term = checked.filter((line) => isTermMethod(line.method.code));
+    if (term.length > 1) throw new AppError(422, 'PAYMENT_TERM_SINGLE');
+    const later = term[0];
+    const titled = later && later.method.code !== CREDIT_METHOD ? later : null;
+    const today = shopDateValue(now).toISOString().slice(0, 10);
+    if (titled && (!titled.reference || !titled.bank || !titled.dueOn || titled.dueOn < today)) {
+      throw new AppError(422, 'PAYMENT_INSTRUMENT_DETAILS');
+    }
+    const creditDue = later ? await creditDueOn(tx, order.customer_id, later.amount, now) : null;
+    const dueOn = titled?.dueOn ? new Date(titled.dueOn) : creditDue;
+    const credit =
+      later && dueOn
+        ? {
+            amount: sumAmounts([later.amount]),
+            dueOn: shopDate(dueOn),
+            instrument: titled
+              ? { method: titled.method.label, number: titled.reference!, bank: titled.bank! }
+              : null,
+          }
+        : null;
     const cashier = await tx.user.findUniqueOrThrow({
       where: { id: actor.userId },
       select: { fullName: true },
@@ -179,9 +197,20 @@ export async function payOrder(
       settings,
       at: now,
     });
-    if (creditAmount && dueOn) {
+    if (later && dueOn) {
       await tx.receivable.create({
-        data: { invoiceId: invoice.id, customerId: order.customer_id, amount: creditAmount, dueOn },
+        data: {
+          invoiceId: invoice.id,
+          customerId: order.customer_id,
+          amount: later.amount,
+          dueOn,
+          ...(titled && {
+            instrumentMethodId: titled.method.id,
+            instrumentNumber: titled.reference,
+            instrumentBank: titled.bank ?? null,
+            instrumentStatus: 'HANDED' as const,
+          }),
+        },
       });
     }
     const payment = await tx.payment.create({

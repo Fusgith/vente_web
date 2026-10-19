@@ -2,6 +2,7 @@ import {
   CASH_METHOD,
   formatMga,
   formatQty,
+  INSTRUMENT_METHODS,
   roundCash,
   settle,
   type Order,
@@ -27,6 +28,9 @@ interface Line {
   methodId: string;
   amount: string;
   reference: string;
+  /** A bill of exchange or a post-dated check (T-096): the bank and its day. */
+  bank: string;
+  dueOn: string;
 }
 
 /** An amount due as it starts a field: `65 000`, `12 500,5` (RG-FMT-01). */
@@ -67,7 +71,17 @@ export function PaymentSheet({ order, ticket, busy, onPay, onClose }: PaymentShe
         // In cash, the amount rounded to the shop step (RG-FMT-04, H70).
         const due =
           first?.code === CASH_METHOD ? roundCash(order.total, cashRounding) : order.total;
-        if (first) setLines([{ key: 0, methodId: first.id, amount: editable(due), reference: '' }]);
+        if (first)
+          setLines([
+            {
+              key: 0,
+              methodId: first.id,
+              amount: editable(due),
+              reference: '',
+              bank: '',
+              dueOn: '',
+            },
+          ]);
       },
       (error: unknown) => live && setFailure(errorMessage(error)),
     );
@@ -97,8 +111,11 @@ export function PaymentSheet({ order, ticket, busy, onPay, onClose }: PaymentShe
     cashTyped,
     step,
   );
+  const isInstrument = (line: Line) => INSTRUMENT_METHODS.includes(methodOf(line)?.code ?? '');
   const missingReference = lines.some(
-    (line) => methodOf(line)?.requiresReference && line.reference.trim() === '',
+    (line) =>
+      (methodOf(line)?.requiresReference && line.reference.trim() === '') ||
+      (isInstrument(line) && (line.bank.trim() === '' || line.dueOn === '')),
   );
   const ready =
     readable && allPositive && settled.issue === null && !missingReference && lines.length > 0;
@@ -114,7 +131,14 @@ export function PaymentSheet({ order, ticket, busy, onPay, onClose }: PaymentShe
     const next = Math.max(...lines.map((line) => line.key)) + 1;
     setLines([
       ...lines,
-      { key: next, methodId: method.id, amount: editable(settled.remaining), reference: '' },
+      {
+        key: next,
+        methodId: method.id,
+        amount: editable(settled.remaining),
+        reference: '',
+        bank: '',
+        dueOn: '',
+      },
     ]);
   };
   const pay = () => {
@@ -126,6 +150,7 @@ export function PaymentSheet({ order, ticket, busy, onPay, onClose }: PaymentShe
           methodId: line.methodId,
           amount: amounts[index] ?? '0',
           reference: line.reference.trim() || null,
+          ...(isInstrument(line) ? { bank: line.bank.trim(), dueOn: line.dueOn } : {}),
         })),
         cashReceived: hasCash ? cashTyped : null,
       },
@@ -219,6 +244,31 @@ export function PaymentSheet({ order, ticket, busy, onPay, onClose }: PaymentShe
                     className={FIELD}
                   />
                 </label>
+              )}
+              {isInstrument(line) && (
+                <>
+                  <label className="flex min-w-48 flex-1 flex-col gap-1">
+                    <span className="text-14 text-ink-2">{text.bank}</span>
+                    <input
+                      autoComplete="off"
+                      maxLength={60}
+                      value={line.bank}
+                      aria-invalid={line.bank.trim() === ''}
+                      onChange={(event) => update(line.key, { bank: event.target.value })}
+                      className={FIELD}
+                    />
+                  </label>
+                  <label className="flex w-48 flex-col gap-1">
+                    <span className="text-14 text-ink-2">{text.instrumentDue}</span>
+                    <input
+                      type="date"
+                      value={line.dueOn}
+                      aria-invalid={line.dueOn === ''}
+                      onChange={(event) => update(line.key, { dueOn: event.target.value })}
+                      className={FIELD}
+                    />
+                  </label>
+                </>
               )}
               {lines.length > 1 && (
                 <button

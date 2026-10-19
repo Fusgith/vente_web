@@ -1,7 +1,9 @@
 import {
   CREDIT_METHOD,
+  INSTRUMENT_METHODS,
   invoiceNumber,
   sumAmounts,
+  type InstrumentOutcome,
   type Receivable,
   type ReceivableList,
   type ReceivablePayment,
@@ -53,18 +55,41 @@ const select = {
   createdAt: true,
   invoice: { select: { id: true, number: true } },
   customer: { select: { id: true, name: true, phone: true } },
+  instrumentNumber: true,
+  instrumentBank: true,
+  instrumentStatus: true,
+  instrumentMethod: { select: { label: true } },
 } satisfies Prisma.ReceivableSelect;
 type StoredReceivable = Prisma.ReceivableGetPayload<{ select: typeof select }>;
 
-function toView(row: StoredReceivable, today: Date): Receivable {
+function toView(
+  {
+    instrumentNumber,
+    instrumentBank,
+    instrumentStatus,
+    instrumentMethod,
+    ...row
+  }: StoredReceivable,
+  today: Date,
+): Receivable {
   return {
     ...row,
     amount: row.amount.toFixed(2),
     paid: row.paid.toFixed(2),
     remaining: row.amount.minus(row.paid).toFixed(2),
     dueOn: row.dueOn.toISOString().slice(0, 10),
-    overdue: row.status === 'OPEN' && row.dueOn < today,
+    // A title still to cash is not overdue: the manager marks it at its due day (H68).
+    overdue: row.status === 'OPEN' && instrumentStatus !== 'HANDED' && row.dueOn < today,
     createdAt: row.createdAt.toISOString(),
+    instrument:
+      instrumentStatus && instrumentMethod
+        ? {
+            method: instrumentMethod.label,
+            number: instrumentNumber ?? '',
+            bank: instrumentBank ?? '',
+            status: instrumentStatus,
+          }
+        : null,
   };
 }
 
@@ -111,7 +136,7 @@ export async function listReceivables(
 
 /**
  * A payment towards a receivable at the caller's open register (H67, RG-CAI-03): one active
- * method other than credit, its reference if required (RG-PAY-04), at most what is left to pay.
+ * method other than credit or a title, its reference if required (RG-PAY-04), at most what is left to pay.
  * Numbered without a gap, the receivable settled once fully paid, audited before → after.
  */
 export async function settleReceivable(
@@ -130,10 +155,15 @@ export async function settleReceivable(
     });
     if (!receivable) throw new AppError(404, 'NOT_FOUND');
     if (receivable.status === 'SETTLED') throw new AppError(409, 'RECEIVABLE_SETTLED');
+    if (receivable.instrumentStatus === 'HANDED') throw new AppError(409, 'RECEIVABLE_COVERED');
     const session = await lockOpenSession(tx, actor.userId);
     if (!session) throw new AppError(409, 'REGISTER_SESSION_REQUIRED');
     const method = await tx.paymentMethod.findFirst({
-      where: { id: methodId, isActive: true, code: { not: CREDIT_METHOD } },
+      where: {
+        id: methodId,
+        isActive: true,
+        code: { notIn: [CREDIT_METHOD, ...INSTRUMENT_METHODS] },
+      },
     });
     if (!method) throw new AppError(409, 'PAYMENT_METHOD_INVALID');
     if (method.requiresReference && !reference) {
@@ -208,6 +238,49 @@ export async function settleReceivable(
       amount: settlement.amount.toFixed(2),
       receivable: toView(updated, shopDateValue(now)),
     };
+  });
+}
+
+/**
+ * At its due day, the manager marks the title (H68): cashed, the receivable is settled; unpaid,
+ * it is owed again, settled at the register and overdue past its day. Audited before → after.
+ */
+export async function markInstrument(
+  db: Db,
+  actor: Actor,
+  id: string,
+  outcome: InstrumentOutcome,
+): Promise<Receivable> {
+  return db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT 1 FROM "receivables" WHERE "id" = ${id}::uuid FOR UPDATE`;
+    const receivable = await tx.receivable.findUnique({ where: { id }, select });
+    if (!receivable) throw new AppError(404, 'NOT_FOUND');
+    if (receivable.instrumentStatus !== 'HANDED') {
+      throw new AppError(409, 'INSTRUMENT_NOT_HANDED');
+    }
+    const updated = await tx.receivable.update({
+      where: { id },
+      data:
+        outcome === 'CASHED'
+          ? { instrumentStatus: outcome, paid: receivable.amount, status: 'SETTLED' }
+          : { instrumentStatus: outcome },
+      select,
+    });
+    await recordAudit(tx, {
+      ...by(actor),
+      action:
+        outcome === 'CASHED' ? 'receivable.instrument_cashed' : 'receivable.instrument_unpaid',
+      entityType: 'receivable',
+      entityId: id,
+      before: { instrument: 'HANDED', paid: receivable.paid.toFixed(2), status: receivable.status },
+      after: {
+        instrument: outcome,
+        number: receivable.instrumentNumber,
+        paid: updated.paid.toFixed(2),
+        status: updated.status,
+      },
+    });
+    return toView(updated, shopDateValue(new Date()));
   });
 }
 

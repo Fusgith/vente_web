@@ -162,4 +162,87 @@ describe.skipIf(!TEST_DATABASE_URL)('credit sale (T-095, H67)', () => {
       },
     });
   });
+  it('holds a bill or a post-dated check as paid until the manager marks it (T-096, ⚠️ H73)', async () => {
+    await condition();
+    const later = new Date(shopDateValue(new Date()).getTime() + 60 * 86_400_000);
+    const due = later.toISOString().slice(0, 10);
+    const pay = (lines: object[]) =>
+      s.post(
+        `/orders/${order.id}/pay`,
+        s.cookies.cashier,
+        {
+          version: order.version,
+          lines: [{ methodId: methods['CASH'], amount: '50000', reference: null }, ...lines],
+          cashReceived: '50000',
+        },
+        randomUUID(),
+      );
+    const check = (code: string, amount = '69500') => ({
+      methodId: methods[code],
+      amount,
+      reference: '1234567',
+      bank: 'BOA',
+      dueOn: due,
+    });
+    const mark = (id: string, outcome: string, cookie = s.cookies.manager) =>
+      s.post(`/receivables/${id}/instrument`, cookie, { outcome });
+
+    expect((await pay([{ ...check('POSTDATED_CHECK'), bank: null }])).json()).toMatchObject({
+      code: 'PAYMENT_INSTRUMENT_DETAILS',
+    });
+    expect(
+      (
+        await pay([
+          { methodId: methods['CREDIT'], amount: '30000', reference: null },
+          check('POSTDATED_CHECK', '39500'),
+        ])
+      ).json(),
+    ).toMatchObject({ code: 'PAYMENT_TERM_SINGLE' });
+
+    const paid = await pay([check('POSTDATED_CHECK')]);
+    expect(paid.statusCode, paid.body).toBe(200);
+    expect((await t.db.invoice.findFirstOrThrow()).snapshot).toMatchObject({
+      credit: {
+        amount: '69500.00',
+        instrument: { method: 'Chèque post-daté', number: '1234567', bank: 'BOA' },
+      },
+    });
+    // Past its day, a check still in hand is not overdue: the bank has not answered yet.
+    await t.db.receivable.updateMany({ data: { dueOn: new Date('2026-01-01') } });
+    const [held] = (await receivables()).items;
+    if (!held) throw new Error('no receivable');
+    expect(held).toMatchObject({
+      overdue: false,
+      instrument: { method: 'Chèque post-daté', number: '1234567', bank: 'BOA', status: 'HANDED' },
+    });
+    expect((await settle(held.id, 'CASH', '1000')).json()).toMatchObject({
+      code: 'RECEIVABLE_COVERED',
+    });
+
+    expect((await mark(held.id, 'UNPAID', s.cookies.cashier)).statusCode).toBe(403);
+    const unpaid = await mark(held.id, 'UNPAID');
+    expect(unpaid.statusCode, unpaid.body).toBe(200);
+    expect(unpaid.json()).toMatchObject({ overdue: true, instrument: { status: 'UNPAID' } });
+    expect((await mark(held.id, 'CASHED')).json()).toMatchObject({
+      code: 'INSTRUMENT_NOT_HANDED',
+    });
+    expect((await settle(held.id, 'CASH', '69500')).statusCode).toBe(201);
+    expect(await auditActions(t.db, held.id)).toEqual([
+      'receivable.instrument_unpaid',
+      'receivable.settled',
+    ]);
+
+    // A bill of exchange the bank paid closes the receivable without the register.
+    order = await s.atRegister();
+    expect((await pay([check('BILL_OF_EXCHANGE')])).statusCode).toBe(200);
+    const [bill] = (await receivables()).items;
+    if (!bill) throw new Error('no bill');
+    expect((await mark(bill.id, 'CASHED')).json()).toMatchObject({
+      paid: '69500.00',
+      remaining: '0.00',
+      status: 'SETTLED',
+      instrument: { method: 'Traite', status: 'CASHED' },
+    });
+    expect((await receivables()).items).toEqual([]);
+  });
 });

@@ -43,4 +43,12 @@ export const creditLabels = {
   cancel: 'Annuler',
   settled: (number: string) => `Règlement encaissé, reçu ${number}.`,
   openReceipt: 'Ouvrir le reçu',
+  instrument: (method: string, number: string, bank: string | null) =>
+    `${method} n° ${number}${bank ? ` (${bank})` : ''}`,
+  instrumentStatus: { HANDED: 'en attente', CASHED: 'encaissé', UNPAID: 'impayé' },
+  cashed: 'Encaissé',
+  unpaid: 'Impayé',
+  cashedOf: (customer: string) => `Titre de ${customer} encaissé par la banque`,
+  unpaidOf: (customer: string) => `Titre de ${customer} impayé`,
+  marked: (customer: string, state: string) => `Titre de ${customer} : ${state}.`,
 };

@@ -1,7 +1,9 @@
 import {
   creditConditionInputSchema,
+  instrumentOutcomeSchema,
   receivablePaymentInputSchema,
   type CreditCondition,
+  type Receivable,
   type ReceivableList,
   type ReceivablePayment,
 } from '@vente-web/shared';
@@ -15,7 +17,12 @@ import {
   listCreditConditions,
   updateCreditCondition,
 } from '../services/credit-conditions.js';
-import { listReceivables, receiptPdf, settleReceivable } from '../services/receivables.js';
+import {
+  listReceivables,
+  markInstrument,
+  receiptPdf,
+  settleReceivable,
+} from '../services/receivables.js';
 
 const params = z.object({ id: z.uuid() });
 const listQuery = z.object({
@@ -27,6 +34,8 @@ const readers = { preHandler: requireRole('owner', 'manager', 'cashier') };
 const owner = { preHandler: requireRole('owner') };
 /** Settled at the register, like a payment (annexe B, H32). */
 const takers = { preHandler: requireRole('cashier', 'manager') };
+/** H68: the manager follows the titles to cash. */
+const manager = { preHandler: requireRole('manager') };
 
 /** Credit sale (T-095, H67): conditions, receivables and their settlements with a receipt. */
 export const creditRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) => {
@@ -65,6 +74,12 @@ export const creditRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env 
       return reply.code(201).send(settlement);
     },
   );
+
+  app.post('/receivables/:id/instrument', manager, async (request): Promise<Receivable> => {
+    const { id } = params.parse(request.params);
+    const { outcome } = instrumentOutcomeSchema.parse(request.body);
+    return markInstrument(app.db, actorOf(authOf(request)), id, outcome);
+  });
 
   app.get('/receivable-settlements/:id/pdf', readers, async (request, reply) => {
     const { id } = params.parse(request.params);

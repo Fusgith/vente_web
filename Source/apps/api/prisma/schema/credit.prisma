@@ -7,6 +7,15 @@ enum ReceivableStatus {
   @@map("receivable_status")
 }
 
+/// A bill of exchange or a post-dated check covering a receivable (H68), until its due day.
+enum InstrumentStatus {
+  HANDED
+  CASHED
+  UNPAID
+
+  @@map("instrument_status")
+}
+
 /// Credit allowed without the owner (H67), for one customer type, one customer category or one
 /// customer: exactly one scope (CHECK in the migration).
 model CreditCondition {
@@ -38,9 +47,17 @@ model Receivable {
   status     ReceivableStatus @default(OPEN)
   createdAt  DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  invoice     Invoice                @relation(fields: [invoiceId], references: [id])
-  customer    Customer               @relation(fields: [customerId], references: [id])
-  settlements ReceivableSettlement[]
+  /// The bill of exchange or post-dated check given for it (H68): due on `dueOn`.
+  instrumentMethodId String?           @map("instrument_method_id") @db.Uuid
+  instrumentNumber   String?           @map("instrument_number") @db.VarChar(80)
+  /// Bank of the check, drawee of the bill.
+  instrumentBank     String?           @map("instrument_bank") @db.VarChar(60)
+  instrumentStatus   InstrumentStatus? @map("instrument_status")
+
+  instrumentMethod PaymentMethod?         @relation(fields: [instrumentMethodId], references: [id])
+  invoice          Invoice                @relation(fields: [invoiceId], references: [id])
+  customer         Customer               @relation(fields: [customerId], references: [id])
+  settlements      ReceivableSettlement[]
 
   @@index([customerId, status])
   @@map("receivables")

@@ -55,6 +55,15 @@ export const paymentLineInputSchema = z.object({
     .max(80)
     .transform((value) => value || null)
     .nullable(),
+  /** A bill of exchange or a post-dated check (H68): the bank or drawee, and its due day. */
+  bank: z
+    .string()
+    .trim()
+    .max(60)
+    .transform((value) => value || null)
+    .nullable()
+    .optional(),
+  dueOn: z.iso.date().nullable().optional(),
 });
 export type PaymentLineInput = z.infer<typeof paymentLineInputSchema>;
 
