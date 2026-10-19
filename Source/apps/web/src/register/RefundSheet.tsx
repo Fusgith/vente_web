@@ -1,5 +1,6 @@
 import {
   CASH_METHOD,
+  CREDIT_METHOD,
   formatMga,
   type InvoiceLookup,
   type PaymentMethod,
@@ -80,7 +81,8 @@ export function RefundSheet({ onRefunded, onClose }: RefundSheetProps) {
   useEffect(() => {
     let live = true;
     paymentsApi.methods().then(
-      (list) => live && setMethods(list),
+      // Money goes back: never on credit (H67).
+      (list) => live && setMethods(list.filter((item) => item.code !== CREDIT_METHOD)),
       (error: unknown) => live && setLoadFailure(errorMessage(error)),
     );
     return () => {

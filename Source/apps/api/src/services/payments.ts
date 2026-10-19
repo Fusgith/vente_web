@@ -1,5 +1,6 @@
 import {
   CASH_METHOD,
+  CREDIT_METHOD,
   settle,
   sumAmounts,
   type PaidOrder,
@@ -14,10 +15,12 @@ import { AppError } from '../errors.js';
 import type { Prisma } from '../generated/prisma/client.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit } from './audit.js';
+import { creditDueOn } from './credit-conditions.js';
 import { issueInvoice, readInvoiceSettings } from './invoices.js';
 import { loadOrder } from './orders.js';
 import { lockOpenSession } from './register-sessions.js';
 import { nextSequenceValue } from './sequences.js';
+import { shopDate } from './shop-time.js';
 
 /** The methods offered at the register, in their order (RG-PAY-01). */
 export async function paymentMethods(db: Db): Promise<PaymentMethod[]> {
@@ -103,10 +106,11 @@ export async function payOrder(
         cashier_user_id: string | null;
         total: string;
         priority: number;
+        customer_id: string;
       }[]
     >`
       SELECT "status"::text AS "status", "version", "cashier_user_id", "total"::text AS "total",
-             "priority"
+             "priority", "customer_id"
         FROM "orders" WHERE "id" = ${id}::uuid FOR UPDATE`;
     if (!order) throw new AppError(404, 'NOT_FOUND');
 
@@ -148,6 +152,11 @@ export async function payOrder(
     if (settled.issue) throw new AppError(422, ISSUE_CODE[settled.issue]);
 
     const now = new Date();
+    // The part left to pay later, within the customer's credit conditions (RG-PAY-02, H67).
+    const onCredit = checked.filter((line) => line.method.code === CREDIT_METHOD);
+    const creditAmount = onCredit.length ? sumAmounts(onCredit.map((line) => line.amount)) : null;
+    const dueOn = creditAmount ? await creditDueOn(tx, order.customer_id, creditAmount, now) : null;
+    const credit = creditAmount && dueOn ? { amount: creditAmount, dueOn: shopDate(dueOn) } : null;
     const cashier = await tx.user.findUniqueOrThrow({
       where: { id: actor.userId },
       select: { fullName: true },
@@ -166,9 +175,15 @@ export async function payOrder(
         change: settled.change,
       },
       cashRounding: settled.rounding,
+      credit,
       settings,
       at: now,
     });
+    if (creditAmount && dueOn) {
+      await tx.receivable.create({
+        data: { invoiceId: invoice.id, customerId: order.customer_id, amount: creditAmount, dueOn },
+      });
+    }
     const payment = await tx.payment.create({
       data: {
         orderId: id,
@@ -229,6 +244,7 @@ export async function payOrder(
         change: result.changeGiven,
         cashRounding: settled.rounding,
         priority: false,
+        credit,
       },
     });
     return { order: await loadOrder(tx, id), payment: result, invoice };

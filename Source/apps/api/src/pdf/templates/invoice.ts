@@ -92,6 +92,13 @@ export function invoiceDocument(snapshot: InvoiceSnapshot): TDocumentDefinitions
     });
   }
   after.push(paymentBlock(snapshot));
+  if (snapshot.credit) {
+    after.push({
+      text: text.creditDue(formatMga(snapshot.credit.amount), snapshot.credit.dueOn),
+      bold: true,
+      margin: [0, 8, 0, 0],
+    });
+  }
   return documentDefinition({
     legal: snapshot.legal,
     title: text.title,

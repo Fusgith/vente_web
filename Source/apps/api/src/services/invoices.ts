@@ -20,7 +20,7 @@ import { readSetting } from './settings.js';
 import { shopDate, shopYear } from './shop-time.js';
 import { readStoreLegal, type StoreLegal } from './store-legal.js';
 
-const legalSchema = z.object({
+export const legalSchema = z.object({
   name: z.string(),
   address: z.string(),
   phone: z.string(),
@@ -68,6 +68,8 @@ export const invoiceSnapshotSchema = z.object({
     cashReceived: z.string(),
     change: z.string(),
   }),
+  /** A credit sale: « Reste dû : …, à régler avant le JJ/MM/AAAA » (RG-FAC-02, H67). */
+  credit: z.object({ amount: z.string(), dueOn: z.string() }).nullable().default(null),
 });
 export type InvoiceSnapshot = z.infer<typeof invoiceSnapshotSchema>;
 
@@ -114,6 +116,7 @@ export interface IssueInput {
   cashier: string;
   payment: InvoiceSnapshot['payment'];
   cashRounding: string;
+  credit: InvoiceSnapshot['credit'];
   settings: InvoiceSettings;
   at: Date;
 }
@@ -125,7 +128,7 @@ export interface IssueInput {
  */
 export async function issueInvoice(
   tx: Prisma.TransactionClient,
-  { order, cashier, payment, cashRounding, settings, at }: IssueInput,
+  { order, cashier, payment, cashRounding, credit, settings, at }: IssueInput,
 ): Promise<InvoiceRef> {
   const year = shopYear(at);
   const seq = await nextSequenceValue(tx, `INVOICE-${year}`);
@@ -157,6 +160,7 @@ export async function issueInvoice(
     vatNotice: settings.vatNotice,
     cashRounding,
     payment,
+    credit,
   };
   const invoice = await tx.invoice.create({
     data: { number, year, seq, orderId: order.id, issuedAt: at, snapshot },

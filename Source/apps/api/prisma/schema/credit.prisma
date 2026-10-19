@@ -1,0 +1,75 @@
+// Credit sale (H67): conditions set by the owner, receivables and their settlements at the register.
+
+enum ReceivableStatus {
+  OPEN
+  SETTLED
+
+  @@map("receivable_status")
+}
+
+/// Credit allowed without the owner (H67), for one customer type, one customer category or one
+/// customer: exactly one scope (CHECK in the migration).
+model CreditCondition {
+  id               String        @id @default(uuid(7)) @db.Uuid
+  customerType     CustomerType? @unique @map("customer_type")
+  customerCategory String?       @unique @map("customer_category") @db.VarChar(40)
+  customerId       String?       @unique @map("customer_id") @db.Uuid
+  /// Outstanding allowed, the sale included (MGA).
+  ceiling          Decimal       @db.Decimal(14, 2)
+  /// Days to settle, counted from the sale.
+  days             Int
+  isActive         Boolean       @default(true) @map("is_active")
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  customer Customer? @relation(fields: [customerId], references: [id])
+
+  @@map("credit_conditions")
+}
+
+/// What a credit sale leaves to pay, due on a day (H67, RG-PAY-05).
+model Receivable {
+  id         String           @id @default(uuid(7)) @db.Uuid
+  invoiceId  String           @unique @map("invoice_id") @db.Uuid
+  customerId String           @map("customer_id") @db.Uuid
+  amount     Decimal          @db.Decimal(14, 2)
+  paid       Decimal          @default(0) @db.Decimal(14, 2)
+  dueOn      DateTime         @map("due_on") @db.Date
+  status     ReceivableStatus @default(OPEN)
+  createdAt  DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  invoice     Invoice                @relation(fields: [invoiceId], references: [id])
+  customer    Customer               @relation(fields: [customerId], references: [id])
+  settlements ReceivableSettlement[]
+
+  @@index([customerId, status])
+  @@map("receivables")
+}
+
+/// A payment towards a receivable at the register, with its numbered receipt (H67).
+model ReceivableSettlement {
+  id                String   @id @default(uuid(7)) @db.Uuid
+  number            String   @unique @db.VarChar(32)
+  year              Int
+  seq               Int
+  receivableId      String   @map("receivable_id") @db.Uuid
+  methodId          String   @map("method_id") @db.Uuid
+  amount            Decimal  @db.Decimal(14, 2)
+  reference         String?  @db.VarChar(80)
+  registerSessionId String   @map("register_session_id") @db.Uuid
+  cashierId         String   @map("cashier_id") @db.Uuid
+  /// Everything the receipt prints, frozen at the settlement.
+  snapshot          Json
+  pdfPath           String?  @map("pdf_path")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  receivable      Receivable      @relation(fields: [receivableId], references: [id])
+  method          PaymentMethod   @relation(fields: [methodId], references: [id])
+  registerSession RegisterSession @relation(fields: [registerSessionId], references: [id])
+  cashier         User            @relation(fields: [cashierId], references: [id])
+
+  @@unique([year, seq])
+  @@index([receivableId])
+  @@index([registerSessionId])
+  @@map("receivable_settlements")
+}

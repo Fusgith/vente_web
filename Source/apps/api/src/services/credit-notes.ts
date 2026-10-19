@@ -1,4 +1,5 @@
 import {
+  CREDIT_METHOD,
   formatTime,
   invoiceNumber,
   issueCauseSchema,
@@ -97,10 +98,12 @@ export async function creditNoteContext(db: Db, actor: Actor) {
   return { prefix, legal, cashier: cashier.fullName };
 }
 
-/** The refund's one method: active, its reference given when it asks one (H36). */
+/** The refund's one method: active, never credit (H67), its reference given when it asks one (H36). */
 export async function refundMethod(tx: Prisma.TransactionClient, refund: OrderRefund['refund']) {
   const method = await tx.paymentMethod.findUnique({ where: { id: refund.methodId } });
-  if (!method?.isActive) throw new AppError(409, 'PAYMENT_METHOD_INVALID');
+  if (!method?.isActive || method.code === CREDIT_METHOD) {
+    throw new AppError(409, 'PAYMENT_METHOD_INVALID');
+  }
   if (method.requiresReference && !refund.reference) {
     throw new AppError(422, 'REFUND_REFERENCE_REQUIRED');
   }

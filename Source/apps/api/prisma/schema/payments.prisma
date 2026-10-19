@@ -24,11 +24,12 @@ model RegisterSession {
   note             String?
   validatedById    String?   @map("validated_by") @db.Uuid
 
-  station     Station      @relation(fields: [stationId], references: [id])
-  cashier     User         @relation("RegisterCashier", fields: [cashierId], references: [id])
-  validatedBy User?        @relation("RegisterValidatedBy", fields: [validatedById], references: [id])
+  station     Station                @relation(fields: [stationId], references: [id])
+  cashier     User                   @relation("RegisterCashier", fields: [cashierId], references: [id])
+  validatedBy User?                  @relation("RegisterValidatedBy", fields: [validatedById], references: [id])
   payments    Payment[]
   refunds     CreditNote[]
+  settlements ReceivableSettlement[]
 
   @@index([cashierId, openedAt])
   @@map("register_sessions")
@@ -46,6 +47,7 @@ model PaymentMethod {
 
   paymentLines PaymentLine[]
   creditNotes  CreditNote[]
+  settlements  ReceivableSettlement[]
 
   @@map("payment_methods")
 }
@@ -114,6 +116,7 @@ model Invoice {
   order       Order        @relation(fields: [orderId], references: [id])
   payment     Payment?
   creditNotes CreditNote[]
+  receivable  Receivable?
 
   @@unique([year, seq])
   @@map("invoices")

@@ -68,8 +68,28 @@ export const INVOICE_PDF = {
   reference: (reference: string) => `réf. ${reference}`,
   cashReceived: 'Reçu en espèces',
   change: 'Rendu',
+  /** RG-FAC-02, H67: a credit sale. */
+  creditDue: (amount: string, day: string) => `Reste dû : ${amount}, à régler avant le ${day}`,
   page: (number: string, current: number, count: number) =>
     `Facture ${number} — page ${current} sur ${count}`,
+};
+
+/** The receipt of a payment towards a receivable (H67). */
+export const RECEIPT_PDF = {
+  ...DOCUMENT_PDF,
+  title: 'Reçu de règlement',
+  cashier: 'Caissier',
+  invoice: 'Facture',
+  invoiceDate: 'Date de la facture',
+  dueOn: 'Échéance',
+  amount: 'Montant de la créance',
+  paidBefore: 'Déjà réglé',
+  settled: 'Montant réglé',
+  method: 'Moyen de paiement',
+  reference: 'Référence',
+  remaining: 'Reste dû',
+  page: (number: string, current: number, count: number) =>
+    `Reçu ${number} — page ${current} sur ${count}`,
 };
 
 /** The register closing report (RG-CAI-03, H35). */

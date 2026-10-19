@@ -250,7 +250,7 @@ export function documentDefinition(frame: DocumentFrame): TDocumentDefinitions {
         ],
       },
       customerBlock(frame.customer),
-      linesTable(frame.lines),
+      ...(frame.lines.length ? [linesTable(frame.lines)] : []),
       ...frame.after,
     ],
     footer: (currentPage, pageCount) => ({

@@ -77,6 +77,8 @@ model Customer {
   orders           Order[]
   discountRequests DiscountRequest[]
   discountCodes    DiscountCode[]
+  creditCondition  CreditCondition?
+  receivables      Receivable[]
 
   @@index([name])
   @@map("customers")

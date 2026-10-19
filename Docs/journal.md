@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 20/10/2026 — T-095 : vente à crédit — agent : Claude Code (Opus 5.5)
+
+**Fait** : conditions de crédit du boss (type ou catégorie de client ; par client dans l'API), part « Crédit » à la caisse dans les conditions (plafond, échéance passée), créance avec échéance et « Reste dû » sur la facture ; panneau « Créances clients » (caisse, responsable, boss), règlement à la caisse avec reçu PDF numéroté, compté dans la clôture ; jamais de remboursement à crédit. Hypothèse H72. Tests API 2 nouveaux, web 401 verts.
+
+**Reste** : T-095b (demande de crédit au boss) ; T-080 (téléchargements à autoriser) ; T-096, T-090b, T-097, T-013, T-036.
+
 ## 20/10/2026 — T-094 : document remis = nouveau numéro — agent : Claude Code (Opus 5.5)
 
 **Fait** : un devis dont le PDF est ouvert est « remis » ; enregistré de nouveau, il prend un nouveau numéro ; une commande baissée à la caisse, renvoyée au commercial ou refusée à la réactivation aussi (H69). La commande garde sa ligne (ticket, place, réservation, demandes) sous le nouveau numéro ; l'ancien reste sur une copie `REPLACED` qui pointe vers elle, journalisé `order.replaced` ; chercher l'ancien numéro trouve le nouveau. Remises et crédit ne changent pas le numéro.

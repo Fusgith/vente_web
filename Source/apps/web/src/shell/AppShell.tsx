@@ -20,6 +20,7 @@ import { ImportsPanel } from '../manager/ImportsPanel.js';
 import { ProductsPanel } from '../manager/ProductsPanel.js';
 import { StockPanel } from '../manager/StockPanel.js';
 import { SupervisionWorkspace } from '../manager/SupervisionWorkspace.js';
+import { CreditConditionsPanel } from '../owner/CreditConditionsPanel.js';
 import { DiscountCapsPanel } from '../owner/DiscountCapsPanel.js';
 import { ReservationDaysPanel } from '../owner/ReservationDaysPanel.js';
 import { DiscountCodesPanel } from '../owner/DiscountCodesPanel.js';
@@ -27,6 +28,7 @@ import { DiscountRulesPanel } from '../owner/DiscountRulesPanel.js';
 import { PromotionsPanel } from '../owner/PromotionsPanel.js';
 import { DiscountRequestsPanel } from '../owner/DiscountRequestsPanel.js';
 import { Dashboard } from '../owner/Dashboard.js';
+import { ReceivablesPanel } from '../register/ReceivablesPanel.js';
 import { RegisterWorkspace } from '../register/RegisterWorkspace.js';
 import { SalesWorkspace } from '../sales/SalesWorkspace.js';
 import { buttonClass } from '../ui/button.js';
@@ -140,6 +142,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
     return (
       <>
         <RegisterWorkspace userId={userId} />
+        {/* H67: what the customers owe, settled at the register with a receipt. */}
+        <ReceivablesPanel canSettle />
         {/* RG-EXP-03: the cashier exports their own closings. */}
         <ExportsPanel role="cashier" />
       </>
@@ -158,6 +162,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         <DeliveryIssuesPanel />
         {/* RG-CAI-04/05: the day's registers. */}
         <RegisterSessionsPanel />
+        {/* H67: the manager follows the receivables and takes their payments (H32). */}
+        <ReceivablesPanel canSettle />
         {/* RG-STK-05 à 07: the products under their threshold, adjustments with a reason. */}
         <StockPanel />
         {/* RG-ART-01 à 07 (H65): products, sale units and dated prices. */}
@@ -218,6 +224,9 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
       <DiscountCapsPanel editable />
       {/* H62: the owner's discount rules, which the register applies beyond the caps. */}
       <DiscountRulesPanel editable />
+      {/* H67: the owner sets the credit conditions and follows what is owed. */}
+      <CreditConditionsPanel />
+      <ReceivablesPanel canSettle={false} />
       {/* RG-REM-04 (H41): the owner issues and revokes the discount codes. */}
       <DiscountCodesPanel />
       {/* RG-STK-02 (H45): how long a validated order keeps its goods. */}

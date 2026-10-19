@@ -31,12 +31,20 @@ type StoredSession = Prisma.RegisterSessionGetPayload<{ select: typeof SESSION_S
 /** What each payment method took during a session, in the order of the list (RG-PAY-01). */
 async function totalsByMethod(db: AuditTx, sessionId: string): Promise<MethodTotal[]> {
   const rows = await db.$queryRaw<{ code: string; label: string; count: bigint; total: string }[]>`
-    SELECT "m"."code", "m"."label", COUNT(DISTINCT "p"."id") AS "count",
-           SUM("l"."amount")::text AS "total"
-      FROM "payments" "p"
-      JOIN "payment_lines" "l" ON "l"."payment_id" = "p"."id"
-      JOIN "payment_methods" "m" ON "m"."id" = "l"."method_id"
-     WHERE "p"."register_session_id" = ${sessionId}::uuid
+    SELECT "m"."code", "m"."label", COUNT(DISTINCT "x"."ref") AS "count",
+           SUM("x"."amount")::text AS "total"
+      FROM (
+        SELECT "p"."id" AS "ref", "l"."method_id", "l"."amount"
+          FROM "payments" "p"
+          JOIN "payment_lines" "l" ON "l"."payment_id" = "p"."id"
+         WHERE "p"."register_session_id" = ${sessionId}::uuid
+        -- Receivables settled at this register count in their method (RG-CAI-03, H67).
+        UNION ALL
+        SELECT "s"."id", "s"."method_id", "s"."amount"
+          FROM "receivable_settlements" "s"
+         WHERE "s"."register_session_id" = ${sessionId}::uuid
+      ) "x"
+      JOIN "payment_methods" "m" ON "m"."id" = "x"."method_id"
      GROUP BY "m"."code", "m"."label", "m"."sort_order"
      ORDER BY "m"."sort_order", "m"."label"`;
   return rows.map((row) => ({

@@ -67,6 +67,7 @@ function snapshot(overrides: Partial<InvoiceSnapshot> = {}): InvoiceSnapshot {
       cashReceived: '10000.00',
       change: '5000.00',
     },
+    credit: null,
     ...overrides,
   };
 }

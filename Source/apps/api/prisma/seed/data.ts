@@ -50,6 +50,8 @@ export const PAYMENT_METHODS = [
   { code: 'CARD', label: 'Carte bancaire', requiresReference: true },
   { code: 'TRANSFER', label: 'Virement', requiresReference: true },
   { code: 'CHEQUE', label: 'Chèque', requiresReference: true },
+  // The part of a sale left to pay later (H67), within the customer's credit conditions.
+  { code: 'CREDIT', label: 'À crédit', requiresReference: false },
 ] as const;
 
 /** Demo credentials (development only; the seed refuses NODE_ENV=production). */

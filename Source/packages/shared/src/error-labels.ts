@@ -122,6 +122,12 @@ export const ERROR_LABELS = {
   PAYMENT_CASH_SHORT: 'Le montant reçu en espèces ne couvre pas la part payée en espèces.',
   PAYMENT_CASH_TWICE: 'Une seule ligne en espèces par paiement.',
   PAYMENT_CASH_WITHOUT_LINE: 'Un montant reçu en espèces demande une ligne en espèces.',
+  CREDIT_NOT_ALLOWED:
+    'Crédit refusé : pas de conditions de crédit pour ce client, plafond d’encours dépassé ou échéance déjà passée.',
+  CREDIT_CONDITION_EXISTS:
+    'Une condition de crédit existe déjà pour ce type, cette catégorie ou ce client.',
+  RECEIVABLE_SETTLED: 'Cette créance est déjà soldée : la liste a été mise à jour.',
+  SETTLEMENT_TOO_HIGH: 'Le montant dépasse le reste dû de cette créance.',
   IDEMPOTENCY_KEY_REQUIRED: 'Requête de paiement incomplète : rechargez la page.',
   COUNTER_BUSY:
     'Une commande est déjà à votre comptoir : livrez-la ou déclarez le client absent avant d’en prendre une autre.',

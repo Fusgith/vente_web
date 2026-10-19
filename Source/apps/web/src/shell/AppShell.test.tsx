@@ -41,6 +41,8 @@ describe('signed-in shell', () => {
       'GET /auth/me': ok(meFor({ user: HERY, activeRole: 'manager' })),
       'POST /auth/switch-role': apiError(403, 'AUTH_ROLE_REMOTE_FORBIDDEN'),
       'GET /register-sessions': ok({ sessions: [] }),
+      'GET /receivables': ok({ items: [], totals: { remaining: '0.00', overdue: '0.00' } }),
+      'GET /payment-methods': ok({ methods: [] }),
       'GET /products?page=1': ok({ items: [], total: 0 }),
       'GET /imports': ok({ items: [] }),
       'GET /audit': ok({ entries: [], more: false }),
