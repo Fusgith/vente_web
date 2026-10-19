@@ -6,7 +6,7 @@ import {
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import {
   reservationDays,
   setCustomerReservationDays,
@@ -15,8 +15,8 @@ import {
 
 const params = z.object({ id: z.uuid() });
 /** RG-STK-02, RG-DSH-07, annexe B: the admin and the owner set them, the manager reads them. */
-const readers = { preHandler: requireRole('admin', 'manager', 'owner') };
-const setters = { preHandler: requireRole('admin', 'owner') };
+const readers = { preHandler: requirePermission('reservationDays.read') };
+const setters = { preHandler: requirePermission('reservationDays.edit') };
 
 /** Reservation durations (T-022b, H45): general, and a customer's own that prevails. */
 export const reservationDaysRoutes: FastifyPluginAsync = async (app) => {

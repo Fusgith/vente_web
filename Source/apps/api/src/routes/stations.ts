@@ -8,12 +8,12 @@ import {
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import { createStation, listStations, pairStation, updateStation } from '../services/stations.js';
 
 const params = z.object({ id: z.uuid() });
 /** Annexe B: the admin declares the stations and pairs the devices (RG-USR-09). */
-const admin = { preHandler: requireRole('admin') };
+const admin = { preHandler: requirePermission('accounts') };
 
 /** The shop's stations and the pairing of their devices (T-015, H71). */
 export const stationRoutes: FastifyPluginAsync = async (app) => {

@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 
 import { AccountsPanel } from '../admin/AccountsPanel.js';
 import { SalesDiscountPanel } from '../admin/SalesDiscountPanel.js';
+import { SettingsPanel } from '../admin/SettingsPanel.js';
 import { StationsPanel } from '../admin/StationsPanel.js';
 import { errorMessage } from '../api/error-message.js';
 import { useAuth } from '../auth/context.js';
@@ -200,6 +201,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         <ReservationDaysPanel />
         {/* H60: whether the salesperson discounts at all. */}
         <SalesDiscountPanel />
+        {/* CDC métier §13: what the shop prints and proposes. */}
+        <SettingsPanel />
         {/* RG-EXP-01 à 03: the Excel exports the role may take. */}
         <ExportsPanel role={role} />
         {/* RG-AUD-01: who did what, read only. */}

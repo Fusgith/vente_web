@@ -6,13 +6,12 @@ import {
   orderSubmitSchema,
   type Order,
   type OrderStatus,
-  type Role,
 } from '@vente-web/shared';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
 import { AppError } from '../errors.js';
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import { adjustOrder, attachOrderCode, cancelOrder } from '../services/order-changes.js';
 import { discountOrder } from '../services/order-discounts.js';
 import { sendBackOrder } from '../services/order-send-back.js';
@@ -30,7 +29,6 @@ import { stockAlerts } from '../services/stock.js';
 const paramsSchema = z.object({ id: z.uuid() });
 
 /** Annexe B: same readers as the quotes, and the warehouse, which prepares the lines (T-060). */
-const READERS: readonly Role[] = ['sales', 'cashier', 'warehouse', 'manager', 'owner', 'admin'];
 
 /** The warehouse reads only the orders paid, to hand over or handed over. */
 const DELIVERY_STATUSES: ReadonlySet<OrderStatus> = new Set([
@@ -55,7 +53,7 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
 
   app.get(
     '/orders/:id',
-    { preHandler: requireRole(...READERS) },
+    { preHandler: requirePermission('orders.read') },
     async (request): Promise<Order> => {
       const { id } = paramsSchema.parse(request.params);
       const order = await loadOrder(app.db, id);
@@ -73,7 +71,7 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
   // RG-DEV-03) and the manager.
   app.post(
     '/orders/:id/submit',
-    { preHandler: requireRole('sales', 'manager') },
+    { preHandler: requirePermission('orders.submit') },
     async (request): Promise<Order> => {
       const { id } = paramsSchema.parse(request.params);
       const body = orderSubmitSchema.parse(request.body);
@@ -86,7 +84,7 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
   // An expired order validated again (RG-CMD-08, H31, H56): its salesperson or the manager.
   app.post(
     '/orders/:id/reactivate',
-    { preHandler: requireRole('sales', 'manager') },
+    { preHandler: requirePermission('orders.submit') },
     async (request): Promise<Order> => {
       const { id } = paramsSchema.parse(request.params);
       const body = orderSubmitSchema.parse(request.body);
@@ -99,7 +97,7 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
   // Back to its salesperson from the register (RG-CMD-05b, H56): the cashier who called it, the manager.
   app.post(
     '/orders/:id/send-back',
-    { preHandler: requireRole('cashier', 'manager') },
+    { preHandler: requirePermission('orders.change') },
     async (request): Promise<Order> => {
       const { id } = paramsSchema.parse(request.params);
       const body = orderSubmitSchema.parse(request.body);
@@ -112,7 +110,7 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
   // Annexe B « Commande : modifier avant paiement » at the register: lower, remove (RG-CMD-05b).
   app.post(
     '/orders/:id/adjust',
-    { preHandler: requireRole('cashier', 'manager') },
+    { preHandler: requirePermission('orders.change') },
     async (request): Promise<Order> => {
       const { id } = paramsSchema.parse(request.params);
       const body = orderAdjustSchema.parse(request.body);
@@ -125,7 +123,7 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
   // Discounts within the caps applied at the register, without the owner (H61, annexe B).
   app.post(
     '/orders/:id/discounts',
-    { preHandler: requireRole('cashier', 'manager') },
+    { preHandler: requirePermission('orders.discount') },
     async (request): Promise<Order> => {
       const { id } = paramsSchema.parse(request.params);
       const body = orderDiscountsSchema.parse(request.body);
@@ -138,7 +136,7 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
   // The owner's code typed at the register before payment (RG-CMD-05b, RG-REM-04, H42).
   app.post(
     '/orders/:id/discount-code',
-    { preHandler: requireRole('cashier', 'manager') },
+    { preHandler: requirePermission('orders.discount') },
     async (request): Promise<Order> => {
       const { id } = paramsSchema.parse(request.params);
       const body = discountCodeAttachSchema.parse(request.body);
@@ -151,7 +149,7 @@ export const orderRoutes: FastifyPluginAsync = async (app) => {
   // Annexe B « Annulation avant paiement »: the salesperson their own, the cashier, the manager.
   app.post(
     '/orders/:id/cancel',
-    { preHandler: requireRole('sales', 'cashier', 'manager') },
+    { preHandler: requirePermission('orders.cancel') },
     async (request): Promise<Order> => {
       const { id } = paramsSchema.parse(request.params);
       const body = orderCancelSchema.parse(request.body);

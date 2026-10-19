@@ -2,12 +2,12 @@ import { promotionCreateSchema, type Promotion, type PromotionList } from '@vent
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import { createPromotion, listPromotions, withdrawPromotion } from '../services/promotions.js';
 
 const params = z.object({ id: z.uuid() });
 /** H49 b: the owner alone marks the products to propose. */
-const owner = { preHandler: requireRole('owner') };
+const owner = { preHandler: requirePermission('promotions') };
 
 /** Products « à proposer » (T-037, RG-DEV-06 §6, H46); the tablets read them with the favorites. */
 export const promotionRoutes: FastifyPluginAsync = async (app) => {

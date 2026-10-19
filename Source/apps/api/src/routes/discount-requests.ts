@@ -9,7 +9,7 @@ import {
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import { grantDiscountRequest } from '../services/discount-grants.js';
 import {
   createDiscountRequest,
@@ -23,9 +23,9 @@ import { discountDecided, discountRequested, orderSetAside } from '../services/r
 
 const params = z.object({ id: z.uuid() });
 /** Annexe B « demander une remise exceptionnelle » (H51): who sells and who cashes. */
-const askers = { preHandler: requireRole('sales', 'cashier', 'manager') };
+const askers = { preHandler: requirePermission('discountRequests.ask') };
 /** Annexe B « accorder une remise exceptionnelle »: the owner alone (RG-REM-03). */
-const owner = { preHandler: requireRole('owner') };
+const owner = { preHandler: requirePermission('discountRequests.decide') };
 
 /** The order as its followers know it: id, salesperson, state. */
 const followed = (order: Order) => ({
@@ -38,14 +38,14 @@ const followed = (order: Order) => ({
 export const discountRequestRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     '/discount-requests/reasons',
-    { preHandler: requireRole('sales', 'cashier', 'manager', 'owner') },
+    { preHandler: requirePermission('discountRequests.reasons') },
     async (): Promise<DiscountReasons> => ({ reasons: await discountReasons(app.db) }),
   );
 
   // The owner decides; the manager follows them (RG-DSH-06).
   app.get(
     '/discount-requests',
-    { preHandler: requireRole('owner', 'manager') },
+    { preHandler: requirePermission('discountRequests.board') },
     async (): Promise<DiscountRequestList> => listDiscountRequests(app.db),
   );
 
@@ -87,7 +87,7 @@ export const discountRequestRoutes: FastifyPluginAsync = async (app) => {
   // Annexe B « File caisse : appeler / absent »: set aside while the owner decides (H52).
   app.post(
     '/orders/:id/set-aside',
-    { preHandler: requireRole('cashier', 'manager') },
+    { preHandler: requirePermission('orders.change') },
     async (request): Promise<Order> => {
       const { id } = params.parse(request.params);
       const order = await setAside(app.db, actorOf(authOf(request)), id);

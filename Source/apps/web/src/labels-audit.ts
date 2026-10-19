@@ -112,6 +112,7 @@ export const auditLabels = {
     remaining: 'Reste dû',
     dueOn: 'Échéance',
     reason: 'Motif',
+    value: 'Valeur',
   } as Record<string, string>,
   /** The stored codes in the shop's words (T-097); one not listed shows as is. */
   values: {
@@ -166,6 +167,7 @@ export const auditLabels = {
     'customer.merged': 'Clients fusionnés',
     'customer.deactivated': 'Client désactivé',
     'reservation_days.set': 'Durée de réservation fixée',
+    'setting.update': 'Paramètre modifié',
     'quote.created': 'Devis créé',
     'quote.updated': 'Devis modifié',
     'order.submitted': 'Commande validée',

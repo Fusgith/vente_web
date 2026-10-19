@@ -1,11 +1,11 @@
-import { registerSessionCloseSchema, type Role, type SessionSummary } from '@vente-web/shared';
+import { registerSessionCloseSchema, type SessionSummary } from '@vente-web/shared';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
 import { AppError } from '../errors.js';
 import { renderPdf } from '../pdf/render.js';
 import { closingDocument } from '../pdf/templates/closing.js';
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import {
   closeSession,
   currentSummary,
@@ -28,14 +28,12 @@ function fileName(summary: SessionSummary): string {
 }
 
 /** Annexe B « Session de caisse »: the cashier closes their own; the manager and owner read. */
-const TAKERS: Role[] = ['cashier', 'manager'];
-const READERS: Role[] = ['cashier', 'manager', 'owner'];
 
 /** The register closing (T-054, RG-CAI-03 à 05, H35). */
 export const registerClosingRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     '/register-sessions/current/summary',
-    { preHandler: requireRole(...TAKERS) },
+    { preHandler: requirePermission('register') },
     async (request): Promise<{ summary: SessionSummary | null }> => ({
       summary: await currentSummary(app.db, authOf(request).user.id),
     }),
@@ -43,7 +41,7 @@ export const registerClosingRoutes: FastifyPluginAsync = async (app) => {
 
   app.post(
     '/register-sessions/current/close',
-    { preHandler: requireRole(...TAKERS) },
+    { preHandler: requirePermission('register') },
     async (request): Promise<SessionSummary> => {
       const body = registerSessionCloseSchema.parse(request.body);
       return closeSession(app.db, actorOf(authOf(request)), body);
@@ -53,7 +51,7 @@ export const registerClosingRoutes: FastifyPluginAsync = async (app) => {
   // The day's sessions, forgotten ones included (RG-CAI-04/05); the shop's day by default.
   app.get(
     '/register-sessions',
-    { preHandler: requireRole('manager', 'owner') },
+    { preHandler: requirePermission('register.list') },
     async (request): Promise<{ sessions: SessionSummary[] }> => {
       const { day } = dayQuery.parse(request.query);
       // Noon UTC lies within the same calendar day at the shop (UTC+3).
@@ -65,7 +63,7 @@ export const registerClosingRoutes: FastifyPluginAsync = async (app) => {
 
   app.get(
     '/register-sessions/:id/report',
-    { preHandler: requireRole(...READERS) },
+    { preHandler: requirePermission('register.read') },
     async (request, reply) => {
       const { id } = idParams.parse(request.params);
       const { summary, invoices } = await sessionFor(app.db, actorOf(authOf(request)), id);

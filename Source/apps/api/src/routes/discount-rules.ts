@@ -10,7 +10,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
 import { AppError } from '../errors.js';
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import {
   createDiscountRule,
   listDiscountRules,
@@ -22,8 +22,8 @@ import { findOrder } from '../services/order-view.js';
 
 const params = z.object({ id: z.uuid() });
 /** H62, annexe B: the owner sets the rules; who applies or checks them reads them. */
-const readers = { preHandler: requireRole('owner', 'manager', 'cashier', 'sales', 'admin') };
-const owner = { preHandler: requireRole('owner') };
+const readers = { preHandler: requirePermission('discountRules.read') };
+const owner = { preHandler: requirePermission('discountRules.edit') };
 
 /** The owner's discount rules (T-090, H62): suggested discounts the register applies (H61). */
 export const discountRuleRoutes: FastifyPluginAsync = async (app) => {

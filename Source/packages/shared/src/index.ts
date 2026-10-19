@@ -47,3 +47,4 @@ export * from './exports.js';
 export * from './users.js';
 export { ROLE_LABELS } from './role-labels.js';
 export { ERROR_LABELS, isErrorCode, type ApiErrorBody, type ErrorCode } from './error-labels.js';
+export * from './settings.js';

@@ -7,11 +7,11 @@ import {
 import type { FastifyPluginAsync, RouteShorthandOptions } from 'fastify';
 
 import { AppError } from '../errors.js';
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import { deleteSubscription, saveSubscription } from '../services/push.js';
 
 /** The owner alone is told of the requests, on the devices they choose (RG-DSH-05). */
-const owner = { preHandler: requireRole('owner') };
+const owner = { preHandler: requirePermission('push') };
 /** A test goes out to the Internet: a few per minute are enough. */
 const TESTS_PER_MINUTE = 5;
 const testLimit: RouteShorthandOptions = {

@@ -3,13 +3,12 @@ import {
   partialRefundSchema,
   type InvoiceLookup,
   type RefundedOrder,
-  type Role,
 } from '@vente-web/shared';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
 import type { Env } from '../env.js';
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import { creditNotePdf, lookupInvoice, refundOrder } from '../services/credit-notes.js';
 import { refundPartly } from '../services/partial-refunds.js';
 import { orderPartlyRefunded, orderRefunded } from '../services/realtime-rooms.js';
@@ -19,13 +18,12 @@ const idParams = z.object({ id: z.uuid() });
 const lookupQuery = z.object({ number: z.string().trim().min(1).max(32) });
 
 /** Annexe B « Annulation après paiement (avoir) »: the cashier, the manager validating (H36). */
-const TAKERS: Role[] = ['cashier', 'manager'];
 
 /** Refunds after payment and their credit notes (T-053, RG-ANN-02, RG-FAC-05, H36). */
 export const creditNoteRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) => {
   app.get(
     '/invoices/lookup',
-    { preHandler: requireRole(...TAKERS) },
+    { preHandler: requirePermission('refunds') },
     async (request): Promise<InvoiceLookup> => {
       const { number } = lookupQuery.parse(request.query);
       return lookupInvoice(app.db, number);
@@ -35,7 +33,7 @@ export const creditNoteRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { 
   app.post(
     '/orders/:id/refund',
     // The manager's password is guessed here like at login (CDC technique §8).
-    { preHandler: requireRole(...TAKERS), ...authRateLimit },
+    { preHandler: requirePermission('refunds'), ...authRateLimit },
     async (request): Promise<RefundedOrder> => {
       const { id } = idParams.parse(request.params);
       const body = orderRefundSchema.parse(request.body);
@@ -55,7 +53,7 @@ export const creditNoteRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { 
   // What a partial delivery left (H37): frozen by the manager's decision, no password here.
   app.post(
     '/orders/:id/partial-refund',
-    { preHandler: requireRole(...TAKERS) },
+    { preHandler: requirePermission('refunds') },
     async (request): Promise<RefundedOrder> => {
       const { id } = idParams.parse(request.params);
       const body = partialRefundSchema.parse(request.body);
@@ -73,7 +71,7 @@ export const creditNoteRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { 
 
   app.get(
     '/credit-notes/:id/pdf',
-    { preHandler: requireRole(...TAKERS, 'owner') },
+    { preHandler: requirePermission('refunds.read') },
     async (request, reply) => {
       const { id } = idParams.parse(request.params);
       const { number, pdf } = await creditNotePdf(app.db, env.FILES_DIR, id);

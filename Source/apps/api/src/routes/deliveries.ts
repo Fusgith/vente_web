@@ -4,12 +4,11 @@ import {
   orderDeliverSchema,
   type IssueEntry,
   type Order,
-  type Role,
 } from '@vente-web/shared';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import {
   backToDeliveryQueue,
   deliverOrder,
@@ -34,7 +33,6 @@ import {
 const orderParams = z.object({ id: z.uuid() });
 
 /** Annexe B « Livraison » (the manager standing in, RG-USR-08). */
-const COUNTER: Role[] = ['warehouse', 'manager'];
 
 /** The counters (T-060, RG-LIV-01 à 03, H34): take, prepare, call, hand over. */
 export const deliveryRoutes: FastifyPluginAsync = async (app) => {
@@ -42,7 +40,7 @@ export const deliveryRoutes: FastifyPluginAsync = async (app) => {
 
   app.post(
     '/queues/delivery/take-next',
-    { preHandler: requireRole(...COUNTER) },
+    { preHandler: requirePermission('deliveries') },
     async (request): Promise<Order> => {
       const order = await takeForDelivery(app.db, actorOf(authOf(request)), null);
       app.realtime.publish(orderTaken(owner(order)));
@@ -53,7 +51,7 @@ export const deliveryRoutes: FastifyPluginAsync = async (app) => {
   // A ticket taken out of turn: the customer stands at the counter.
   app.post(
     '/orders/:id/delivery/take',
-    { preHandler: requireRole(...COUNTER) },
+    { preHandler: requirePermission('deliveries') },
     async (request): Promise<Order> => {
       const { id } = orderParams.parse(request.params);
       const order = await takeForDelivery(app.db, actorOf(authOf(request)), id);
@@ -64,7 +62,7 @@ export const deliveryRoutes: FastifyPluginAsync = async (app) => {
 
   app.post(
     '/orders/:id/delivery/ready',
-    { preHandler: requireRole(...COUNTER) },
+    { preHandler: requirePermission('deliveries') },
     async (request): Promise<Order> => {
       const { id } = orderParams.parse(request.params);
       const order = await markReady(app.db, actorOf(authOf(request)), id);
@@ -75,7 +73,7 @@ export const deliveryRoutes: FastifyPluginAsync = async (app) => {
 
   app.post(
     '/orders/:id/delivery/no-show',
-    { preHandler: requireRole(...COUNTER) },
+    { preHandler: requirePermission('deliveries') },
     async (request): Promise<Order> => {
       const { id } = orderParams.parse(request.params);
       const { order, noShowCount } = await backToDeliveryQueue(
@@ -92,7 +90,7 @@ export const deliveryRoutes: FastifyPluginAsync = async (app) => {
   // Reassignment (RG-USR-08): the manager gives the order back to the queue, at its place.
   app.post(
     '/orders/:id/delivery/release',
-    { preHandler: requireRole('manager') },
+    { preHandler: requirePermission('deliveries.supervise') },
     async (request): Promise<Order> => {
       const { id } = orderParams.parse(request.params);
       const { order, noShowCount } = await backToDeliveryQueue(
@@ -108,7 +106,7 @@ export const deliveryRoutes: FastifyPluginAsync = async (app) => {
 
   app.post(
     '/orders/:id/delivery/deliver',
-    { preHandler: requireRole(...COUNTER) },
+    { preHandler: requirePermission('deliveries') },
     async (request): Promise<Order> => {
       const { id } = orderParams.parse(request.params);
       const body = orderDeliverSchema.parse(request.body);
@@ -121,7 +119,7 @@ export const deliveryRoutes: FastifyPluginAsync = async (app) => {
   // A line missing or damaged (RG-LIV-04, H37): the manager decides.
   app.post(
     '/orders/:id/delivery/issue',
-    { preHandler: requireRole(...COUNTER) },
+    { preHandler: requirePermission('deliveries') },
     async (request): Promise<Order> => {
       const { id } = orderParams.parse(request.params);
       const body = deliveryIssueReportSchema.parse(request.body);
@@ -133,13 +131,13 @@ export const deliveryRoutes: FastifyPluginAsync = async (app) => {
 
   app.get(
     '/deliveries/issues',
-    { preHandler: requireRole('manager') },
+    { preHandler: requirePermission('deliveries.supervise') },
     async (): Promise<IssueEntry[]> => listIssues(app.db),
   );
 
   app.post(
     '/orders/:id/issue/requeue',
-    { preHandler: requireRole('manager') },
+    { preHandler: requirePermission('deliveries.supervise') },
     async (request): Promise<Order> => {
       const { id } = orderParams.parse(request.params);
       const body = issueDecisionSchema.parse(request.body);
@@ -151,7 +149,7 @@ export const deliveryRoutes: FastifyPluginAsync = async (app) => {
 
   app.post(
     '/orders/:id/issue/deliver-partly',
-    { preHandler: requireRole('manager') },
+    { preHandler: requirePermission('deliveries.supervise') },
     async (request): Promise<Order> => {
       const { id } = orderParams.parse(request.params);
       const body = issueDecisionSchema.parse(request.body);

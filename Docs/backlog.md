@@ -52,7 +52,7 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-016g | MVP | Comptes — écran du boss pour choisir son mot de passe avec le code d'activation (`POST /auth/activate`) | Terminé (05/10) | E01 | RG-USR-10 ; s'appuie sur T-016b |
 
 | T-015 | MVP | Postes : déclaration libre (tablettes, caisses, comptoirs, écran 0/1), modifiable à chaud ; appairage de l'appareil à son poste, puis **poste obligatoire** à toute connexion dans le magasin (RG-USR-09) | Terminé (19/10) | E01 | §13 `stations`, H11, H21, H71 |
-| T-013 | MVP | Module de permissions (annexe B) + tests | À faire | E01 | |
+| T-013 | MVP | Module de permissions (annexe B) + tests | Terminé (20/10/2026) | E01 | droits en un seul module, test de la matrice ; écran « Paramètres » de l'admin (CDC métier §13) |
 | T-014 | MVP | Journal d'audit (ajout seul, droits SQL) + tests | Terminé (06/10) | E01 | RG-AUD-01 à 03 ; lecture `GET /audit` (responsable, boss, admin) par jour, sujet, identifiant, 100 par page ; ajout seul prouvé par les déclencheurs ; droits SQL `REVOKE` avec T-080, export avec T-071 |
 | T-019 | MVP | Unités de vente et grille de prix : unité de base, facteur, création/désactivation, prix par unité, gel du facteur utilisé | Fait | E02 | RG-ART-03/04/06 ; ⚠️ H65 : trois unités actives au plus, avec T-092 |
 | T-019b | MVP | Historique des prix : nouveau prix daté, jamais deux en vigueur, fiche article (tableau + courbe), export, événement `catalog.changed` | Partiel : tableau fait ; courbe, export et événement restent | E02 | RG-ART-07, RG-EXP-01, RG-DSH-03 ; date d'effet future [V1.1] |

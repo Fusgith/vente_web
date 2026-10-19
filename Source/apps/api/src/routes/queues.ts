@@ -11,7 +11,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
 import { AppError } from '../errors.js';
-import { actorOf, authOf, requireAuth, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requireAuth, requirePermission } from '../plugins/session.js';
 import {
   callToRegister,
   loadQueue,
@@ -31,7 +31,6 @@ const READERS: Record<QueueName, readonly Role[]> = {
   delivery: ['warehouse', 'manager', 'owner'],
 };
 /** Annexe B « File caisse : appeler / absent ». */
-const REGISTER_CALLERS: Role[] = ['cashier', 'manager'];
 
 export const queueRoutes: FastifyPluginAsync = async (app) => {
   /** Without a public display, a call is verbal (RG-DSP-05, `display.enabled`). */
@@ -54,7 +53,7 @@ export const queueRoutes: FastifyPluginAsync = async (app) => {
 
   app.post(
     '/queues/register/call-next',
-    { preHandler: requireRole(...REGISTER_CALLERS) },
+    { preHandler: requirePermission('queues.register') },
     async (request): Promise<Order> =>
       called(await callToRegister(app.db, actorOf(authOf(request)), null)),
   );
@@ -62,7 +61,7 @@ export const queueRoutes: FastifyPluginAsync = async (app) => {
   // A ticket called out of turn: the customer is in front of the cashier (RG-FIL-03).
   app.post(
     '/orders/:id/call',
-    { preHandler: requireRole(...REGISTER_CALLERS) },
+    { preHandler: requirePermission('queues.register') },
     async (request): Promise<Order> => {
       const { id } = orderParams.parse(request.params);
       return called(await callToRegister(app.db, actorOf(authOf(request)), id));
@@ -71,7 +70,7 @@ export const queueRoutes: FastifyPluginAsync = async (app) => {
 
   app.post(
     '/orders/:id/no-show',
-    { preHandler: requireRole(...REGISTER_CALLERS) },
+    { preHandler: requirePermission('queues.register') },
     async (request): Promise<Order> => {
       const { id } = orderParams.parse(request.params);
       const { order, noShowCount } = await markNoShow(app.db, actorOf(authOf(request)), id);
@@ -83,7 +82,7 @@ export const queueRoutes: FastifyPluginAsync = async (app) => {
   // Annexe B « Files : réordonner, prioriser » — the manager alone (RG-FIL-02).
   app.post(
     '/queues/:queue/reorder',
-    { preHandler: requireRole('manager') },
+    { preHandler: requirePermission('queues.supervise') },
     async (request, reply) => {
       const { queue } = queueParams.parse(request.params);
       const body = queueMoveSchema.parse(request.body);
@@ -95,7 +94,7 @@ export const queueRoutes: FastifyPluginAsync = async (app) => {
 
   app.post(
     '/queues/:queue/priority',
-    { preHandler: requireRole('manager') },
+    { preHandler: requirePermission('queues.supervise') },
     async (request, reply) => {
       const { queue } = queueParams.parse(request.params);
       const body = queuePrioritySchema.parse(request.body);

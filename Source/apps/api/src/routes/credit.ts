@@ -11,7 +11,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
 import type { Env } from '../env.js';
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import {
   createCreditCondition,
   listCreditConditions,
@@ -30,12 +30,12 @@ const listQuery = z.object({
   q: z.string().max(80).optional(),
 });
 /** H67: the owner sets the conditions; the register and the owner follow what is owed. */
-const readers = { preHandler: requireRole('owner', 'manager', 'cashier') };
-const owner = { preHandler: requireRole('owner') };
+const readers = { preHandler: requirePermission('credit.read') };
+const owner = { preHandler: requirePermission('credit.conditions') };
 /** Settled at the register, like a payment (annexe B, H32). */
-const takers = { preHandler: requireRole('cashier', 'manager') };
+const takers = { preHandler: requirePermission('credit.settle') };
 /** H68: the manager follows the titles to cash. */
-const manager = { preHandler: requireRole('manager') };
+const manager = { preHandler: requirePermission('credit.instruments') };
 
 /** Credit sale (T-095, H67): conditions, receivables and their settlements with a receipt. */
 export const creditRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) => {

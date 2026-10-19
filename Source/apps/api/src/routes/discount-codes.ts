@@ -6,7 +6,7 @@ import {
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import {
   defaultValidUntil,
   issueDiscountCode,
@@ -16,7 +16,7 @@ import {
 
 const params = z.object({ id: z.uuid() });
 /** Annexe B « émettre un code, révoquer »: the owner alone. */
-const owner = { preHandler: requireRole('owner') };
+const owner = { preHandler: requirePermission('discountCodes') };
 
 /** Promo codes issued by the owner (T-034, T-091, RG-REM-04/07, H41, H63). */
 export const discountCodeRoutes: FastifyPluginAsync = async (app) => {

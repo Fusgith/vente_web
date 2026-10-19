@@ -2,7 +2,7 @@ import { EXPORT_KINDS, exportQuerySchema } from '@vente-web/shared';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import { buildExport } from '../services/exports.js';
 
 const params = z.object({ kind: z.enum(EXPORT_KINDS) });
@@ -11,7 +11,7 @@ const params = z.object({ kind: z.enum(EXPORT_KINDS) });
 export const exportRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     '/exports/:kind',
-    { preHandler: requireRole('owner', 'manager', 'cashier', 'admin') },
+    { preHandler: requirePermission('exports') },
     async (request, reply) => {
       const { kind } = params.parse(request.params);
       const query = exportQuerySchema.parse(request.query);

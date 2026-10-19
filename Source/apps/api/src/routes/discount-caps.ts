@@ -7,7 +7,7 @@ import {
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import {
   listDiscountCaps,
   productDiscountCaps,
@@ -18,20 +18,19 @@ import {
 const params = z.object({ id: z.uuid() });
 
 /** Annexe B « Plafonds de remise »: read by every role but the warehouse, set by the owner. */
-const READERS = ['admin', 'manager', 'sales', 'cashier', 'owner'] as const;
-const setter = { preHandler: requireRole('owner') };
+const setter = { preHandler: requirePermission('discountCaps.edit') };
 
 /** Discount caps (T-024, RG-REM-01, decision H15). */
 export const discountCapRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     '/discount-caps',
-    { preHandler: requireRole(...READERS) },
+    { preHandler: requirePermission('discountCaps.read') },
     async (): Promise<DiscountCaps> => listDiscountCaps(app.db),
   );
 
   app.get(
     '/products/:id/discount-caps',
-    { preHandler: requireRole(...READERS) },
+    { preHandler: requirePermission('discountCaps.read') },
     async (request): Promise<ProductDiscountCaps> =>
       productDiscountCaps(app.db, params.parse(request.params).id),
   );

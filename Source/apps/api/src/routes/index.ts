@@ -21,6 +21,7 @@ import { importRoutes } from './imports.js';
 import { promotionRoutes } from './promotions.js';
 import { reservationDaysRoutes } from './reservation-days.js';
 import { salesDiscountRoutes } from './sales-discount.js';
+import { settingsRoutes } from './settings.js';
 import { pushRoutes } from './push.js';
 import { queueRoutes } from './queues.js';
 import { quoteRoutes } from './quotes.js';
@@ -62,6 +63,7 @@ export const apiRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) 
   await app.register(promotionRoutes);
   await app.register(reservationDaysRoutes);
   await app.register(salesDiscountRoutes);
+  await app.register(settingsRoutes);
   await app.register(pushRoutes);
   await app.register(auditRoutes);
 };

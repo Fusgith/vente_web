@@ -11,7 +11,7 @@ import {
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import {
   addUnit,
   changePrice,
@@ -26,34 +26,36 @@ const productParams = z.object({ id: z.uuid() });
 const unitParams = z.object({ id: z.uuid(), unitId: z.uuid() });
 
 /** Annexe B (H65): the manager and the owner create and change products; the admin reads. */
-const EDITORS = ['manager', 'owner'] as const;
-const READERS = ['manager', 'owner', 'admin'] as const;
 
 /** Products, sale units and dated prices on screen (T-092, T-019, T-019b). */
 export const productRoutes: FastifyPluginAsync = async (app) => {
   app.get(
     '/products',
-    { preHandler: requireRole(...READERS) },
+    { preHandler: requirePermission('products.read') },
     async (request): Promise<ProductList> =>
       listProducts(app.db, productListQuerySchema.parse(request.query)),
   );
 
   app.get(
     '/products/:id',
-    { preHandler: requireRole(...READERS) },
+    { preHandler: requirePermission('products.read') },
     async (request): Promise<ProductDetail> =>
       loadProduct(app.db, productParams.parse(request.params).id),
   );
 
-  app.post('/products', { preHandler: requireRole(...EDITORS) }, async (request, reply) => {
-    const body = productCreateSchema.parse(request.body);
-    const id = await createProduct(app.db, actorOf(authOf(request)), body);
-    return reply.code(201).send(await loadProduct(app.db, id));
-  });
+  app.post(
+    '/products',
+    { preHandler: requirePermission('products.edit') },
+    async (request, reply) => {
+      const body = productCreateSchema.parse(request.body);
+      const id = await createProduct(app.db, actorOf(authOf(request)), body);
+      return reply.code(201).send(await loadProduct(app.db, id));
+    },
+  );
 
   app.patch(
     '/products/:id',
-    { preHandler: requireRole(...EDITORS) },
+    { preHandler: requirePermission('products.edit') },
     async (request): Promise<ProductDetail> => {
       const { id } = productParams.parse(request.params);
       await updateProduct(
@@ -68,7 +70,7 @@ export const productRoutes: FastifyPluginAsync = async (app) => {
 
   app.post(
     '/products/:id/units',
-    { preHandler: requireRole(...EDITORS) },
+    { preHandler: requirePermission('products.edit') },
     async (request, reply) => {
       const { id } = productParams.parse(request.params);
       await addUnit(app.db, actorOf(authOf(request)), id, unitCreateSchema.parse(request.body));
@@ -78,7 +80,7 @@ export const productRoutes: FastifyPluginAsync = async (app) => {
 
   app.patch(
     '/products/:id/units/:unitId',
-    { preHandler: requireRole(...EDITORS) },
+    { preHandler: requirePermission('products.edit') },
     async (request): Promise<ProductDetail> => {
       const { id, unitId } = unitParams.parse(request.params);
       await updateUnit(
@@ -94,7 +96,7 @@ export const productRoutes: FastifyPluginAsync = async (app) => {
 
   app.post(
     '/products/:id/units/:unitId/prices',
-    { preHandler: requireRole(...EDITORS) },
+    { preHandler: requirePermission('products.edit') },
     async (request): Promise<ProductDetail> => {
       const { id, unitId } = unitParams.parse(request.params);
       await changePrice(

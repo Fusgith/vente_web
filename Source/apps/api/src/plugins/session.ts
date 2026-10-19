@@ -1,10 +1,11 @@
-import type { ErrorCode, Role } from '@vente-web/shared';
+import type { ErrorCode } from '@vente-web/shared';
 import type { CookieSerializeOptions } from '@fastify/cookie';
 import type { FastifyRequest, preHandlerAsyncHookHandler } from 'fastify';
 import fp from 'fastify-plugin';
 
 import type { Env } from '../env.js';
 import { AppError } from '../errors.js';
+import { can, type Permission } from '../permissions.js';
 import type { Actor } from '../services/actor.js';
 import { resolveSession, sessionCookieName, type AuthContext } from '../services/sessions.js';
 
@@ -29,7 +30,7 @@ export function sessionCookieOptions(env: Env): CookieSerializeOptions {
 
 /**
  * Resolves the session cookie on every request. Routes opt in with `requireAuth` /
- * `requireRole`; T-013 replaces these two guards by the annexe-B permission module.
+ * `requirePermission` (annexe B, T-013).
  */
 export const sessionPlugin = fp<{ env: Env }>(
   async (app, { env }) => {
@@ -71,10 +72,10 @@ export const requireAuth: preHandlerAsyncHookHandler = async (request) => {
   authOf(request);
 };
 
-/** The active role of the session must be one of `roles`. */
-export function requireRole(...roles: Role[]): preHandlerAsyncHookHandler {
+/** The active role of the session must hold `permission` (annexe B, T-013). */
+export function requirePermission(permission: Permission): preHandlerAsyncHookHandler {
   return async (request) => {
     const auth = authOf(request);
-    if (!roles.includes(auth.session.activeRole)) throw new AppError(403, 'AUTH_FORBIDDEN');
+    if (!can(auth.session.activeRole, permission)) throw new AppError(403, 'AUTH_FORBIDDEN');
   };
 }

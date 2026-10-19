@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 20/10/2026 — T-013 : droits de l'annexe B et écran « Paramètres » — agent : Claude Code (Opus 5.5)
+
+**Fait** : les droits de l'annexe B sont écrits en un seul endroit (`apps/api/src/permissions.ts`) et chaque route nomme le droit qu'elle exige ; un test appelle une route par droit avec chacun des six rôles. L'admin règle à l'écran « Paramètres » l'identité du magasin, la TVA, l'arrondi des espèces, les préfixes, les délais, les listes proposées, l'écran public et le verrouillage ; chaque changement est contrôlé et journalisé. Tests API 439, web 406 verts.
+
+**Reste** : T-080 (téléchargements à autoriser) ; T-036, T-019b, T-095b.
+
 ## 20/10/2026 — T-097 : journal d'audit lisible — agent : Claude Code (Opus 5.5)
 
 **Fait** : le détail du journal d'audit parle la langue du magasin : noms des champs, référence de l'élément (« Commande D-2026-… », client, article, compte…) au lieu des identifiants, dates et heures du magasin, montants en MGA, états en français, seules les lignes modifiées d'un devis ou d'une commande. Tests API 384, web 404 verts.

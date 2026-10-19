@@ -9,7 +9,7 @@ import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
 import type { Env } from '../env.js';
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import { importTemplate } from '../services/import-file.js';
 import {
   cancelImport,
@@ -21,11 +21,10 @@ import {
 
 const params = z.object({ id: z.uuid() });
 /** RG-IMP-08: the manager and the admin import; a stocktake is the manager's alone. */
-const IMPORTERS = ['manager', 'admin'] as const;
 
 /** Catalog import from Excel (T-020; RG-IMP-01 à 08). */
 export const importRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) => {
-  const preHandler = requireRole(...IMPORTERS);
+  const preHandler = requirePermission('imports');
 
   app.get('/imports', { preHandler }, async (): Promise<ImportList> => listImports(app.db));
 

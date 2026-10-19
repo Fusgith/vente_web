@@ -9,12 +9,11 @@ import {
   type CustomerCategories,
   type CustomerPurchases,
   type CustomerSearchResult,
-  type Role,
 } from '@vente-web/shared';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import { customerPurchases } from '../services/customer-purchases.js';
 import {
   createCustomer,
@@ -35,14 +34,12 @@ const paramsSchema = z.object({ id: z.uuid() });
  * the owner and the admin read; only the manager merges or deactivates (RG-DEV-04). The
  * warehouse has no access: phone numbers are personal data.
  */
-const READERS: readonly Role[] = ['sales', 'cashier', 'manager', 'owner', 'admin'];
-const EDITORS: readonly Role[] = ['sales', 'cashier', 'manager'];
 
 export const customerRoutes: FastifyPluginAsync = async (app) => {
-  const readers = { preHandler: requireRole(...READERS) };
-  const editors = { preHandler: requireRole(...EDITORS) };
-  const manager = { preHandler: requireRole('manager') };
-  const typeSetters = { preHandler: requireRole('manager', 'owner') };
+  const readers = { preHandler: requirePermission('customers.read') };
+  const editors = { preHandler: requirePermission('customers.edit') };
+  const manager = { preHandler: requirePermission('customers.manage') };
+  const typeSetters = { preHandler: requirePermission('customers.type') };
 
   app.get('/customers', readers, async (request): Promise<CustomerSearchResult> => {
     const { q, category } = customerSearchQuerySchema.parse(request.query);
@@ -65,11 +62,15 @@ export const customerRoutes: FastifyPluginAsync = async (app) => {
     return customerPurchases(app.db, id);
   });
 
-  app.post('/customers', { preHandler: requireRole('sales') }, async (request, reply) => {
-    const body = customerCreateSchema.parse(request.body);
-    const customer = await createCustomer(app.db, actorOf(authOf(request)), body);
-    return reply.code(201).send(customer);
-  });
+  app.post(
+    '/customers',
+    { preHandler: requirePermission('customers.create') },
+    async (request, reply) => {
+      const body = customerCreateSchema.parse(request.body);
+      const customer = await createCustomer(app.db, actorOf(authOf(request)), body);
+      return reply.code(201).send(customer);
+    },
+  );
 
   app.patch('/customers/:id', editors, async (request): Promise<Customer> => {
     const { id } = paramsSchema.parse(request.params);

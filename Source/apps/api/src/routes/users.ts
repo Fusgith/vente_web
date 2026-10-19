@@ -9,7 +9,7 @@ import {
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import {
   adminResetTotp,
   adminRevokeSessions,
@@ -23,7 +23,7 @@ const paramsSchema = z.object({ id: z.uuid() });
 
 /** Accounts and their credentials, managed by the admin (annexe B; RG-USR-01/02/06; H20; T-016). */
 export const userRoutes: FastifyPluginAsync = async (app) => {
-  const adminOnly = { preHandler: requireRole('admin') };
+  const adminOnly = { preHandler: requirePermission('accounts') };
 
   app.get('/users', adminOnly, async (): Promise<UserAccountList> => {
     return { users: await listUsers(app.db) };

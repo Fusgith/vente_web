@@ -5,14 +5,13 @@ import {
   type PaymentMethod,
   type RegisterSession,
   type RegisterStation,
-  type Role,
 } from '@vente-web/shared';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
 import type { Env } from '../env.js';
 import { AppError } from '../errors.js';
-import { actorOf, authOf, requireRole } from '../plugins/session.js';
+import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import { invoicePdf, readInvoiceSettings } from '../services/invoices.js';
 import { payOrder, paymentMethods } from '../services/payments.js';
 import { orderPaid } from '../services/realtime-rooms.js';
@@ -22,12 +21,11 @@ const idParams = z.object({ id: z.uuid() });
 const idempotencyKey = z.uuid();
 
 /** Annexe B « Paiement, facture » and « Session de caisse » (the manager who takes payments, H32). */
-const TAKERS: Role[] = ['cashier', 'manager'];
 
 export const paymentRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) => {
   app.get(
     '/payment-methods',
-    { preHandler: requireRole(...TAKERS) },
+    { preHandler: requirePermission('payments') },
     // With the step the cash part is rounded to (RG-FMT-04, H70), for the screen to show it.
     async (): Promise<{ methods: PaymentMethod[]; cashRounding: number | null }> => ({
       methods: await paymentMethods(app.db),
@@ -37,7 +35,7 @@ export const paymentRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env
 
   app.get(
     '/register-sessions/current',
-    { preHandler: requireRole(...TAKERS) },
+    { preHandler: requirePermission('payments') },
     async (request): Promise<{ session: RegisterSession | null }> => ({
       session: await openSessionOf(app.db, authOf(request).user.id),
     }),
@@ -45,7 +43,7 @@ export const paymentRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env
 
   app.get(
     '/register-sessions/stations',
-    { preHandler: requireRole(...TAKERS) },
+    { preHandler: requirePermission('payments') },
     async (request): Promise<{ stations: RegisterStation[] }> => ({
       stations: await registerStations(app.db, authOf(request).user.id),
     }),
@@ -53,7 +51,7 @@ export const paymentRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env
 
   app.post(
     '/register-sessions',
-    { preHandler: requireRole(...TAKERS) },
+    { preHandler: requirePermission('payments') },
     async (request, reply): Promise<RegisterSession> => {
       const body = registerSessionOpenSchema.parse(request.body);
       const session = await openSession(app.db, actorOf(authOf(request)), body);
@@ -64,7 +62,7 @@ export const paymentRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env
   // RG-PAY: the `Idempotency-Key` header makes a payment sent twice a single one (CDC technique §6).
   app.post(
     '/orders/:id/pay',
-    { preHandler: requireRole(...TAKERS) },
+    { preHandler: requirePermission('payments') },
     async (request): Promise<PaidOrder> => {
       const { id } = idParams.parse(request.params);
       const key = idempotencyKey.safeParse(request.headers['idempotency-key']);
@@ -81,13 +79,17 @@ export const paymentRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env
   );
 
   // The same file every time, as issued (RG-FAC-04); opened in a tab, printed from the browser.
-  app.get('/invoices/:id/pdf', { preHandler: requireRole(...TAKERS) }, async (request, reply) => {
-    const { id } = idParams.parse(request.params);
-    const { number, pdf } = await invoicePdf(app.db, env.FILES_DIR, id);
-    return reply
-      .type('application/pdf')
-      .header('content-disposition', `inline; filename="${number}.pdf"`)
-      .header('cache-control', 'no-store')
-      .send(pdf);
-  });
+  app.get(
+    '/invoices/:id/pdf',
+    { preHandler: requirePermission('payments') },
+    async (request, reply) => {
+      const { id } = idParams.parse(request.params);
+      const { number, pdf } = await invoicePdf(app.db, env.FILES_DIR, id);
+      return reply
+        .type('application/pdf')
+        .header('content-disposition', `inline; filename="${number}.pdf"`)
+        .header('cache-control', 'no-store')
+        .send(pdf);
+    },
+  );
 };
