@@ -18,6 +18,7 @@ import {
   assertNotFree,
   priceLines,
   quotePrefix,
+  suggestedOnLines,
   totalsWithinCaps,
   type PricedLine,
 } from './quotes.js';
@@ -74,7 +75,7 @@ export function asAmount(amount: { toFixed(decimals: number): string }): Discoun
  * the quote was saved is refused: the customer agreed on the saved one, the tablet saves the
  * quote again at the new price for the salesperson to check with them (H28). A cap lowered
  * since is checked like on saving (RG-REM-01/02), a discount granted by the owner's code attached
- * against its grant (RG-REM-04).
+ * against its grant (RG-REM-04), one widened by the owner's rules against them (H62).
  */
 async function priceAgain(db: Db, order: StoredOrder, customerType: CustomerType) {
   const priced = await priceLines(
@@ -97,6 +98,7 @@ async function priceAgain(db: Db, order: StoredOrder, customerType: CustomerType
     priced,
     asAmount(order.orderDiscountAmount),
     grantsOf(usedCode(order)),
+    await suggestedOnLines(db, order.customerId, priced),
   );
   // A quote saved at 0,00 MGA stays a draft: it never becomes an order (H50).
   assertNotFree(totals);

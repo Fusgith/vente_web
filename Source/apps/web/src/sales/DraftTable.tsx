@@ -1,5 +1,6 @@
 import {
   computeQuote,
+  discountAmount,
   formatAmount,
   formatMga,
   formatQty,
@@ -25,6 +26,8 @@ interface DraftTableProps {
   draft: DraftState;
   onSelect: (key: string) => void;
   onOrderDiscount: (discount: DiscountEntry | null) => void;
+  /** The suggested discounts of the lines below them, applied at the customer's request (H62). */
+  onApplySuggested: (applied: Suggested[]) => void;
   onSave: () => void;
   onSubmit: () => void;
   /** A request to the owner from its sheet: null once sent, else why it was refused. */
@@ -39,6 +42,28 @@ interface DraftTableProps {
 }
 
 const text = labels.sales.draft;
+
+interface Suggested {
+  key: string;
+  discount: DiscountEntry;
+}
+
+/**
+ * The lines whose suggested discount goes beyond their discount (H62); a line the owner's grant
+ * covers keeps it (RG-REM-04).
+ */
+function belowSuggested(draft: DraftState, quote: QuoteTotals): Suggested[] {
+  return draft.lines.flatMap((line, index) => {
+    const totals = quote.lines[index];
+    const pct = line.suggestedPct;
+    if (!pct || !totals || totals.source === 'CODE') return [];
+    const discount = { kind: 'pct', value: pct } as const;
+    // Amounts of 2 decimals: exact as numbers at a shop's scale, and the API checks anyway.
+    return Number(discountAmount(discount, totals.gross)) > Number(totals.discount)
+      ? [{ key: line.key, discount }]
+      : [];
+  });
+}
 
 const HEAD_PX = 48;
 
@@ -76,6 +101,7 @@ export function DraftTable({
   draft,
   onSelect,
   onOrderDiscount,
+  onApplySuggested,
   onSave,
   onSubmit,
   onAsk,
@@ -88,6 +114,8 @@ export function DraftTable({
   // No discount column when the salesperson gives none (H60).
   const discounts = useSalesDiscount();
   const quote = computeQuote(quoteInput(draft));
+  const toApply = belowSuggested(draft, quote);
+  const below = new Set(toApply.map((item) => item.key));
   // Lines of the products the last validation found short of stock (RG-CMD-02).
   const short = new Set(draft.shortages?.map((shortage) => shortage.productId));
 
@@ -212,6 +240,11 @@ export function DraftTable({
                               </span>
                             </>
                           )}
+                          {below.has(line.key) && line.suggestedPct && (
+                            <span className="block text-14 font-semibold text-indigo">
+                              {labels.register.suggestedPct(formatQty(line.suggestedPct))}
+                            </span>
+                          )}
                         </td>
                       )}
                       <td className={row + ' text-right font-semibold figures'}>
@@ -226,7 +259,9 @@ export function DraftTable({
           <Totals
             quote={quote}
             draft={draft}
+            toApply={toApply}
             onOrderDiscount={onOrderDiscount}
+            onApplySuggested={onApplySuggested}
             onSave={onSave}
             onSubmit={onSubmit}
             onAsk={onAsk}
@@ -239,7 +274,10 @@ export function DraftTable({
   );
 }
 
-type TotalsProps = Omit<DraftTableProps, 'onSelect' | 'customer'> & { quote: QuoteTotals };
+type TotalsProps = Omit<DraftTableProps, 'onSelect' | 'customer'> & {
+  quote: QuoteTotals;
+  toApply: Suggested[];
+};
 
 function saveLabel(draft: DraftState, busy: TotalsProps['busy']): string {
   if (busy === 'save') return text.saving;
@@ -256,7 +294,9 @@ function saveLabel(draft: DraftState, busy: TotalsProps['busy']): string {
 function Totals({
   quote,
   draft,
+  toApply,
   onOrderDiscount,
+  onApplySuggested,
   onSave,
   onSubmit,
   onAsk,
@@ -279,6 +319,15 @@ function Totals({
             <Icon name="percent" className="size-5" />
             {labels.sales.discount.order}
           </button>
+          {toApply.length > 0 && (
+            <button
+              type="button"
+              onClick={() => onApplySuggested(toApply)}
+              className={buttonClass('primary', 'md', 'shrink-0')}
+            >
+              {labels.register.applySuggested}
+            </button>
+          )}
           <OwnerControls draft={draft} busy={busy} onAsk={onAsk} onWithdraw={onWithdraw} />
         </div>
       )}

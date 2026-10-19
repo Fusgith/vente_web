@@ -200,14 +200,18 @@ describe('quote screen: validating the order (T-032, RG-CMD-03/05)', () => {
     fireEvent.click(submitButton());
 
     expect(bandAlert()).toHaveTextContent(shown(ERROR_LABELS.ORDER_TOTAL_ZERO));
-    expect(api.calls.filter((call) => call.method !== 'GET')).toHaveLength(0);
+    expect(
+      api.calls.filter((call) => call.method !== 'GET' && call.path !== '/suggested-discounts'),
+    ).toHaveLength(0);
   });
 
   it('asks for the customer before anything is sent', () => {
     const api = mount({}, { ...ready, customer: null });
     fireEvent.click(submitButton());
     expect(bandAlert()).toHaveTextContent(text.customerFirstOrder);
-    expect(api.calls.filter((call) => call.method !== 'GET')).toHaveLength(0);
+    expect(
+      api.calls.filter((call) => call.method !== 'GET' && call.path !== '/suggested-discounts'),
+    ).toHaveLength(0);
   });
 
   it('shows the dialog of a shortage kept in the draft, and closes it', () => {

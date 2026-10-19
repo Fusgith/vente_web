@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 20/10/2026 — T-090b : remises prévues sur la tablette — agent : Claude Code (Opus 5.5)
+
+**Fait** : quand le commercial remise (H60), la tablette lit les règles du boss sur le brouillon : « Prévue : x % » sous la ligne en dessous de sa règle, bouton « Appliquer les remises prévues » ; la remise prévue élargit la limite de la ligne à l'écran comme à l'enregistrement, à la mise à jour et à la validation (H62). Tests API 383, web 403 verts.
+
+**Reste** : T-080 (téléchargements à autoriser) ; T-097, T-013, T-036, T-019b, T-095b.
+
 ## 20/10/2026 — T-096 : traite et chèque post-daté — agent : Claude Code (Opus 5.5)
 
 **Fait** : moyens « Traite » et « Chèque post-daté » à la caisse (numéro, banque, échéance), dans les conditions de crédit ; créance « en attente » imprimée sur la facture, non échue et non encaissable tant que le titre est en main ; le responsable marque « Encaissé » ou « Impayé » dans « Créances clients », journalisé. Hypothèse H73. Tests API 382, web 402 verts.

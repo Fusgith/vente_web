@@ -2,6 +2,7 @@ import { useReducer, useState } from 'react';
 
 import { requestPending } from '../api/discount-requests.js';
 import { labels } from '../labels.js';
+import { useStatusLine } from '../shell/status-line.js';
 import { buttonClass } from '../ui/button.js';
 import { Icon } from '../ui/Icon.js';
 import { OrderNotices } from './OrderNotices.js';
@@ -22,6 +23,7 @@ import { ProductSearch } from './ProductSearch.js';
 import { QuantityPad } from './QuantityPad.js';
 import { SalesDiscountContext, useSalesDiscountSetting } from './sales-discount.js';
 import { StockShortageSheet } from './StockShortageSheet.js';
+import { useDraftSuggestions } from './useDraftSuggestions.js';
 import { useQuoteActions } from './useQuoteActions.js';
 import { useRequestDecisions } from './useRequestDecisions.js';
 
@@ -39,11 +41,14 @@ interface SalesWorkspaceProps {
  */
 export function SalesWorkspace({ initialDraft = emptyDraft, discounts }: SalesWorkspaceProps) {
   const allowed = useSalesDiscountSetting(discounts);
-  const [draft, dispatch] = useReducer(draftReducer, initialDraft);
+  const [typed, dispatch] = useReducer(draftReducer, initialDraft);
+  // The owner's rules widen each line's limit, on screen as on saving (H62).
+  const draft = useDraftSuggestions(typed, allowed);
+  const { say } = useStatusLine();
   const position = draft.lines.findIndex((line) => line.key === draft.selected);
   const selected = draft.lines[position];
   const { save, submit, ask, withdraw, busy } = useQuoteActions(draft, dispatch);
-  useRequestDecisions(draft, dispatch);
+  useRequestDecisions(typed, dispatch);
   const [mineOpen, setMineOpen] = useState(false);
   // Lines never saved, or changed since: taking up another quote would lose them.
   const unsaved = draft.lines.length > 0 && (!draft.saved || unsavedChanges(draft));
@@ -81,6 +86,11 @@ export function SalesWorkspace({ initialDraft = emptyDraft, discounts }: SalesWo
           draft={draft}
           onSelect={(key) => dispatch({ type: 'select', key })}
           onOrderDiscount={(discount) => dispatch({ type: 'setOrderDiscount', discount })}
+          onApplySuggested={(applied) => {
+            for (const { key, discount } of applied)
+              dispatch({ type: 'setDiscount', key, discount });
+            say(labels.register.suggestedApplied(applied.length), 'check');
+          }}
           onSave={() => void save()}
           onSubmit={() => void submit()}
           onAsk={ask}

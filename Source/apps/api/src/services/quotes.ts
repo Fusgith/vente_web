@@ -21,6 +21,7 @@ import type { Prisma } from '../generated/prisma/client.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit, type AuditSnapshot, type AuditTx } from './audit.js';
 import { findCustomer } from './customers.js';
+import { suggestedFor } from './discount-rules.js';
 import { replaceNumber } from './order-replace.js';
 import { CODE_SELECT, findOrder, grantsOf, toQuote } from './order-view.js';
 import { defaultDiscountCap, inForceAt, priceFor, unitCap } from './product-hits.js';
@@ -135,14 +136,24 @@ export function grantsOn(lines: readonly PricedLine[], grants: readonly CodeGran
   );
 }
 
+/** What the owner's rules suggest today on priced lines: it widens their limit (H62). */
+export function suggestedOnLines(db: Db, customerId: string, lines: readonly PricedLine[]) {
+  return suggestedFor(
+    db,
+    customerId,
+    lines.map((line) => ({ productId: line.productId, qty: line.entry.qty, factor: line.factor })),
+  );
+}
+
 /**
- * The engine's totals, every discount within its cap — or within what the owner's code attached
- * grants on it, which replaces the cap (RG-REM-04/06).
+ * The engine's totals, every discount within its cap or its suggested discount (H62) — or within
+ * what the owner's code attached grants on it, which replaces the cap (RG-REM-04/06).
  */
 export function totalsWithinCaps(
   lines: readonly PricedLine[],
   orderDiscount: DiscountEntry | null,
   grants: readonly CodeGrant[] = [],
+  suggested: readonly (string | null)[] = [],
 ): QuoteTotals {
   const granted = grantsOn(lines, grants);
   const totals = computeQuote({
@@ -150,6 +161,7 @@ export function totalsWithinCaps(
       quantity: line.entry.qty,
       unitPrice: line.unitPrice,
       capPct: line.capPct,
+      suggestedPct: suggested[index] ?? null,
       discount: line.entry.discount,
       granted: granted.lines[index] ?? null,
     })),
@@ -256,7 +268,8 @@ export async function nextQuoteNumber(
 export async function createQuote(db: Db, actor: Actor, input: QuoteSave): Promise<Quote> {
   const customerType = await assertActiveCustomer(db, input.customerId);
   const lines = await priceLines(db, input.lines, customerType);
-  const totals = totalsWithinCaps(lines, input.orderDiscount);
+  const suggested = await suggestedOnLines(db, input.customerId, lines);
+  const totals = totalsWithinCaps(lines, input.orderDiscount, [], suggested);
   if (totals.discountTotal !== '0.00') await assertSalesDiscount(db, actor);
   const prefix = await quotePrefix(db);
   return db.$transaction(async (tx) => {
@@ -326,7 +339,8 @@ export async function updateQuote(
     throw new AppError(409, 'DISCOUNT_CODE_OTHER_CUSTOMER');
   }
   const codeId = code?.id ?? null;
-  const totals = totalsWithinCaps(lines, input.orderDiscount, grantsOf(code));
+  const suggested = await suggestedOnLines(db, input.customerId, lines);
+  const totals = totalsWithinCaps(lines, input.orderDiscount, grantsOf(code), suggested);
   if (totals.discountTotal !== '0.00') await assertSalesDiscount(db, actor);
   const prefix = await quotePrefix(db);
   return db.$transaction(async (tx) => {

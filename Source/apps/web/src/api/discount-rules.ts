@@ -1,9 +1,12 @@
 import {
   discountRuleListSchema,
   discountRuleSchema,
+  draftSuggestedSchema,
   suggestedDiscountsSchema,
   type DiscountRule,
   type DiscountRuleInput,
+  type DraftSuggested,
+  type DraftSuggestedInput,
   type SuggestedDiscounts,
 } from '@vente-web/shared';
 
@@ -30,6 +33,13 @@ export const discountRulesApi = {
     return parseResponse(
       suggestedDiscountsSchema,
       await apiRequest(`/orders/${orderId}/suggested-discounts`),
+    );
+  },
+  /** On the tablet's draft, before it is saved (H62). */
+  async forDraft(input: DraftSuggestedInput): Promise<DraftSuggested> {
+    return parseResponse(
+      draftSuggestedSchema,
+      await apiRequest('/suggested-discounts', { method: 'POST', body: input }),
     );
   },
 };

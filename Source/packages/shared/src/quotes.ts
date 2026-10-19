@@ -34,6 +34,20 @@ export const quoteSaveSchema = z.object({
 });
 export type QuoteSave = z.infer<typeof quoteSaveSchema>;
 
+/** The tablet's draft as the owner's rules read it (H62): its customer, its lines in sale units. */
+export const draftSuggestedInputSchema = z.object({
+  customerId: z.uuid(),
+  lines: z
+    .array(z.object({ productUnitId: z.uuid(), qty: z.string().refine(isQuantity) }))
+    .min(1)
+    .max(QUOTE_MAX_LINES),
+});
+export type DraftSuggestedInput = z.infer<typeof draftSuggestedInputSchema>;
+
+/** The suggested discount of each line of the draft, in its order (H62). */
+export const draftSuggestedSchema = z.object({ lines: z.array(z.string().nullable()) });
+export type DraftSuggested = z.infer<typeof draftSuggestedSchema>;
+
 /** The version read: a quote changed meanwhile on another tablet is never overwritten. */
 export const quoteUpdateSchema = quoteSaveSchema.extend({ version: z.int().positive() });
 export type QuoteUpdate = z.infer<typeof quoteUpdateSchema>;

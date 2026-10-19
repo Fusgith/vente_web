@@ -1,6 +1,7 @@
 import {
   discountRuleListSchema,
   discountRuleSchema,
+  draftSuggestedSchema,
   orderSchema,
   suggestedDiscountsSchema,
   type DiscountRuleInput,
@@ -96,24 +97,60 @@ describe.skipIf(!TEST_DATABASE_URL)('discount rules (H62)', () => {
     expect(await t.db.discountRule.count()).toBe(0);
   });
 
+  /** Soap: 10 % from 24 pieces (4 packs of 6). Everything: 8 % today, a promotion. */
+  const planned = async () => {
+    await created(rule());
+    await created(
+      rule({
+        kind: 'PROMOTION',
+        productId: null,
+        minQty: null,
+        pct: '8',
+        startsOn: today(),
+        endsOn: today(),
+      }),
+    );
+    // Switched off or over: never suggested.
+    await created(rule({ productId: null, minQty: '1', pct: '50', isActive: false }));
+  };
+
+  it('suggests on the tablet’s draft and widens the salesperson’s limit (T-090b)', async () => {
+    await planned();
+    const suggest = (packs: string) =>
+      s.post('/suggested-discounts', s.cookies.sales, {
+        customerId: s.ids.customer,
+        lines: [
+          { productUnitId: s.units.soapPack, qty: packs },
+          { productUnitId: s.units.nails, qty: '3' },
+        ],
+      });
+    const reply = await suggest('4');
+    expect(reply.statusCode, reply.body).toBe(200);
+    expect(draftSuggestedSchema.parse(reply.json())).toEqual({ lines: ['10', '8'] });
+    // 3 packs: 18 pieces, under 24; the promotion remains.
+    expect((await suggest('3')).json()).toEqual({ lines: ['8', '8'] });
+
+    const beyond = await s.post('/quotes', s.cookies.sales, {
+      customerId: s.ids.customer,
+      lines: [
+        { productUnitId: s.units.soapPack, qty: '4', discount: { kind: 'pct', value: '10.5' } },
+      ],
+      orderDiscount: null,
+    });
+    expect(beyond.json()).toMatchObject({ code: 'QUOTE_DISCOUNT_BEYOND_CAP' });
+    const saved = await s.quote({ kind: 'pct', value: '10' }, { kind: 'pct', value: '8' });
+    expect(saved.lines).toMatchObject([{ discountSource: 'RULE' }, { discountSource: 'RULE' }]);
+    const submitted = await s.post(`/orders/${saved.id}/submit`, s.cookies.sales, {
+      version: saved.version,
+    });
+    expect(submitted.statusCode, submitted.body).toBe(200);
+  });
+
   describe('at the register', () => {
     let order: Order;
 
     beforeEach(async () => {
-      // Soap: 10 % from 24 pieces (4 packs of 6). Everything: 8 % today, a promotion.
-      await created(rule());
-      await created(
-        rule({
-          kind: 'PROMOTION',
-          productId: null,
-          minQty: null,
-          pct: '8',
-          startsOn: today(),
-          endsOn: today(),
-        }),
-      );
-      // Switched off or over: never suggested.
-      await created(rule({ productId: null, minQty: '1', pct: '50', isActive: false }));
+      await planned();
       order = await s.atRegister();
     });
 

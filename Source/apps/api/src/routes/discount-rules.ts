@@ -1,7 +1,9 @@
 import {
   discountRuleInputSchema,
+  draftSuggestedInputSchema,
   type DiscountRule,
   type DiscountRuleList,
+  type DraftSuggested,
   type SuggestedDiscounts,
 } from '@vente-web/shared';
 import type { FastifyPluginAsync } from 'fastify';
@@ -12,6 +14,7 @@ import { actorOf, authOf, requireRole } from '../plugins/session.js';
 import {
   createDiscountRule,
   listDiscountRules,
+  suggestedFor,
   suggestedOn,
   updateDiscountRule,
 } from '../services/discount-rules.js';
@@ -46,6 +49,27 @@ export const discountRuleRoutes: FastifyPluginAsync = async (app) => {
       };
     },
   );
+
+  /** What the rules suggest on the tablet's draft, not saved yet (H62). */
+  app.post('/suggested-discounts', readers, async (request): Promise<DraftSuggested> => {
+    const input = draftSuggestedInputSchema.parse(request.body);
+    const units = await app.db.productUnit.findMany({
+      where: { id: { in: input.lines.map((line) => line.productUnitId) } },
+      select: { id: true, productId: true, factor: true },
+    });
+    const byId = new Map(units.map((unit) => [unit.id, unit]));
+    const lines = input.lines.flatMap((line) => {
+      const unit = byId.get(line.productUnitId);
+      return unit
+        ? [{ productId: unit.productId, qty: line.qty, factor: unit.factor.toFixed() }]
+        : [];
+    });
+    if (lines.length !== input.lines.length) throw new AppError(404, 'NOT_FOUND');
+    if (!(await app.db.customer.count({ where: { id: input.customerId } }))) {
+      throw new AppError(404, 'NOT_FOUND');
+    }
+    return { lines: await suggestedFor(app.db, input.customerId, lines) };
+  });
 
   app.post('/discount-rules', owner, async (request, reply): Promise<DiscountRule> => {
     const input = discountRuleInputSchema.parse(request.body);

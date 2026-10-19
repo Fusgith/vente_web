@@ -48,6 +48,7 @@ export function quoteInput(draft: Pick<DraftState, 'lines' | 'orderDiscount' | '
       quantity: line.qty,
       unitPrice: line.unit.price,
       capPct: line.capPct,
+      suggestedPct: line.suggestedPct ?? null,
       discount: line.discount,
       granted: line.granted ?? null,
     })),

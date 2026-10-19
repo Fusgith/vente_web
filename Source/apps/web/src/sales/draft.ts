@@ -33,6 +33,8 @@ export interface DraftLine {
   discount: DiscountEntry | null;
   /** Discount granted by the owner’s code (RG-REM-04), in place of the cap. */
   granted?: DiscountEntry | null;
+  /** What the owner's rules suggest on the line today (H62): it widens its limit. */
+  suggestedPct?: string | null;
 }
 
 export type DraftCustomer = Pick<Customer, 'id' | 'name' | 'phone' | 'type'>;
