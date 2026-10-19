@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 19/10/2026 — T-093 : type de client et prix par type — agent : Claude Code (Opus 5.5)
+
+**Fait** : type de client (Grossiste, Semi-grossiste, Détaillant, Particulier par défaut) choisi par le responsable dans l'annuaire, audité ; prix facultatif par unité × type, daté comme le prix de base (fiche article, colonnes `prix_grossiste`… de l'import) ; le devis prend le prix du type du client, sinon le prix de base, et se revalorise au changement de client. Tests API et web verts.
+
+**Reste** : règle de remise par type de client (H62) ; l'historique de prix du tableau de bord et des exports ne suit que le prix de base.
+
 ## 19/10/2026 — T-015 : postes et appairage — agent : Claude Code (Opus 5.5)
 
 **Fait** : panneau admin « Postes du magasin » (déclarer, renommer, désactiver ; lien de l'écran public) et appairage de l'appareil depuis lui-même (clé gardée par le navigateur, empreinte sha256 au serveur, un appareil par poste) ; la connexion envoie la clé, jamais un identifiant de poste ; poste obligatoire dans le magasin dès qu'un poste actif est appairé (`STATION_REQUIRED`, admin et boss exceptés). Hypothèse H71 au CDC. Tests API 50, web 26 verts.

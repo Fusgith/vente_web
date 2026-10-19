@@ -63,7 +63,7 @@ export async function stockRows(db: Db): Promise<Rows[]> {
         take: 1,
         select: {
           prices: {
-            where: inForceAt(now),
+            where: { ...inForceAt(now), customerType: null },
             orderBy: { effectiveFrom: 'desc' },
             take: 1,
             select: { price: true },
@@ -115,7 +115,7 @@ export async function priceGridRows(db: Db): Promise<Rows[]> {
           },
         },
         prices: {
-          where: inForceAt(now),
+          where: { ...inForceAt(now), customerType: null },
           orderBy: { effectiveFrom: 'desc' },
           take: 1,
           select: { price: true, effectiveFrom: true },
@@ -142,9 +142,11 @@ export async function priceGridRows(db: Db): Promise<Rows[]> {
 /** The prices taking effect over the period, each against the one before it (RG-ART-07). */
 export async function priceHistoryRows(db: Db, period: Span): Promise<Rows[]> {
   const prices = await db.productPrice.findMany({
+    // The base prices only (H66): a customer type's own price has its own history.
     where: {
       effectiveFrom: { lt: period.lt },
-      productUnit: { prices: { some: { effectiveFrom: period } } },
+      customerType: null,
+      productUnit: { prices: { some: { effectiveFrom: period, customerType: null } } },
     },
     orderBy: [{ productUnitId: 'asc' }, { effectiveFrom: 'asc' }, { createdAt: 'asc' }],
     select: {

@@ -99,6 +99,17 @@ export const customerMergeSchema = z.object({ intoId: z.uuid() });
 
 const categorySchema = z.string().trim().min(1).max(CUSTOMER_CATEGORY_MAX_LENGTH);
 
+/**
+ * The customer's type (⚠️ H66): it sets the price of each line, the category never does. A fixed
+ * list; a new customer is INDIVIDUAL until the manager or the owner changes it.
+ */
+export const CUSTOMER_TYPES = ['WHOLESALER', 'SEMI_WHOLESALER', 'RETAILER', 'INDIVIDUAL'] as const;
+export const customerTypeSchema = z.enum(CUSTOMER_TYPES);
+export type CustomerType = z.infer<typeof customerTypeSchema>;
+
+/** The manager or the owner changes a customer's type (H66), audited. */
+export const customerTypeBodySchema = z.object({ type: customerTypeSchema });
+
 /** By phone or name, by category (H49 a), or both; at least one. */
 export const customerSearchQuerySchema = z
   .object({ q: z.string().trim().max(100).optional(), category: categorySchema.optional() })
@@ -120,6 +131,8 @@ export const customerSchema = z.object({
   secondPhone: z.string().nullable(),
   /** Classes the customer, who stays identified by name and phone (H43, H49 a). */
   category: z.string(),
+  /** Sets the price of each line (H66). */
+  type: customerTypeSchema,
   /** False once deactivated or merged: never offered for a new quote. */
   isActive: z.boolean(),
   /** The record that replaced this one after a merge. */

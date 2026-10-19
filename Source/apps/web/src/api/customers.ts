@@ -10,6 +10,7 @@ import {
   type CustomerPurchases,
   type CustomerSearchQuery,
   type CustomerSearchResult,
+  type CustomerType,
 } from '@vente-web/shared';
 
 import { ApiError, apiRequest, parseResponse } from './client.js';
@@ -41,6 +42,12 @@ export const customersApi = {
       method: 'POST',
       body: { category },
     });
+    return parseResponse(customerSchema, data);
+  },
+
+  /** The manager or the owner sets the customer's type, which sets its prices (H66). */
+  async setType(id: string, type: CustomerType): Promise<Customer> {
+    const data = await apiRequest(`/customers/${id}/type`, { method: 'POST', body: { type } });
     return parseResponse(customerSchema, data);
   },
 

@@ -215,7 +215,8 @@ async function productsOf(db: Db, invoices: Invoices) {
 /** The prices that changed in the period, each with the one it replaced (RG-ART-07). */
 async function priceChangesOf(db: Db, period: DashboardQuery): Promise<Dashboard['priceChanges']> {
   const changed = await db.productPrice.findMany({
-    where: { effectiveFrom: span(period) },
+    // The base prices only (H66): a customer type's own price has its own history.
+    where: { effectiveFrom: span(period), customerType: null },
     orderBy: { effectiveFrom: 'desc' },
     take: PRICE_CHANGES,
     select: {
@@ -229,7 +230,10 @@ async function priceChangesOf(db: Db, period: DashboardQuery): Promise<Dashboard
     },
   });
   const history = await db.productPrice.findMany({
-    where: { productUnitId: { in: [...new Set(changed.map((price) => price.productUnitId))] } },
+    where: {
+      productUnitId: { in: [...new Set(changed.map((price) => price.productUnitId))] },
+      customerType: null,
+    },
     orderBy: [{ effectiveFrom: 'asc' }, { id: 'asc' }],
     select: { id: true, productUnitId: true, price: true },
   });

@@ -3,6 +3,7 @@ import {
   computeQuote,
   grantsFor,
   type CodeGrant,
+  type CustomerType,
   quoteNumber,
   type DiscountEntry,
   type Quote,
@@ -21,7 +22,7 @@ import { by, type Actor } from './actor.js';
 import { recordAudit, type AuditSnapshot, type AuditTx } from './audit.js';
 import { findCustomer } from './customers.js';
 import { CODE_SELECT, findOrder, grantsOf, toQuote } from './order-view.js';
-import { defaultDiscountCap, inForceAt, unitCap } from './product-hits.js';
+import { defaultDiscountCap, inForceAt, priceFor, unitCap } from './product-hits.js';
 import { assertSalesDiscount } from './sales-discount.js';
 import { nextSequenceValue } from './sequences.js';
 import { readSetting } from './settings.js';
@@ -49,18 +50,22 @@ export async function loadQuote(db: AuditTx, id: string): Promise<Quote> {
   return toQuote(order);
 }
 
-/** Mandatory, and never a deactivated or merged record (RG-DEV-04). */
-export async function assertActiveCustomer(db: Db, id: string): Promise<void> {
-  if (!(await findCustomer(db, id)).isActive) throw new AppError(409, 'CUSTOMER_INACTIVE');
+/** Mandatory, and never a deactivated or merged record (RG-DEV-04); its type sets the prices. */
+export async function assertActiveCustomer(db: Db, id: string): Promise<CustomerType> {
+  const customer = await findCustomer(db, id);
+  if (!customer.isActive) throw new AppError(409, 'CUSTOMER_INACTIVE');
+  return customer.type;
 }
 
 /**
- * Each line in its sale unit at the price in force now, with its cap resolved now; a unit
- * deactivated or without a price since it was added is refused with the positions concerned.
+ * Each line in its sale unit at the price in force now for the customer's type (H66), with its
+ * cap resolved now; a unit deactivated or without a price since it was added is refused with
+ * the positions concerned.
  */
 export async function priceLines(
   db: Db,
   entries: readonly QuoteLineEntry[],
+  customerType: CustomerType,
 ): Promise<PricedLine[]> {
   const now = new Date();
   const [units, fallbackCap] = await Promise.all([
@@ -73,10 +78,11 @@ export async function priceLines(
       include: {
         product: { include: { category: { select: { maxDiscountPct: true } } } },
         prices: {
-          where: inForceAt(now),
+          where: {
+            AND: [inForceAt(now), { OR: [{ customerType: null }, { customerType }] }],
+          },
           orderBy: { effectiveFrom: 'desc' },
-          take: 1,
-          select: { id: true, price: true },
+          select: { id: true, price: true, customerType: true },
         },
       },
     }),
@@ -86,7 +92,7 @@ export async function priceLines(
   const unavailable: number[] = [];
   const priced = entries.flatMap((entry, index): PricedLine[] => {
     const unit = byId.get(entry.productUnitId);
-    const price = unit?.prices[0];
+    const price = unit && priceFor(unit.prices, customerType);
     if (!unit || !price) {
       unavailable.push(index + 1);
       return [];
@@ -244,8 +250,8 @@ async function nextQuoteNumber(tx: Prisma.TransactionClient, prefix: string): Pr
 
 /** A new quote of the salesperson: priced, checked and numbered here (RG-DEV-01/02/05). */
 export async function createQuote(db: Db, actor: Actor, input: QuoteSave): Promise<Quote> {
-  await assertActiveCustomer(db, input.customerId);
-  const lines = await priceLines(db, input.lines);
+  const customerType = await assertActiveCustomer(db, input.customerId);
+  const lines = await priceLines(db, input.lines, customerType);
   const totals = totalsWithinCaps(lines, input.orderDiscount);
   if (totals.discountTotal !== '0.00') await assertSalesDiscount(db, actor);
   const prefix = await quotePrefix(db);
@@ -303,8 +309,8 @@ export async function updateQuote(
   if (current.customerId !== input.customerId && current._count.discountRequests > 0) {
     throw new AppError(409, 'DISCOUNT_REQUEST_PENDING');
   }
-  await assertActiveCustomer(db, input.customerId);
-  const lines = await priceLines(db, input.lines);
+  const customerType = await assertActiveCustomer(db, input.customerId);
+  const lines = await priceLines(db, input.lines, customerType);
   // The code attached stays with the quote: its grants still bound the discounts typed (T-034b).
   const code = await db.discountCode.findFirst({
     where: { usedOnOrderId: id },

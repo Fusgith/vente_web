@@ -308,7 +308,7 @@ export function demoOrderAtRegister(): Order {
     id: rasoa.orderId,
     number: rasoa.number,
     version: 2,
-    customer: { id: id(301), ...rasoa.customer },
+    customer: { id: id(301), ...rasoa.customer, type: 'INDIVIDUAL' },
     salesUser: rasoa.salesUser,
     lines: lines.map((line, index) => {
       const computed = totals.lines[index]!;

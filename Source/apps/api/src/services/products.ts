@@ -1,6 +1,7 @@
 import {
   MAX_ACTIVE_UNITS,
   PRODUCT_LIST_PAGE,
+  type CustomerType,
   type PriceSet,
   type ProductCreate,
   type ProductDetail,
@@ -15,6 +16,7 @@ import { AppError } from '../errors.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit } from './audit.js';
+import { typePricesOf } from './product-hits.js';
 
 type Tx = Prisma.TransactionClient;
 
@@ -53,11 +55,20 @@ async function barcodeTaken(tx: Tx, barcode: string | null, exceptUnit?: string)
   if (twin) throw new AppError(409, 'PRODUCT_BARCODE_TAKEN');
 }
 
-/** A new current price: the previous one closed at the same instant, never overwritten (RG-ART-07). */
-async function setPrice(tx: Tx, actor: Actor, unitId: string, price: string) {
+/**
+ * A new current price: the previous one closed at the same instant, never overwritten
+ * (RG-ART-07). With a customer type, that type's own price (H66), dated the same way.
+ */
+async function setPrice(
+  tx: Tx,
+  actor: Actor,
+  unitId: string,
+  price: string,
+  customerType: CustomerType | null = null,
+) {
   const now = new Date();
   const current = await tx.productPrice.findFirst({
-    where: { productUnitId: unitId, effectiveTo: null },
+    where: { productUnitId: unitId, customerType, effectiveTo: null },
     select: { id: true, price: true },
   });
   if (current?.price.equals(price)) throw new AppError(409, 'PRICE_UNCHANGED');
@@ -68,6 +79,7 @@ async function setPrice(tx: Tx, actor: Actor, unitId: string, price: string) {
     data: {
       productUnitId: unitId,
       price,
+      customerType,
       effectiveFrom: now,
       source: 'MANUAL',
       setById: actor.userId,
@@ -118,7 +130,7 @@ export async function listProducts(
           select: {
             label: true,
             factor: true,
-            prices: { where: { effectiveTo: null }, select: { price: true } },
+            prices: { where: { effectiveTo: null, customerType: null }, select: { price: true } },
           },
         },
       },
@@ -176,6 +188,7 @@ export async function loadProduct(db: Db | Tx, id: string): Promise<ProductDetai
               effectiveFrom: true,
               effectiveTo: true,
               source: true,
+              customerType: true,
               setBy: { select: { fullName: true } },
             },
           },
@@ -203,7 +216,11 @@ export async function loadProduct(db: Db | Tx, id: string): Promise<ProductDetai
       isBase: unit.isBase,
       barcode: unit.barcode,
       isActive: unit.isActive,
-      price: decimal(unit.prices.find((entry) => entry.effectiveTo === null)?.price),
+      price: decimal(
+        unit.prices.find((entry) => entry.effectiveTo === null && entry.customerType === null)
+          ?.price,
+      ),
+      typePrices: typePricesOf(unit.prices.filter((entry) => entry.effectiveTo === null)),
       used: unit._count.orderLines > 0,
       prices: unit.prices.map((entry) => ({
         id: entry.id,
@@ -211,6 +228,7 @@ export async function loadProduct(db: Db | Tx, id: string): Promise<ProductDetai
         effectiveFrom: entry.effectiveFrom.toISOString(),
         effectiveTo: entry.effectiveTo?.toISOString() ?? null,
         source: entry.source,
+        customerType: entry.customerType,
         setBy: entry.setBy.fullName,
       })),
     })),
@@ -399,7 +417,7 @@ export async function updateUnit(
   }
 }
 
-/** A new dated price for a unit (RG-ART-03, RG-ART-07), journaled old → new. */
+/** A new dated price for a unit or one customer type (RG-ART-07, H66), journaled old → new. */
 export async function changePrice(
   db: Db,
   actor: Actor,
@@ -413,14 +431,16 @@ export async function changePrice(
       select: { label: true },
     });
     if (!unit) throw new AppError(404, 'NOT_FOUND');
-    const previous = await setPrice(tx, actor, unitId, input.price);
+    const customerType = input.customerType ?? null;
+    const previous = await setPrice(tx, actor, unitId, input.price, customerType);
+    const price = new Prisma.Decimal(input.price).toFixed(2);
     await recordAudit(tx, {
       ...by(actor),
       action: 'product_price.set',
       entityType: 'product',
       entityId: productId,
-      before: { unit: unit.label, price: previous },
-      after: { unit: unit.label, price: new Prisma.Decimal(input.price).toFixed(2) },
+      before: { unit: unit.label, customerType, price: previous },
+      after: { unit: unit.label, customerType, price },
     });
   });
 }

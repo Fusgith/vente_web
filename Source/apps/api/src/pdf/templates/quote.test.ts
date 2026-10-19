@@ -21,7 +21,7 @@ function sampleQuote(): Quote {
     id: ID,
     number: 'D-2026-000042',
     version: 1,
-    customer: { id: ID, name: 'Rasoa Hanta', phone: '0341122233' },
+    customer: { id: ID, name: 'Rasoa Hanta', phone: '0341122233', type: 'INDIVIDUAL' },
     salesUser: { id: ID, fullName: 'Vola Rakoto' },
     lines: [
       {

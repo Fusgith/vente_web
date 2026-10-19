@@ -4,6 +4,8 @@
  */
 import { z } from 'zod';
 
+import { customerTypeSchema, type CustomerType } from './customers.js';
+
 /** The list appears from the 2nd character; an exact code or barcode is looked up at any length. */
 export const SEARCH_MIN_LENGTH = 2;
 export const SEARCH_MAX_LENGTH = 100;
@@ -35,6 +37,8 @@ export const productUnitHitSchema = z.object({
   barcode: z.string().nullable(),
   /** Current price; null = not sellable in this unit until a price is set (RG-ART-03, H14). */
   price: decimalString.nullable(),
+  /** The prices of the customer types that have one, which win over `price` (H66). */
+  typePrices: z.partialRecord(customerTypeSchema, decimalString).optional(),
   /** Resolved cap (RG-REM-01); null when the active role may not see caps (annexe B). */
   maxDiscountPct: decimalString.nullable(),
 });
@@ -110,6 +114,17 @@ export function defaultSaleUnit<U extends Pick<ProductUnitHit, 'isBase' | 'price
 ): U | null {
   const sellable = units.filter((unit) => unit.price !== null);
   return sellable.find((unit) => unit.isBase) ?? sellable[0] ?? null;
+}
+
+/**
+ * The price of a sale unit for a customer of this type (H66): the type's own price, else the
+ * base one; the base one without a customer (kiosk, search before choosing one).
+ */
+export function unitPriceFor(
+  unit: Pick<ProductUnitHit, 'price' | 'typePrices'>,
+  type: CustomerType | null,
+): string | null {
+  return (type ? unit.typePrices?.[type] : undefined) ?? unit.price;
 }
 
 /** Words of a search term: letters and digits only, so they never carry LIKE wildcards. */

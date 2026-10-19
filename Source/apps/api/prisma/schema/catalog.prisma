@@ -83,16 +83,18 @@ model ProductUnit {
 
 /// Append-only price history (RG-ART-07): a new price closes the previous one; never overwritten.
 model ProductPrice {
-  id            String      @id @default(uuid(7)) @db.Uuid
-  productUnitId String      @map("product_unit_id") @db.Uuid
-  price         Decimal     @db.Decimal(14, 2)
-  effectiveFrom DateTime    @default(now()) @map("effective_from") @db.Timestamptz(6)
-  /// Null = current price; at most one per unit (partial unique index in the migration).
-  effectiveTo   DateTime?   @map("effective_to") @db.Timestamptz(6)
+  id            String        @id @default(uuid(7)) @db.Uuid
+  productUnitId String        @map("product_unit_id") @db.Uuid
+  price         Decimal       @db.Decimal(14, 2)
+  effectiveFrom DateTime      @default(now()) @map("effective_from") @db.Timestamptz(6)
+  /// Null = current price; at most one per unit and customer type (partial unique index).
+  effectiveTo   DateTime?     @map("effective_to") @db.Timestamptz(6)
   source        PriceSource
-  importBatchId String?     @map("import_batch_id") @db.Uuid
-  setById       String      @map("set_by") @db.Uuid
-  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  importBatchId String?       @map("import_batch_id") @db.Uuid
+  /// Null = the base price; else the price of that customer type, which wins over it (H66).
+  customerType  CustomerType? @map("customer_type")
+  setById       String        @map("set_by") @db.Uuid
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
 
   productUnit ProductUnit  @relation(fields: [productUnitId], references: [id])
   importBatch ImportBatch? @relation(fields: [importBatchId], references: [id])

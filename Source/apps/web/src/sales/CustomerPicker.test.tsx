@@ -16,6 +16,7 @@ const RAKOTO: Customer = {
   phone: '0341234567',
   secondPhone: null,
   category: 'Divers',
+  type: 'INDIVIDUAL',
   isActive: true,
   mergedIntoId: null,
 };

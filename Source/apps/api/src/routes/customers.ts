@@ -3,6 +3,7 @@ import {
   customerCreateSchema,
   customerMergeSchema,
   customerSearchQuerySchema,
+  customerTypeBodySchema,
   customerUpdateSchema,
   type Customer,
   type CustomerCategories,
@@ -23,6 +24,7 @@ import {
   mergeCustomer,
   searchCustomers,
   setCustomerCategory,
+  setCustomerType,
   updateCustomer,
 } from '../services/customers.js';
 
@@ -40,6 +42,7 @@ export const customerRoutes: FastifyPluginAsync = async (app) => {
   const readers = { preHandler: requireRole(...READERS) };
   const editors = { preHandler: requireRole(...EDITORS) };
   const manager = { preHandler: requireRole('manager') };
+  const typeSetters = { preHandler: requireRole('manager', 'owner') };
 
   app.get('/customers', readers, async (request): Promise<CustomerSearchResult> => {
     const { q, category } = customerSearchQuerySchema.parse(request.query);
@@ -79,6 +82,13 @@ export const customerRoutes: FastifyPluginAsync = async (app) => {
     const { id } = paramsSchema.parse(request.params);
     const { category } = customerCategoryBodySchema.parse(request.body);
     return setCustomerCategory(app.db, actorOf(authOf(request)), id, category);
+  });
+
+  /** The manager or the owner sets the type, which sets the prices (H66, annexe B). */
+  app.post('/customers/:id/type', typeSetters, async (request): Promise<Customer> => {
+    const { id } = paramsSchema.parse(request.params);
+    const { type } = customerTypeBodySchema.parse(request.body);
+    return setCustomerType(app.db, actorOf(authOf(request)), id, type);
   });
 
   app.post('/customers/:id/deactivate', manager, async (request, reply) => {

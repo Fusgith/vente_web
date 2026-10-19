@@ -2,6 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import type {
+  CustomerType,
   ImportBatch,
   ImportCommit,
   ImportDetail,
@@ -239,13 +240,34 @@ async function applyProduct(tx: Tx, actor: Actor, batch: Batch, plan: ProductPla
     // A different price opens a new dated one from the validation (RG-ART-07, RG-IMP-07).
     if (unit.price) {
       await tx.productPrice.updateMany({
-        where: { productUnitId: unitId, effectiveTo: null },
+        where: { productUnitId: unitId, customerType: null, effectiveTo: null },
         data: { effectiveTo: batch.now },
       });
       await tx.productPrice.create({
         data: {
           productUnitId: unitId,
           price: unit.price,
+          effectiveFrom: batch.now,
+          source: 'IMPORT',
+          importBatchId: batch.id,
+          setById: actor.userId,
+        },
+      });
+    }
+    // Each customer type's own price, dated the same way (H66).
+    for (const [customerType, price] of Object.entries(unit.typePrices) as [
+      CustomerType,
+      string,
+    ][]) {
+      await tx.productPrice.updateMany({
+        where: { productUnitId: unitId, customerType, effectiveTo: null },
+        data: { effectiveTo: batch.now },
+      });
+      await tx.productPrice.create({
+        data: {
+          productUnitId: unitId,
+          price,
+          customerType,
           effectiveFrom: batch.now,
           source: 'IMPORT',
           importBatchId: batch.id,

@@ -49,23 +49,25 @@ enum DiscountCodeStatus {
 /// Name and phone are mandatory, a second phone optional; a number belongs to one active
 /// customer only, first or second (RG-DEV-04, H26: `customer_phones`).
 model Customer {
-  id              String   @id @default(uuid(7)) @db.Uuid
-  name            String   @db.VarChar(120)
+  id              String       @id @default(uuid(7)) @db.Uuid
+  name            String       @db.VarChar(120)
   /// Printed on quotes and invoices.
-  phone           String   @db.VarChar(32)
+  phone           String       @db.VarChar(32)
   /// Optional; never equal to `phone` (CHECK in the migration).
-  secondPhone     String?  @map("second_phone") @db.VarChar(32)
+  secondPhone     String?      @map("second_phone") @db.VarChar(32)
   /// Classes the customer (H43, H49 a): one of the `customer_categories` setting.
-  category        String   @default("Divers") @db.VarChar(40)
+  category        String       @default("Divers") @db.VarChar(40)
+  /// Sets the price of each line (H66); never the category. Changed by the manager or the owner.
+  type            CustomerType @default(INDIVIDUAL)
   /// Days an order stays reserved after its own (H45, T-022b): a particular condition that
   /// prevails; null → the `reservation_days` setting. 0 to 365 (CHECK in the migration).
-  reservationDays Int?     @map("reservation_days")
+  reservationDays Int?         @map("reservation_days")
   notes           String?
-  isActive        Boolean  @default(true) @map("is_active")
+  isActive        Boolean      @default(true) @map("is_active")
   /// Set when this record was merged into another one (deduplication).
-  mergedIntoId    String?  @map("merged_into_id") @db.Uuid
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  mergedIntoId    String?      @map("merged_into_id") @db.Uuid
+  createdAt       DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   mergedInto       Customer?         @relation("CustomerMerge", fields: [mergedIntoId], references: [id])
   mergedFrom       Customer[]        @relation("CustomerMerge")
@@ -300,4 +302,14 @@ model DiscountCodeItem {
 
   @@index([productId])
   @@map("discount_code_items")
+}
+
+/// The customer's type (H66): a sale unit may carry a price of its own for each.
+enum CustomerType {
+  WHOLESALER
+  SEMI_WHOLESALER
+  RETAILER
+  INDIVIDUAL
+
+  @@map("customer_type")
 }

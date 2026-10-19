@@ -5,6 +5,8 @@
  */
 import { z } from 'zod';
 
+import { customerTypeSchema, type CustomerType } from './customers.js';
+
 export const IMPORT_MODES = ['ENTRY', 'STOCKTAKE'] as const;
 export type ImportMode = (typeof IMPORT_MODES)[number];
 export const IMPORT_STATUSES = ['PREVIEW', 'COMMITTED', 'CANCELLED'] as const;
@@ -20,6 +22,13 @@ export const IMPORT_REQUIRED_COLUMNS = [
   'unite',
   'quantite',
 ] as const;
+/** Optional columns: the price of a customer type, which wins over `prix_vente` (H66). */
+export const IMPORT_TYPE_PRICE_COLUMNS = {
+  prix_grossiste: 'WHOLESALER',
+  prix_semi_grossiste: 'SEMI_WHOLESALER',
+  prix_detaillant: 'RETAILER',
+  prix_particulier: 'INDIVIDUAL',
+} as const satisfies Record<string, CustomerType>;
 
 export const importUploadSchema = z.object({
   fileName: z
@@ -88,6 +97,8 @@ export const importLineSchema = z.object({
   priceBefore: decimalString.nullable(),
   /** The new price, only when it differs from the one in force (RG-ART-07). */
   price: decimalString.nullable(),
+  /** The new prices of customer types, only those that differ from the ones in force (H66). */
+  typePrices: z.partialRecord(customerTypeSchema, decimalString).optional(),
   errors: z.array(z.enum(IMPORT_ERRORS)),
   warnings: z.array(z.enum(IMPORT_WARNINGS)),
 });

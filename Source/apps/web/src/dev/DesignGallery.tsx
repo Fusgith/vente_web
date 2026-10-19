@@ -89,6 +89,7 @@ function savedDraft(): DraftState {
       id: '0192a4f0-0000-7000-8000-000000000301',
       name: 'Rasoa Hanta',
       phone: '0341122233',
+      type: 'INDIVIDUAL',
     },
   };
   const saved = {

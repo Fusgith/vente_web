@@ -1,5 +1,6 @@
 import {
   ticketLabel,
+  type CustomerType,
   type DiscountEntry,
   type Order,
   type OrderPriceChanged,
@@ -73,7 +74,7 @@ export function asAmount(amount: { toFixed(decimals: number): string }): Discoun
  * since is checked like on saving (RG-REM-01/02), a discount granted by the owner's code attached
  * against its grant (RG-REM-04).
  */
-async function priceAgain(db: Db, order: StoredOrder) {
+async function priceAgain(db: Db, order: StoredOrder, customerType: CustomerType) {
   const priced = await priceLines(
     db,
     order.lines.map((line) => ({
@@ -81,6 +82,7 @@ async function priceAgain(db: Db, order: StoredOrder) {
       qty: line.qty.toFixed(),
       discount: asAmount(line.discountAmount),
     })),
+    customerType,
   );
   const changed = order.lines.flatMap((line, index) =>
     priced[index]?.unitPrice === line.unitPrice.toFixed(2) ? [] : [line.position],
@@ -264,8 +266,8 @@ async function validate(
 ): Promise<Order> {
   const { id, status: from, version } = current;
   const { salesUserId, letter } = await salesOwner(db, actor, current);
-  await assertActiveCustomer(db, current.customerId);
-  const priced = await priceAgain(db, current);
+  const customerType = await assertActiveCustomer(db, current.customerId);
+  const priced = await priceAgain(db, current, customerType);
   const now = new Date();
   // The day end of its last day: the customer's own duration, else the general one (H45).
   const expiresAt = nextShopTime(

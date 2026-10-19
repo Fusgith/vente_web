@@ -1,8 +1,10 @@
 import {
   baseQuantity,
   IMPORT_PRICE_JUMP_PCT,
+  IMPORT_TYPE_PRICE_COLUMNS,
   MAX_ACTIVE_UNITS,
   priceChangePct,
+  type CustomerType,
   type ImportLine,
   type ImportMode,
   type ImportTotals,
@@ -42,6 +44,8 @@ export interface UnitPlan {
   baseQty: string;
   /** The new price when it differs from the one in force. */
   price: string | null;
+  /** The new prices of customer types that differ from the ones in force (H66). */
+  typePrices: Partial<Record<CustomerType, string>>;
 }
 
 export interface ProductPlan {
@@ -91,7 +95,7 @@ async function loadExisting(tx: Tx, skus: string[], lock: boolean) {
           factor: true,
           isBase: true,
           isActive: true,
-          prices: { where: { effectiveTo: null }, select: { price: true } },
+          prices: { where: { effectiveTo: null }, select: { price: true, customerType: true } },
           _count: { select: { orderLines: true } },
         },
       },
@@ -207,7 +211,23 @@ function planProduct(
     }
 
     line.unitAction = label ? (match ? 'update' : 'create') : null;
-    const current = match?.prices[0]?.price.toFixed(2) ?? null;
+    const currentOf = (type: CustomerType | null) =>
+      match?.prices.find((entry) => entry.customerType === type)?.price.toFixed(2) ?? null;
+    const current = currentOf(null);
+    const typePrices: Partial<Record<CustomerType, string>> = {};
+    for (const [column, type] of Object.entries(IMPORT_TYPE_PRICE_COLUMNS)) {
+      const text = typed(cells[column]);
+      if (!text) continue;
+      if (!PRICE.test(text) || Number(text) <= 0) {
+        fail('PRICE_INVALID');
+        continue;
+      }
+      const before = currentOf(type);
+      if (before === null || !new Decimal(before).equals(text)) {
+        typePrices[type] = new Decimal(text).toFixed(2);
+      }
+    }
+    if (Object.keys(typePrices).length > 0) line.typePrices = typePrices;
     line.priceBefore = current;
     if (priceOk && priceText && (current === null || !new Decimal(current).equals(priceText))) {
       line.price = new Decimal(priceText).toFixed(2);
@@ -231,6 +251,7 @@ function planProduct(
       qty: line.qty ?? '0',
       baseQty: line.baseQty ?? '0',
       price: line.price,
+      typePrices,
     });
   }
 

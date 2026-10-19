@@ -1,6 +1,8 @@
 import {
+  CUSTOMER_TYPES,
   formatPhone,
   type Customer,
+  type CustomerType,
   type CustomerSearchQuery,
   type CustomerSearchResult,
 } from '@vente-web/shared';
@@ -42,8 +44,8 @@ export function CustomersPanel() {
       setFailure(null);
     }, fail);
   };
-  const classify = (customer: Customer, next: string) => {
-    customersApi.setCategory(customer.id, next).then((saved) => {
+  const update = (saving: Promise<Customer>) => {
+    saving.then((saved) => {
       setResult(
         (list) =>
           list && { ...list, items: list.items.map((c) => (c.id === saved.id ? saved : c)) },
@@ -111,6 +113,7 @@ export function CustomersPanel() {
                 <th className={HEAD}>{text.name}</th>
                 <th className={HEAD}>{text.phone}</th>
                 <th className={HEAD}>{text.category}</th>
+                <th className={HEAD}>{text.type}</th>
               </tr>
             </thead>
             <tbody>
@@ -122,12 +125,32 @@ export function CustomersPanel() {
                     <select
                       aria-label={text.categoryOf(customer.name)}
                       value={customer.category}
-                      onChange={(event) => classify(customer, event.target.value)}
+                      onChange={(event) =>
+                        update(customersApi.setCategory(customer.id, event.target.value))
+                      }
                       className={FIELD}
                     >
                       {optionsFor(customer.category).map((name) => (
                         <option key={name} value={name}>
                           {name}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className={ROW}>
+                    <select
+                      aria-label={text.typeOf(customer.name)}
+                      value={customer.type}
+                      onChange={(event) =>
+                        update(
+                          customersApi.setType(customer.id, event.target.value as CustomerType),
+                        )
+                      }
+                      className={FIELD}
+                    >
+                      {CUSTOMER_TYPES.map((type) => (
+                        <option key={type} value={type}>
+                          {text.types[type]}
                         </option>
                       ))}
                     </select>

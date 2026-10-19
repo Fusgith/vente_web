@@ -63,6 +63,9 @@ export const productsLabels = {
   applyPrice: 'Appliquer le nouveau prix',
   priceSet: (unit: string, price: string) => `Nouveau prix de ${unit} : ${price}.`,
   history: (unit: string) => `Historique des prix : ${unit}`,
+  /** Whose price it is (H66): every customer, or one customer type. */
+  priceFor: 'Pour',
+  allCustomers: 'Tous les clients',
   historyNone: 'Aucun prix enregistré.',
   from: 'Depuis le',
   to: 'Jusqu’au',

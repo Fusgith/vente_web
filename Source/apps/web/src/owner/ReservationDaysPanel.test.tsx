@@ -20,6 +20,7 @@ const rasoa: Customer = {
   phone: '0341122233',
   secondPhone: null,
   category: 'Particulier',
+  type: 'INDIVIDUAL',
   isActive: true,
   mergedIntoId: null,
 };

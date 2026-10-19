@@ -7,6 +7,7 @@ import {
   type CustomerCreate,
   type CustomerPhoneTaken,
   type CustomerSearchResult,
+  type CustomerType,
   type CustomerUpdate,
 } from '@vente-web/shared';
 
@@ -23,6 +24,7 @@ const CUSTOMER_FIELDS = {
   phone: true,
   secondPhone: true,
   category: true,
+  type: true,
   isActive: true,
   mergedIntoId: true,
 } as const;
@@ -231,6 +233,37 @@ export async function setCustomerCategory(
       after: { category },
     });
     return { ...current, category };
+  });
+}
+
+/**
+ * The manager or the owner sets an active customer's type (H66), audited: its next quotes take
+ * that type's prices; a quote already saved is priced again when validated (H28).
+ */
+export async function setCustomerType(
+  db: Db,
+  actor: Actor,
+  id: string,
+  type: CustomerType,
+): Promise<Customer> {
+  const current = await findCustomer(db, id);
+  if (!current.isActive) throw new AppError(409, 'CUSTOMER_INACTIVE');
+  if (current.type === type) return current;
+  return db.$transaction(async (tx) => {
+    const { count } = await tx.customer.updateMany({
+      where: { id, isActive: true },
+      data: { type },
+    });
+    if (count === 0) throw new AppError(409, 'CUSTOMER_INACTIVE');
+    await recordAudit(tx, {
+      ...by(actor),
+      action: 'customer.updated',
+      entityType: 'customer',
+      entityId: id,
+      before: { type: current.type },
+      after: { type },
+    });
+    return { ...current, type };
   });
 }
 

@@ -37,7 +37,7 @@ export async function listOpenOrders(
         number: true,
         version: true,
         status: true,
-        customer: { select: { id: true, name: true, phone: true } },
+        customer: { select: { id: true, name: true, phone: true, type: true } },
         salesUser: { select: { id: true, fullName: true } },
         total: true,
         ticketLetter: true,

@@ -93,7 +93,7 @@ export function toRequestSummary(request: StoredRequest): DiscountRequestSummary
 
 /** What a quote or an order shows: its customer, its salesperson and its lines in order. */
 export const ORDER_INCLUDE = {
-  customer: { select: { id: true, name: true, phone: true } },
+  customer: { select: { id: true, name: true, phone: true, type: true } },
   salesUser: { select: { id: true, fullName: true } },
   lines: {
     orderBy: { position: 'asc' },

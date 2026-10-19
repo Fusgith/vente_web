@@ -5,6 +5,8 @@
  */
 import { z } from 'zod';
 
+import { customerTypeSchema } from './customers.js';
+
 /** At most three active sale units per product, base unit included (H65). */
 export const MAX_ACTIVE_UNITS = 3;
 export const PRODUCT_LIST_PAGE = 50;
@@ -73,7 +75,8 @@ export const unitUpdateSchema = z.object({
 });
 export type UnitUpdate = z.input<typeof unitUpdateSchema>;
 
-export const priceSetSchema = z.object({ price });
+/** Without `customerType`, the base price; with it, that type's own price (H66). */
+export const priceSetSchema = z.object({ price, customerType: customerTypeSchema.optional() });
 export type PriceSet = z.input<typeof priceSetSchema>;
 
 export const productListQuerySchema = z.object({
@@ -88,6 +91,8 @@ export const priceEntrySchema = z.object({
   effectiveFrom: z.string(),
   effectiveTo: z.string().nullable(),
   source: z.enum(['IMPORT', 'MANUAL']),
+  /** Null = the base price (H66). */
+  customerType: customerTypeSchema.nullable(),
   setBy: z.string(),
 });
 export type PriceEntry = z.infer<typeof priceEntrySchema>;
@@ -101,6 +106,8 @@ export const productUnitDetailSchema = z.object({
   isActive: z.boolean(),
   /** Current price, null = none (not sellable in this unit). */
   price: decimalString.nullable(),
+  /** The current price of each customer type that has one (H66). */
+  typePrices: z.partialRecord(customerTypeSchema, decimalString),
   /** Some order uses it: its factor is frozen (RG-ART-06). */
   used: z.boolean(),
   /** Newest first (RG-ART-07). */

@@ -1,4 +1,4 @@
-import { resolveDiscountCap, type ProductHit } from '@vente-web/shared';
+import { resolveDiscountCap, type CustomerType, type ProductHit } from '@vente-web/shared';
 
 import type { Db } from '../db.js';
 import type { Prisma } from '../generated/prisma/client.js';
@@ -23,6 +23,35 @@ export function inForceAt(now: Date) {
     effectiveFrom: { lte: now },
     OR: [{ effectiveTo: null }, { effectiveTo: { gt: now } }],
   } satisfies Prisma.ProductPriceWhereInput;
+}
+
+interface TypedPrice {
+  customerType: CustomerType | null;
+}
+
+/**
+ * The price a customer of this type pays (H66): the type's own, else the base one; the base
+ * one without a customer. `prices` are those in force, the newest first.
+ */
+export function priceFor<P extends TypedPrice>(
+  prices: readonly P[],
+  type: CustomerType | null,
+): P | undefined {
+  const own = type ? prices.find((entry) => entry.customerType === type) : undefined;
+  return own ?? prices.find((entry) => entry.customerType === null);
+}
+
+/** The current price of each customer type that has one (H66), newest first in `prices`. */
+export function typePricesOf(
+  prices: readonly (TypedPrice & { price: Prisma.Decimal })[],
+): Partial<Record<CustomerType, string>> {
+  const result: Partial<Record<CustomerType, string>> = {};
+  for (const entry of prices) {
+    if (entry.customerType && !(entry.customerType in result)) {
+      result[entry.customerType] = entry.price.toFixed(2);
+    }
+  }
+  return result;
 }
 
 interface CapHolder {
@@ -54,8 +83,7 @@ function hitInclude(now: Date) {
         prices: {
           where: inForceAt(now),
           orderBy: { effectiveFrom: 'desc' },
-          take: 1,
-          select: { price: true },
+          select: { price: true, customerType: true },
         },
       },
     },
@@ -80,7 +108,7 @@ function toHit(product: ProductWithHit, fallbackCap: string, options: HitOptions
     // Available = on hand − reserved, in base unit (RG-STK-01).
     available: onHand && reserved ? decimal(onHand.minus(reserved)) : '0',
     units: product.units.map((unit) => {
-      const price = unit.prices[0]?.price;
+      const price = priceFor(unit.prices, null)?.price;
       return {
         id: unit.id,
         label: unit.label,
@@ -88,6 +116,7 @@ function toHit(product: ProductWithHit, fallbackCap: string, options: HitOptions
         isBase: unit.isBase,
         barcode: unit.barcode,
         price: price ? decimal(price) : null,
+        typePrices: typePricesOf(unit.prices),
         maxDiscountPct: options.showCaps ? unitCap(unit, product, fallbackCap) : null,
       };
     }),

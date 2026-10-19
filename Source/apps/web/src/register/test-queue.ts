@@ -42,7 +42,7 @@ export function orderOf(entry: QueueItem): Order {
     id: entry.orderId,
     number: entry.number,
     version: 2,
-    customer: { id: '0192a4f0-0000-7000-8000-000000000301', ...entry.customer },
+    customer: { id: '0192a4f0-0000-7000-8000-000000000301', ...entry.customer, type: 'INDIVIDUAL' },
     salesUser: entry.salesUser,
     lines: [],
     grossTotal: zero,

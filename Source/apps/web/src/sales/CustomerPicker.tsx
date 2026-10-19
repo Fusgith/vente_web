@@ -102,7 +102,7 @@ export function CustomerPicker({ value, onChange, locked = null }: CustomerPicke
   const { say } = useStatusLine();
   const pick = (customer: DraftCustomer) => {
     setOpen(false);
-    onChange({ id: customer.id, name: customer.name, phone: customer.phone });
+    onChange({ id: customer.id, name: customer.name, phone: customer.phone, type: customer.type });
     say(text.chosen(customer.name), 'check');
   };
 

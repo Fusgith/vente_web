@@ -10,6 +10,7 @@ import {
   type QuoteCode,
   type QuoteSave,
   type StockShortage,
+  unitPriceFor,
 } from '@vente-web/shared';
 
 import { applyCode, applyCodeOnTyped, withGrants } from './draft-code.js';
@@ -34,7 +35,7 @@ export interface DraftLine {
   granted?: DiscountEntry | null;
 }
 
-export type DraftCustomer = Pick<Customer, 'id' | 'name' | 'phone'>;
+export type DraftCustomer = Pick<Customer, 'id' | 'name' | 'phone' | 'type'>;
 
 /** The quote as last saved: its number, the version to send back, and what was sent. */
 export interface SavedQuote {
@@ -107,9 +108,24 @@ export const emptyDraft: DraftState = {
 
 const keyOf = (productId: string, unitId: string) => `${productId}:${unitId}`;
 
-function sellableUnit(product: DraftLine['product'], unitId: string): DraftLine['unit'] | null {
+/** A unit with a base price, at the price of the customer's type when it has one (H66). */
+function sellableUnit(
+  product: DraftLine['product'],
+  unitId: string,
+  customer: DraftCustomer | null,
+): DraftLine['unit'] | null {
   const unit = product.units.find((candidate) => candidate.id === unitId);
-  return unit?.price ? { ...unit, price: unit.price } : null;
+  const price = unit?.price && unitPriceFor(unit, customer?.type ?? null);
+  return unit && price ? { ...unit, price } : null;
+}
+
+/** Another customer: each line takes the price of its type (H66); the API checks it again. */
+function setCustomer(state: DraftState, customer: DraftCustomer | null): DraftState {
+  const lines = state.lines.map((line) => {
+    const unit = sellableUnit(line.product, line.unit.id, customer);
+    return unit && unit.price !== line.unit.price ? { ...line, unit } : line;
+  });
+  return { ...state, customer, lines };
 }
 
 /** A role that may not see caps gets none on screen (annexe B); the API resolves its own. */
@@ -117,7 +133,7 @@ const capOf = (unit: DraftLine['unit']) => unit.maxDiscountPct ?? '0';
 
 /** Adds `qty` (1 when null) of a product in a unit with a price (RG-ART-03). */
 function add(state: DraftState, hit: ProductHit, unitId: string, qty: string | null): DraftState {
-  const unit = sellableUnit(hit, unitId);
+  const unit = sellableUnit(hit, unitId, state.customer);
   if (!unit) return state;
   const key = keyOf(hit.id, unitId);
   const added = qty ?? '1';
@@ -142,7 +158,7 @@ function add(state: DraftState, hit: ProductHit, unitId: string, qty: string | n
 /** Another sale unit for a line; merges into the line already holding that unit, if any. */
 function changeUnit(state: DraftState, key: string, unitId: string): DraftState {
   const line = state.lines.find((candidate) => candidate.key === key);
-  const unit = line && sellableUnit(line.product, unitId);
+  const unit = line && sellableUnit(line.product, unitId, state.customer);
   if (!line || !unit) return state;
   const target = keyOf(line.product.id, unitId);
   if (target === key) return state;
@@ -313,7 +329,7 @@ function reduce(state: DraftState, action: DraftAction): DraftState {
     case 'setOrderDiscount':
       return { ...state, orderDiscount: action.discount };
     case 'setCustomer':
-      return { ...state, customer: action.customer };
+      return setCustomer(state, action.customer);
     case 'saved':
       return applySaved(state, action.quote, action.body);
     case 'codeAttached': {

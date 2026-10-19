@@ -1,4 +1,5 @@
 import {
+  CUSTOMER_TYPES,
   formatAmount,
   formatDate,
   formatMga,
@@ -6,6 +7,7 @@ import {
   formatTime,
   MAX_ACTIVE_UNITS,
   priceChangePct,
+  type CustomerType,
   type ProductDetail,
   type ProductUnitDetail,
 } from '@vente-web/shared';
@@ -22,6 +24,8 @@ import { CategorySelect, Field } from './NewProductSheet.js';
 import { orNull } from './product-input.js';
 
 const text = labels.products;
+const typeName = (type: CustomerType | null) =>
+  type ? labels.customers.types[type] : text.allCustomers;
 const ROW = `${CELL} border-b border-rule py-2`;
 const when = (value: string) => `${formatDate(value)} ${formatTime(value)}`;
 
@@ -36,6 +40,7 @@ function PriceHistory({ unit }: { unit: ProductUnitDetail }) {
           <tr>
             <th className={`${HEAD} w-36 text-right`}>{text.price}</th>
             <th className={`${HEAD} w-24 text-right`}>{text.change}</th>
+            <th className={HEAD}>{text.priceFor}</th>
             <th className={HEAD}>{text.from}</th>
             <th className={HEAD}>{text.to}</th>
             <th className={HEAD}>{text.setBy}</th>
@@ -43,13 +48,17 @@ function PriceHistory({ unit }: { unit: ProductUnitDetail }) {
         </thead>
         <tbody>
           {unit.prices.map((entry, index) => {
-            const pct = priceChangePct(unit.prices[index + 1]?.price ?? null, entry.price);
+            const before = unit.prices
+              .slice(index + 1)
+              .find((older) => older.customerType === entry.customerType);
+            const pct = priceChangePct(before?.price ?? null, entry.price);
             return (
               <tr key={entry.id}>
                 <td className={`${ROW} text-right figures`}>{formatAmount(entry.price)}</td>
                 <td className={`${ROW} text-right figures`}>
                   {pct === null ? '' : `${Number(pct) > 0 ? '+' : ''}${pct.replace('.', ',')} %`}
                 </td>
+                <td className={`${ROW} truncate`}>{typeName(entry.customerType)}</td>
                 <td className={`${ROW} figures`}>{when(entry.effectiveFrom)}</td>
                 <td className={`${ROW} figures`}>
                   {entry.effectiveTo ? when(entry.effectiveTo) : text.current}
@@ -88,6 +97,7 @@ export function ProductSheet({
   const [threshold, setThreshold] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
   const [newPrice, setNewPrice] = useState('');
+  const [priceType, setPriceType] = useState<CustomerType | ''>('');
   const [unitLabel, setUnitLabel] = useState('');
   const [factor, setFactor] = useState('');
   const [unitPrice, setUnitPrice] = useState('');
@@ -143,7 +153,8 @@ export function ProductSheet({
     event.preventDefault();
     if (!unit) return;
     const price = orNull(newPrice) ?? '';
-    void run(productsApi.setPrice(product.id, unit.id, { price }), () => {
+    const body = { price, ...(priceType ? { customerType: priceType } : {}) };
+    void run(productsApi.setPrice(product.id, unit.id, body), () => {
       setNewPrice('');
       return text.priceSet(unit.label, formatMga(price));
     });
@@ -286,6 +297,21 @@ export function ProductSheet({
                 required
               />
             </div>
+            <label className="flex flex-col gap-1">
+              <span className="text-14 font-semibold">{text.priceFor}</span>
+              <select
+                value={priceType}
+                onChange={(event) => setPriceType(event.target.value as CustomerType | '')}
+                className="h-12 rounded-control border border-rule-strong bg-white px-3 text-18 text-ink"
+              >
+                <option value="">{text.allCustomers}</option>
+                {CUSTOMER_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {typeName(type)}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button type="submit" className={buttonClass('primary', 'md')}>
               {text.applyPrice}
             </button>

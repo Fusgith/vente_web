@@ -46,6 +46,7 @@ const detail = (
       barcode: null,
       isActive: true,
       price,
+      typePrices: {},
       used: true,
       prices: history,
     },
@@ -57,6 +58,7 @@ const first = {
   effectiveFrom: '2026-10-01T08:00:00.000Z',
   effectiveTo: null,
   source: 'IMPORT' as const,
+  customerType: null,
   setBy: 'Admin',
 };
 

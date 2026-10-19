@@ -5,6 +5,7 @@
  */
 import { z } from 'zod';
 
+import { customerTypeSchema } from './customers.js';
 import { isQuantity } from './decimal.js';
 import { discountRequestSummarySchema } from './discount-requests.js';
 import { discountEntrySchema } from './discount.js';
@@ -81,7 +82,13 @@ export const quoteSchema = z.object({
   /** `D-2026-000123` (RG-DEV-02). */
   number: z.string(),
   version: z.int().positive(),
-  customer: z.object({ id: z.uuid(), name: z.string(), phone: z.string() }),
+  /** `type` sets the price of each line (H66). */
+  customer: z.object({
+    id: z.uuid(),
+    name: z.string(),
+    phone: z.string(),
+    type: customerTypeSchema,
+  }),
   salesUser: z.object({ id: z.uuid(), fullName: z.string() }),
   lines: z.array(quoteLineSchema),
   grossTotal: decimalString,
