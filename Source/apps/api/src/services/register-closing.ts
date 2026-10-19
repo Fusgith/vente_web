@@ -183,6 +183,21 @@ export async function sessionsOfDay(db: Db, day: Date): Promise<SessionSummary[]
   return Promise.all(sessions.map((session) => summarize(db, session, now)));
 }
 
+/** The sessions opened over a period, for the closings export (T-071); a cashier's own only. */
+export async function sessionsOpened(
+  db: Db,
+  openedAt: { gte: Date; lt: Date },
+  cashierId?: string,
+): Promise<SessionSummary[]> {
+  const sessions = await db.registerSession.findMany({
+    where: { openedAt, ...(cashierId ? { cashierId } : {}) },
+    orderBy: [{ openedAt: 'asc' }, { id: 'asc' }],
+    select: SESSION_SELECT,
+  });
+  const now = new Date();
+  return Promise.all(sessions.map((session) => summarize(db, session, now)));
+}
+
 /** One session, for its report: its cashier, the manager or the owner (annexe B). */
 export async function sessionFor(db: Db, actor: Actor, id: string) {
   const session = await db.registerSession.findUnique({ where: { id }, select: SESSION_SELECT });

@@ -79,6 +79,12 @@ export function shopDayStart(at: Date, days = 0): Date {
   return new Date(Date.UTC(clock.year, clock.month - 1, clock.day + days) - offset);
 }
 
+/** The shop's wall clock as a UTC instant: what a spreadsheet, which has no zone, must show. */
+export function shopWallClock(at: Date): Date {
+  const { year, month, day, hour, minute, second } = shopClock(at);
+  return new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+}
+
 /** The shop's calendar day of an instant, `days` later, as a `date` input holds it: « 2026-10-09 ». */
 export function shopIsoDate(at: Date, days = 0): string {
   return shopDay(at, days).toISOString().slice(0, 10);

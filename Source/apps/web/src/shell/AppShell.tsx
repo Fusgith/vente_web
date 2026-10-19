@@ -13,6 +13,7 @@ import { RealtimeProvider } from '../realtime/RealtimeProvider.js';
 import { AuditLogPanel } from '../manager/AuditLogPanel.js';
 import { CustomersPanel } from '../manager/CustomersPanel.js';
 import { DeliveryIssuesPanel } from '../manager/DeliveryIssuesPanel.js';
+import { ExportsPanel } from '../manager/ExportsPanel.js';
 import { RegisterSessionsPanel } from '../manager/RegisterSessionsPanel.js';
 import { ImportsPanel } from '../manager/ImportsPanel.js';
 import { ProductsPanel } from '../manager/ProductsPanel.js';
@@ -134,7 +135,15 @@ function Shell({ me, children }: Omit<AppShellProps, 'realtime'>) {
 
 function Workspace({ role, userId }: { role: Role; userId: string }) {
   if (role === 'sales') return <SalesWorkspace />;
-  if (role === 'cashier') return <RegisterWorkspace userId={userId} />;
+  if (role === 'cashier') {
+    return (
+      <>
+        <RegisterWorkspace userId={userId} />
+        {/* RG-EXP-03: the cashier exports their own closings. */}
+        <ExportsPanel role="cashier" />
+      </>
+    );
+  }
   if (role === 'warehouse') return <DeliveryWorkspace userId={userId} />;
   if (role === 'manager') {
     return (
@@ -160,6 +169,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         <DiscountRulesPanel editable={false} />
         {/* RG-DEV-04 (H49 a): the manager classes the customers. */}
         <CustomersPanel />
+        {/* RG-EXP-01 à 03: the Excel exports the role may take. */}
+        <ExportsPanel role={role} />
         {/* RG-AUD-01: who did what, read only. */}
         <AuditLogPanel />
       </div>
@@ -179,6 +190,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         <ReservationDaysPanel />
         {/* H60: whether the salesperson discounts at all. */}
         <SalesDiscountPanel />
+        {/* RG-EXP-01 à 03: the Excel exports the role may take. */}
+        <ExportsPanel role={role} />
         {/* RG-AUD-01: who did what, read only. */}
         <AuditLogPanel />
       </div>
@@ -208,6 +221,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
       <ReservationDaysPanel />
       {/* RG-DEV-06 §6 (H46, H49 b): the owner marks the products to propose. */}
       <PromotionsPanel />
+      {/* RG-EXP-01 à 03: every Excel export. */}
+      <ExportsPanel role="owner" />
       {/* RG-AUD-01: who did what, read only. */}
       <AuditLogPanel />
     </div>

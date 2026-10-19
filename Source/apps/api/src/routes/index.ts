@@ -26,6 +26,7 @@ import { registerClosingRoutes } from './register-closing.js';
 import { stockRoutes } from './stock.js';
 import { supervisionRoutes } from './supervision.js';
 import { dashboardRoutes } from './dashboard.js';
+import { exportRoutes } from './exports.js';
 import { userRoutes } from './users.js';
 
 /** Everything under `/api/v1` (CDC technique section 6); `/healthz` stays at the root. */
@@ -46,6 +47,7 @@ export const apiRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) 
   await app.register(creditNoteRoutes, { env });
   await app.register(supervisionRoutes);
   await app.register(dashboardRoutes);
+  await app.register(exportRoutes);
   await app.register(stockRoutes);
   await app.register(discountCapRoutes);
   await app.register(discountCodeRoutes);

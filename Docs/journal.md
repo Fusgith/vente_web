@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 19/10/2026 — T-071 : exports Excel — agent : Claude Code (Opus 5.5)
+
+**Fait** : `GET /exports/:kind?from&to` (exceljs, déjà en place) : 12 classeurs aux en-têtes français et nombres natifs, les états à l’instant (stock, prix, clients) datés du jour ; droits par rôle (boss et responsable tout, caissier ses clôtures, admin le journal) ; panneau replié « Exports Excel » chez chacun. Tests API 3, web 295 verts.
+
+**Reste** : T-056, T-041, T-015 ; T-080 (téléchargements à autoriser) ; ventes à crédit (H67) et courbe de prix hors T-071.
+
 ## 19/10/2026 — T-070 : tableau de bord du boss — agent : Claude Code (Opus 5.5)
 
 **Fait** : `GET /dashboard?from&to` (boss, responsable) ; écran avec Aujourd'hui, Hier, Cette semaine, Ce mois, Période libre ; encaissé, factures, panier moyen, ventes, remises (dans plafond, par règle, par code, % du brut), avoirs, comparés à la période précédente et à une semaine avant ; détail par moyen, commercial, heure, jour, catégorie ; top 20 avec disponible ; modifications de prix ; files en direct et articles sous seuil chez le boss. Tests API 3, web 292 verts.

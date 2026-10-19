@@ -9,6 +9,7 @@ import { reservationLabels } from './labels-reservation.js';
 import { salesDiscountLabels } from './labels-sales-discount.js';
 import { customersLabels } from './labels-customers.js';
 import { dashboardLabels } from './labels-dashboard.js';
+import { exportsLabels } from './labels-exports.js';
 import { promotionsLabels } from './labels-promotions.js';
 import { closingLabels } from './labels-closing.js';
 import { deliveryLabels } from './labels-delivery.js';
@@ -322,6 +323,8 @@ export const labels = {
   supervision: supervisionLabels,
   /** The owner's dashboard (T-070, RG-DSH-01 à 04). */
   dashboard: dashboardLabels,
+  /** The Excel exports (T-071, RG-EXP-01 à 03). */
+  exports: exportsLabels,
   stock: stockLabels,
   /** Products, sale units and dated prices (T-092, T-019, T-019b). */
   products: productsLabels,
