@@ -143,6 +143,7 @@ export async function payOrder(
       order.total,
       checked.map((line) => ({ amount: line.amount, cash: line.method.code === CASH_METHOD })),
       cashReceived,
+      settings.cashRounding,
     );
     if (settled.issue) throw new AppError(422, ISSUE_CODE[settled.issue]);
 
@@ -164,6 +165,7 @@ export async function payOrder(
         cashReceived: settled.cashReceived,
         change: settled.change,
       },
+      cashRounding: settled.rounding,
       settings,
       at: now,
     });
@@ -173,7 +175,8 @@ export async function payOrder(
         invoiceId: invoice.id,
         registerSessionId: session.id,
         cashierId: actor.userId,
-        totalDue: order.total,
+        // What the lines settle: the cash rounding included (RG-FMT-04, H70).
+        totalDue: settled.due,
         cashReceived: settled.cashReceived,
         changeGiven: settled.change,
         idempotencyKey: key,
@@ -224,6 +227,7 @@ export async function payOrder(
         })),
         cashReceived: result.cashReceived,
         change: result.changeGiven,
+        cashRounding: settled.rounding,
         priority: false,
       },
     });

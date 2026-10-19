@@ -85,7 +85,12 @@ export const paymentSchema = z.object({
 export type Payment = z.infer<typeof paymentSchema>;
 
 /** Answers of the API, as the screens check them. */
-export const paymentMethodListSchema = z.object({ methods: z.array(paymentMethodSchema) });
+export const paymentMethodListSchema = z.object({
+  methods: z.array(paymentMethodSchema),
+  /** Step the cash part is rounded to, in MGA; null: none (RG-FMT-04, ⚠️ HYPOTHÈSE H70). */
+  cashRounding: z.int().positive().nullable().default(null),
+});
+export type PaymentMethodList = z.infer<typeof paymentMethodListSchema>;
 export const currentRegisterSessionSchema = z.object({ session: registerSessionSchema.nullable() });
 export const registerStationListSchema = z.object({ stations: z.array(registerStationSchema) });
 export const paidOrderSchema = z.object({
@@ -105,6 +110,10 @@ export interface SettleLine {
 }
 
 export interface Settlement {
+  /** Amount due, the cash rounding included: what the lines must add up to. */
+  due: string;
+  /** Rounding of the cash part, + or − (RG-FMT-04); 0.00 without cash or rounding. */
+  rounding: string;
   /** Sum of the lines. */
   paid: string;
   /** Amount due − paid: what is still to pay, negative when too much. */
@@ -119,14 +128,27 @@ export interface Settlement {
 }
 
 /**
+ * A cash part rounded to the shop's step (RG-FMT-04, ⚠️ HYPOTHÈSE H70): to the nearest multiple,
+ * half up; never down to zero, kept exact then. `step` null: no rounding.
+ */
+export function roundCash(amount: string, step: number | null): string {
+  const cents = toScaled(amount, 2);
+  const unit = BigInt(step ?? 0) * 100n;
+  const rounded = unit > 0n && cents > 0n ? ((cents + unit / 2n) / unit) * unit : 0n;
+  return fromScaled(rounded > 0n ? rounded : cents, 2);
+}
+
+/**
  * A mixed payment checked (RG-PAY-02/03): its lines add up exactly to the amount due; one cash
  * line at most, whose cash handed over covers it, the difference given back as change. Change
- * is only ever given on cash: card or mobile money pay their exact part.
+ * is only ever given on cash: card or mobile money pay their exact part. With `cashStep`, the
+ * cash part — the amount due less the other methods — is rounded (RG-FMT-04, H70).
  */
 export function settle(
   totalDue: string,
   lines: readonly SettleLine[],
   cashReceived: string | null,
+  cashStep: number | null = null,
 ): Settlement {
   const cents = (value: string) => toScaled(value, 2);
   const money = (value: bigint) => fromScaled(value, 2);
@@ -134,7 +156,11 @@ export function settle(
   const cashLines = lines.filter((line) => line.cash);
   const cashPart = cashLines.reduce((sum, line) => sum + cents(line.amount), 0n);
   const received = cashReceived === null ? cashPart : cents(cashReceived);
-  const remaining = cents(totalDue) - paid;
+  const exactCash = cents(totalDue) - (paid - cashPart);
+  const rounding =
+    cashLines.length === 1 ? cents(roundCash(money(exactCash), cashStep)) - exactCash : 0n;
+  const due = cents(totalDue) + rounding;
+  const remaining = due - paid;
 
   let issue: SettleIssue | null = null;
   if (cashLines.length > 1) issue = 'CASH_TWICE';
@@ -143,6 +169,8 @@ export function settle(
   else if (received < cashPart) issue = 'CASH_SHORT';
 
   return {
+    due: money(due),
+    rounding: money(rounding),
     paid: money(paid),
     remaining: money(remaining),
     cashPart: money(cashPart),

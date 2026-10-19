@@ -13,7 +13,7 @@ import { z } from 'zod';
 import type { Env } from '../env.js';
 import { AppError } from '../errors.js';
 import { actorOf, authOf, requireRole } from '../plugins/session.js';
-import { invoicePdf } from '../services/invoices.js';
+import { invoicePdf, readInvoiceSettings } from '../services/invoices.js';
 import { payOrder, paymentMethods } from '../services/payments.js';
 import { orderPaid } from '../services/realtime-rooms.js';
 import { openSession, openSessionOf, registerStations } from '../services/register-sessions.js';
@@ -28,7 +28,11 @@ export const paymentRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env
   app.get(
     '/payment-methods',
     { preHandler: requireRole(...TAKERS) },
-    async (): Promise<{ methods: PaymentMethod[] }> => ({ methods: await paymentMethods(app.db) }),
+    // With the step the cash part is rounded to (RG-FMT-04, H70), for the screen to show it.
+    async (): Promise<{ methods: PaymentMethod[]; cashRounding: number | null }> => ({
+      methods: await paymentMethods(app.db),
+      cashRounding: (await readInvoiceSettings(app.db)).cashRounding,
+    }),
   );
 
   app.get(

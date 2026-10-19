@@ -61,6 +61,9 @@ export const INVOICE_PDF = {
   vatBase: 'Total HT',
   vat: (rate: string) => `TVA ${rate} %`,
   vatTotal: 'Total TTC',
+  /** RG-FMT-04, H70: the total before the cash rounding, when VAT is off. */
+  invoiceTotal: 'Total de la facture',
+  cashRounding: 'Arrondi espèces',
   payments: 'Paiement',
   reference: (reference: string) => `réf. ${reference}`,
   cashReceived: 'Reçu en espèces',

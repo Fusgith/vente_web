@@ -42,6 +42,8 @@ export const registerLabels = {
   pay: 'Encaisser',
   payTitle: (ticket: string, name: string) => `Encaisser ${ticket} — ${name}`,
   amountDue: 'Net à payer',
+  /** RG-FMT-04, H70: the cash part rounded to the shop step. */
+  cashRounding: (rounding: string, due: string) => `Arrondi espèces ${rounding} : à payer ${due}`,
   method: 'Moyen de paiement',
   lineAmount: 'Montant (MGA)',
   reference: 'Référence de la transaction (obligatoire)',

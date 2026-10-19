@@ -58,6 +58,7 @@ function snapshot(overrides: Partial<InvoiceSnapshot> = {}): InvoiceSnapshot {
     discountGranted: false,
     vat: null,
     vatNotice: '',
+    cashRounding: '0.00',
     payment: {
       lines: [
         { method: 'MVola', reference: 'MP240928', amount: '60000.00' },
@@ -110,6 +111,19 @@ describe('invoice PDF (RG-FAC-02, H33)', () => {
     expect(at('Net à payer')).toBeGreaterThan(at('10 833,33 MGA'));
     const notice = texts(invoiceDocument(snapshot({ vatNotice: 'TVA non applicable' })).content);
     expect(notice).toContain('TVA non applicable');
+  });
+
+  it('prints the cash rounding, then the amount paid (RG-FMT-04, H70)', () => {
+    const at = (doc: ReturnType<typeof invoiceDocument>) => {
+      const all = texts(doc.content).map((value) => value.replace(/\s/g, ' '));
+      return (value: string) => all.indexOf(value);
+    };
+    expect(at(invoiceDocument(snapshot()))('Arrondi espèces')).toBe(-1);
+    const rounded = at(invoiceDocument(snapshot({ cashRounding: '-50.00' })));
+    expect(rounded('Total de la facture')).toBeGreaterThan(0);
+    expect(rounded('Arrondi espèces')).toBeGreaterThan(rounded('Total de la facture'));
+    expect(rounded('Net à payer')).toBeGreaterThan(rounded('Arrondi espèces'));
+    expect(rounded('64 950,00 MGA')).toBeGreaterThan(rounded('Net à payer'));
   });
 
   it('names the promo code under which discounts went beyond the caps (RG-REM-07, H63)', () => {

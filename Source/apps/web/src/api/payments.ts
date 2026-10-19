@@ -11,6 +11,7 @@ import {
   registerStationListSchema,
   type PaidOrder,
   type PaymentInput,
+  type PaymentMethodList,
   type PaymentMethod,
   type RegisterSession,
   type RegisterSessionOpen,
@@ -21,7 +22,12 @@ import { API_BASE, apiRequest, parseResponse } from './client.js';
 /** The register session and the payment (T-051, RG-CAI-01/02, RG-PAY, H32). */
 export const paymentsApi = {
   async methods(): Promise<PaymentMethod[]> {
-    return parseResponse(paymentMethodListSchema, await apiRequest('/payment-methods')).methods;
+    return (await paymentsApi.checkout()).methods;
+  },
+
+  /** The methods with the step the cash part is rounded to (RG-FMT-04, H70). */
+  async checkout(): Promise<PaymentMethodList> {
+    return parseResponse(paymentMethodListSchema, await apiRequest('/payment-methods'));
   },
 
   /** The invoice as issued (RG-FAC-04), opened in a tab and printed from the browser. */

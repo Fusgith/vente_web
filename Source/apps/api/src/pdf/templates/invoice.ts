@@ -1,4 +1,4 @@
-import { formatMga, formatQty } from '@vente-web/shared';
+import { formatMga, formatQty, sumAmounts } from '@vente-web/shared';
 import type { Content, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces.js';
 
 import type { InvoiceSnapshot } from '../../services/invoices.js';
@@ -14,6 +14,21 @@ function vatRows(snapshot: InvoiceSnapshot): TableCell[][] {
     amountRow(text.vatBase, formatMga(base)),
     amountRow(text.vat(formatQty(rate)), formatMga(vat)),
     amountRow(text.vatTotal, formatMga(snapshot.totals.total)),
+  ];
+}
+
+/**
+ * The cash rounding before the amount paid (RG-FMT-04, ⚠️ HYPOTHÈSE H70): the invoice total
+ * first — the VAT rows give it when on —, then the rounding, + or −.
+ */
+function roundingRows({ cashRounding: rounding, totals, vat }: InvoiceSnapshot): TableCell[][] {
+  if (isZero(rounding)) return [];
+  const signed = rounding.startsWith('-')
+    ? text.minus(formatMga(rounding.slice(1)))
+    : `+${formatMga(rounding)}`;
+  return [
+    ...(vat ? [] : [amountRow(text.invoiceTotal, formatMga(totals.total))]),
+    amountRow(text.cashRounding, signed),
   ];
 }
 
@@ -61,7 +76,13 @@ function paymentBlock({ payment }: InvoiceSnapshot): Content {
  * table and totals as the quote and the screen, the VAT when on, how it was paid, the footer.
  */
 export function invoiceDocument(snapshot: InvoiceSnapshot): TDocumentDefinitions {
-  const after: Content[] = [totalsBlock(snapshot.totals, vatRows(snapshot))];
+  const paid = sumAmounts([snapshot.totals.total, snapshot.cashRounding]);
+  const after: Content[] = [
+    totalsBlock({ ...snapshot.totals, total: paid }, [
+      ...vatRows(snapshot),
+      ...roundingRows(snapshot),
+    ]),
+  ];
   if (snapshot.vatNotice) {
     after.push({
       text: snapshot.vatNotice,

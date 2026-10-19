@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { paymentLineInputSchema, settle } from './payments.js';
+import { paymentLineInputSchema, roundCash, settle } from './payments.js';
 
 const cash = (amount: string) => ({ amount, cash: true });
 const other = (amount: string) => ({ amount, cash: false });
@@ -8,6 +8,8 @@ const other = (amount: string) => ({ amount, cash: false });
 describe('settle (RG-PAY-02/03)', () => {
   it('gives change on the cash handed over', () => {
     expect(settle('112500.00', [cash('112500.00')], '120000')).toEqual({
+      due: '112500.00',
+      rounding: '0.00',
       paid: '112500.00',
       remaining: '0.00',
       cashPart: '112500.00',
@@ -40,6 +42,33 @@ describe('settle (RG-PAY-02/03)', () => {
     expect(settle('100', [cash('50'), cash('50')], null).issue).toBe('CASH_TWICE');
     expect(settle('100', [other('100')], '100').issue).toBe('CASH_WITHOUT_LINE');
     expect(settle('100', [other('100')], '0').issue).toBeNull();
+  });
+
+  it('rounds the cash part only, to the nearest step (RG-FMT-04, H70)', () => {
+    expect(roundCash('12345.00', 100)).toBe('12300.00');
+    expect(roundCash('12350.00', 100)).toBe('12400.00');
+    expect(roundCash('30.00', 100)).toBe('30.00');
+    expect(roundCash('12345.00', null)).toBe('12345.00');
+    expect(settle('12345.00', [cash('12300')], '13000', 100)).toMatchObject({
+      due: '12300.00',
+      rounding: '-45.00',
+      change: '700.00',
+      issue: null,
+    });
+    // Mixed: the rest after mobile money, 2 345,00, is paid 2 300,00 in cash.
+    expect(settle('12345.00', [other('10000'), cash('2300')], null, 100)).toMatchObject({
+      due: '12300.00',
+      issue: null,
+    });
+    expect(settle('12345.00', [cash('12345')], null, 100)).toMatchObject({
+      remaining: '-45.00',
+      issue: 'TOTAL_MISMATCH',
+    });
+    // Without cash, nothing rounded.
+    expect(settle('12345.00', [other('12345')], null, 100)).toMatchObject({
+      rounding: '0.00',
+      issue: null,
+    });
   });
 });
 

@@ -2,6 +2,7 @@ import {
   CASH_METHOD,
   formatMga,
   formatQty,
+  roundCash,
   settle,
   type Order,
   type PaymentInput,
@@ -49,6 +50,7 @@ interface PaymentSheetProps {
 export function PaymentSheet({ order, ticket, busy, onPay, onClose }: PaymentSheetProps) {
   const [key] = useState(() => crypto.randomUUID());
   const [methods, setMethods] = useState<PaymentMethod[] | null>(null);
+  const [step, setStep] = useState<number | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
   const [received, setReceived] = useState('');
@@ -56,13 +58,16 @@ export function PaymentSheet({ order, ticket, busy, onPay, onClose }: PaymentShe
 
   useEffect(() => {
     let live = true;
-    paymentsApi.methods().then(
-      (list) => {
+    paymentsApi.checkout().then(
+      ({ methods: list, cashRounding }) => {
         if (!live) return;
         setMethods(list);
+        setStep(cashRounding);
         const first = list.find((method) => method.code === CASH_METHOD) ?? list[0];
-        if (first)
-          setLines([{ key: 0, methodId: first.id, amount: editable(order.total), reference: '' }]);
+        // In cash, the amount rounded to the shop step (RG-FMT-04, H70).
+        const due =
+          first?.code === CASH_METHOD ? roundCash(order.total, cashRounding) : order.total;
+        if (first) setLines([{ key: 0, methodId: first.id, amount: editable(due), reference: '' }]);
       },
       (error: unknown) => live && setFailure(errorMessage(error)),
     );
@@ -90,6 +95,7 @@ export function PaymentSheet({ order, ticket, busy, onPay, onClose }: PaymentShe
       cash: methodOf(line)?.code === CASH_METHOD,
     })),
     cashTyped,
+    step,
   );
   const missingReference = lines.some(
     (line) => methodOf(line)?.requiresReference && line.reference.trim() === '',
@@ -148,7 +154,7 @@ export function PaymentSheet({ order, ticket, busy, onPay, onClose }: PaymentShe
           className={buttonClass('primary', 'lg', 'w-full')}
         >
           <Icon name="check" className="size-5" />
-          {busy ? text.paying : text.confirmPay(formatMga(order.total))}
+          {busy ? text.paying : text.confirmPay(formatMga(settled.due))}
         </button>
       }
     >
@@ -156,6 +162,16 @@ export function PaymentSheet({ order, ticket, busy, onPay, onClose }: PaymentShe
         <span className="text-18 font-semibold">{text.amountDue}</span>
         <span className="text-36 font-bold figures">{formatMga(order.total)}</span>
       </p>
+      {settled.rounding !== '0.00' && (
+        <p className="-mt-3 text-right font-semibold figures">
+          {text.cashRounding(
+            settled.rounding.startsWith('-')
+              ? `−${formatMga(settled.rounding.slice(1))}`
+              : `+${formatMga(settled.rounding)}`,
+            formatMga(settled.due),
+          )}
+        </p>
+      )}
       {failure && (
         <p role="alert" className="font-semibold text-madder">
           {failure}

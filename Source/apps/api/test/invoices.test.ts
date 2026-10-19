@@ -198,4 +198,27 @@ describe.skipIf(!TEST_DATABASE_URL)('invoice issued with the payment (RG-FAC-01 
       totals: { total: '6500.00' },
     });
   });
+
+  it('rounds the cash part to the shop step, the gap on the invoice (RG-FMT-04, H70)', async () => {
+    await t.db.setting.upsert({
+      where: { key: 'cash_rounding' },
+      create: { key: 'cash_rounding', value: 1000 },
+      update: { value: 1000 },
+    });
+    clearSettingsCache();
+    const order = await atRegister();
+    const methods = await request(t.app, 'GET', '/api/v1/payment-methods', {
+      cookie: order.cookie,
+    });
+    expect(methods.json()).toMatchObject({ cashRounding: 1000 });
+    // 6 500,00 in cash: 7 000,00 due, the exact amount refused.
+    expect((await pay(order)).statusCode).toBe(422);
+    const response = await pay(order, '7000');
+    expect(response.statusCode, response.body).toBe(200);
+    const { invoice, payment } = paidOrderSchema.parse(response.json());
+    expect(payment).toMatchObject({ totalDue: '7000.00', changeGiven: '3000.00' });
+    expect(
+      (await t.db.invoice.findUniqueOrThrow({ where: { id: invoice.id } })).snapshot,
+    ).toMatchObject({ totals: { total: '6500.00' }, cashRounding: '500.00' });
+  });
 });

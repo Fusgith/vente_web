@@ -59,6 +59,8 @@ export const invoiceSnapshotSchema = z.object({
   discountGranted: z.boolean().default(false),
   vat: z.object({ rate: z.string(), base: z.string(), vat: z.string() }).nullable(),
   vatNotice: z.string(),
+  /** Cash rounding, + or −: printed before the amount paid (RG-FMT-04, H70); absent before T-056. */
+  cashRounding: z.string().default('0.00'),
   payment: z.object({
     lines: z.array(
       z.object({ method: z.string(), reference: z.string().nullable(), amount: z.string() }),
@@ -76,18 +78,21 @@ export interface InvoiceSettings {
   /** VAT rate in %, or null when VAT is off (RG-FAC-03). */
   vatRate: string | null;
   vatNotice: string;
+  /** Step the cash part is rounded to, in MGA, or null (RG-FMT-04, ⚠️ HYPOTHÈSE H70). */
+  cashRounding: number | null;
 }
 
 const PREFIX = /^[A-Z0-9]{1,6}$/;
 const text = (value: unknown) => (typeof value === 'string' ? value.trim().slice(0, 120) : '');
 
 export async function readInvoiceSettings(db: Db): Promise<InvoiceSettings> {
-  const [prefix, legal, enabled, rate, notice] = await Promise.all([
+  const [prefix, legal, enabled, rate, notice, rounding] = await Promise.all([
     readSetting(db, 'invoice_prefix'),
     readStoreLegal(db),
     readSetting(db, 'vat_enabled'),
     readSetting(db, 'vat_rate'),
     readSetting(db, 'vat_notice'),
+    readSetting(db, 'cash_rounding'),
   ]);
   const vatRate =
     enabled === true && typeof rate === 'number' && rate >= 0 && rate <= 100
@@ -98,6 +103,9 @@ export async function readInvoiceSettings(db: Db): Promise<InvoiceSettings> {
     legal,
     vatRate,
     vatNotice: vatRate === null ? text(notice) : '',
+    // A whole number of Ariary; 'none', the default, or anything else: no rounding.
+    cashRounding:
+      Number.isInteger(rounding) && (rounding as number) > 0 ? (rounding as number) : null,
   };
 }
 
@@ -105,6 +113,7 @@ export interface IssueInput {
   order: Order;
   cashier: string;
   payment: InvoiceSnapshot['payment'];
+  cashRounding: string;
   settings: InvoiceSettings;
   at: Date;
 }
@@ -116,7 +125,7 @@ export interface IssueInput {
  */
 export async function issueInvoice(
   tx: Prisma.TransactionClient,
-  { order, cashier, payment, settings, at }: IssueInput,
+  { order, cashier, payment, cashRounding, settings, at }: IssueInput,
 ): Promise<InvoiceRef> {
   const year = shopYear(at);
   const seq = await nextSequenceValue(tx, `INVOICE-${year}`);
@@ -146,6 +155,7 @@ export async function issueInvoice(
       ? { rate: settings.vatRate, ...pickVat(order.total, settings.vatRate) }
       : null,
     vatNotice: settings.vatNotice,
+    cashRounding,
     payment,
   };
   const invoice = await tx.invoice.create({

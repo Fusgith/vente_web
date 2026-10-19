@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 19/10/2026 — T-056 : arrondi espèces — agent : Claude Code (Opus 5.5)
+
+**Fait** : paramètre `cash_rounding` (pas en MGA, aucun par défaut) : la part payée en espèces s'arrondit au pas le plus proche, à la caisse comme à l'API ; facture avec « Total de la facture », « Arrondi espèces » et net à payer ; le paiement enregistre le montant dû. Hypothèse H70 au CDC. Tests shared 6, API 15, web 396 verts.
+
+**Reste** : T-041, T-015 ; T-080 (téléchargements à autoriser) ; réglage du pas à l'écran avec T-013.
+
 ## 19/10/2026 — T-071 : exports Excel — agent : Claude Code (Opus 5.5)
 
 **Fait** : `GET /exports/:kind?from&to` (exceljs, déjà en place) : 12 classeurs aux en-têtes français et nombres natifs, les états à l’instant (stock, prix, clients) datés du jour ; droits par rôle (boss et responsable tout, caissier ses clôtures, admin le journal) ; panneau replié « Exports Excel » chez chacun. Tests API 3, web 295 verts.
