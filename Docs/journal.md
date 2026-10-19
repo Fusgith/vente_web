@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 20/10/2026 — T-094 : document remis = nouveau numéro — agent : Claude Code (Opus 5.5)
+
+**Fait** : un devis dont le PDF est ouvert est « remis » ; enregistré de nouveau, il prend un nouveau numéro ; une commande baissée à la caisse, renvoyée au commercial ou refusée à la réactivation aussi (H69). La commande garde sa ligne (ticket, place, réservation, demandes) sous le nouveau numéro ; l'ancien reste sur une copie `REPLACED` qui pointe vers elle, journalisé `order.replaced` ; chercher l'ancien numéro trouve le nouveau. Remises et crédit ne changent pas le numéro.
+
+**Reste** : T-080 (téléchargements à autoriser) ; T-095, T-096, T-090b, T-097, T-013, T-036.
+
 ## 19/10/2026 — T-093 : type de client et prix par type — agent : Claude Code (Opus 5.5)
 
 **Fait** : type de client (Grossiste, Semi-grossiste, Détaillant, Particulier par défaut) choisi par le responsable dans l'annuaire, audité ; prix facultatif par unité × type, daté comme le prix de base (fiche article, colonnes `prix_grossiste`… de l'import) ; le devis prend le prix du type du client, sinon le prix de base, et se revalorise au changement de client ; règle de remise « Type de client » chez le boss (H62). Tests API 377, web 401 verts (base de test en mémoire : le disque Docker répondait en ~0,5 s par fsync).

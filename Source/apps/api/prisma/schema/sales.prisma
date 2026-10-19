@@ -13,6 +13,8 @@ enum OrderStatus {
   EXPIRED
   CANCELLED
   REFUNDED
+  /// Its number given up for a new one, on the same row (H69): final, kept for the record.
+  REPLACED
 
   @@map("order_status")
 }
@@ -129,6 +131,10 @@ model Order {
   readyAt             DateTime?      @map("ready_at") @db.Timestamptz(6)
   deliveredAt         DateTime?      @map("delivered_at") @db.Timestamptz(6)
   cancelReason        String?        @map("cancel_reason")
+  /// The quote's PDF opened: handed to the customer, changed under a new number (H69).
+  handedAt            DateTime?      @map("handed_at") @db.Timestamptz(6)
+  /// A REPLACED number: the order that carries on under the new one (H69).
+  replacedById        String?        @map("replaced_by_id") @db.Uuid
   /// Optimistic locking: every update checks and increments it.
   version             Int            @default(1)
   createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -139,6 +145,8 @@ model Order {
   customer          Customer          @relation(fields: [customerId], references: [id])
   orderDiscountCode DiscountCode?     @relation("OrderDiscountCode", fields: [orderDiscountCodeId], references: [id])
   registerStation   Station?          @relation("OrderRegisterStation", fields: [registerStationId], references: [id])
+  replacedBy        Order?            @relation("OrderReplacedBy", fields: [replacedById], references: [id])
+  replaced          Order[]           @relation("OrderReplacedBy")
   lines             OrderLine[]
   reservations      Reservation[]
   stockMovements    StockMovement[]

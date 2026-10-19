@@ -21,6 +21,7 @@ import type { Prisma } from '../generated/prisma/client.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit, type AuditSnapshot, type AuditTx } from './audit.js';
 import { findCustomer } from './customers.js';
+import { replaceNumber } from './order-replace.js';
 import { CODE_SELECT, findOrder, grantsOf, toQuote } from './order-view.js';
 import { defaultDiscountCap, inForceAt, priceFor, unitCap } from './product-hits.js';
 import { assertSalesDiscount } from './sales-discount.js';
@@ -237,13 +238,16 @@ export function snapshot(quote: Quote): AuditSnapshot {
   };
 }
 
-async function quotePrefix(db: Db): Promise<string> {
+export async function quotePrefix(db: Db): Promise<string> {
   const value = await readSetting(db, 'quote_prefix');
   return typeof value === 'string' && /^[A-Z]{1,4}$/.test(value) ? value : 'D';
 }
 
 /** Next number of the shop's year (RG-DEV-02); gaps are tolerated for quotes. */
-async function nextQuoteNumber(tx: Prisma.TransactionClient, prefix: string): Promise<string> {
+export async function nextQuoteNumber(
+  tx: Prisma.TransactionClient,
+  prefix: string,
+): Promise<string> {
   const year = shopYear(new Date());
   return quoteNumber(prefix, year, await nextSequenceValue(tx, `QUOTE-${year}`));
 }
@@ -295,6 +299,7 @@ export async function updateQuote(
       salesUserId: true,
       customerId: true,
       version: true,
+      handedAt: true,
       _count: { select: { discountRequests: { where: { status: 'PENDING' } } } },
     },
   });
@@ -323,8 +328,11 @@ export async function updateQuote(
   const codeId = code?.id ?? null;
   const totals = totalsWithinCaps(lines, input.orderDiscount, grantsOf(code));
   if (totals.discountTotal !== '0.00') await assertSalesDiscount(db, actor);
+  const prefix = await quotePrefix(db);
   return db.$transaction(async (tx) => {
     const before = await loadQuote(tx, id);
+    // Handed to the customer: changed, it is a new quote under a new number (H69).
+    if (current.handedAt) await replaceNumber(tx, actor, id, prefix);
     // Guarded on the version read and on DRAFT: a save or a validation committed meanwhile wins.
     const { count } = await tx.order.updateMany({
       where: { id, status: 'DRAFT', version: input.version },

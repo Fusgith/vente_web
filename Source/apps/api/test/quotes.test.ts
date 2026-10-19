@@ -233,4 +233,35 @@ describe.skipIf(!TEST_DATABASE_URL)('quotes (RG-DEV-01/02/05, RG-REM-01/02)', ()
     const read = await request(t.app, 'GET', `${QUOTES}/${quote.id}`, { cookie: cookies.sales });
     expect(read.statusCode).toBe(404);
   });
+
+  it('saves a quote handed over, its PDF opened, under a new number (H69)', async () => {
+    const quote = await saved();
+    const year = shopYear(new Date());
+    const body = { ...draft(), version: 1 };
+    // Not handed over yet: the same number.
+    expect(quoteSchema.parse((await resave(quote.id, body)).json()).number).toBe(quote.number);
+    await request(t.app, 'GET', `${QUOTES}/${quote.id}/pdf`, { cookie: cookies.sales });
+    const changed = quoteSchema.parse((await resave(quote.id, { ...body, version: 2 })).json());
+    expect(changed).toMatchObject({ id: quote.id, number: `D-${year}-000002`, version: 3 });
+    const old = await t.db.order.findUniqueOrThrow({
+      where: { number: quote.number },
+      include: { lines: true },
+    });
+    expect(old).toMatchObject({ status: 'REPLACED', replacedById: quote.id });
+    expect(old.lines).toHaveLength(2);
+    expect(await auditActions(t.db, quote.id)).toEqual([
+      'quote.created',
+      'quote.updated',
+      'order.replaced',
+      'quote.updated',
+    ]);
+    // Saved again before its PDF is opened anew: the number stays.
+    const again = quoteSchema.parse((await resave(quote.id, { ...body, version: 3 })).json());
+    expect(again.number).toBe(changed.number);
+    // The old number still finds it.
+    const found = await request(t.app, 'GET', `${QUOTES}?number=${quote.number}`, {
+      cookie: cookies.sales,
+    });
+    expect(found.json()).toMatchObject({ orders: [{ id: quote.id, number: changed.number }] });
+  });
 });

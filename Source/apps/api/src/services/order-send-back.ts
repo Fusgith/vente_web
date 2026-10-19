@@ -5,13 +5,15 @@ import { AppError } from '../errors.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit } from './audit.js';
 import { atMyRegister } from './order-changes.js';
+import { replaceNumber } from './order-replace.js';
 import { findOrder, toOrder } from './order-view.js';
+import { quotePrefix } from './quotes.js';
 import { releaseReservations } from './stock-reservation.js';
 
 /**
  * Sent back from the register to its salesperson (RG-CMD-05b, H56) by the cashier who called it
- * or the manager: a quote again, same number, to go over with the customer. It keeps its ticket and
- * its place in the queue for a validation that day; its stock is freed meanwhile.
+ * or the manager: a quote again, under a new number (H69), to go over with the customer. It keeps
+ * its ticket and its place in the queue for a validation that day; its stock is freed meanwhile.
  */
 export async function sendBackOrder(
   db: Db,
@@ -20,7 +22,9 @@ export async function sendBackOrder(
   { version }: OrderSubmit,
 ): Promise<Order> {
   await atMyRegister(db, actor, id, version);
+  const prefix = await quotePrefix(db);
   return db.$transaction(async (tx) => {
+    await replaceNumber(tx, actor, id, prefix);
     const { count } = await tx.order.updateMany({
       where: { id, status: 'AT_REGISTER', version },
       data: {

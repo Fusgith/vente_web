@@ -22,6 +22,7 @@ export const ORDER_STATUSES = [
   'EXPIRED',
   'CANCELLED',
   'REFUNDED',
+  'REPLACED',
 ] as const;
 export const orderStatusSchema = z.enum(ORDER_STATUSES);
 export type OrderStatus = z.infer<typeof orderStatusSchema>;
@@ -46,6 +47,8 @@ export const ORDER_TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatu
   EXPIRED: ['SUBMITTED', 'DRAFT'],
   CANCELLED: [],
   REFUNDED: [],
+  // A number given up for a new one (H69): written so, never reached by a transition.
+  REPLACED: [],
 };
 
 export function canTransition(from: OrderStatus, to: OrderStatus): boolean {

@@ -47,6 +47,11 @@ export const quoteRoutes: FastifyPluginAsync = async (app) => {
   app.get('/quotes/:id/pdf', { preHandler: requireRole(...READERS) }, async (request, reply) => {
     const { id } = paramsSchema.parse(request.params);
     const { number, pdf } = await quotePdf(app.db, id);
+    // Opened, the quote is handed to the customer: changed, it takes a new number (H69).
+    await app.db.order.updateMany({
+      where: { id, status: 'DRAFT', handedAt: null },
+      data: { handedAt: new Date() },
+    });
     return reply
       .type('application/pdf')
       .header('content-disposition', `inline; filename="${number}.pdf"`)

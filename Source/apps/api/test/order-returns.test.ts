@@ -176,6 +176,11 @@ describe.skipIf(!TEST_DATABASE_URL)(
       expect(response.statusCode, response.body).toBe(200);
       const back = orderSchema.parse(response.json());
       expect(back).toMatchObject({ status: 'DRAFT', ticket: order.ticket, expiresAt: null });
+      // A new number; the old one kept, replaced by it (H69).
+      expect(back.number).not.toBe(order.number);
+      expect(await t.db.order.findUniqueOrThrow({ where: { number: order.number } })).toMatchObject(
+        { status: 'REPLACED', replacedById: order.id, ticketSeq: null },
+      );
       expect(await reserved()).toBe('0.00');
       expect(await auditActions(t.db, order.id)).toContain('order.sent_back');
       expect(published.map((e) => [e.event, e.payload])).toEqual([
@@ -259,7 +264,9 @@ describe.skipIf(!TEST_DATABASE_URL)(
       });
       const row = await t.db.order.findUniqueOrThrow({ where: { id: order.id } });
       expect(row).toMatchObject({ status: 'DRAFT', queueRank: null, version: order.version + 1 });
+      expect(row.number).not.toBe(order.number);
       expect(await auditActions(t.db, order.id)).toContain('order.reopened');
+      expect(await auditActions(t.db, order.id)).toContain('order.replaced');
       expect(await reserved()).toBe('0.00');
     });
   },

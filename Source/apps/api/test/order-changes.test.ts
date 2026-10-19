@@ -111,6 +111,9 @@ describe.skipIf(!TEST_DATABASE_URL)(
         { position: 2, qty: '3', discountAmount: '0.00', net: '19500.00' },
       ]);
       // 2 000 off the total still fits the nails' headroom (15 % of 19 500).
+      // Fewer articles: a new number, the same ticket (H69).
+      expect(adjusted.number).not.toBe(order.number);
+      expect(adjusted.ticket).toEqual(order.ticket);
       expect(adjusted).toMatchObject({
         version: order.version + 1,
         subtotal: '67000.00',

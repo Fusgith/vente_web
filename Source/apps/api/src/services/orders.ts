@@ -11,11 +11,13 @@ import type { Db } from '../db.js';
 import { AppError } from '../errors.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit, type AuditSnapshot, type AuditTx } from './audit.js';
+import { replaceNumber } from './order-replace.js';
 import { findOrder, grantsOf, toOrder, usedCode, type StoredOrder } from './order-view.js';
 import {
   assertActiveCustomer,
   assertNotFree,
   priceLines,
+  quotePrefix,
   totalsWithinCaps,
   type PricedLine,
 } from './quotes.js';
@@ -205,8 +207,8 @@ const REOPENING: ReadonlySet<string> = new Set([
 /**
  * An expired order validated again (RG-CMD-08, H31, H56) by its salesperson or the manager:
  * the checks of a validation, the last place in the queue, its ticket kept if of the day. Refused
- * for a price changed, stock short or a cap lowered, it becomes a quote again, same number, for
- * the salesperson to go over with the customer.
+ * for a price changed, stock short or a cap lowered, it becomes a quote again, under a new number
+ * (H69), for the salesperson to go over with the customer.
  */
 export async function reactivateOrder(
   db: Db,
@@ -236,12 +238,14 @@ export async function reactivateOrder(
 
 /** EXPIRED → DRAFT: a quote again, out of the queue — validated, it goes last. */
 async function reopen(db: Db, actor: Actor, order: StoredOrder, refusal: string) {
+  const prefix = await quotePrefix(db);
   await db.$transaction(async (tx) => {
     const { count } = await tx.order.updateMany({
       where: { id: order.id, status: 'EXPIRED', version: order.version },
       data: { status: 'DRAFT', queueRank: null, version: { increment: 1 } },
     });
     if (count === 0) return;
+    await replaceNumber(tx, actor, order.id, prefix);
     await recordAudit(tx, {
       ...by(actor),
       action: 'order.reopened',

@@ -30,7 +30,8 @@ import {
   type StoredOrder,
 } from './order-view.js';
 import { usableCode, useCode } from './discount-code-use.js';
-import { assertNotFree, orderAmounts } from './quotes.js';
+import { replaceNumber } from './order-replace.js';
+import { assertNotFree, orderAmounts, quotePrefix } from './quotes.js';
 import { releaseReservations, shrinkReservations } from './stock-reservation.js';
 
 type StoredLine = StoredOrder['lines'][number];
@@ -159,7 +160,8 @@ function recompute(order: StoredOrder, kept: KeptLine[], suggested: (string | nu
 
 /**
  * Lowers or removes lines of the order at the cashier's register, before payment (RG-CMD-05b):
- * totals computed again, the stock no longer asked freed, the change audited before → after.
+ * totals computed again, the stock no longer asked freed, the change audited before → after,
+ * under a new number (H69).
  */
 export async function adjustOrder(
   db: Db,
@@ -187,8 +189,11 @@ export async function adjustOrder(
     position: index + 1,
     computed: totals.lines[index],
   }));
+  const prefix = await quotePrefix(db);
 
   return db.$transaction(async (tx) => {
+    // Fewer articles than validated: a new order, same ticket and place (H69).
+    await replaceNumber(tx, actor, id, prefix);
     const { count } = await tx.order.updateMany({
       where: { id, status: 'AT_REGISTER', version },
       data: { ...orderAmounts(totals, usedCode(order)?.id ?? null), version: { increment: 1 } },

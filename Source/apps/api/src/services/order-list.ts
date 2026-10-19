@@ -11,7 +11,8 @@ const LIST_LIMIT = 100;
 /**
  * The quotes and orders still open — to take up again, have paid or reactivate (RG-DEV-02/03,
  * RG-CMD-08, H56): the salesperson's own, everyone's for the manager, the latest changed first;
- * a colleague's quote found by its number. A quote past its validity is told outdated (RG-DEV-02).
+ * a colleague's quote found by its number, current or replaced (H69). A quote past its validity is
+ * told outdated (RG-DEV-02).
  */
 export async function listOpenOrders(
   db: Db,
@@ -25,7 +26,13 @@ export async function listOpenOrders(
       where: {
         status: { in: [...OPEN_ORDER_STATUSES] },
         ...(wanted
-          ? { number: { equals: wanted, mode: 'insensitive' } }
+          ? {
+              // An older number of it, given up for the current one, finds it too (H69).
+              OR: [
+                { number: { equals: wanted, mode: 'insensitive' } },
+                { replaced: { some: { number: { equals: wanted, mode: 'insensitive' } } } },
+              ],
+            }
           : actor.activeRole === 'sales'
             ? { salesUserId: actor.userId }
             : {}),

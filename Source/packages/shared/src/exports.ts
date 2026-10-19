@@ -362,6 +362,7 @@ export const EXPORT_VALUES = {
     EXPIRED: 'Expirée',
     CANCELLED: 'Annulée',
     REFUNDED: 'Remboursée',
+    REPLACED: 'Remplacée',
   } as Record<string, string>,
   invoiceStatus: {
     ISSUED: 'Émise',
