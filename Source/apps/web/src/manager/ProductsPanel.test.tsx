@@ -1,4 +1,4 @@
-import type { ProductDetail, ProductRow } from '@vente-web/shared';
+import { formatMga, type ProductDetail, type ProductRow } from '@vente-web/shared';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
@@ -102,5 +102,11 @@ describe('products on screen (T-092, RG-ART-07)', () => {
     );
     expect(await sheet.findByText('+10,0 %')).toBeVisible();
     expect(sheet.getByText(text.current)).toBeVisible();
+    // The base price's curve, from the first price to the current one (RG-DSH-03).
+    expect(
+      sheet.getByRole('img', {
+        name: text.curve('pièce', formatMga('5000.00'), formatMga('5500.00')),
+      }),
+    ).toBeVisible();
   });
 });

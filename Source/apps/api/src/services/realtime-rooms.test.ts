@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { orderSubmitted, roomsOf, stockLow } from './realtime-rooms.js';
+import { catalogChanged, orderSubmitted, roomsOf, stockLow } from './realtime-rooms.js';
 
 const USER = '0192a4f0-0000-7000-8000-000000000501';
 const STATION = '0192a4f0-0000-7000-8000-000000000601';
@@ -50,5 +50,15 @@ describe('realtime rooms (CDC technique §6.1)', () => {
       { rooms: ['role:manager', 'role:owner'], event: 'stock.alert', payload: { productId } },
     ]);
     expect(stockLow([])).toEqual([]);
+  });
+
+  it('has the tablets, the registers and the manager read the catalogue again (RG-ART-07)', () => {
+    expect(catalogChanged()).toEqual([
+      {
+        rooms: ['role:sales', 'role:cashier', 'role:manager'],
+        event: 'catalog.changed',
+        payload: {},
+      },
+    ]);
   });
 });

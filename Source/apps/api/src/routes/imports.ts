@@ -18,6 +18,7 @@ import {
   loadImport,
   uploadImport,
 } from '../services/imports.js';
+import { catalogChanged } from '../services/realtime-rooms.js';
 
 const params = z.object({ id: z.uuid() });
 /** RG-IMP-08: the manager and the admin import; a stocktake is the manager's alone. */
@@ -60,6 +61,7 @@ export const importRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env 
       id,
       importCommitSchema.parse(request.body ?? {}),
     );
+    app.realtime.publish(catalogChanged());
     return loadImport(app.db, id);
   });
 };

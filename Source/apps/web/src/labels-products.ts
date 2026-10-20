@@ -67,6 +67,9 @@ export const productsLabels = {
   priceFor: 'Pour',
   allCustomers: 'Tous les clients',
   historyNone: 'Aucun prix enregistré.',
+  /** The curve's accessible name: what it shows, from the first price to the current one. */
+  curve: (unit: string, first: string, last: string) =>
+    `Évolution du prix de base : ${unit}, de ${first} à ${last}`,
   from: 'Depuis le',
   to: 'Jusqu’au',
   current: 'en cours',

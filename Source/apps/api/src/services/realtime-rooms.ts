@@ -287,3 +287,14 @@ export function kioskBasketCreated(basketId: string): Emission[] {
 export function kioskBasketClaimed(basketId: string): Emission[] {
   return [emission(BASKET_FOLLOWERS, 'kiosk.basket_claimed', { basketId })];
 }
+
+/** The tablets, the registers and the manager read the catalogue again (RG-ART-07, §6.1). */
+export function catalogChanged(): Emission[] {
+  return [
+    emission(
+      [room.role('sales'), room.role('cashier'), room.role('manager')],
+      'catalog.changed',
+      {},
+    ),
+  ];
+}

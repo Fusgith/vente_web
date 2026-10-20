@@ -10,6 +10,7 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } fr
 import { catalogApi } from '../api/catalog.js';
 import { errorMessage } from '../api/error-message.js';
 import { labels } from '../labels.js';
+import { useRealtimeEvent } from '../realtime/context.js';
 import { useStatusLine } from '../shell/status-line.js';
 import { buttonClass } from '../ui/button.js';
 import { Icon } from '../ui/Icon.js';
@@ -48,6 +49,8 @@ export function ProductSearch({ onAdd, pad, onType }: ProductSearchProps) {
   const [categories, setCategories] = useState<CategorySummary[]>([]);
   const [favorites, setFavorites] = useState<Favorites>({ status: 'loading' });
   const [scanning, setScanning] = useState(false);
+  /** Bumped by `catalog.changed`: a new price or unit shows without reloading (RG-ART-07). */
+  const [catalog, setCatalog] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   /** The term whose « nothing found » was already said, so it is said once. */
   const spokenRef = useRef<string | null>(null);
@@ -55,7 +58,7 @@ export function ProductSearch({ onAdd, pad, onType }: ProductSearchProps) {
   const { say, sayError } = useStatusLine();
 
   const entry = parseQuickEntry(text);
-  const { state, lookup } = useProductSearch(entry.term, categoryId);
+  const { state, lookup } = useProductSearch(entry.term, categoryId, catalog);
   const noMatch = state.status === 'done' && state.result.items.length === 0 ? entry.term : null;
   const searchError = state.status === 'error' ? state.message : null;
   const showHint = text === '' && !pad;
@@ -77,7 +80,9 @@ export function ProductSearch({ onAdd, pad, onType }: ProductSearchProps) {
       },
     );
     return () => controller.abort();
-  }, [categoryId]);
+  }, [categoryId, catalog]);
+
+  useRealtimeEvent('catalog.changed', () => setCatalog((version) => version + 1));
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {

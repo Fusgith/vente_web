@@ -21,6 +21,7 @@ import {
   updateProduct,
   updateUnit,
 } from '../services/products.js';
+import { catalogChanged } from '../services/realtime-rooms.js';
 
 const productParams = z.object({ id: z.uuid() });
 const unitParams = z.object({ id: z.uuid(), unitId: z.uuid() });
@@ -49,6 +50,7 @@ export const productRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const body = productCreateSchema.parse(request.body);
       const id = await createProduct(app.db, actorOf(authOf(request)), body);
+      app.realtime.publish(catalogChanged());
       return reply.code(201).send(await loadProduct(app.db, id));
     },
   );
@@ -64,6 +66,7 @@ export const productRoutes: FastifyPluginAsync = async (app) => {
         id,
         productUpdateSchema.parse(request.body),
       );
+      app.realtime.publish(catalogChanged());
       return loadProduct(app.db, id);
     },
   );
@@ -74,6 +77,7 @@ export const productRoutes: FastifyPluginAsync = async (app) => {
     async (request, reply) => {
       const { id } = productParams.parse(request.params);
       await addUnit(app.db, actorOf(authOf(request)), id, unitCreateSchema.parse(request.body));
+      app.realtime.publish(catalogChanged());
       return reply.code(201).send(await loadProduct(app.db, id));
     },
   );
@@ -90,6 +94,7 @@ export const productRoutes: FastifyPluginAsync = async (app) => {
         unitId,
         unitUpdateSchema.parse(request.body),
       );
+      app.realtime.publish(catalogChanged());
       return loadProduct(app.db, id);
     },
   );
@@ -106,6 +111,7 @@ export const productRoutes: FastifyPluginAsync = async (app) => {
         unitId,
         priceSetSchema.parse(request.body),
       );
+      app.realtime.publish(catalogChanged());
       return loadProduct(app.db, id);
     },
   );

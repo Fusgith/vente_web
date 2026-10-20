@@ -16,16 +16,18 @@ export type SearchState =
 
 type Settled = { key: string; result: ProductSearchResult } | { key: string; error: string };
 
-const searchKey = (term: string, categoryId: string | undefined) => `${categoryId ?? ''}|${term}`;
+const searchKey = (term: string, categoryId: string | undefined, catalog = 0) =>
+  `${catalog}|${categoryId ?? ''}|${term}`;
 
 /**
  * Search while typing, from the 2nd character; a newer term cancels the request in flight.
  * `lookup` answers at once for Enter or a scan, reusing the list already shown for that term.
+ * A new `catalog` version (`catalog.changed`, RG-ART-07) searches the same term again.
  */
-export function useProductSearch(term: string, categoryId: string | undefined) {
+export function useProductSearch(term: string, categoryId: string | undefined, catalog = 0) {
   const [settled, setSettled] = useState<Settled | null>(null);
   const active = term.length >= SEARCH_MIN_LENGTH;
-  const key = searchKey(term, categoryId);
+  const key = searchKey(term, categoryId, catalog);
 
   useEffect(() => {
     if (!active) return;
@@ -46,12 +48,12 @@ export function useProductSearch(term: string, categoryId: string | undefined) {
 
   const lookup = useCallback(
     async (value: string): Promise<ProductSearchResult> => {
-      if (settled?.key === searchKey(value, categoryId) && 'result' in settled) {
+      if (settled?.key === searchKey(value, categoryId, catalog) && 'result' in settled) {
         return settled.result;
       }
       return catalogApi.search(value, categoryId);
     },
-    [settled, categoryId],
+    [settled, categoryId, catalog],
   );
 
   let state: SearchState;

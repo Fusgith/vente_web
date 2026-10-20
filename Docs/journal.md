@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 21/10/2026 — T-019b : courbe des prix et catalogue à jour — agent : Claude Code (Opus 5.5)
+
+**Fait** : la fiche article montre, au-dessus de l'historique de chaque unité, la courbe du prix de base (en escalier, du premier prix au prix en vigueur ; hypothèse H75). Un nouveau prix, une unité ou un article modifié, un import appliqué envoient `catalog.changed` : la tablette relit ses favoris et sa recherche sans rechargement. Les exports « Grille de prix » et « Historique des prix » existaient (T-071). Aucune dépendance ajoutée. Tests verts.
+
+**Reste** : T-095b (demande de crédit au boss) ; T-080 (téléchargements à autoriser).
+
 ## 21/10/2026 — T-036 : borne libre-service — agent : Claude Code (Opus 5.5)
 
 **Fait** : l'admin déclare un poste « Borne libre-service » ; la borne s'ouvre à `/borne/<clé>`, montre les articles les plus vendus et la recherche, le client remplit son panier (unité, quantité au pavé, sans remise), saisit nom et téléphone et reçoit un numéro P1, P2… Sur la tablette, « n paniers borne » liste les paniers du jour ; « Prendre » en fait un devis au nom du commercial. Remise à zéro après inactivité et limite d'envoi réglables dans « Paramètres ». Hypothèse H74. Aucune dépendance ajoutée. Tests API 446, web 408 verts.

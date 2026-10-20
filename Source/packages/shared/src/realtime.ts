@@ -44,6 +44,8 @@ export const realtimePayloadSchemas = {
   /** A kiosk basket sent, or taken up by a salesperson (RG-BOR-04/05). */
   'kiosk.basket_created': z.object({ basketId: z.uuid() }),
   'kiosk.basket_claimed': z.object({ basketId: z.uuid() }),
+  /** A product, a sale unit or a price changed, or an import was applied (RG-ART-07). */
+  'catalog.changed': z.object({}),
   /** A product's available stock at or under its alert threshold (RG-STK-07). */
   'stock.alert': z.object({ productId: z.uuid() }),
   /** An exceptional discount asked of the owner (RG-REM-03, RG-DSH-05). */

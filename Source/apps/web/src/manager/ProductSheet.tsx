@@ -21,6 +21,7 @@ import { buttonClass } from '../ui/button.js';
 import { CELL, HEAD } from '../ui/document-table.js';
 import { Sheet } from '../ui/Sheet.js';
 import { CategorySelect, Field } from './NewProductSheet.js';
+import { PriceCurve } from './PriceCurve.js';
 import { orNull } from './product-input.js';
 
 const text = labels.products;
@@ -316,6 +317,7 @@ export function ProductSheet({
               {text.applyPrice}
             </button>
           </form>
+          <PriceCurve unit={unit} />
           <PriceHistory unit={unit} />
         </div>
       )}
