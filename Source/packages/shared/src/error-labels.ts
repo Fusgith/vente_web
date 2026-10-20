@@ -30,7 +30,10 @@ export const ERROR_LABELS = {
   STATION_REQUIRED:
     'Cet appareil n’est appairé à aucun poste actif : demandez à l’admin de l’appairer.',
   STATION_DISPLAY_EXISTS: 'Il y a déjà un écran public actif : désactivez-le d’abord.',
-  STATION_NOT_PAIRABLE: 'L’écran public ne s’appaire pas : il s’ouvre par son adresse.',
+  STATION_NOT_PAIRABLE:
+    'L’écran public et la borne ne s’appairent pas : ils s’ouvrent par leur adresse.',
+  KIOSK_BUSY: 'Trop de paniers envoyés par cette borne : demandez à un commercial.',
+  KIOSK_BASKET_TAKEN: 'Ce panier est déjà pris par un autre commercial, ou a expiré.',
   OWNER_PASSWORD_SELF_ONLY:
     'Seul le boss choisit son mot de passe : l’admin ne peut ni le poser ni le réinitialiser.',
   USERNAME_TAKEN: 'Cet identifiant est déjà celui d’un autre compte.',

@@ -159,6 +159,7 @@ model Order {
   invoice           Invoice?
   deliveries        Delivery[]
   deliveryIssues    DeliveryIssue[]
+  kioskBasket       KioskBasket?
 
   @@unique([ticketDate, ticketLetter, ticketSeq])
   @@index([status, queueRank])
@@ -322,4 +323,30 @@ enum CustomerType {
   INDIVIDUAL
 
   @@map("customer_type")
+}
+
+/// A basket sent from the kiosk (RG-BOR-03, H74): the customer's name and phone, the lines at base
+/// price, numbered P1, P2… per day. A salesperson takes it up and it becomes a quote in their name.
+model KioskBasket {
+  id        String   @id @default(uuid(7)) @db.Uuid
+  stationId String   @map("station_id") @db.Uuid
+  day       DateTime @db.Date
+  seq       Int
+  name      String   @db.VarChar(120)
+  phone     String   @db.VarChar(20)
+  /// [{ productUnitId, qty }], as sent.
+  lines     Json
+  lineCount Int      @map("line_count")
+  total     Decimal  @db.Decimal(14, 2)
+  takenById String?  @map("taken_by_id") @db.Uuid
+  orderId   String?  @unique @map("order_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  station Station @relation(fields: [stationId], references: [id])
+  takenBy User?   @relation(fields: [takenById], references: [id], onDelete: SetNull)
+  order   Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@unique([day, seq])
+  @@index([stationId, createdAt])
+  @@map("kiosk_baskets")
 }

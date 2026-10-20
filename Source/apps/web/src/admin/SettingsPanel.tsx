@@ -55,6 +55,13 @@ const GROUPS: [keyof typeof text.groups, [SettingKey, Kind][]][] = [
     ],
   ],
   [
+    'kiosk',
+    [
+      ['kiosk.idle_seconds', 'number'],
+      ['kiosk.max_baskets_per_hour', 'number'],
+    ],
+  ],
+  [
     'lock',
     [
       ['session.lock_minutes.tablet', 'number'],

@@ -18,6 +18,7 @@ enum StationType {
   REGISTER
   DELIVERY
   DISPLAY
+  KIOSK
 
   @@map("station_type")
 }
@@ -90,6 +91,7 @@ model User {
   pushSubscriptions   PushSubscription[]
   promotions          ProductPromotion[]
   discountRules       DiscountRule[]
+  kioskBasketsTaken   KioskBasket[]
 
   @@map("users")
 }
@@ -98,7 +100,7 @@ model Station {
   id          String      @id @default(uuid(7)) @db.Uuid
   type        StationType
   name        String      @db.VarChar(80)
-  /// Key typed on the public display to pair it, no account needed (RG-DSP-01).
+  /// Address key of the public display (RG-DSP-01) or a kiosk (RG-BOR-01), no account needed.
   displayKey  String?     @unique @map("display_key") @db.VarChar(64)
   isActive    Boolean     @default(true) @map("is_active")
   /// sha256 of the key its paired device sends at login (T-015, RG-USR-09): one device per station.
@@ -112,6 +114,7 @@ model Station {
   registerSessions RegisterSession[]
   deliveries       Delivery[]
   auditEntries     AuditLog[]
+  kioskBaskets     KioskBasket[]
 
   @@map("stations")
 }

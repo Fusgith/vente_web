@@ -33,6 +33,8 @@ const PROBES: [Permission, 'GET' | 'POST' | 'PUT' | 'PATCH', string][] = [
   ['quotes.read', 'GET', `/quotes/${ID}`],
   ['quotes.create', 'POST', '/quotes'],
   ['quotes.edit', 'GET', '/quotes'],
+  ['kiosk.read', 'GET', '/kiosk-baskets'],
+  ['kiosk.take', 'POST', `/kiosk-baskets/${ID}/take`],
   ['orders.read', 'GET', `/orders/${ID}`],
   ['orders.submit', 'POST', `/orders/${ID}/submit`],
   ['orders.change', 'POST', `/orders/${ID}/send-back`],

@@ -54,6 +54,9 @@ export const PERMISSIONS = {
   'discountRequests.board': ['manager', 'owner'],
   'discountRequests.decide': ['owner'],
   discountCodes: ['owner'],
+  // Paniers de la borne : voir ; prendre (RG-BOR-04/05).
+  'kiosk.read': ['sales', 'manager', 'owner'],
+  'kiosk.take': ['sales', 'manager'],
   // Files : appeler à la caisse ; réordonner, prioriser ; superviser.
   'queues.register': ['cashier', 'manager'],
   'queues.supervise': ['manager'],

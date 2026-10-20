@@ -8,6 +8,7 @@ export const settingsLabels = {
     delays: 'Délais',
     lists: 'Listes proposées',
     display: 'Écran public',
+    kiosk: 'Borne libre-service',
     lock: 'Verrouillage des appareils',
   },
   fields: {
@@ -35,6 +36,8 @@ export const settingsLabels = {
     'display.enabled': 'Écran public allumé',
     'display.sound': 'Son à chaque appel',
     'display.last_calls': 'Derniers appels affichés',
+    'kiosk.idle_seconds': 'Remise à zéro sans contact (secondes)',
+    'kiosk.max_baskets_per_hour': 'Paniers par heure et par borne au plus',
     'session.lock_minutes.tablet': 'Tablette (minutes)',
     'session.lock_minutes.register': 'Caisse (minutes)',
   } as Record<string, string>,

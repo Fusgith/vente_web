@@ -167,12 +167,12 @@ export function StationsPanel() {
                   <td className={ROW}>
                     {station.displayKey ? (
                       <a
-                        href={`/ecran/${encodeURIComponent(station.displayKey)}`}
+                        href={`/${station.type === 'KIOSK' ? 'borne' : 'ecran'}/${encodeURIComponent(station.displayKey)}`}
                         target="_blank"
                         rel="noreferrer"
                         className={buttonClass('link')}
                       >
-                        {text.displayLink}
+                        {station.type === 'KIOSK' ? text.kioskLink : text.displayLink}
                       </a>
                     ) : (
                       <div className="flex flex-col items-start gap-1">

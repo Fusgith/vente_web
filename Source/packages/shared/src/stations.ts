@@ -1,11 +1,11 @@
 /**
- * The shop's stations (T-015, RG-USR-09, H21, H71): tablets, registers, delivery counters and the
- * public display. The admin declares them and pairs each device to its station from the device
+ * The shop's stations (T-015, RG-USR-09, H21, H71): tablets, registers, delivery counters, the
+ * public display and the kiosks (RG-BOR-01). The admin declares them and pairs each device to its station from the device
  * itself; a paired device sends its key at login, never a bare station id.
  */
 import { z } from 'zod';
 
-export const STATION_TYPES = ['SALES', 'REGISTER', 'DELIVERY', 'DISPLAY'] as const;
+export const STATION_TYPES = ['SALES', 'REGISTER', 'DELIVERY', 'DISPLAY', 'KIOSK'] as const;
 export const stationTypeSchema = z.enum(STATION_TYPES);
 export type StationType = z.infer<typeof stationTypeSchema>;
 
@@ -16,7 +16,7 @@ export const stationSchema = z.object({
   type: stationTypeSchema,
   name: z.string(),
   isActive: z.boolean(),
-  /** The public display's address key (`/ecran/<key>`); null for other stations. */
+  /** The address key of the public display (`/ecran/<key>`) or a kiosk (`/borne/<key>`). */
   displayKey: z.string().nullable(),
   /** When a device was last paired to it; null while none is. */
   pairedAt: z.iso.datetime({ offset: true }).nullable(),

@@ -158,6 +158,11 @@ export async function favoriteProducts(
   return loadHits(db, ids, options);
 }
 
+/** The shop's 12 best sellers over 30 days: the kiosk's favourites (RG-BOR-02). */
+export async function shopBestSellers(db: Db, options: HitOptions): Promise<ProductHit[]> {
+  return loadHits(db, await bestSellers(db, null, undefined), options);
+}
+
 /** The « À proposer » row (RG-DEV-06 §6): today's promotions of products on sale, ending soonest. */
 export async function promotedProducts(
   db: Db,

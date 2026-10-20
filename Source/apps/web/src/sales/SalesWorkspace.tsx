@@ -17,6 +17,7 @@ import {
   type DraftState,
 } from './draft.js';
 import { loadQuote } from './draft-load.js';
+import { KioskBaskets } from './KioskBaskets.js';
 import { MyOrdersSheet } from './MyOrdersSheet.js';
 import { OrderTicketSheet } from './OrderTicketSheet.js';
 import { ProductSearch } from './ProductSearch.js';
@@ -97,14 +98,20 @@ export function SalesWorkspace({ initialDraft = emptyDraft, discounts }: SalesWo
           onWithdraw={() => void withdraw()}
           busy={busy}
           mine={
-            <button
-              type="button"
-              className={buttonClass('secondary', 'md', 'gap-2')}
-              onClick={() => setMineOpen(true)}
-            >
-              <Icon name="document" className="size-5" />
-              {labels.mine.open}
-            </button>
+            <>
+              <button
+                type="button"
+                className={buttonClass('secondary', 'md', 'gap-2')}
+                onClick={() => setMineOpen(true)}
+              >
+                <Icon name="document" className="size-5" />
+                {labels.mine.open}
+              </button>
+              <KioskBaskets
+                unsaved={unsaved}
+                onTaken={async (id) => dispatch({ type: 'load', draft: await loadQuote(id) })}
+              />
+            </>
           }
           customer={
             <CustomerPicker

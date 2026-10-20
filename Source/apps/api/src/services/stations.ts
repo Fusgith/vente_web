@@ -55,6 +55,9 @@ async function write<T>(run: () => Promise<T>): Promise<T> {
   }
 }
 
+/** The public display and the kiosks open by their address key, without pairing (RG-BOR-01). */
+const opensByAddress = (type: StationType) => type === 'DISPLAY' || type === 'KIOSK';
+
 /** Every station, by type then name (T-015). */
 export async function listStations(db: Db): Promise<Station[]> {
   const rows = await db.station.findMany({ orderBy: [{ type: 'asc' }, { name: 'asc' }], select });
@@ -65,7 +68,7 @@ export async function createStation(db: Db, actor: Actor, input: CreateStation):
   return write(() =>
     db.$transaction(async (tx) => {
       const row = await tx.station.create({
-        data: { ...input, displayKey: input.type === 'DISPLAY' ? newKey() : null },
+        data: { ...input, displayKey: opensByAddress(input.type) ? newKey() : null },
         select,
       });
       const station = toView(row);
@@ -117,7 +120,7 @@ export async function pairStation(db: Db, actor: Actor, id: string): Promise<Sta
   return db.$transaction(async (tx) => {
     const current = await tx.station.findUnique({ where: { id }, select });
     if (!current) throw new AppError(404, 'NOT_FOUND');
-    if (current.type === 'DISPLAY') throw new AppError(400, 'STATION_NOT_PAIRABLE');
+    if (opensByAddress(current.type)) throw new AppError(400, 'STATION_NOT_PAIRABLE');
     if (!current.isActive) throw new AppError(400, 'STATION_INVALID');
     const key = newKey();
     const row = await tx.station.update({

@@ -42,6 +42,9 @@ export const SETTING_SCHEMAS = {
   'display.enabled': z.boolean(),
   'display.sound': z.boolean(),
   'display.last_calls': z.int().min(1).max(20),
+  // RG-BOR-06: the kiosk's idle reset and its baskets per hour.
+  'kiosk.idle_seconds': z.int().min(30).max(600),
+  'kiosk.max_baskets_per_hour': z.int().min(1).max(200),
   'session.lock_minutes.tablet': minutes,
   'session.lock_minutes.register': minutes,
 } as const;

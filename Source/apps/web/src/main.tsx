@@ -12,6 +12,8 @@ const mount = (node: ReactNode) => createRoot(root).render(<StrictMode>{node}</S
 
 // The public display, opened by its station key without an account (RG-DSP-03).
 const display = /^\/ecran\/([^/]+)\/?$/.exec(window.location.pathname)?.[1];
+// The self-service kiosk, opened the same way (RG-BOR-01).
+const kiosk = /^\/borne\/([^/]+)\/?$/.exec(window.location.pathname)?.[1];
 
 // The design gallery exists only in development: the build drops this branch and its chunk.
 if (import.meta.env.DEV && window.location.pathname === '/__design') {
@@ -19,6 +21,10 @@ if (import.meta.env.DEV && window.location.pathname === '/__design') {
 } else if (display) {
   void import('./display/PublicDisplay.js').then(({ PublicDisplay }) =>
     mount(<PublicDisplay displayKey={decodeURIComponent(display)} />),
+  );
+} else if (kiosk) {
+  void import('./kiosk/KioskScreen.js').then(({ KioskScreen }) =>
+    mount(<KioskScreen kioskKey={decodeURIComponent(kiosk)} />),
   );
 } else {
   mount(<App />);

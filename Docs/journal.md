@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 21/10/2026 — T-036 : borne libre-service — agent : Claude Code (Opus 5.5)
+
+**Fait** : l'admin déclare un poste « Borne libre-service » ; la borne s'ouvre à `/borne/<clé>`, montre les articles les plus vendus et la recherche, le client remplit son panier (unité, quantité au pavé, sans remise), saisit nom et téléphone et reçoit un numéro P1, P2… Sur la tablette, « n paniers borne » liste les paniers du jour ; « Prendre » en fait un devis au nom du commercial. Remise à zéro après inactivité et limite d'envoi réglables dans « Paramètres ». Hypothèse H74. Aucune dépendance ajoutée. Tests API 446, web 408 verts.
+
+**Reste** : T-019b (courbe des prix, export, événement `catalog.changed`) ; T-095b ; T-080 (téléchargements à autoriser).
+
 ## 20/10/2026 — T-013 : droits de l'annexe B et écran « Paramètres » — agent : Claude Code (Opus 5.5)
 
 **Fait** : les droits de l'annexe B sont écrits en un seul endroit (`apps/api/src/permissions.ts`) et chaque route nomme le droit qu'elle exige ; un test appelle une route par droit avec chacun des six rôles. L'admin règle à l'écran « Paramètres » l'identité du magasin, la TVA, l'arrondi des espèces, les préfixes, les délais, les listes proposées, l'écran public et le verrouillage ; chaque changement est contrôlé et journalisé. Tests API 439, web 406 verts.

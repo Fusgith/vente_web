@@ -276,3 +276,14 @@ export function orderSetAside(order: CalledOrder): Emission[] {
 export function orderRefunded(order: CalledOrder): Emission[] {
   return [...queueChanged('delivery', order.id, 'cancelled'), statusChanged(order, 'REFUNDED')];
 }
+
+/** The salespeople and the manager follow the kiosk's pending baskets live (RG-BOR-04). */
+const BASKET_FOLLOWERS = [room.role('sales'), room.role('manager'), room.role('owner')];
+
+export function kioskBasketCreated(basketId: string): Emission[] {
+  return [emission(BASKET_FOLLOWERS, 'kiosk.basket_created', { basketId })];
+}
+
+export function kioskBasketClaimed(basketId: string): Emission[] {
+  return [emission(BASKET_FOLLOWERS, 'kiosk.basket_claimed', { basketId })];
+}

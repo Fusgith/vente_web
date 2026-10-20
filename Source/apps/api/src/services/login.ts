@@ -43,6 +43,7 @@ export function stationAcceptsRole(stationType: StationType, role: Role): boolea
     case 'DELIVERY':
       return role === 'warehouse' || isSupervisor(role);
     case 'DISPLAY':
+    case 'KIOSK':
       return false;
   }
 }
