@@ -90,3 +90,40 @@ model ReceivableSettlement {
   @@index([registerSessionId])
   @@map("receivable_settlements")
 }
+
+enum CreditRequestStatus {
+  PENDING
+  GRANTED
+  REJECTED
+
+  @@map("credit_request_status")
+}
+
+/// Credit the conditions refused, asked of the owner at the register (H67, ⚠️ H76): granted,
+/// the order is paid with up to `amount` left to pay, due `days` after the sale.
+model CreditRequest {
+  id            String              @id @default(uuid(7)) @db.Uuid
+  orderId       String              @map("order_id") @db.Uuid
+  customerId    String              @map("customer_id") @db.Uuid
+  amount        Decimal             @db.Decimal(14, 2)
+  /// Why the conditions refused it (H72): NO_CONDITION, CEILING or OVERDUE.
+  refusal       String              @db.VarChar(20)
+  /// What the customer owed when asked.
+  outstanding   Decimal             @db.Decimal(14, 2)
+  /// Days to settle, set by the owner on granting.
+  days          Int?
+  status        CreditRequestStatus @default(PENDING)
+  requestedById String              @map("requested_by") @db.Uuid
+  decidedById   String?             @map("decided_by") @db.Uuid
+  decidedAt     DateTime?           @map("decided_at") @db.Timestamptz(6)
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  order       Order    @relation(fields: [orderId], references: [id])
+  customer    Customer @relation(fields: [customerId], references: [id])
+  requestedBy User     @relation("CreditRequestedBy", fields: [requestedById], references: [id])
+  decidedBy   User?    @relation("CreditDecidedBy", fields: [decidedById], references: [id])
+
+  @@index([status, createdAt])
+  @@index([orderId])
+  @@map("credit_requests")
+}

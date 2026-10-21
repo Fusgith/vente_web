@@ -1,6 +1,8 @@
 import {
+  CREDIT_REFUSAL_LABEL,
   formatMga,
   formatQty,
+  type CreditRequest,
   type DiscountEntry,
   type Order,
   type PushMessage,
@@ -56,6 +58,22 @@ export function requestMessage(order: Order): PushMessage | null {
     title: PUSH_TEXT.title(order.customer.name),
     body: body.length > MAX_BODY ? `${body.slice(0, MAX_BODY - 1)}…` : body,
     tag: `discount-request:${request.id}`,
+    url: HOME,
+  };
+}
+
+/** A credit beyond the conditions (⚠️ H76): how much, on what order, why refused, who asks. */
+export function creditMessage(request: CreditRequest): PushMessage {
+  const body = [
+    `Crédit de ${formatMga(request.amount)}`,
+    PUSH_TEXT.order(formatMga(request.order.total)),
+    PUSH_TEXT.reason(CREDIT_REFUSAL_LABEL[request.refusal]),
+    PUSH_TEXT.askedBy(request.requestedBy.fullName),
+  ].join('\n');
+  return {
+    title: `Demande de crédit : ${request.customer.name}`,
+    body: body.length > MAX_BODY ? `${body.slice(0, MAX_BODY - 1)}…` : body,
+    tag: `credit-request:${request.id}`,
     url: HOME,
   };
 }

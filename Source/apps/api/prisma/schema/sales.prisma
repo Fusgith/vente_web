@@ -79,6 +79,7 @@ model Customer {
   discountCodes    DiscountCode[]
   creditCondition  CreditCondition?
   receivables      Receivable[]
+  creditRequests   CreditRequest[]
 
   @@index([name])
   @@map("customers")
@@ -160,6 +161,7 @@ model Order {
   deliveries        Delivery[]
   deliveryIssues    DeliveryIssue[]
   kioskBasket       KioskBasket?
+  creditRequests    CreditRequest[]
 
   @@unique([ticketDate, ticketLetter, ticketSeq])
   @@index([status, queueRank])

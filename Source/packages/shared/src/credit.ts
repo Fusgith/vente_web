@@ -105,3 +105,50 @@ export type ReceivablePayment = z.infer<typeof receivablePaymentSchema>;
 /** At its due day, the manager marks the title cashed or unpaid (H68). */
 export const instrumentOutcomeSchema = z.object({ outcome: z.enum(['CASHED', 'UNPAID']) });
 export type InstrumentOutcome = z.infer<typeof instrumentOutcomeSchema>['outcome'];
+
+/** Why the conditions refused the credit (H72), shown to the owner with the request. */
+export const creditRefusalSchema = z.enum(['NO_CONDITION', 'CEILING', 'OVERDUE']);
+export type CreditRefusal = z.infer<typeof creditRefusalSchema>;
+export const CREDIT_REFUSAL_LABEL: Record<CreditRefusal, string> = {
+  NO_CONDITION: 'Pas de conditions de crédit pour ce client',
+  CEILING: 'Plafond d’encours dépassé',
+  OVERDUE: 'Échéance déjà passée',
+};
+
+/** Refused by the conditions, the register asks the owner for this much on credit (⚠️ H76). */
+export const creditRequestCreateSchema = z.object({
+  orderId: z.uuid(),
+  amount: paymentLineInputSchema.shape.amount,
+});
+export type CreditRequestCreate = z.infer<typeof creditRequestCreateSchema>;
+
+/** The owner grants it with the days to settle (⚠️ H76). */
+export const creditRequestGrantSchema = z.object({ days: z.number().int().min(1).max(365) });
+export type CreditRequestGrant = z.infer<typeof creditRequestGrantSchema>;
+
+const personSchema = z.object({ id: z.uuid(), fullName: z.string() });
+
+export const creditRequestSchema = z.object({
+  id: z.uuid(),
+  status: z.enum(['PENDING', 'GRANTED', 'REJECTED']),
+  amount: z.string(),
+  refusal: creditRefusalSchema,
+  /** What the customer owed when asked. */
+  outstanding: z.string(),
+  /** Days to settle, once granted. */
+  days: z.number().int().nullable(),
+  customer: customerRefSchema,
+  order: z.object({ id: z.uuid(), number: z.string(), total: z.string() }),
+  requestedBy: personSchema,
+  decidedBy: personSchema.nullable(),
+  createdAt: z.iso.datetime({ offset: true }),
+  decidedAt: z.iso.datetime({ offset: true }).nullable(),
+});
+export type CreditRequest = z.infer<typeof creditRequestSchema>;
+
+/** The owner's list: pending first, oldest first, then today's answers. */
+export const creditRequestListSchema = z.object({
+  pending: z.array(creditRequestSchema),
+  recent: z.array(creditRequestSchema),
+});
+export type CreditRequestList = z.infer<typeof creditRequestListSchema>;

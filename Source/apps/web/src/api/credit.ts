@@ -1,11 +1,15 @@
 import {
   creditConditionListSchema,
   creditConditionSchema,
+  creditRequestListSchema,
+  creditRequestSchema,
   receivableListSchema,
   receivablePaymentSchema,
   receivableSchema,
   type CreditCondition,
   type CreditConditionInput,
+  type CreditRequest,
+  type CreditRequestList,
   type InstrumentOutcome,
   type Receivable,
   type ReceivableList,
@@ -51,5 +55,26 @@ export const creditApi = {
   },
   receiptPdfUrl(settlementId: string): string {
     return `${API_BASE}/receivable-settlements/${settlementId}/pdf`;
+  },
+  /** Beyond the conditions, asked of the owner (⚠️ H76). */
+  async askCredit(orderId: string, amount: string): Promise<CreditRequest> {
+    return parseResponse(
+      creditRequestSchema,
+      await apiRequest('/credit-requests', { method: 'POST', body: { orderId, amount } }),
+    );
+  },
+  async creditRequests(): Promise<CreditRequestList> {
+    return parseResponse(creditRequestListSchema, await apiRequest('/credit-requests'));
+  },
+  /** Granted with its days to settle, or refused (null). */
+  async decideCredit(id: string, days: number | null): Promise<CreditRequest> {
+    const path = days === null ? 'reject' : 'grant';
+    return parseResponse(
+      creditRequestSchema,
+      await apiRequest(`/credit-requests/${id}/${path}`, {
+        method: 'POST',
+        ...(days === null ? {} : { body: { days } }),
+      }),
+    );
   },
 };

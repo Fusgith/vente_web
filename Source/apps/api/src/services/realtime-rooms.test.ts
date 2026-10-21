@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { catalogChanged, orderSubmitted, roomsOf, stockLow } from './realtime-rooms.js';
+import {
+  catalogChanged,
+  creditDecided,
+  orderSubmitted,
+  roomsOf,
+  stockLow,
+} from './realtime-rooms.js';
 
 const USER = '0192a4f0-0000-7000-8000-000000000501';
 const STATION = '0192a4f0-0000-7000-8000-000000000601';
@@ -58,6 +64,16 @@ describe('realtime rooms (CDC technique §6.1)', () => {
         rooms: ['role:sales', 'role:cashier', 'role:manager'],
         event: 'catalog.changed',
         payload: {},
+      },
+    ]);
+  });
+
+  it('tells the asker and the registers of the answer to a credit request (⚠️ H76)', () => {
+    expect(creditDecided(STATION, USER, USER, 'GRANTED')).toEqual([
+      {
+        rooms: ['role:owner', 'role:manager', `user:${USER}`, 'queue:register'],
+        event: 'credit.request_decided',
+        payload: { requestId: STATION, orderId: USER, status: 'GRANTED' },
       },
     ]);
   });

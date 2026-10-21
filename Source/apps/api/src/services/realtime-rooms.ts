@@ -298,3 +298,29 @@ export function catalogChanged(): Emission[] {
     ),
   ];
 }
+
+/** Credit asked beyond the conditions: the owner and the manager are told (H67, H76). */
+export function creditRequested(requestId: string, orderId: string): Emission[] {
+  return [
+    emission([room.role('owner'), room.role('manager')], 'credit.request_created', {
+      requestId,
+      orderId,
+    }),
+  ];
+}
+
+/** The owner's answer: the other owner devices, the manager, the asker and the registers (H76). */
+export function creditDecided(
+  requestId: string,
+  orderId: string,
+  askerId: string,
+  status: RealtimeEvents['credit.request_decided']['status'],
+): Emission[] {
+  return [
+    emission(
+      [room.role('owner'), room.role('manager'), room.user(askerId), room.queue('register')],
+      'credit.request_decided',
+      { requestId, orderId, status },
+    ),
+  ];
+}

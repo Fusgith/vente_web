@@ -27,6 +27,7 @@ import { ReservationDaysPanel } from '../owner/ReservationDaysPanel.js';
 import { DiscountCodesPanel } from '../owner/DiscountCodesPanel.js';
 import { DiscountRulesPanel } from '../owner/DiscountRulesPanel.js';
 import { PromotionsPanel } from '../owner/PromotionsPanel.js';
+import { CreditRequestsPanel } from '../owner/CreditRequestsPanel.js';
 import { DiscountRequestsPanel } from '../owner/DiscountRequestsPanel.js';
 import { Dashboard } from '../owner/Dashboard.js';
 import { ReceivablesPanel } from '../register/ReceivablesPanel.js';
@@ -159,6 +160,7 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
         <Dashboard live={false} />
         {/* RG-DSH-05 (H54): the requests to the owner and the answers, read-only. */}
         <DiscountRequestsPanel editable={false} />
+        <CreditRequestsPanel editable={false} />
         {/* RG-LIV-04 (H37): the manager decides on each delivery issue. */}
         <DeliveryIssuesPanel />
         {/* RG-CAI-04/05: the day's registers. */}
@@ -218,6 +220,8 @@ function Workspace({ role, userId }: { role: Role; userId: string }) {
       </header>
       {/* RG-REM-03, RG-DSH-05 (H53): the owner answers the discount requests, first of all. */}
       <DiscountRequestsPanel editable />
+      {/* H67, ⚠️ H76: the credits the conditions refused, asked by the register. */}
+      <CreditRequestsPanel editable />
       {/* RG-DSH-01 à 04: the period's figures, the live queues, the products under threshold. */}
       <Dashboard live />
       {/* RG-CAI-04/05: the day's registers. */}

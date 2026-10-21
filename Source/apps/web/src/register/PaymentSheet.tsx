@@ -1,5 +1,6 @@
 import {
   CASH_METHOD,
+  CREDIT_METHOD,
   formatMga,
   formatQty,
   INSTRUMENT_METHODS,
@@ -11,9 +12,11 @@ import {
 } from '@vente-web/shared';
 import { useEffect, useId, useState } from 'react';
 
+import { creditApi } from '../api/credit.js';
 import { errorMessage } from '../api/error-message.js';
 import { paymentsApi } from '../api/payments.js';
 import { labels } from '../labels.js';
+import { useRealtimeEvent } from '../realtime/context.js';
 import { buttonClass } from '../ui/button.js';
 import { Icon } from '../ui/Icon.js';
 import { Sheet } from '../ui/Sheet.js';
@@ -58,6 +61,8 @@ export function PaymentSheet({ order, ticket, busy, onPay, onClose }: PaymentShe
   const [failure, setFailure] = useState<string | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
   const [received, setReceived] = useState('');
+  const [asking, setAsking] = useState(false);
+  const [creditNote, setCreditNote] = useState<string | null>(null);
   const receivedId = useId();
 
   useEffect(() => {
@@ -157,6 +162,25 @@ export function PaymentSheet({ order, ticket, busy, onPay, onClose }: PaymentShe
       key,
     );
   };
+
+  // A credit the conditions refuse is asked of the owner, the sheet left open (⚠️ H76).
+  const creditLine = lines.find((line) => methodOf(line)?.code === CREDIT_METHOD);
+  const creditAmount = creditLine ? typedAmount(creditLine.amount) : null;
+  const askCredit = () => {
+    if (!creditAmount) return;
+    setAsking(true);
+    setFailure(null);
+    creditApi
+      .askCredit(order.id, creditAmount)
+      .then(
+        () => setCreditNote(labels.credit.asked),
+        (error: unknown) => setFailure(errorMessage(error)),
+      )
+      .finally(() => setAsking(false));
+  };
+  useRealtimeEvent('credit.request_decided', ({ orderId, status }) => {
+    if (orderId === order.id) setCreditNote(labels.credit.answer[status]);
+  });
 
   const remaining = settled.remaining;
   const issue =
@@ -292,6 +316,19 @@ export function PaymentSheet({ order, ticket, busy, onPay, onClose }: PaymentShe
         >
           {text.addMethod}
         </button>
+      )}
+      {creditAmount && /[1-9]/.test(creditAmount) && (
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={askCredit}
+            disabled={asking}
+            className={buttonClass('secondary', 'md')}
+          >
+            {asking ? labels.credit.asking : labels.credit.ask}
+          </button>
+          {creditNote && <output className="font-semibold">{creditNote}</output>}
+        </div>
       )}
       {hasCash && (
         <div className="flex flex-wrap items-end gap-4 rounded-control bg-cotton p-3">

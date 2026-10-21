@@ -51,4 +51,24 @@ export const creditLabels = {
   cashedOf: (customer: string) => `Titre de ${customer} encaissé par la banque`,
   unpaidOf: (customer: string) => `Titre de ${customer} impayé`,
   marked: (customer: string, state: string) => `Titre de ${customer} : ${state}.`,
+
+  /** Credit beyond the conditions, asked of the owner (⚠️ H76). */
+  ask: 'Demander ce crédit au boss',
+  asking: 'Envoi…',
+  asked: 'Demande envoyée au boss : attendez sa réponse.',
+  answer: {
+    GRANTED: 'Le boss a accordé le crédit : encaissez.',
+    REJECTED: 'Le boss a refusé le crédit : encaissez autrement.',
+  },
+  requestsTitle: 'Demandes de crédit',
+  requestsHelp:
+    'Crédit refusé par les conditions du client : accordez-le avec un délai pour régler, ou refusez-le.',
+  requestOf: (amount: string, total: string) => `Crédit de ${amount} sur une commande de ${total}`,
+  owed: (amount: string) => `Doit déjà ${amount}`,
+  askedBy: (name: string, time: string) => `Demandé par ${name} à ${time}`,
+  daysInvalid: 'Délai incorrect : de 1 à 365 jours.',
+  grant: 'Accorder',
+  reject: 'Refuser',
+  granted: (customer: string) => `Crédit accordé à ${customer}.`,
+  rejected: (customer: string) => `Crédit refusé à ${customer}.`,
 };

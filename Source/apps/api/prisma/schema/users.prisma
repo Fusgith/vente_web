@@ -92,6 +92,8 @@ model User {
   promotions          ProductPromotion[]
   discountRules       DiscountRule[]
   kioskBasketsTaken   KioskBasket[]
+  creditRequests      CreditRequest[]        @relation("CreditRequestedBy")
+  creditDecisions     CreditRequest[]        @relation("CreditDecidedBy")
 
   @@map("users")
 }

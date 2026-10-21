@@ -34,6 +34,10 @@ export const PERMISSIONS = {
   'credit.conditions': ['owner'],
   'credit.settle': ['cashier', 'manager'],
   'credit.instruments': ['manager'],
+  // Crédit hors conditions : demander au boss ; suivre ; accorder ou refuser (⚠️ H76).
+  'creditRequests.ask': ['cashier', 'manager'],
+  'creditRequests.board': ['manager', 'owner'],
+  'creditRequests.decide': ['owner'],
   // Durée de réservation (RG-STK-02, H45).
   'reservationDays.read': ['manager', 'owner', 'admin'],
   'reservationDays.edit': ['owner', 'admin'],

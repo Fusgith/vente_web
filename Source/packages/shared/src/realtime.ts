@@ -56,6 +56,14 @@ export const realtimePayloadSchemas = {
     orderId: z.uuid(),
     status: discountRequestStatusSchema.exclude(['PENDING']),
   }),
+  /** Credit asked of the owner beyond the conditions (H67, H76). */
+  'credit.request_created': z.object({ requestId: z.uuid(), orderId: z.uuid() }),
+  /** The owner granted or refused it: the register pays on credit or otherwise (H76). */
+  'credit.request_decided': z.object({
+    requestId: z.uuid(),
+    orderId: z.uuid(),
+    status: z.enum(['GRANTED', 'REJECTED']),
+  }),
 };
 
 export type RealtimeEvent = keyof typeof realtimePayloadSchemas;

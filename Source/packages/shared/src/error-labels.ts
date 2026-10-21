@@ -127,6 +127,11 @@ export const ERROR_LABELS = {
   PAYMENT_CASH_WITHOUT_LINE: 'Un montant reçu en espèces demande une ligne en espèces.',
   CREDIT_NOT_ALLOWED:
     'Crédit refusé : pas de conditions de crédit pour ce client, plafond d’encours dépassé ou échéance déjà passée.',
+  CREDIT_ALLOWED: 'Ce crédit est dans les conditions du client : encaissez sans demander au boss.',
+  CREDIT_REQUEST_PENDING:
+    'Une demande de crédit attend déjà la réponse du boss pour cette commande.',
+  CREDIT_REQUEST_NOT_PENDING:
+    'Cette demande de crédit n’attend plus de réponse : elle a été décidée, ou la commande a été payée ou annulée.',
   CREDIT_CONDITION_EXISTS:
     'Une condition de crédit existe déjà pour ce type, cette catégorie ou ce client.',
   RECEIVABLE_SETTLED: 'Cette créance est déjà soldée : la liste a été mise à jour.',

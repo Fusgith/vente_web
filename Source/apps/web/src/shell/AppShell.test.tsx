@@ -53,6 +53,7 @@ describe('signed-in shell', () => {
       'GET /discount-caps': ok({ defaultPct: '0.00', categories: [] }),
       'GET /discount-rules': ok({ items: [] }),
       'GET /discount-requests': ok({ pending: [], recent: [] }),
+      'GET /credit-requests': ok({ pending: [], recent: [] }),
       'GET /queues/register': ok({ queue: 'register', serving: [], waiting: [] }),
       'GET /queues/delivery': ok({ queue: 'delivery', serving: [], waiting: [] }),
       'GET /supervision/today': ok({
@@ -79,6 +80,7 @@ describe('signed-in shell', () => {
     fakeApi({
       'GET /auth/me': ok(meFor({ user: { ...RIJA, roles: ['owner'] }, activeRole: 'owner' })),
       'GET /discount-requests': ok({ pending: [], recent: [] }),
+      'GET /credit-requests': ok({ pending: [], recent: [] }),
       'GET /register-sessions': ok({ sessions: [] }),
       'GET /products?page=1': ok({ items: [], total: 0 }),
       'GET /audit': ok({ entries: [], more: false }),

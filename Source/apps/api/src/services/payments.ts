@@ -17,6 +17,7 @@ import type { Prisma } from '../generated/prisma/client.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit } from './audit.js';
 import { creditDueOn } from './credit-conditions.js';
+import { grantedDueOn } from './credit-requests.js';
 import { issueInvoice, readInvoiceSettings } from './invoices.js';
 import { loadOrder } from './orders.js';
 import { lockOpenSession } from './register-sessions.js';
@@ -163,7 +164,11 @@ export async function payOrder(
     if (titled && (!titled.reference || !titled.bank || !titled.dueOn || titled.dueOn < today)) {
       throw new AppError(422, 'PAYMENT_INSTRUMENT_DETAILS');
     }
-    const creditDue = later ? await creditDueOn(tx, order.customer_id, later.amount, now) : null;
+    // A credit the owner granted on this order stands in for the conditions (⚠️ H76).
+    const creditDue = later
+      ? ((await grantedDueOn(tx, id, later.amount, now)) ??
+        (await creditDueOn(tx, order.customer_id, later.amount, now)))
+      : null;
     const dueOn = titled?.dueOn ? new Date(titled.dueOn) : creditDue;
     const credit =
       later && dueOn

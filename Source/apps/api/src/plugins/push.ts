@@ -1,10 +1,15 @@
-import { isKnownPushService, type Order, type PushMessage } from '@vente-web/shared';
+import {
+  isKnownPushService,
+  type CreditRequest,
+  type Order,
+  type PushMessage,
+} from '@vente-web/shared';
 import fp from 'fastify-plugin';
 import webpush from 'web-push';
 
 import type { Env } from '../env.js';
 import { AppError } from '../errors.js';
-import { requestMessage, testMessage } from '../services/push-message.js';
+import { creditMessage, requestMessage, testMessage } from '../services/push-message.js';
 import { findSubscription, forgetGone, ownerTargets, type PushTarget } from '../services/push.js';
 import type { Vapid } from '../services/vapid.js';
 
@@ -30,6 +35,8 @@ export interface Push {
    * the request is made whatever comes of it.
    */
   notifyOwners(order: Order): void;
+  /** Each owner's device told of a credit asked beyond the conditions (⚠️ H76), likewise. */
+  notifyCreditRequest(request: CreditRequest): void;
   /** One test notification to the caller's device, refused with why it did not go. */
   test(userId: string, endpoint: string): Promise<void>;
   /** The notifications under way, sent or failed (tests, closing). */
@@ -119,15 +126,26 @@ export const pushPlugin = fp<{ env: Env; send?: PushSend }>(
       pending.add(running);
     }
 
-    function notifyOwners(order: Order): void {
-      const request = order.discountRequest;
-      const message = requestMessage(order);
-      if (!vapid || !request || !message) return;
-      const options = { ttl: ttlUntil(request.expiresAt), topic: request.id.replaceAll('-', '') };
+    function toOwners(message: PushMessage, options: PushOptions): void {
       track(async () => {
         const targets = await ownerTargets(app.db);
         await Promise.all(targets.map((target) => sendTo(target, message, options)));
       });
+    }
+
+    function notifyOwners(order: Order): void {
+      const request = order.discountRequest;
+      const message = requestMessage(order);
+      if (!vapid || !request || !message) return;
+      toOwners(message, {
+        ttl: ttlUntil(request.expiresAt),
+        topic: request.id.replaceAll('-', ''),
+      });
+    }
+
+    function notifyCreditRequest(request: CreditRequest): void {
+      if (!vapid) return;
+      toOwners(creditMessage(request), { ttl: MAX_TTL, topic: request.id.replaceAll('-', '') });
     }
 
     async function test(userId: string, endpoint: string): Promise<void> {
@@ -146,6 +164,7 @@ export const pushPlugin = fp<{ env: Env; send?: PushSend }>(
     app.decorate('push', {
       publicKey: vapid?.publicKey ?? null,
       notifyOwners,
+      notifyCreditRequest,
       test,
       flush,
     } satisfies Push);

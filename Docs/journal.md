@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 21/10/2026 — T-095b : demande de crédit au boss — agent : Claude Code (Opus 5.5)
+
+**Fait** : quand les conditions refusent la part à crédit, le bouton « Demander ce crédit au boss » de l'encaissement envoie la demande (motif, encours du client) ; le boss reçoit une notification et l'accorde avec un délai ou la refuse sur son écran, la caisse est prévenue en temps réel et encaisse. Une demande en attente par commande ; tout est journalisé (hypothèse H76). Aucune dépendance ajoutée.
+
+**Reste** : T-080 (téléchargements à autoriser).
+
 ## 21/10/2026 — T-019b : courbe des prix et catalogue à jour — agent : Claude Code (Opus 5.5)
 
 **Fait** : la fiche article montre, au-dessus de l'historique de chaque unité, la courbe du prix de base (en escalier, du premier prix au prix en vigueur ; hypothèse H75). Un nouveau prix, une unité ou un article modifié, un import appliqué envoient `catalog.changed` : la tablette relit ses favoris et sa recherche sans rechargement. Les exports « Grille de prix » et « Historique des prix » existaient (T-071). Aucune dépendance ajoutée. Tests verts.
