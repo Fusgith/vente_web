@@ -1,0 +1,12 @@
+# Shop server inside the shop: https://APP_DOMAIN on the LAN address (service VenteWeb-Caddy).
+# It never depends on the tunnel: the shop works without the Internet (CDC technique §2.4).
+{
+	admin off
+	persist_config off
+	storage file_system {$VW_DATA}/caddy
+}
+
+{$APP_DOMAIN} {
+	bind {$LAN_IP}
+	import site.caddy lan
+}

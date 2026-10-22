@@ -1,0 +1,43 @@
+# One site of the shop server (T-080), imported with its access origin: lan or remote.
+# Paths and keys come from the environment: VW_APP, VW_DATA (Windows service), the rest from
+# the data folder's .env (--envfile).
+tls {
+	dns ovh {
+		endpoint {$OVH_ENDPOINT}
+		application_key {$OVH_APPLICATION_KEY}
+		application_secret {$OVH_APPLICATION_SECRET}
+		consumer_key {$OVH_CONSUMER_KEY}
+	}
+	resolvers 1.1.1.1 8.8.8.8
+}
+encode zstd gzip
+header {
+	Strict-Transport-Security "max-age=31536000"
+	X-Content-Type-Options nosniff
+	Referrer-Policy same-origin
+	-Server
+}
+log {
+	output file {$VW_DATA}/journaux/caddy-{args[0]}.log {
+		roll_keep_for 2160h
+	}
+}
+
+# The API sees the origin set here, whatever the client sent (CDC technique §2.2); the client's
+# address, scheme and host travel in X-Forwarded-For / -Proto / Host, trusted from 127.0.0.1.
+@api path /api/* /socket.io/* /healthz
+handle @api {
+	reverse_proxy 127.0.0.1:3000 {
+		header_up X-Access-Origin {args[0]}
+	}
+}
+
+# Everything else is the PWA; its entry files are never cached, so an update shows at once.
+handle {
+	root * {$VW_APP}/web
+	@entry path / /index.html /sw.js /push-sw.js /registerSW.js /manifest.webmanifest
+	header @entry Cache-Control no-cache
+	header Content-Security-Policy "default-src 'self'; connect-src 'self' wss://{host}; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'"
+	try_files {path} /index.html
+	file_server
+}

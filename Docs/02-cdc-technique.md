@@ -284,11 +284,11 @@ Notification push (T-033e) : après la validation de la transaction d'une nouvel
 
 ### 10.3 Composition (dossier `Dist/<nom-simplifié>/`, ADR-0007)
 
-Node.js portable + API construite · PostgreSQL (binaires Windows officiels) · Caddy (80/443, TLS DNS-01, sert la PWA, proxy `/api` et `/socket.io`) · WireGuard (tunnel vers le relais OVH, ADR-0008) · scripts **Installer**, **Mettre à jour**, **Sauvegarder**, **Restaurer**. Services Windows à démarrage automatique. Données hors du dossier de l'application : base, fichiers émis (`FILES_DIR`), sauvegardes, `.env`.
+Node.js portable + API construite (`node_modules` à plat) · PostgreSQL 16 (binaires Windows officiels, `bin`, `lib`, `share` seulement) · Caddy avec `caddy-dns/ovh` (80/443, TLS DNS-01, sert la PWA, proxy `/api`, `/socket.io`, `/healthz`, en-têtes de sécurité et CSP) · DNS local (`dns-local.mjs`) · WireGuard (tunnel vers le relais OVH, ADR-0008) · WinSW (services Windows à démarrage automatique, relancés en cas d'arrêt) · script **Installer ou mettre a jour** ; **Sauvegarder** et **Restaurer** avec T-081. Données hors du dossier de l'application, dans `C:ProgramDataVenteWeb` : base, fichiers émis (`FILES_DIR`), sauvegardes, certificats, journaux, `.env` (secrets créés à l'installation). Détail : ⚠️ H77 du CDC métier, `Source/infra/windows/`.
 
 ### 10.4 Mise à jour
 
-Copier le nouveau dossier sur le serveur → double-clic sur **Mettre à jour** : sauvegarde, arrêt des services, migrations Prisma (`migrate deploy`, réversibles testées en staging) → redémarrage ; fenêtre hors ouverture ; sauvegarde complète avant chaque mise à jour ; procédure de retour arrière documentée.
+Copier le nouveau dossier à côté de l'ancien → double-clic sur son **Installer ou mettre a jour** : arrêt des services, sauvegarde complète (`pg_dump`), migrations (`dist/cli/migrate.js` : mêmes fichiers et même table `_prisma_migrations` que `prisma migrate deploy`, sans le CLI Prisma), droits SQL du rôle de l'API, services repointés sur le nouveau dossier → redémarrage et contrôle de `/healthz` ; fenêtre hors ouverture. Retour arrière : relancer l'ancien dossier puis restaurer la sauvegarde `avant-mise-a-jour-*.dump` (T-081).
 
 ### 10.5 Surveillance
 

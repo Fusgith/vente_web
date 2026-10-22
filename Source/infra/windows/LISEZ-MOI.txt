@@ -1,0 +1,23 @@
+Serveur du magasin : installation et mise à jour
+(Windows 10 ou 11, 64 bits ; dossier construit par « pnpm dist », T-080)
+
+Première installation
+1. Sur la box : donner au serveur une adresse fixe (celle du paramètre LAN_IP).
+2. Copier ce dossier sur le serveur, par exemple C:\VenteWeb (pas sur le Bureau).
+3. Double-clic sur « Installer ou mettre a jour.cmd », accepter la demande d'administrateur.
+4. À la fin : choisir l'identifiant et le nom du premier admin ; noter le mot de passe
+   provisoire affiché (il ne sera plus montré).
+5. Sur la box : DHCP, serveur DNS = l'adresse du serveur. Les tablettes ouvrent alors
+   l'adresse affichée à la fin de l'installation (https://...).
+
+Mise à jour
+1. Copier le nouveau dossier à côté de l'ancien (exemple : C:\VenteWeb-2).
+2. Double-clic sur son « Installer ou mettre a jour.cmd ». La base est sauvegardée avant
+   toute modification (C:\ProgramData\VenteWeb\sauvegardes).
+3. Quand tout marche, supprimer l'ancien dossier.
+
+Les données ne sont jamais dans ce dossier : C:\ProgramData\VenteWeb (base, factures,
+sauvegardes, certificats, journaux, paramètres et secrets).
+
+En cas d'échec : le message dit quelle étape a échoué ; les journaux sont dans
+C:\ProgramData\VenteWeb\journaux. Relancer le script après correction ne casse rien.

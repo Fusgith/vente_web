@@ -1,5 +1,13 @@
 # Dist
 
-Livrables construits depuis `Source/`, à déployer sur le serveur du magasin ou sur les postes clients
-(front statique, images Docker exportées, éventuel APK/TWA).
-Contenu reproductible, non versionné (voir `.gitignore`), jamais modifié à la main.
+Livrables construits depuis `Source/` ; contenu reproductible, non versionné (voir `.gitignore`),
+jamais modifié à la main.
+
+- `<nom-simplifié>/` — dossier Windows tout-en-un d'un magasin (ADR-0007, T-080), construit par
+  `pnpm dist --nom "…" [--nom-court "…"] [--client <paramètres>]` depuis `Source/`.
+  Mode d'emploi pour le magasin : `LISEZ-MOI.txt` dans ce dossier.
+  Avec `--client` (modèle : `Source/infra/windows/client.env.example`), il contient les secrets
+  du magasin : à transporter tel quel, jamais à partager.
+- `.telechargements/` — programmes tiers (Node.js, PostgreSQL, Caddy, WinSW, WireGuard), téléchargés
+  une fois et vérifiés par empreinte SHA-256 (`Source/scripts/dist.mjs`) ; Caddy avec son module OVH
+  n'a pas de version officielle : il est compilé une fois (commande donnée par `pnpm dist` s'il manque).

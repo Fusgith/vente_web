@@ -5,6 +5,10 @@
   "description": "Fastify API — single source of truth for the shop (Prisma, PostgreSQL, Socket.IO)",
   "type": "module",
   "main": "dist/index.js",
+  "files": [
+    "dist",
+    "prisma/migrations"
+  ],
   "scripts": {
     "dev": "tsx watch --conditions=development --env-file-if-exists=../../.env src/index.ts",
     "build": "prisma generate && tsc -b",

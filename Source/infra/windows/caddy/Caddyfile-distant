@@ -1,0 +1,23 @@
+# Remote access (service VenteWeb-Distant, ADR-0008): the same site on the WireGuard address,
+# where only the OVH relay may speak the PROXY protocol, which carries the client's address.
+# A second Caddy: while the tunnel is down, this one restarts in a loop and the LAN one runs on.
+# Both share the certificate storage, which Caddy locks.
+{
+	admin off
+	persist_config off
+	storage file_system {$VW_DATA}/caddy
+	auto_https disable_redirects
+	servers {$WG_ADDRESS}:443 {
+		listener_wrappers {
+			proxy_protocol {
+				allow {$RELAY_WG_IP}/32
+			}
+			tls
+		}
+	}
+}
+
+{$APP_DOMAIN} {
+	bind {$WG_ADDRESS}
+	import site.caddy remote
+}
