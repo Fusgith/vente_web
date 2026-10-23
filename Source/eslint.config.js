@@ -19,6 +19,6 @@ export default [
     files: ['apps/web/public/**/*.js'],
     languageOptions: { sourceType: 'script', globals: { self: 'readonly' } },
   },
-  // `pnpm dist` (ADR-0006) talks to whoever builds a version for a shop.
-  { files: ['scripts/**/*.mjs'], rules: { 'no-console': 'off' } },
+  // `pnpm dist` (ADR-0006) and the shop's scripts (T-080, T-081) print for whoever runs them.
+  { files: ['scripts/**/*.mjs', 'infra/windows/*.mjs'], rules: { 'no-console': 'off' } },
 ];

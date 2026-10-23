@@ -59,6 +59,12 @@ const DOWNLOADS = {
     url: 'https://download.wireguard.com/windows-client/wireguard-amd64-1.1.1.msi',
     sha256: '7bfed60ad61b785c914b38b61555a975488e1d3ec472dbfb2fcdf498fca75242',
   },
+  // Hash from the release's PGP-signed SHA256SUMS (T-081).
+  rclone: {
+    file: 'rclone-v1.75.2-windows-amd64.zip',
+    url: 'https://downloads.rclone.org/v1.75.2/rclone-v1.75.2-windows-amd64.zip',
+    sha256: '8a9db2bad1dc79a65b3348fd857069598e2aab7cf4d118b77b1df23055aff818',
+  },
 };
 
 /** Shop parameters the installer cannot do without (client.env.example). */
@@ -209,6 +215,8 @@ rmSync(unpacked, { recursive: true, force: true });
 unzip(files.node, unpacked, ['node-v24.15.0-win-x64/node.exe']);
 mkdirSync(join(app, 'node'));
 renameSync(join(unpacked, 'node-v24.15.0-win-x64', 'node.exe'), join(app, 'node', 'node.exe'));
+unzip(files.rclone, unpacked, ['rclone-v1.75.2-windows-amd64/rclone.exe']);
+renameSync(join(unpacked, 'rclone-v1.75.2-windows-amd64', 'rclone.exe'), join(app, 'rclone.exe'));
 // The server only needs PostgreSQL's programs and libraries, not pgAdmin, StackBuilder or docs.
 unzip(files.postgresql, app, ['pgsql/bin', 'pgsql/lib', 'pgsql/share']);
 rmSync(unpacked, { recursive: true, force: true });
@@ -219,17 +227,22 @@ copyFileSync(files.winsw, join(app, 'winsw.exe'));
 copyFileSync(files.wireguard, join(app, 'wireguard.msi'));
 
 mkdirSync(join(app, 'scripts'));
-for (const script of ['secrets.mjs', 'dns-local.mjs']) {
+for (const script of ['secrets.mjs', 'dns-local.mjs', 'sauvegarde.mjs']) {
   copyFileSync(join(windows, script), join(app, 'scripts', script));
 }
 // Windows PowerShell 5.1 reads a script without BOM as ANSI: the French messages need one.
-const installer = readFileSync(join(windows, 'installer.ps1'), 'utf8').replace(/\r?\n/g, '\r\n');
-writeFileSync(join(app, 'scripts', 'installer.ps1'), `\uFEFF${installer}`);
-copyFileSync(
-  join(windows, 'Installer ou mettre a jour.cmd'),
-  join(target, 'Installer ou mettre a jour.cmd'),
-);
-copyFileSync(join(windows, 'LISEZ-MOI.txt'), join(target, 'LISEZ-MOI.txt'));
+for (const script of ['installer.ps1', 'sauvegarder.ps1', 'restaurer.ps1']) {
+  const text = readFileSync(join(windows, script), 'utf8').replace(/\r?\n/g, '\r\n');
+  writeFileSync(join(app, 'scripts', script), `\uFEFF${text}`);
+}
+for (const file of [
+  'Installer ou mettre a jour.cmd',
+  'Sauvegarder.cmd',
+  'Restaurer.cmd',
+  'LISEZ-MOI.txt',
+]) {
+  copyFileSync(join(windows, file), join(target, file));
+}
 
 // The server reads the same name as APP_NAME (TOTP issuer).
 writeFileSync(join(app, 'nom.json'), `${JSON.stringify({ name, shortName }, null, 2)}\n`);

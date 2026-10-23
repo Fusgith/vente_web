@@ -121,8 +121,21 @@ $values['LOG_LEVEL'] = 'info'
 $values['FILES_DIR'] = Join-Path $Data 'fichiers'
 $values['DATABASE_URL'] = "postgresql://vente_web_api:$($values['API_PASSWORD'])@127.0.0.1:5432/vente_web"
 $values['MIGRATION_DATABASE_URL'] = "postgresql://vente_web:$($values['OWNER_PASSWORD'])@127.0.0.1:5432/vente_web"
+# The key of the OVH vault (rclone crypt, T-081): kept on a sealed envelope out of the shop,
+# the only way to read the backups once this server is lost. Hex: copied by hand.
+$newVaultKey = -not $values['BACKUP_CRYPT_PASSWORD']
+if ($newVaultKey) {
+  $bytes = New-Object byte[] 16
+  [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+  $values['BACKUP_CRYPT_PASSWORD'] = (($bytes | ForEach-Object { $_.ToString('x2') }) -join '') -replace '(.{4})(?!$)', '$1-'
+}
 Write-EnvFile $EnvFile $values
 if (Test-Path $client) { Remove-Item $client -Force }
+if ($newVaultKey) {
+  Write-Host "Mot de passe des sauvegardes chiffrées : $($values['BACKUP_CRYPT_PASSWORD'])" -ForegroundColor Yellow
+  Write-Host "Notez-le sur l'enveloppe scellée gardée hors du magasin : sans lui, le coffre OVH est illisible." -ForegroundColor Yellow
+  Read-Host 'Une fois noté, appuyez sur Entrée' | Out-Null
+}
 $remote = [bool]$values['WG_PRIVATE_KEY']
 
 Step 'Arrêt des services'
@@ -240,6 +253,26 @@ foreach ($attempt in 1..30) {
 }
 if (-not $healthy) { throw "L'API ne répond pas : voir $Data\journaux\VenteWeb-API.err.log" }
 Write-Host 'API : en marche.'
+
+# Every 15 minutes as SYSTEM (SID: the name changes with the Windows language); a run due while
+# one still goes is skipped, never doubled. Run once now.
+Step 'Sauvegardes automatiques'
+$backupTask = 'VenteWeb-Sauvegarde'
+$action = New-ScheduledTaskAction -Execute $Node -WorkingDirectory $App `
+  -Argument "$envArg `"$(Join-Path $PSScriptRoot 'sauvegarde.mjs')`""
+$trigger = New-ScheduledTaskTrigger -Daily -At '00:00'
+$trigger.Repetition = (New-ScheduledTaskTrigger -Once -At '00:00' `
+    -RepetitionInterval (New-TimeSpan -Minutes 15) -RepetitionDuration (New-TimeSpan -Days 1)).Repetition
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew `
+  -ExecutionTimeLimit (New-TimeSpan -Hours 2)
+$system = New-ScheduledTaskPrincipal -UserId 'S-1-5-18' -LogonType ServiceAccount -RunLevel Highest
+Register-ScheduledTask -TaskName $backupTask -Action $action -Trigger $trigger -Settings $settings `
+  -Principal $system -Force | Out-Null
+Start-ScheduledTask -TaskName $backupTask
+Write-Host "Toutes les 15 minutes ; journal : $Data\journaux\sauvegarde.log"
+if (-not $values['BACKUP_S3_BUCKET']) {
+  Write-Host 'Coffre OVH non configuré (BACKUP_S3_*) : sauvegardes sur ce PC et le disque externe seulement.' -ForegroundColor Yellow
+}
 
 $adminDone = Join-Path $Services 'premier-admin.ok'
 if (-not (Test-Path $adminDone)) {

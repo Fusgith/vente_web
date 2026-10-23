@@ -21,3 +21,18 @@ sauvegardes, certificats, journaux, paramètres et secrets).
 
 En cas d'échec : le message dit quelle étape a échoué ; les journaux sont dans
 C:\ProgramData\VenteWeb\journaux. Relancer le script après correction ne casse rien.
+
+Sauvegardes
+- Automatiques toutes les 15 minutes : sur ce PC (C:\ProgramData\VenteWeb\sauvegardes), sur
+  le disque externe s'il est branché, et chiffrées dans le coffre OVH si Internet répond.
+  Journal : C:\ProgramData\VenteWeb\journaux\sauvegarde.log
+- « Sauvegarder.cmd » : une sauvegarde tout de suite (avant une manipulation risquée).
+- Le mot de passe des sauvegardes chiffrées, affiché à la première installation, se garde
+  sur une enveloppe scellée hors du magasin : sans lui, le coffre OVH est illisible.
+
+Restauration
+- « Restaurer.cmd » : choisir une sauvegarde de la liste (ou O : la plus récente du coffre
+  OVH), puis taper RESTAURER. La base actuelle est d'abord sauvegardée (avant-restauration-*).
+- Serveur perdu : sur un PC neuf avec la même adresse fixe, copier ce dossier,
+  « Installer ou mettre a jour.cmd », puis « Restaurer.cmd », choix O, mot de passe de
+  l'enveloppe. Les tablettes retrouvent l'application à la même adresse.

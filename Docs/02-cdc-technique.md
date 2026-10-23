@@ -54,7 +54,7 @@ Ce document traduit le CDC métier en architecture, stack et règles d'implémen
 
 ### 2.3 Sauvegarde et reprise
 
-- `pg_dump` compressé toutes les **15 min** (incrémental logique : dernière heure) + complet chaque nuit ; chiffrement au magasin (`rclone crypt`, clé propre au client, remise au client sous enveloppe scellée) ; envoi vers OVH Object Storage, un compartiment par client, avec un identifiant qui écrit sans pouvoir effacer (ADR-0008) ; copie sur un disque externe au magasin. Rétention : 48 dumps horaires, 30 quotidiens, 12 mensuels.
+- `pg_dump` compressé complet toutes les **15 min** (⚠️ H78 du CDC métier) ; chiffrement au magasin (`rclone crypt`, clé propre au client, remise au client sous enveloppe scellée) ; envoi vers OVH Object Storage, un compartiment par client, avec un identifiant qui lit et écrit sans pouvoir effacer, l'expiration étant faite par le compartiment (ADR-0008) ; copie sur un disque externe au magasin. Rétention : 48 dumps horaires, 30 quotidiens, 12 mensuels.
 - Les fichiers (PDF émis, Excel importés) sont sauvegardés avec la base.
 - **Procédure de reprise** documentée et **testée trimestriellement** : copier le dossier sur un autre PC Windows, **Installer**, **Restaurer** la dernière sauvegarde, repointer le DNS local (ADR-0007). Objectif : RPO 15 min, RTO 2 h.
 - Si le serveur meurt et qu'aucune machine de secours n'est disponible, la même stack se déploie sur une instance OVH en attendant.
@@ -284,7 +284,7 @@ Notification push (T-033e) : après la validation de la transaction d'une nouvel
 
 ### 10.3 Composition (dossier `Dist/<nom-simplifié>/`, ADR-0007)
 
-Node.js portable + API construite (`node_modules` à plat) · PostgreSQL 16 (binaires Windows officiels, `bin`, `lib`, `share` seulement) · Caddy avec `caddy-dns/ovh` (80/443, TLS DNS-01, sert la PWA, proxy `/api`, `/socket.io`, `/healthz`, en-têtes de sécurité et CSP) · DNS local (`dns-local.mjs`) · WireGuard (tunnel vers le relais OVH, ADR-0008) · WinSW (services Windows à démarrage automatique, relancés en cas d'arrêt) · script **Installer ou mettre a jour** ; **Sauvegarder** et **Restaurer** avec T-081. Données hors du dossier de l'application, dans `C:ProgramDataVenteWeb` : base, fichiers émis (`FILES_DIR`), sauvegardes, certificats, journaux, `.env` (secrets créés à l'installation). Détail : ⚠️ H77 du CDC métier, `Source/infra/windows/`.
+Node.js portable + API construite (`node_modules` à plat) · PostgreSQL 16 (binaires Windows officiels, `bin`, `lib`, `share` seulement) · Caddy avec `caddy-dns/ovh` (80/443, TLS DNS-01, sert la PWA, proxy `/api`, `/socket.io`, `/healthz`, en-têtes de sécurité et CSP) · DNS local (`dns-local.mjs`) · WireGuard (tunnel vers le relais OVH, ADR-0008) · WinSW (services Windows à démarrage automatique, relancés en cas d'arrêt) · script **Installer ou mettre a jour** ; **Sauvegarder** et **Restaurer** avec T-081. Données hors du dossier de l'application, dans `C:\ProgramData\VenteWeb` : base, fichiers émis (`FILES_DIR`), sauvegardes, certificats, journaux, `.env` (secrets créés à l'installation). Détail : ⚠️ H77 du CDC métier, `Source/infra/windows/`.
 
 ### 10.4 Mise à jour
 

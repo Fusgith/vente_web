@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 23/10/2026 — T-081 : sauvegardes chiffrées et restauration — agent : Claude Code (Opus 5.5)
+
+**Fait** : tâche planifiée « VenteWeb-Sauvegarde » (toutes les 15 min, compte système) : `pg_dump` complet dans `C:\ProgramData\VenteWeb\sauvegardes`, rotation 48 heures / 30 jours / 12 mois, copie sur le disque externe (`BACKUP_DISK`) et, chiffrée par `rclone crypt`, dans le coffre OVH (`BACKUP_S3_*`) ; « Sauvegarder.cmd » et « Restaurer.cmd » (liste locale ou plus récente du coffre, confirmation RESTAURER, base remplacée sauvegardée d'abord, migrations relancées) ; l'installateur génère et montre une fois le mot de passe de l'enveloppe. Vérifié ici : dump réel, rotation, disque absent, cycle DROP/CREATE/pg_restore (données, propriétaire, droits). Dépendance : rclone v1.75.2 (un seul exe, S3 + chiffrement), téléchargé par `pnpm dist`, empreinte du SHA256SUMS signé. H78 au CDC métier.
+
+**Reste** : téléchargement de rclone à autoriser, puis vérifier l'envoi et la relecture du coffre ; poser les règles de cycle de vie du compartiment OVH par préfixe ; T-082 (surveillance).
+
 ## 23/10/2026 — T-083 : test bout-en-bout du parcours complet — agent : Claude Code (Opus 5.5)
 
 **Fait** : `pnpm e2e` (Playwright) rejoue la vente type sur une base `<base>_e2e` neuve avec le jeu de démonstration : client, 2 paquets, commande validée (stock réservé), caisse ouverte, appel, paiement espèces + Mvola, facture PDF, livraison, sortie de stock de 12 pièces. Correctif trouvé par le test : sur un écran de 720 px, le bloc des créances recouvrait le bouton « Ouvrir la caisse ». Dépendance `@playwright/test` 1.64.1 (développement seulement) : l'outil de bout-en-bout prévu par l'ADR-0003 ; son Chromium était déjà sur le poste.
