@@ -21,7 +21,7 @@ Lire d'abord `../CLAUDE.md`. Ici : commandes et structure. Détail : `../Docs/02
 - `packages/shared` — règles pures (formats RG-FMT-01, remises, numérotation…) sans base ni réseau ; compilé en `dist/` (`tsc -b`), consommé en source (`development`) par Vite/tsx.
 - `packages/config` — `tsconfig.base.json`, ESLint (flat), Prettier.
 - `infra/` — Docker Compose dev ; prod, Caddy, sauvegardes : T-080/T-081.
-- Tests : Vitest à la racine (`vitest.config.ts` → projets `shared`, `api`, `web`) ; e2e Playwright plus tard (T-083).
+- Tests : Vitest à la racine (`vitest.config.ts` → projets `shared`, `api`, `web`) ; bout-en-bout : `DATABASE_URL=… pnpm e2e` (Playwright, `e2e/`, T-083) recrée `<base>_e2e`, lance l’API (port 3100) et Vite (port 5180).
 
 ## Conventions
 

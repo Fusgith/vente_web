@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 23/10/2026 — T-083 : test bout-en-bout du parcours complet — agent : Claude Code (Opus 5.5)
+
+**Fait** : `pnpm e2e` (Playwright) rejoue la vente type sur une base `<base>_e2e` neuve avec le jeu de démonstration : client, 2 paquets, commande validée (stock réservé), caisse ouverte, appel, paiement espèces + Mvola, facture PDF, livraison, sortie de stock de 12 pièces. Correctif trouvé par le test : sur un écran de 720 px, le bloc des créances recouvrait le bouton « Ouvrir la caisse ». Dépendance `@playwright/test` 1.64.1 (développement seulement) : l'outil de bout-en-bout prévu par l'ADR-0003 ; son Chromium était déjà sur le poste.
+
+**Reste** : T-081 (sauvegardes), T-082 (surveillance).
+
 ## 23/10/2026 — T-080 : livraison Windows tout-en-un — agent : Claude Code (Opus 5.5)
 
 **Fait** : `pnpm dist --nom … [--client <paramètres du magasin>]` assemble `Dist/<nom>/` ; un seul script « Installer ou mettre a jour » installe ou met à jour le serveur (données dans `C:\ProgramData\VenteWeb`, secrets générés, sauvegarde `pg_dump` avant migration, services Windows relancés en cas d'arrêt, pare-feu, premier admin) ; migrations par `dist/cli/migrate.js` (même table que Prisma, sans son CLI), qui retire au rôle de l'API la réécriture des tables en ajout seul ; moyens de paiement standard créés par migration ; DNS local ; hypothèse H77. Programmes ajoutés au dossier, pris aux sources officielles et épinglés par SHA-256 : Node 24.15.0 (le serveur), PostgreSQL 16.15 binaires EDB sans pgAdmin (la base), Caddy 2.11.7 avec `caddy-dns/ovh` 1.1.0 (HTTPS, certificat par DNS-01 chez OVH), compilé par xcaddy avec Go 1.27.3 de go.dev car aucune version officielle n'a ce module et le service de build de caddyserver.com ne répondait pas, WinSW 2.12.0 (services Windows), WireGuard 1.1.1 (accès distant, ADR-0008). Testé ici : PostgreSQL portable (ICU fr, `pg_trgm`, `unaccent`), migrations sur base neuve, rôles SQL rejouables, deux configurations Caddy validées, dossier assemblé (707 Mo), API du dossier démarrée sur la base d'essai (`/healthz`, premier admin, connexion), 867 tests verts.

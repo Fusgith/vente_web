@@ -10,6 +10,9 @@ import brand from '../../packages/shared/src/brand.json' with { type: 'json' };
 const appName = process.env.VITE_APP_NAME?.trim() || brand.name;
 const appShortName = process.env.VITE_APP_SHORT_NAME?.trim() || brand.shortName;
 
+// The API behind the proxy: the dev one, or the end-to-end one (T-083, playwright.config.ts).
+const apiTarget = process.env.API_PROXY_TARGET?.trim() || 'http://localhost:3000';
+
 const escapeHtml = (text: string) =>
   text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 
@@ -58,8 +61,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': { target: 'http://localhost:3000', changeOrigin: true },
-      '/socket.io': { target: 'http://localhost:3000', ws: true },
+      '/api': { target: apiTarget, changeOrigin: true },
+      '/socket.io': { target: apiTarget, ws: true },
     },
   },
 });

@@ -16,6 +16,8 @@ Dist/*
 # Outils de build et de test (Source/)
 Source/**/dev-dist/
 Source/**/coverage/
+Source/test-results/
+Source/playwright-report/
 *.tsbuildinfo
 
 # Client Prisma généré (pnpm --filter @vente-web/api exec prisma generate)

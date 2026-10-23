@@ -21,12 +21,14 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "e2e": "playwright test",
     "db:up": "docker compose -f infra/docker-compose.yml up -d",
     "db:down": "docker compose -f infra/docker-compose.yml down",
     "db:logs": "docker compose -f infra/docker-compose.yml logs -f postgres",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm format:check"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "@vente-web/config": "workspace:*",
     "eslint": "^10.11.0",
     "prettier": "^3.9.8",

@@ -141,14 +141,16 @@ function Shell({ me, children }: Omit<AppShellProps, 'realtime'>) {
 function Workspace({ role, userId }: { role: Role; userId: string }) {
   if (role === 'sales') return <SalesWorkspace />;
   if (role === 'cashier') {
+    // One scrolling column: inside the frame's fixed height the workspace would shrink under
+    // its content and the panels below would cover its buttons (T-083, 720-pixel screen).
     return (
-      <>
+      <div className="flex flex-col pb-8">
         <RegisterWorkspace userId={userId} />
         {/* H67: what the customers owe, settled at the register with a receipt. */}
         <ReceivablesPanel canSettle />
         {/* RG-EXP-03: the cashier exports their own closings. */}
         <ExportsPanel role="cashier" />
-      </>
+      </div>
     );
   }
   if (role === 'warehouse') return <DeliveryWorkspace userId={userId} />;
