@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 23/10/2026 — T-086 : relais VPS OVH partagé — agent : Claude Code (Opus 5.5)
+
+**Fait** : `Source/infra/relais/relais.sh` (bash, en root) : `installer <IP>` pose WireGuard et nginx `stream` (aiguillage HTTPS par nom sans déchiffrer, protocole PROXY, aucun transfert IP entre magasins) ; `ajouter <domaine>` crée le pair du magasin et affiche ses paramètres `WG_*` / `RELAY_*`, attendus tels quels par l'installateur Windows. Vérifié ici : syntaxe (`bash -n`) et essai à blanc (commandes système simulées : adresses, `wg0.conf`, table nginx, doublon et nom invalide refusés). Paquets Debian seulement (wireguard-tools, nginx, libnginx-mod-stream).
+
+**Reste** : essai réel sur le VPS OVH et un magasin ; T-082 (surveillance).
+
 ## 23/10/2026 — T-081 : sauvegardes chiffrées et restauration — agent : Claude Code (Opus 5.5)
 
 **Fait** : tâche planifiée « VenteWeb-Sauvegarde » (toutes les 15 min, compte système) : `pg_dump` complet dans `C:\ProgramData\VenteWeb\sauvegardes`, rotation 48 heures / 30 jours / 12 mois, copie sur le disque externe (`BACKUP_DISK`) et, chiffrée par `rclone crypt`, dans le coffre OVH (`BACKUP_S3_*`) ; « Sauvegarder.cmd » et « Restaurer.cmd » (liste locale ou plus récente du coffre, confirmation RESTAURER, base remplacée sauvegardée d'abord, migrations relancées) ; l'installateur génère et montre une fois le mot de passe de l'enveloppe. Vérifié ici : dump réel, rotation, disque absent, cycle DROP/CREATE/pg_restore (données, propriétaire, droits). Dépendance : rclone v1.75.2 (un seul exe, S3 + chiffrement), téléchargé par `pnpm dist`, empreinte du SHA256SUMS signé. H78 au CDC métier.
