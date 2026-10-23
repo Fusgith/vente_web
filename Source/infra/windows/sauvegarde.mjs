@@ -44,7 +44,7 @@ const VAULT_KEYS = [
   'BACKUP_S3_BUCKET',
   'BACKUP_S3_ACCESS_KEY',
   'BACKUP_S3_SECRET_KEY',
-  'BACKUP_CRYPT_PASSWORD',
+  'BACKUP_PASSPHRASE',
 ];
 
 function log(line) {
@@ -152,7 +152,7 @@ function vault() {
     RCLONE_CONFIG_COFFRE_TYPE: 'crypt',
     RCLONE_CONFIG_COFFRE_REMOTE: `ovh:${env.BACKUP_S3_BUCKET}`,
     RCLONE_CONFIG_COFFRE_PASSWORD: run(rclone, ['obscure', '-'], {
-      input: env.BACKUP_CRYPT_PASSWORD,
+      input: env.BACKUP_PASSPHRASE,
     }).trim(),
     // Clear folder names: the bucket's lifecycle rules expire by prefix (sauvegardes/heures/…).
     RCLONE_CONFIG_COFFRE_DIRECTORY_NAME_ENCRYPTION: 'false',

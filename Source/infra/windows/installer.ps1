@@ -123,16 +123,16 @@ $values['DATABASE_URL'] = "postgresql://vente_web_api:$($values['API_PASSWORD'])
 $values['MIGRATION_DATABASE_URL'] = "postgresql://vente_web:$($values['OWNER_PASSWORD'])@127.0.0.1:5432/vente_web"
 # The key of the OVH vault (rclone crypt, T-081): kept on a sealed envelope out of the shop,
 # the only way to read the backups once this server is lost. Hex: copied by hand.
-$newVaultKey = -not $values['BACKUP_CRYPT_PASSWORD']
+$newVaultKey = -not $values['BACKUP_PASSPHRASE']
 if ($newVaultKey) {
   $bytes = New-Object byte[] 16
   [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
-  $values['BACKUP_CRYPT_PASSWORD'] = (($bytes | ForEach-Object { $_.ToString('x2') }) -join '') -replace '(.{4})(?!$)', '$1-'
+  $values['BACKUP_PASSPHRASE'] = (($bytes | ForEach-Object { $_.ToString('x2') }) -join '') -replace '(.{4})(?!$)', '$1-'
 }
 Write-EnvFile $EnvFile $values
 if (Test-Path $client) { Remove-Item $client -Force }
 if ($newVaultKey) {
-  Write-Host "Mot de passe des sauvegardes chiffrées : $($values['BACKUP_CRYPT_PASSWORD'])" -ForegroundColor Yellow
+  Write-Host "Mot de passe des sauvegardes chiffrées : $($values['BACKUP_PASSPHRASE'])" -ForegroundColor Yellow
   Write-Host "Notez-le sur l'enveloppe scellée gardée hors du magasin : sans lui, le coffre OVH est illisible." -ForegroundColor Yellow
   Read-Host 'Une fois noté, appuyez sur Entrée' | Out-Null
 }

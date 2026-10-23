@@ -64,14 +64,14 @@ $fetched = $null
 if ($vault -and $choice -eq 'O') {
   $typed = (Read-Host "Mot de passe de l'enveloppe scellée (Entrée : celui de ce serveur)").Trim()
   # Tried first through the environment, which wins over the .env; kept once it opened the vault.
-  if ($typed) { $env:BACKUP_CRYPT_PASSWORD = $typed }
+  if ($typed) { $env:BACKUP_PASSPHRASE = $typed }
   $incoming = Join-Path $Data 'restauration'
   New-Item -ItemType Directory -Force -Path $incoming | Out-Null
   $fetched = & $Node "--env-file=$EnvFile" $Backup ovh-dernier $incoming | Select-Object -Last 1
   Check 'Récupération depuis le coffre OVH'
   if ($typed) {
-    $lines = [IO.File]::ReadAllLines($EnvFile) | Where-Object { $_ -notmatch '^\s*BACKUP_CRYPT_PASSWORD=' }
-    [IO.File]::WriteAllText($EnvFile, ((@($lines) + "BACKUP_CRYPT_PASSWORD=$typed") -join "`n") + "`n", $Utf8)
+    $lines = [IO.File]::ReadAllLines($EnvFile) | Where-Object { $_ -notmatch '^\s*BACKUP_PASSPHRASE=' }
+    [IO.File]::WriteAllText($EnvFile, ((@($lines) + "BACKUP_PASSPHRASE=$typed") -join "`n") + "`n", $Utf8)
   }
   $file = $fetched
 } elseif ($choice -match '^\d+$' -and [int]$choice -ge 1 -and [int]$choice -le $dumps.Count) {
