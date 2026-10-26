@@ -35,14 +35,17 @@ function Queue({ title, calls }: { title: string; calls: DisplayCall[] }) {
       {latest ? (
         <>
           <p
-            className="rounded-lg bg-saffron px-6 py-4 font-display text-96 font-bold break-words text-ink figures"
+            className="rounded-lg bg-saffron px-6 py-4 font-display text-96 font-bold break-words text-ink tabular-nums"
             data-latest
           >
             {t.call(latest.ticket, latest.station)}
           </p>
           <ol className="flex flex-col gap-3">
             {earlier.map((call) => (
-              <li key={`${call.calledAt}-${call.ticket}`} className="font-display text-36 figures">
+              <li
+                key={`${call.calledAt}-${call.ticket}`}
+                className="font-display text-36 tabular-nums"
+              >
                 {t.call(call.ticket, call.station)}
               </li>
             ))}
