@@ -28,8 +28,8 @@ Statuts : `À faire` · `En cours` · `Bloqué` · `Terminé`. Une seule tâche 
 | T-002 | — | Valider les hypothèses T1–T8 du CDC technique §13 | Fait | E00 | Validées le 21/09/2026 |
 | T-003 | — | Accepter ou amender les ADR 0001 à 0004 | Fait | E00 | Acceptés le 21/09/2026 |
 | T-004 | — | Faire relire les mentions légales de facture (RG-FAC-07) par le comptable | À faire | E00 | Hors agent |
-| T-001d | — | Valider H60 à H69 (commentaires du client du 09/10 : remises, conditionnements, prix par type, crédit, titres, document remis) | À faire | E00 | CDC métier v0.18 §16.2 ; codées selon leur formulation écrite en attendant |
-| T-005 | — | Inventaire du matériel disponible (tablettes, PC, imprimantes, box, TV) | À faire | E00 | Conditionne E08 et H10/H11 |
+| T-001d | — | Valider H60 à H69 (commentaires du client du 09/10 : remises, conditionnements, prix par type, crédit, titres, document remis) | Fait | E00 | Validées telles quelles le 28/10/2026 (CDC métier §16.14) |
+| T-005 | — | Inventaire du matériel disponible (tablettes, PC, imprimantes, box, TV) | Abandonnée | E00 | 28/10/2026 : inutile, l'application marche quel que soit le nombre de PC et de tablettes ; seuls prérequis : un PC serveur Windows 10/11 64 bits et un navigateur récent sur chaque appareil |
 | T-006 | — | Choisir le nom de domaine et le fournisseur DNS/tunnel | À faire | E00 | Conditionne T1 |
 | T-007 | — | Premier commit du dépôt (docs seulement) et premier push vers `origin/main` | Fait | E00 | Commit e8d73a1 le 21/09/2026 |
 | T-008 | — | **GO pour coder** consigné dans le journal | Fait | E00 | GO donné le 21/09/2026 |
