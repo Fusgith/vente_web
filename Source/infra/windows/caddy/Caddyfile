@@ -9,4 +9,5 @@
 {$APP_DOMAIN} {
 	bind {$LAN_IP}
 	import site.caddy lan
+	import tls-ovh.caddy
 }

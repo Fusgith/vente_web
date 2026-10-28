@@ -67,14 +67,14 @@ const DOWNLOADS = {
   },
 };
 
-/** Shop parameters the installer cannot do without (client.env.example). */
-const REQUIRED = [
-  'APP_DOMAIN',
-  'LAN_IP',
-  'OVH_APPLICATION_KEY',
-  'OVH_APPLICATION_SECRET',
-  'OVH_CONSUMER_KEY',
-];
+/** Shop parameters the installer cannot do without (client.env.example): the OVH keys only
+ * with a domain; without one the shop is served on its LAN only (ADR-0009). */
+function missingParameters(values) {
+  const required = values.APP_DOMAIN
+    ? ['LAN_IP', 'OVH_APPLICATION_KEY', 'OVH_APPLICATION_SECRET', 'OVH_CONSUMER_KEY']
+    : ['LAN_IP'];
+  return required.filter((key) => !values[key]);
+}
 
 function stop(lines) {
   for (const line of lines) console.error(line);
@@ -163,10 +163,12 @@ try {
 const client = options.client === undefined ? undefined : resolve(process.cwd(), options.client);
 if (client !== undefined) {
   if (!existsSync(client)) stop([`Fichier de paramètres introuvable : ${client}`, usage]);
-  const values = readEnvFile(client);
-  const missing = REQUIRED.filter((key) => !values[key]);
+  const missing = missingParameters(readEnvFile(client));
   if (missing.length > 0) stop([`Paramètres manquants dans ${client} : ${missing.join(', ')}`]);
 }
+// rclone only serves the off-site vault (T-081): bundled for a shop that has one; an update
+// keeps the copy the installer left in the data folder.
+const withRclone = client !== undefined && Boolean(readEnvFile(client).BACKUP_S3_BUCKET);
 
 // The rules live in @vente-web/shared (tested there): build it first, then load its output.
 run(['--filter', '@vente-web/shared', 'build']);
@@ -186,7 +188,9 @@ if (!target.startsWith(distRoot + sep)) stop([`Dossier de sortie inattendu : ${t
 const app = join(target, 'app');
 
 const files = {};
-for (const [key, download] of Object.entries(DOWNLOADS)) files[key] = await fetchPinned(download);
+for (const [key, download] of Object.entries(DOWNLOADS)) {
+  if (key !== 'rclone' || withRclone) files[key] = await fetchPinned(download);
+}
 
 console.log(`Construction de « ${name} » (sous l'icône : « ${shortName} »)…`);
 run(['--filter', '@vente-web/web...', 'build'], {
@@ -215,8 +219,10 @@ rmSync(unpacked, { recursive: true, force: true });
 unzip(files.node, unpacked, ['node-v24.15.0-win-x64/node.exe']);
 mkdirSync(join(app, 'node'));
 renameSync(join(unpacked, 'node-v24.15.0-win-x64', 'node.exe'), join(app, 'node', 'node.exe'));
-unzip(files.rclone, unpacked, ['rclone-v1.75.2-windows-amd64/rclone.exe']);
-renameSync(join(unpacked, 'rclone-v1.75.2-windows-amd64', 'rclone.exe'), join(app, 'rclone.exe'));
+if (withRclone) {
+  unzip(files.rclone, unpacked, ['rclone-v1.75.2-windows-amd64/rclone.exe']);
+  renameSync(join(unpacked, 'rclone-v1.75.2-windows-amd64', 'rclone.exe'), join(app, 'rclone.exe'));
+}
 // The server only needs PostgreSQL's programs and libraries, not pgAdmin, StackBuilder or docs.
 unzip(files.postgresql, app, ['pgsql/bin', 'pgsql/lib', 'pgsql/share']);
 rmSync(unpacked, { recursive: true, force: true });

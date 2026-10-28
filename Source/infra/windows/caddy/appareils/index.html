@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Préparer cet appareil</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 24px 16px 48px;
+        font:
+          17px/1.5 system-ui,
+          sans-serif;
+        color: #1f2a37;
+        background: #f6f7f9;
+      }
+      main {
+        max-width: 640px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 1.5em;
+        margin: 0 0 8px;
+      }
+      h2 {
+        font-size: 1.1em;
+        margin: 28px 0 6px;
+      }
+      ol {
+        padding-left: 1.4em;
+        margin: 0;
+      }
+      li {
+        margin: 4px 0;
+      }
+      .button {
+        display: inline-block;
+        margin: 12px 12px 0 0;
+        padding: 12px 20px;
+        border-radius: 8px;
+        background: #1d5c96;
+        color: #fff;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      .button.secondary {
+        background: #fff;
+        color: #1d5c96;
+        border: 2px solid #1d5c96;
+      }
+      .note {
+        color: #4b5563;
+        font-size: 0.95em;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Préparer cet appareil</h1>
+      <p>
+        Une seule fois par tablette, téléphone ou PC : installer le certificat du magasin. Il permet
+        d'ouvrir l'application en sécurité sur le réseau du magasin (caméra, notifications,
+        installation sur l'écran d'accueil).
+      </p>
+      <a class="button" href="/certificat.crt" download="certificat-magasin.crt">
+        Télécharger le certificat
+      </a>
+      <a class="button secondary" id="app" href="#">Ouvrir l'application</a>
+
+      <h2>Tablette ou téléphone Android</h2>
+      <ol>
+        <li>Touchez « Télécharger le certificat ».</li>
+        <li>
+          Ouvrez Paramètres, Sécurité (ou « Sécurité et confidentialité »), Plus de paramètres,
+          Chiffrement et identifiants, Installer un certificat, Certificat CA.
+        </li>
+        <li>Touchez « Installer quand même », puis choisissez le fichier téléchargé.</li>
+        <li>Revenez ici et touchez « Ouvrir l'application ».</li>
+      </ol>
+
+      <h2>iPhone ou iPad</h2>
+      <ol>
+        <li>Dans Safari, touchez « Télécharger le certificat », puis Autoriser.</li>
+        <li>Réglages, Profil téléchargé, Installer.</li>
+        <li>
+          Réglages, Général, Informations, Réglages des certificats : activez le certificat du
+          magasin.
+        </li>
+        <li>Revenez ici et touchez « Ouvrir l'application ».</li>
+      </ol>
+
+      <h2>PC Windows</h2>
+      <ol>
+        <li>Cliquez « Télécharger le certificat », puis ouvrez le fichier.</li>
+        <li>
+          Installer le certificat, Ordinateur local, « Placer tous les certificats dans le magasin
+          suivant », Autorités de certification racines de confiance, Terminer.
+        </li>
+        <li>Fermez et rouvrez le navigateur, puis « Ouvrir l'application ».</li>
+      </ol>
+
+      <p class="note">
+        L'adresse de l'application est celle de cette page, en « https ». Le certificat ne sert
+        qu'aux appareils du magasin.
+      </p>
+    </main>
+    <script>
+      document.getElementById('app').href = 'https://' + location.host + '/';
+    </script>
+  </body>
+</html>

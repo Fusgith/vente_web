@@ -1,5 +1,5 @@
 Serveur du magasin : installation et mise à jour
-(Windows 10 ou 11, 64 bits ; dossier construit par « pnpm dist », T-080)
+(Windows 10 ou 11, 64 bits ; dossier construit par l'outil de distribution, T-080)
 
 Première installation
 1. Sur la box : donner au serveur une adresse fixe (celle du paramètre LAN_IP).
@@ -7,8 +7,11 @@ Première installation
 3. Double-clic sur « Installer ou mettre a jour.cmd », accepter la demande d'administrateur.
 4. À la fin : choisir l'identifiant et le nom du premier admin ; noter le mot de passe
    provisoire affiché (il ne sera plus montré).
-5. Sur la box : DHCP, serveur DNS = l'adresse du serveur. Les tablettes ouvrent alors
-   l'adresse affichée à la fin de l'installation (https://...).
+5. Avec un nom de domaine : sur la box, DHCP, serveur DNS = l'adresse du serveur. Les
+   tablettes ouvrent alors l'adresse affichée à la fin de l'installation (https://...).
+   Sans nom de domaine (réseau du magasin seulement) : sur chaque tablette, téléphone ou PC,
+   une seule fois, ouvrir http://<adresse du serveur> et suivre la page (installer le
+   certificat du magasin), puis « Ouvrir l'application » (https://<adresse du serveur>).
 
 Mise à jour
 1. Copier le nouveau dossier à côté de l'ancien (exemple : C:\VenteWeb-2).
@@ -24,11 +27,12 @@ C:\ProgramData\VenteWeb\journaux. Relancer le script après correction ne casse 
 
 Sauvegardes
 - Automatiques toutes les 15 minutes : sur ce PC (C:\ProgramData\VenteWeb\sauvegardes), sur
-  le disque externe s'il est branché, et chiffrées dans le coffre OVH si Internet répond.
+  le disque externe s'il est branché et, si le magasin a un coffre OVH, chiffrées dans ce
+  coffre quand Internet répond.
   Journal : C:\ProgramData\VenteWeb\journaux\sauvegarde.log
 - « Sauvegarder.cmd » : une sauvegarde tout de suite (avant une manipulation risquée).
-- Le mot de passe des sauvegardes chiffrées, affiché à la première installation, se garde
-  sur une enveloppe scellée hors du magasin : sans lui, le coffre OVH est illisible.
+- Avec un coffre OVH : le mot de passe des sauvegardes chiffrées, affiché à l'installation,
+  se garde sur une enveloppe scellée hors du magasin ; sans lui, le coffre est illisible.
 
 Restauration
 - « Restaurer.cmd » : choisir une sauvegarde de la liste (ou O : la plus récente du coffre

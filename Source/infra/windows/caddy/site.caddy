@@ -1,15 +1,7 @@
-# One site of the shop server (T-080), imported with its access origin: lan or remote.
+# One site of the shop server (T-080), imported with its access origin: lan or remote. Its
+# certificate is set by the importing file: tls-ovh.caddy with a domain, tls internal without.
 # Paths and keys come from the environment: VW_APP, VW_DATA (Windows service), the rest from
 # the data folder's .env (--envfile).
-tls {
-	dns ovh {
-		endpoint {$OVH_ENDPOINT}
-		application_key {$OVH_APPLICATION_KEY}
-		application_secret {$OVH_APPLICATION_SECRET}
-		consumer_key {$OVH_CONSUMER_KEY}
-	}
-	resolvers 1.1.1.1 8.8.8.8
-}
 encode zstd gzip
 header {
 	Strict-Transport-Security "max-age=31536000"

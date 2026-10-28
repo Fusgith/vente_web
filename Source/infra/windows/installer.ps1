@@ -107,11 +107,16 @@ if (-not $values['POSTGRES_PASSWORD']) {
   }
   Check 'Création des secrets'
 }
-foreach ($required in 'APP_DOMAIN', 'LAN_IP', 'OVH_APPLICATION_KEY', 'OVH_APPLICATION_SECRET', 'OVH_CONSUMER_KEY') {
-  if (-not $values[$required]) { throw "Paramètre $required manquant : reconstruire le dossier avec pnpm dist --client <fichier>." }
+# Without a domain the shop is served on its LAN only, at https://LAN_IP (ADR-0009).
+$local = -not $values['APP_DOMAIN']
+$required = if ($local) { @('LAN_IP') } else {
+  @('LAN_IP', 'OVH_APPLICATION_KEY', 'OVH_APPLICATION_SECRET', 'OVH_CONSUMER_KEY') }
+foreach ($key in $required) {
+  if (-not $values[$key]) { throw "Paramètre $key manquant : reconstruire le dossier avec l'outil de distribution." }
 }
+$address = if ($local) { $values['LAN_IP'] } else { $values['APP_DOMAIN'] }
 if (-not $values['OVH_ENDPOINT']) { $values['OVH_ENDPOINT'] = 'ovh-eu' }
-if (-not $values['VAPID_SUBJECT']) { $values['VAPID_SUBJECT'] = "https://$($values['APP_DOMAIN'])" }
+if (-not $values['VAPID_SUBJECT']) { $values['VAPID_SUBJECT'] = "https://$address" }
 $values['NODE_ENV'] = 'production'
 $values['APP_NAME'] = "`"$AppName`""
 $values['API_HOST'] = '127.0.0.1'
@@ -124,7 +129,7 @@ $values['DATABASE_URL'] = "postgresql://vente_web_api:$($values['API_PASSWORD'])
 $values['MIGRATION_DATABASE_URL'] = "postgresql://vente_web:$($values['OWNER_PASSWORD'])@127.0.0.1:5432/vente_web"
 # The key of the OVH vault (rclone crypt, T-081): kept on a sealed envelope out of the shop,
 # the only way to read the backups once this server is lost. Hex: copied by hand.
-$newVaultKey = -not $values['BACKUP_PASSPHRASE']
+$newVaultKey = $values['BACKUP_S3_BUCKET'] -and -not $values['BACKUP_PASSPHRASE']
 if ($newVaultKey) {
   $bytes = New-Object byte[] 16
   [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
@@ -137,7 +142,9 @@ if ($newVaultKey) {
   Write-Host "Notez-le sur l'enveloppe scellée gardée hors du magasin : sans lui, le coffre OVH est illisible." -ForegroundColor Yellow
   Read-Host 'Une fois noté, appuyez sur Entrée' | Out-Null
 }
-$remote = [bool]$values['WG_PRIVATE_KEY']
+$remote = -not $local -and [bool]$values['WG_PRIVATE_KEY']
+# rclone serves the vault only (T-081): kept in the data folder, so an update without it keeps it.
+if (Test-Path (Join-Path $App 'rclone.exe')) { Copy-Item (Join-Path $App 'rclone.exe') $Data -Force }
 
 Step 'Arrêt des services'
 foreach ($id in 'VenteWeb-Distant', 'VenteWeb-Caddy', 'VenteWeb-DNS', 'VenteWeb-API') {
@@ -204,10 +211,19 @@ Check 'Migrations'
 Step "Services de l'application"
 $envArg = "--env-file=`"$EnvFile`""
 Install-AppService 'VenteWeb-API' 'API' $Node "$envArg `"$(Join-Path $App 'api\dist\index.js')`"" 'VenteWeb-PostgreSQL'
-Install-AppService 'VenteWeb-DNS' 'DNS local' $Node "$envArg `"$(Join-Path $PSScriptRoot 'dns-local.mjs')`"" $null
+# The local DNS only answers the shop's domain on the LAN: none without a domain.
+if ($local) {
+  if (Get-Service 'VenteWeb-DNS' -ErrorAction SilentlyContinue) {
+    & (Join-Path $Services 'VenteWeb-DNS.exe') uninstall | Out-Null
+    Check 'Retrait du service DNS local'
+  }
+} else {
+  Install-AppService 'VenteWeb-DNS' 'DNS local' $Node "$envArg `"$(Join-Path $PSScriptRoot 'dns-local.mjs')`"" $null
+}
 $caddy = Join-Path $App 'caddy\caddy.exe'
 $caddyArgs = { param($file) "run --adapter caddyfile --config `"$(Join-Path $App "caddy\$file")`" --envfile `"$EnvFile`"" }
-Install-AppService 'VenteWeb-Caddy' 'HTTPS' $caddy (& $caddyArgs 'Caddyfile') $null
+$caddyFile = if ($local) { 'Caddyfile-local' } else { 'Caddyfile' }
+Install-AppService 'VenteWeb-Caddy' 'HTTPS' $caddy (& $caddyArgs $caddyFile) $null
 
 if ($remote) {
   Step 'Accès distant (WireGuard)'
@@ -233,16 +249,18 @@ if ($remote) {
 }
 
 Step 'Pare-feu'
-foreach ($rule in @(
-    @{ Name = 'VenteWeb HTTPS'; Protocol = 'TCP'; Port = @('80', '443'); From = 'Any' },
-    @{ Name = 'VenteWeb DNS'; Protocol = 'UDP'; Port = @('53'); From = 'LocalSubnet' })) {
+$rules = @(@{ Name = 'VenteWeb HTTPS'; Protocol = 'TCP'; Port = @('80', '443'); From = 'Any' })
+if (-not $local) { $rules += @{ Name = 'VenteWeb DNS'; Protocol = 'UDP'; Port = @('53'); From = 'LocalSubnet' } }
+Remove-NetFirewallRule -DisplayName 'VenteWeb DNS' -ErrorAction SilentlyContinue
+foreach ($rule in $rules) {
   Remove-NetFirewallRule -DisplayName $rule.Name -ErrorAction SilentlyContinue
   New-NetFirewallRule -DisplayName $rule.Name -Direction Inbound -Action Allow -Profile Any `
     -Protocol $rule.Protocol -LocalPort $rule.Port -RemoteAddress $rule.From | Out-Null
 }
 
 Step 'Démarrage'
-$started = @('VenteWeb-API', 'VenteWeb-DNS', 'VenteWeb-Caddy')
+$started = @('VenteWeb-API', 'VenteWeb-Caddy')
+if (-not $local) { $started += 'VenteWeb-DNS' }
 if ($remote) { $started += 'VenteWeb-Distant' }
 foreach ($id in $started) { Start-Service $id }
 $healthy = $false
@@ -254,6 +272,15 @@ foreach ($attempt in 1..30) {
 }
 if (-not $healthy) { throw "L'API ne répond pas : voir $Data\journaux\VenteWeb-API.err.log" }
 Write-Host 'API : en marche.'
+
+if ($local) {
+  # Caddy creates its authority on first start; this PC trusts it like any tablet (appareils/).
+  $root = Join-Path $Data 'caddy\pki\authorities\local\root.crt'
+  foreach ($attempt in 1..30) { if (Test-Path $root) { break }; Start-Sleep -Seconds 1 }
+  if (-not (Test-Path $root)) { throw "Certificat du magasin absent : voir $Data\journaux\VenteWeb-Caddy.err.log" }
+  Import-Certificate -FilePath $root -CertStoreLocation Cert:\LocalMachine\Root | Out-Null
+  Write-Host 'Certificat du magasin : approuvé sur ce PC.'
+}
 
 # Every 15 minutes as SYSTEM (SID: the name changes with the Windows language); a run due while
 # one still goes is skipped, never doubled. Run once now.
@@ -272,7 +299,7 @@ Register-ScheduledTask -TaskName $backupTask -Action $action -Trigger $trigger -
 Start-ScheduledTask -TaskName $backupTask
 Write-Host "Toutes les 15 minutes ; journal : $Data\journaux\sauvegarde.log"
 if (-not $values['BACKUP_S3_BUCKET']) {
-  Write-Host 'Coffre OVH non configuré (BACKUP_S3_*) : sauvegardes sur ce PC et le disque externe seulement.' -ForegroundColor Yellow
+  Write-Host 'Sauvegardes sur ce PC et le disque externe (pas de coffre OVH).' -ForegroundColor Yellow
 }
 
 $adminDone = Join-Path $Services 'premier-admin.ok'
@@ -289,6 +316,11 @@ if (-not (Test-Path $adminDone)) {
 
 Write-Host ''
 Write-Host "Terminé : $AppName $Version est en service." -ForegroundColor Green
-Write-Host "Tablettes et PC : https://$($values['APP_DOMAIN'])"
-Write-Host "La box doit donner $($values['LAN_IP']) comme DNS (DHCP) et cette adresse fixe au serveur."
+Write-Host "Tablettes et PC : https://$address"
+if ($local) {
+  Write-Host "Première fois sur chaque appareil : ouvrir http://$($values['LAN_IP']) et installer le certificat du magasin."
+  Write-Host "La box doit réserver l'adresse $($values['LAN_IP']) à ce serveur."
+} else {
+  Write-Host "La box doit donner $($values['LAN_IP']) comme DNS (DHCP) et cette adresse fixe au serveur."
+}
 Read-Host 'Appuyez sur Entrée pour fermer'

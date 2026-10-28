@@ -1,0 +1,11 @@
+# Certificate of the shop's domain by DNS-01 at OVH (caddy-dns/ovh, ADR-0008), imported by the
+# domain's sites; the OVH keys come from the .env (--envfile).
+tls {
+	dns ovh {
+		endpoint {$OVH_ENDPOINT}
+		application_key {$OVH_APPLICATION_KEY}
+		application_secret {$OVH_APPLICATION_SECRET}
+		consumer_key {$OVH_CONSUMER_KEY}
+	}
+	resolvers 1.1.1.1 8.8.8.8
+}

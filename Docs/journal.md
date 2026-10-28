@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 28/10/2026 — T-100 : réseau local sans domaine — agent : Claude Code (Opus 5.5)
+
+**Fait** : sans `APP_DOMAIN`, l'installateur sert l'application à `https://<LAN_IP>` avec l'autorité interne de Caddy (`Caddyfile-local`), l'approuve sur le serveur, ne pose ni DNS local, ni WireGuard, ni clés OVH ; `http://<LAN_IP>` montre la page « Préparer cet appareil » (certificat + étapes Android, iPhone, Windows). `rclone` n'est plus livré sans coffre OVH (gardé dans le dossier des données sinon). H60 à H69 validées, T-005 abandonnée (aucun inventaire : marche pour n'importe quel nombre d'appareils). ADR-0009. Vérifié : les trois Caddyfile par `caddy adapt`, l'installateur par l'analyseur PowerShell.
+
+**Reste** : T-101 (licence d'essai), T-102 (outil graphique), T-099 (logo du client) ; essai réel sur un PC et une tablette.
+
 ## 28/10/2026 — Deux logos distincts (T-010c précisée, T-099 créée) — agent : Claude Code (Opus 5.5)
 
 **Fait** : l'utilisateur précise que l'application se vend à plusieurs clients : **un logo de l'application** (icônes, T-010c, pas encore fourni) et **un logo par client** (devis, factures, reçus, RG-FAC-07, pas encore codé), le logo du client chargé par l'outil de distribution (T-099). Base de test recréée sans `fsync` (le disque de l'hôte bloquait les `TRUNCATE` plus de 80 s) ; suites API (457) et web (310) vertes, T-082 et T-098 committés.

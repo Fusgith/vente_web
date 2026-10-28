@@ -31,7 +31,8 @@ const files = join(data, 'fichiers');
 const logFile = join(data, 'journaux', 'sauvegarde.log');
 /** Read by the API's /healthz, watched from the OVH relay (BACKUP_STATUS_FILE, T-082). */
 const statusFile = join(data, 'derniere-sauvegarde.txt');
-const rclone = join(app, 'rclone.exe');
+// Copied there by the installer when the shop has a vault: an update without it keeps it.
+const rclone = join(data, 'rclone.exe');
 const env = process.env;
 
 const DUMP = /^vente_web-(\d{8}-\d{4})\.dump$/;

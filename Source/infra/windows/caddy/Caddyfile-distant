@@ -20,4 +20,5 @@
 {$APP_DOMAIN} {
 	bind {$WG_ADDRESS}
 	import site.caddy remote
+	import tls-ovh.caddy
 }
