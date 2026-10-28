@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 26/10/2026 — T-098 : manuel d’utilisation HTML avec captures — agent : Claude Code (Opus 5.5)
+
+**Fait** : `Docs/manuel/manuel.html` (une page, s’imprime) : connexion, commercial, caisse, livraison, écran public et borne, responsable, boss, admin, règles et problèmes courants, en étapes numérotées et 44 captures du jeu de démonstration, sans aucun mot de passe. Les captures se régénèrent : `MANUEL_CAPTURES=1 DATABASE_URL=… pnpm e2e manuel-captures`. Correctifs trouvés au passage : sur l’écran public, l’appel « A2 → Caisse 1 » débordait au lieu de passer à la ligne ; le journal d’audit montrait encore des codes (`station.created`, `KIOSK`, `PASSWORD`, `CASH`, `specific_ticket`, `stockOut`…) au lieu de mots français.
+
+**Reste** : refaire les captures après tout changement d’écran ; T-010c (logo) quand il sera fourni.
+
 ## 23/10/2026 — T-082 : surveillance depuis le relais — agent : Claude Code (Opus 5.5)
 
 **Fait** : `/healthz` donne la base (503 si elle ne répond pas), le % de disque libre et la date de la dernière sauvegarde complète (`BACKUP_STATUS_FILE`, écrit par `sauvegarde.mjs`, posé par l'installateur) ; sur le relais, `relais.sh surveiller` (timer systemd, chaque minute) interroge chaque magasin par le tunnel et envoie un e-mail quand ses problèmes changent : tout au développeur, l'injoignabilité ≥ 5 min et son retour aussi à l'admin et au boss (`ajouter <domaine> <e-mails>`) ; H79. Vérifié ici : tests de `/healthz`, essai à blanc des cas (coupure courte, coupure de 6 min, retour, disque, sauvegarde, base, certificat). Paquets Debian ajoutés au relais : curl, jq, openssl.

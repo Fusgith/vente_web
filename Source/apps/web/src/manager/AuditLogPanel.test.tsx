@@ -82,6 +82,27 @@ describe('changesOf (RG-AUD-01, T-097)', () => {
     expect(subjectOf('setting', 'cash_rounding', refs)).toBe('Paramètre cash_rounding');
     expect(subjectOf('order', id(9), refs)).toBe('Commande');
   });
+
+  it('names stations, sign-ins, payments and stock moves rather than their codes', () => {
+    expect(changesOf(null, { type: 'KIOSK', authMethod: 'PASSWORD' })).toEqual([
+      'Type : Borne libre-service',
+      'Connexion par : mot de passe',
+    ]);
+    expect(
+      changesOf(null, {
+        reason: 'specific_ticket',
+        lines: [{ method: 'CASH', amount: '100000' }],
+        stockOut: [{ baseQty: '12' }],
+      }).map(flat),
+    ).toEqual(
+      [
+        'Motif : ticket choisi hors de l’ordre de la file',
+        `Ligne 1 : Moyen Espèces, Montant ${formatMga('100000')}`,
+        'Sortie de stock 1 : Quantité en unité de base 12',
+      ].map(flat),
+    );
+    expect(subjectOf('station', 'Borne entrée', {})).toBe('Poste Borne entrée');
+  });
 });
 
 describe('the audit log panel (T-014, RG-AUD-01)', () => {

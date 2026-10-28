@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manuel Vente Web</title>
+<meta name="description" content="Prise en main de Vente Web, rôle par rôle : commercial, caissier, magasinier, responsable, boss, admin, écran public et borne.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Asap:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1b1e3f; --ink-2: #474c6b; --cotton: #f1f3f6; --paper: #ffffff;
+    --rule: #d3d8e3; --rule-strong: #737a95; --indigo: #2b3a92; --indigo-soft: #e7eaf7;
+    --saffron: #f5b301; --saffron-soft: #fff2cc; --madder: #b42318; --madder-soft: #fbe9e7;
+    --role: var(--ink);
+    --r-sales: #2b3a92; --r-cashier: #17693f; --r-warehouse: #3e4c59;
+    --r-manager: #6a2c77; --r-owner: #7a4a12; --r-admin: #1b1e3f; --r-public: #474c6b;
+    --text: 'Asap', system-ui, 'Segoe UI', Roboto, sans-serif;
+    --title: 'Archivo', 'Asap', system-ui, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 1rem; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0; background: var(--cotton); color: var(--ink);
+    font: 400 1.0625rem/1.6 var(--text);
+    -webkit-text-size-adjust: 100%;
+  }
+  a { color: var(--indigo); text-underline-offset: 2px; }
+  a:focus-visible, summary:focus-visible { outline: 3px solid var(--saffron); outline-offset: 2px; }
+  h1, h2, h3 { font-family: var(--title); line-height: 1.2; margin: 0; }
+  h3 { font-size: 1.25rem; margin: 2.5rem 0 .75rem; }
+  p { margin: 0 0 1rem; }
+  ul, ol { margin: 0 0 1rem; padding-left: 1.4rem; }
+  li { margin: .3rem 0; }
+  b.ui, .ui { font-weight: 700; white-space: nowrap; }
+  .ui::before { content: '« '; font-weight: 400; }
+  .ui::after { content: ' »'; font-weight: 400; }
+  kbd { font: 600 .9em var(--text); background: var(--paper); border: 1px solid var(--rule-strong);
+        border-bottom-width: 2px; border-radius: 4px; padding: 0 .35em; }
+  .num { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+  /* Page frame: the same saffron-stitched frame as the application. */
+  .masthead { background: var(--ink); color: #fff; }
+  .masthead .bar { display: flex; align-items: center; gap: .9rem; padding: .7rem 1.25rem;
+                   font: 800 1.15rem var(--title); }
+  .masthead .bar span { font-weight: 500; border-left: 2px solid var(--saffron); padding-left: .9rem; }
+  .stitch { height: 6px; background:
+    repeating-linear-gradient(135deg, var(--saffron) 0 3px, transparent 3px 7px) var(--ink); }
+
+  .hero { max-width: 76rem; margin: 0 auto; padding: 2.5rem 1.25rem 1rem; }
+  .hero h1 { font-size: clamp(2rem, 5vw, 3.1rem); font-weight: 800; letter-spacing: -.01em; }
+  .hero p.lead { font-size: 1.2rem; color: var(--ink-2); max-width: 44rem; margin-top: .8rem; }
+
+  /* The journey of a sale: the ticket travels from one role to the next. */
+  .journey { list-style: none; padding: 0; margin: 2rem 0 0; display: grid;
+             grid-template-columns: repeat(4, 1fr); gap: .75rem; counter-reset: step; }
+  .journey li { margin: 0; background: var(--paper); border: 1px solid var(--rule);
+                border-top: 6px solid var(--role); border-radius: 10px; padding: 1rem 1rem 1.1rem;
+                position: relative; }
+  .journey li + li::before { content: ''; position: absolute; left: -.75rem; top: 50%; width: .75rem;
+                             border-top: 2px dashed var(--rule-strong); }
+  .journey .who { font: 700 .95rem var(--title); color: var(--role); }
+  .journey .what { margin: .35rem 0 .6rem; }
+  .ticket { display: inline-block; font: 800 1.05rem var(--title); color: var(--ink);
+            background: var(--saffron-soft); border: 2px dashed var(--saffron); border-radius: 6px;
+            padding: .05rem .55rem; }
+  .journey .out { font-size: .95rem; color: var(--ink-2); }
+
+  /* Layout: table of contents beside the text. */
+  .layout { max-width: 76rem; margin: 0 auto; padding: 1.5rem 1.25rem 4rem;
+            display: grid; grid-template-columns: 15.5rem minmax(0, 1fr); gap: 2.5rem; align-items: start; }
+  nav.toc { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow: auto;
+            background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 1rem .9rem; }
+  nav.toc summary { font: 700 1rem var(--title); cursor: pointer; list-style: none; }
+  nav.toc summary::-webkit-details-marker { display: none; }
+  nav.toc ol { list-style: none; padding: 0; margin: .7rem 0 0; }
+  nav.toc li { margin: 0; }
+  nav.toc a { display: flex; align-items: center; gap: .55rem; padding: .3rem .4rem; border-radius: 6px;
+              color: var(--ink); text-decoration: none; font-size: .97rem; }
+  nav.toc a:hover { background: var(--indigo-soft); }
+  nav.toc i { width: .7rem; height: .7rem; border-radius: 2px; background: var(--role); flex: none; }
+
+  main { min-width: 0; }
+  .chapter { --role: var(--ink); background: var(--paper); border: 1px solid var(--rule);
+             border-radius: 12px; overflow: hidden; margin-bottom: 2.5rem; }
+  .chapter > .body { padding: 1.75rem clamp(1rem, 3vw, 2.5rem) 1.5rem; }
+  .chapter > .body > p, .chapter > .body > ul, .chapter > .body > ol, .chapter > .body > h3,
+  .chapter > .body > .note, .chapter > .body > dl { max-width: 46rem; }
+
+  /* Each chapter opens with the role's band, as on the screen of that role. */
+  .band { background: var(--role); color: #fff; display: flex; flex-wrap: wrap; align-items: baseline;
+          justify-content: space-between; gap: .3rem 1rem; padding: 1rem clamp(1rem, 3vw, 2.5rem); }
+  .band h2 { font-size: clamp(1.45rem, 3vw, 1.9rem); font-weight: 800; }
+  .band .seen { font: 500 .98rem var(--title); opacity: .9; }
+  .band .seen b { border-left: 2px solid var(--saffron); padding-left: .6rem; margin-left: .5rem; font-weight: 700; }
+  .chapter > .stitch { background-color: var(--role); }
+
+  .who-does { font-size: 1.08rem; color: var(--ink-2); }
+
+  ol.steps { list-style: none; padding: 0; counter-reset: s; }
+  ol.steps > li { counter-increment: s; position: relative; padding-left: 2.6rem; margin: .7rem 0; }
+  ol.steps > li::before { content: counter(s); position: absolute; left: 0; top: .05rem;
+    width: 1.8rem; height: 1.8rem; border-radius: 50%; background: var(--role); color: #fff;
+    font: 700 .95rem/1.8rem var(--title); text-align: center; }
+
+  figure { margin: 1.25rem 0 2rem; }
+  figure a { display: block; border: 1px solid var(--rule-strong); border-radius: 8px; overflow: hidden;
+             background: var(--cotton); box-shadow: 0 1px 0 var(--rule), 0 10px 24px -18px rgba(27,30,63,.55); }
+  figure img { display: block; width: 100%; height: auto; }
+  figure.part a { max-width: 48rem; }
+  figcaption { font-size: .95rem; color: var(--ink-2); margin-top: .55rem; max-width: 46rem; }
+  figcaption b { color: var(--ink); }
+
+  .note { border-radius: 8px; padding: .85rem 1rem .85rem 1.1rem; margin: 1.25rem 0;
+          background: var(--saffron-soft); border-left: 5px solid var(--saffron); }
+  .note.warn { background: var(--madder-soft); border-left-color: var(--madder); }
+  .note.tip { background: var(--indigo-soft); border-left-color: var(--indigo); }
+  .note > b:first-child { display: block; font-family: var(--title); margin-bottom: .2rem; }
+  .note p:last-child, .note ul:last-child { margin-bottom: 0; }
+
+  dl.faq dt { font-weight: 700; margin-top: 1.1rem; }
+  dl.faq dd { margin: .25rem 0 0; }
+
+  table.plain { border-collapse: collapse; margin: 0 0 1.25rem; font-size: .98rem; width: 100%; max-width: 46rem; }
+  table.plain th, table.plain td { text-align: left; vertical-align: top; padding: .45rem .6rem;
+                                   border-bottom: 1px solid var(--rule); }
+  table.plain th { font-family: var(--title); font-size: .9rem; background: var(--cotton); }
+
+  footer { max-width: 76rem; margin: 0 auto; padding: 0 1.25rem 3rem; color: var(--ink-2); font-size: .95rem; }
+
+  .r-sales { --role: var(--r-sales); } .r-cashier { --role: var(--r-cashier); }
+  .r-warehouse { --role: var(--r-warehouse); } .r-manager { --role: var(--r-manager); }
+  .r-owner { --role: var(--r-owner); } .r-admin { --role: var(--r-admin); } .r-public { --role: var(--r-public); }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: 1fr; gap: 1.25rem; }
+    nav.toc { position: static; max-height: none; }
+    .journey { grid-template-columns: repeat(2, 1fr); }
+    .journey li + li::before { display: none; }
+  }
+  @media (max-width: 520px) {
+    body { font-size: 1rem; }
+    .layout, .hero, footer { padding-left: 1rem; padding-right: 1rem; }
+    .journey { grid-template-columns: 1fr; }
+    .chapter > .body { padding: 1.25rem 1rem; }
+  }
+  @media print {
+    body { background: #fff; font-size: 11pt; }
+    nav.toc, .masthead .stitch { display: none; }
+    .layout { display: block; padding: 0; }
+    .chapter { border: 0; break-before: page; }
+    figure, .note, ol.steps > li { break-inside: avoid; }
+    figure a { box-shadow: none; }
+    .band, ol.steps > li::before { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="bar">Vente Web <span>Manuel d’utilisation</span></div>
+  <div class="stitch"></div>
+</header>
+
+<section class="hero">
+  <h1>Prendre en main Vente Web</h1>
+  <p class="lead">Ce que chaque personne du magasin voit à l’écran et ce qu’elle fait, étape par étape. Lisez d’abord « Se connecter », puis le chapitre de votre rôle : il porte la couleur du bandeau en haut de votre écran.</p>
+
+  <ol class="journey" aria-label="Le parcours d’une vente">
+    <li class="r-sales"><div class="who">1. Commercial</div><p class="what">Prépare le devis avec le client sur la tablette, puis valide la commande.</p><span class="ticket">A1</span> <span class="out">le client reçoit son ticket</span></li>
+    <li class="r-cashier"><div class="who">2. Caissier</div><p class="what">Appelle le ticket, contrôle la commande, encaisse et imprime la facture.</p><span class="out">la commande passe en livraison</span></li>
+    <li class="r-warehouse"><div class="who">3. Magasinier</div><p class="what">Prépare la marchandise, appelle le client et lui remet chaque ligne.</p><span class="out">le stock sort à la livraison</span></li>
+    <li class="r-public"><div class="who">Écran public</div><p class="what">Affiche et annonce chaque ticket appelé, à la caisse puis à la livraison.</p><span class="ticket">A1 → Caisse 1</span></li>
+  </ol>
+</section>
+
+<div class="layout">
+  <nav class="toc" aria-label="Sommaire">
+    <details open>
+      <summary>Sommaire</summary>
+      <ol>
+        <li><a href="#connexion"><i></i>Se connecter</a></li>
+        <li class="r-sales"><a href="#commercial"><i></i>Commercial</a></li>
+        <li class="r-cashier"><a href="#caisse"><i></i>Caissier</a></li>
+        <li class="r-warehouse"><a href="#livraison"><i></i>Magasinier</a></li>
+        <li class="r-public"><a href="#ecran"><i></i>Écran public et borne</a></li>
+        <li class="r-manager"><a href="#responsable"><i></i>Responsable</a></li>
+        <li class="r-owner"><a href="#boss"><i></i>Boss</a></li>
+        <li class="r-admin"><a href="#admin"><i></i>Admin</a></li>
+        <li><a href="#regles"><i></i>Règles à connaître</a></li>
+        <li><a href="#problemes"><i></i>Problèmes fréquents</a></li>
+      </ol>
+    </details>
+  </nav>
+
+  <main>
+
+<!-- ============================================================ CONNEXION -->
+<section class="chapter" id="connexion">
+  <div class="band"><h2>Se connecter</h2><span class="seen">Vente Web<b>Connexion</b></span></div>
+  <div class="stitch"></div>
+  <div class="body">
+    <p class="who-does">Tout le monde, sur l’appareil de son poste : tablette, caisse, comptoir de livraison, ordinateur ou téléphone du boss.</p>
+    <figure class="part"><a href="captures/01-connexion.png"><img src="captures/01-connexion.png" alt="Écran de connexion : champs Identifiant et Mot de passe, bouton Se connecter, lien J’ai un code d’activation." loading="lazy"></a>
+      <figcaption><b>L’écran de connexion.</b> Le bandeau du bas rappelle ce qu’il faut saisir.</figcaption></figure>
+    <ol class="steps">
+      <li>Tapez votre <span class="ui">Identifiant</span>, celui que l’admin vous a donné.</li>
+      <li>Tapez votre <span class="ui">Mot de passe</span>.</li>
+      <li>Touchez <span class="ui">Se connecter</span>. Votre écran de travail s’ouvre, avec en haut un bandeau à la couleur de votre rôle, votre nom et <span class="ui">Se déconnecter</span>.</li>
+    </ol>
+
+    <h3>La première fois</h3>
+    <ul>
+      <li><strong>Mot de passe donné par l’admin</strong> : il ne sert qu’à entrer. L’application demande aussitôt <span class="ui">Votre nouveau mot de passe</span> ; choisissez-en un différent, assez long, que vous seul connaissez.</li>
+      <li><strong>Boss</strong> : l’admin ne connaît jamais votre mot de passe. Il vous remet un code d’activation. Touchez <span class="ui">J’ai un code d’activation</span>, tapez le code, choisissez votre mot de passe, puis <span class="ui">Enregistrer mon mot de passe</span>. Le code ne sert qu’une fois, avant son échéance.</li>
+    </ul>
+
+    <h3>Hors du magasin</h3>
+    <p>Le boss et l’admin peuvent se connecter de l’extérieur. L’application demande alors en plus le <span class="ui">Code de validation (application d’authentification)</span> : les 6 chiffres affichés par l’application d’authentification de votre téléphone.</p>
+
+    <div class="note">
+      <b>À savoir</b>
+      <ul>
+        <li>Une personne n’a qu’une session ouverte : se connecter sur un autre appareil ferme la précédente.</li>
+        <li>Sans activité pendant quelques minutes, l’écran se verrouille : <em>« Écran verrouillé après N min d’inactivité : reconnectez-vous. »</em> La durée est réglée par l’admin, par type d’appareil.</li>
+        <li>Après plusieurs mots de passe faux, le compte est verrouillé pour quelques minutes. L’admin peut le <span class="ui">Déverrouiller</span>.</li>
+        <li>Un compte qui a plusieurs rôles choisit son <span class="ui">Rôle actif</span> dans le bandeau du haut.</li>
+        <li>Quittez toujours votre poste avec <span class="ui">Se déconnecter</span>.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ COMMERCIAL -->
+<section class="chapter r-sales" id="commercial">
+  <div class="band"><h2>Commercial</h2><span class="seen">Vente Web<b>Ventes</b></span></div>
+  <div class="stitch"></div>
+  <div class="body">
+    <p class="who-does">Sur la tablette, avec le client : choisir le client, ajouter les articles, enregistrer le devis, puis valider la commande. Le client repart avec un ticket et attend son appel à la caisse.</p>
+
+    <figure><a href="captures/10-vente-accueil.png"><img src="captures/10-vente-accueil.png" alt="Écran Ventes : recherche d’articles, catégories, articles les plus vendus et à proposer, tableau du devis vide." loading="lazy"></a>
+      <figcaption><b>L’écran de vente.</b> À gauche, la recherche d’articles, le bouton <span class="ui">Scanner</span> et la rangée <span class="ui">Les plus vendus</span> (vide avant les premières ventes) ; à droite, les lignes du devis et <span class="ui">Choisir le client</span>.</figcaption></figure>
+
+    <h3>1. Choisir le client</h3>
+    <ol class="steps">
+      <li>Touchez <span class="ui">Choisir le client</span>.</li>
+      <li>Dans <span class="ui">Téléphone ou nom du client</span>, tapez au moins 3 chiffres du téléphone, ou le début du nom.</li>
+      <li>Touchez le client dans la liste. Son nom s’affiche en haut du devis, avec la date de son <span class="ui">Dernier achat</span> : touchez-la pour voir ce qu’il a acheté la dernière fois.</li>
+    </ol>
+    <figure class="part"><a href="captures/11-vente-client.png"><img src="captures/11-vente-client.png" alt="Fenêtre Client du devis : recherche « Rasoa », un client trouvé, formulaire Nouveau client." loading="lazy"></a>
+      <figcaption><b>Recherche du client.</b> S’il n’existe pas encore, remplissez <span class="ui">Nouveau client</span> : <span class="ui">Nom</span>, <span class="ui">Téléphone</span> (10 chiffres commençant par 0, ou +indicatif), et si besoin un second téléphone, puis <span class="ui">Enregistrer le client</span>.</figcaption></figure>
+
+    <h3>2. Ajouter les articles</h3>
+    <p>Trois façons, au choix :</p>
+    <ul>
+      <li><strong>Taper</strong> dans <span class="ui">Rechercher un article</span> un code, un code-barres ou le début du nom. Pour plusieurs pièces d’un coup, tapez la quantité, une étoile, puis le code : <kbd>12*SAV-001</kbd> ajoute 12 d’un coup.</li>
+      <li><strong>Scanner</strong> : touchez <span class="ui">Scanner</span> et présentez les codes-barres l’un après l’autre à la caméra, ou utilisez une douchette. Chaque article reconnu est ajouté.</li>
+      <li><strong>Toucher</strong> un article dans <span class="ui">Les plus vendus</span> ou <span class="ui">À proposer</span> (les articles que le boss veut mettre en avant), ou filtrer par <span class="ui">Catégorie : Toutes</span>.</li>
+    </ul>
+    <figure><a href="captures/12-vente-recherche.png"><img src="captures/12-vente-recherche.png" alt="Recherche « savon » : articles trouvés avec leur stock disponible et leurs unités de vente." loading="lazy"></a>
+      <figcaption><b>Résultats de recherche.</b> Chaque article montre son stock disponible (<em>dispo …</em>) et ses unités de vente avec leur prix.</figcaption></figure>
+    <p>Un article qui se vend en plusieurs unités (la pièce, le paquet, le carton…) propose un bouton par unité : touchez celle que veut le client.</p>
+    <figure><a href="captures/13-vente-unites.png"><img src="captures/13-vente-unites.png" alt="Saisie 2*SAV-001 : boutons des unités de vente proposées pour le savon." loading="lazy"></a>
+      <figcaption><b>Choix de l’unité.</b> Ici <kbd>2*SAV-001</kbd> : la quantité 2 attend que vous choisissiez l’unité.</figcaption></figure>
+
+    <h3>3. Vérifier le devis</h3>
+    <figure><a href="captures/14-vente-devis.png"><img src="captures/14-vente-devis.png" alt="Tableau du devis avec trois lignes, totaux et boutons Enregistrer le devis et Valider la commande." loading="lazy"></a>
+      <figcaption><b>Le devis en tableau.</b> Une ligne par article : quantité, unité, prix unitaire, montant net, en Ariary (MGA). En bas, le <span class="ui">Net à payer</span>. À gauche, le pavé de la ligne qui vient d’être ajoutée.</figcaption></figure>
+    <p>Pour changer une ligne, touchez sa quantité dans le tableau. Le pavé <span class="ui">Ligne N</span> s’ouvre à gauche : touchez une autre unité de vente ou tapez la quantité, puis <span class="ui">Valider</span>. La corbeille rouge retire la ligne du devis ; <span class="ui">Fermer</span> range le pavé.</p>
+    <figure><a href="captures/15-vente-ligne.png"><img src="captures/15-vente-ligne.png" alt="Pavé de la ligne 1 : unités pièce, paquet et carton avec leur prix et leur stock, quantité saisie, pavé numérique, Valider." loading="lazy"></a>
+      <figcaption><b>Le pavé d’une ligne.</b> Chaque unité de vente montre son prix et ce qui reste en stock dans cette unité (<em>dispo …</em>).</figcaption></figure>
+
+    <h3>4. Enregistrer le devis</h3>
+    <ol class="steps">
+      <li>Touchez <span class="ui">Enregistrer le devis</span>. Il reçoit un numéro (par exemple <em>D-2026-000001</em>).</li>
+      <li>Si le client veut un papier, touchez <span class="ui">Ouvrir le PDF</span> et imprimez-le ou envoyez-le.</li>
+    </ol>
+    <figure><a href="captures/16-vente-devis-enregistre.png"><img src="captures/16-vente-devis-enregistre.png" alt="Devis enregistré : numéro du devis et bouton Ouvrir le PDF." loading="lazy"></a>
+      <figcaption><b>Devis enregistré.</b> Le bandeau du bas confirme le numéro. Un devis se garde pour un nombre de jours fixé par l’admin.</figcaption></figure>
+
+    <h3>5. Valider la commande</h3>
+    <ol class="steps">
+      <li>Quand le client est d’accord, touchez <span class="ui">Valider la commande</span>. La marchandise lui est réservée.</li>
+      <li>Le grand ticket s’affiche : <em>« Donnez ce ticket au client : il sera appelé à la caisse. »</em> Dites-lui son numéro (ici <span class="ticket">A1</span>).</li>
+      <li>Touchez <span class="ui">Nouveau devis</span> pour le client suivant.</li>
+    </ol>
+    <figure><a href="captures/17-vente-commande-validee.png"><img src="captures/17-vente-commande-validee.png" alt="Fenêtre Commande validée : grand numéro de ticket A1 et nom du client." loading="lazy"></a>
+      <figcaption><b>Commande validée.</b> La lettre du ticket est propre à chaque commercial ; le numéro repart de 1 chaque jour.</figcaption></figure>
+    <div class="note warn">
+      <b>Stock insuffisant</b>
+      <p>Si le stock ne suffit plus, la validation est refusée et la fenêtre <span class="ui">Stock insuffisant</span> indique, ligne par ligne, ce qui est disponible. Touchez <span class="ui">Ramener la ligne N à …</span> ou <span class="ui">Retirer la ligne N</span>, puis validez à nouveau.</p>
+    </div>
+
+    <h3>6. Retrouver ses devis et commandes</h3>
+    <p>Touchez <span class="ui">Mes devis et commandes</span> : la liste montre vos devis enregistrés et vos commandes du jour, avec leur état.</p>
+    <figure><a href="captures/18-vente-mes-commandes.png"><img src="captures/18-vente-mes-commandes.png" alt="Liste Mes devis et commandes avec numéros, clients, totaux et états." loading="lazy"></a>
+      <figcaption><b>Mes devis et commandes.</b> Le champ <span class="ui">Numéro du devis</span> retrouve aussi le devis d’un collègue.</figcaption></figure>
+    <table class="plain">
+      <thead><tr><th>État</th><th>Ce que cela veut dire</th><th>Ce que vous pouvez faire</th></tr></thead>
+      <tbody>
+        <tr><td>Devis</td><td>Enregistré, pas encore validé.</td><td><span class="ui">Reprendre</span> pour le modifier, l’enregistrer puis le valider.</td></tr>
+        <tr><td>Validée, en file</td><td>Le client attend son appel à la caisse.</td><td><span class="ui">Annuler</span> si le client renonce.</td></tr>
+        <tr><td>À la caisse</td><td>Le caissier s’en occupe.</td><td>Rien : attendez.</td></tr>
+        <tr><td>Renvoyée par la caisse</td><td>Le caissier vous la renvoie pour une correction (un article à ajouter, par exemple).</td><td><span class="ui">Reprendre</span>, corriger, enregistrer, valider.</td></tr>
+        <tr><td>Expirée</td><td>Non payée à la fin de la journée : son stock est libéré.</td><td><span class="ui">Réactiver</span> : elle revient en fin de file à la caisse.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>7. Les paniers de la borne</h3>
+    <p>Quand un client a préparé son panier à la borne libre-service, le bouton des paniers de la borne indique combien attendent. Ouvrez <span class="ui">Paniers de la borne</span>, touchez <span class="ui">Prendre</span> à côté du panier, appelez le client par son nom et vérifiez le panier avec lui. Il devient votre devis : continuez à l’étape 3.</p>
+
+    <div class="note">
+      <b>À savoir</b>
+      <ul>
+        <li>Quand la caisse appelle votre client et qu’il n’y a pas d’écran public, le bandeau du bas vous prévient : <em>« Ticket A1 appelé à la caisse : prévenez … »</em>.</li>
+        <li>Par défaut, le commercial n’accorde pas de remise : le client la demande à la caisse, avant de payer. Si l’admin coche <span class="ui">Le commercial peut accorder des remises</span>, un bouton <span class="ui">Remise</span> apparaît sur chaque ligne et sur le total, dans les plafonds fixés par le boss.</li>
+        <li>Les prix sont ceux du jour : si un prix a changé depuis l’ajout de la ligne, l’application l’indique à la validation. Vérifiez le nouveau net à payer avec le client, puis validez.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ CAISSE -->
+<section class="chapter r-cashier" id="caisse">
+  <div class="band"><h2>Caissier</h2><span class="seen">Vente Web<b>Caisse</b></span></div>
+  <div class="stitch"></div>
+  <div class="body">
+    <p class="who-does">À la caisse : ouvrir la caisse, appeler les tickets, contrôler chaque commande avec le client, encaisser, remettre la facture ; le soir, clôturer.</p>
+
+    <h3>1. Ouvrir la caisse</h3>
+    <ol class="steps">
+      <li>Choisissez votre <span class="ui">Caisse</span>.</li>
+      <li>Comptez les espèces du tiroir et tapez-les dans <span class="ui">Fond de caisse (MGA)</span>.</li>
+      <li>Touchez <span class="ui">Ouvrir la caisse</span>. Chaque paiement de la journée sera rattaché à cette caisse.</li>
+    </ol>
+    <figure class="part"><a href="captures/30-caisse-ouverture.png"><img src="captures/30-caisse-ouverture.png" alt="Ouverture de la caisse : choix de la caisse et fond de caisse." loading="lazy"></a>
+      <figcaption><b>Ouverture de la caisse.</b></figcaption></figure>
+
+    <h3>2. Appeler le client</h3>
+    <p>La <span class="ui">File caisse</span> liste les commandes validées dans l’ordre d’arrivée : rang, ticket, client, commercial, montant, temps d’attente. Une commande <span class="ui">Prioritaire</span> passe devant.</p>
+    <figure><a href="captures/31-caisse-file.png"><img src="captures/31-caisse-file.png" alt="File caisse avec les commandes en attente et le bouton Appeler le suivant." loading="lazy"></a>
+      <figcaption><b>La file caisse.</b> À droite, le panneau <span class="ui">À votre caisse</span>.</figcaption></figure>
+    <ol class="steps">
+      <li>Touchez <span class="ui">Appeler le suivant</span> (ou <span class="ui">Appeler A1</span> sur une ligne précise). Le ticket s’affiche sur l’écran public, avec un son.</li>
+      <li>Annoncez le ticket et le nom du client à voix haute s’il n’y a pas d’écran.</li>
+      <li>Si personne ne vient, touchez <span class="ui">Client absent</span> : la commande repart en fin de file.</li>
+    </ol>
+    <figure><a href="captures/32-caisse-appel.png"><img src="captures/32-caisse-appel.png" alt="Commande appelée à la caisse : lignes de la commande, remises, boutons Encaisser, Demander au boss, Renvoyer au commercial, Annuler la commande." loading="lazy"></a>
+      <figcaption><b>La commande appelée.</b> Vous la contrôlez avec le client avant d’encaisser.</figcaption></figure>
+
+    <h3>3. Contrôler la commande avec le client</h3>
+    <ul>
+      <li><strong>Moins d’articles</strong> : touchez la quantité de la ligne et tapez la nouvelle. Une quantité ne peut que baisser ; pour ajouter un article, renvoyez la commande au commercial.</li>
+      <li><strong>Une remise</strong> : touchez la case <em>Aucune</em> de la colonne Remise (remise sur la ligne) ou <span class="ui">Remise sur le total</span>. Choisissez <span class="ui">%</span> ou <span class="ui">MGA</span>, tapez la valeur, <span class="ui">Appliquer</span>. L’application affiche le maximum permis (<em>« Au plus … »</em>) : ce sont les plafonds du boss.</li>
+      <li><strong>Remises prévues</strong> : si une règle du boss s’applique (quantité, type de client, promotion), une étiquette <em>remise prévue</em> apparaît. Touchez <span class="ui">Appliquer les remises prévues</span> si le client le demande.</li>
+      <li><strong>Code promo</strong> : le client présente un code (par exemple <em>R7K4-29QP</em>) ; touchez <span class="ui">Code promo</span>, tapez-le, <span class="ui">Appliquer le code</span>. Il ne sert qu’une fois.</li>
+      <li><strong>Un article à ajouter ou à changer</strong> : <span class="ui">Renvoyer au commercial</span>. La commande garde son ticket et sa place dans la file.</li>
+      <li><strong>Le client renonce</strong> : <span class="ui">Annuler la commande</span>, avec un motif obligatoire. Le stock réservé est libéré.</li>
+    </ul>
+    <figure><a href="captures/33-caisse-remise.png"><img src="captures/33-caisse-remise.png" alt="Fenêtre Remise sur le total : en pourcentage ou en montant, avec le maximum permis." loading="lazy"></a>
+      <figcaption><b>Une remise dans les plafonds.</b> Au-delà du maximum, il faut l’accord du boss.</figcaption></figure>
+
+    <h3>4. Demander une remise au boss</h3>
+    <p>Quand le client veut plus que le plafond :</p>
+    <ol class="steps">
+      <li>Touchez <span class="ui">Demander au boss</span>.</li>
+      <li>Remplissez seulement ce que le client demande : une remise sur un ou plusieurs articles, et/ou sur le <span class="ui">Total de la commande</span>, en % ou en MGA. Laissez vide le reste.</li>
+      <li>Choisissez le motif dans <span class="ui">Choisir le motif</span>, ajoutez si besoin une note, puis <span class="ui">Envoyer au boss</span>.</li>
+    </ol>
+    <figure><a href="captures/34-caisse-demande-boss.png"><img src="captures/34-caisse-demande-boss.png" alt="Fenêtre Demander une remise au boss : remise demandée sur le total, motif, note." loading="lazy"></a>
+      <figcaption><b>La demande au boss.</b> Le boss la reçoit aussitôt, même à distance.</figcaption></figure>
+    <p>Le paiement attend sa réponse. Pendant ce temps, vous pouvez <span class="ui">Remettre en attente</span> le ticket (il garde sa place) et appeler le suivant.</p>
+    <figure><a href="captures/35-caisse-demande-attente.png"><img src="captures/35-caisse-demande-attente.png" alt="Commande en attente de la réponse du boss." loading="lazy"></a>
+      <figcaption><b>En attente du boss.</b> Avec l’accord du client, <span class="ui">Retirer la demande</span> : il paie alors dans les plafonds.</figcaption></figure>
+    <figure><a href="captures/36-caisse-remise-accordee.png"><img src="captures/36-caisse-remise-accordee.png" alt="Remise accordée par le boss, appliquée à la commande." loading="lazy"></a>
+      <figcaption><b>Réponse du boss.</b> Accordée, la remise s’applique seule à la commande ; refusée, les remises restent dans les plafonds.</figcaption></figure>
+
+    <h3>5. Encaisser</h3>
+    <ol class="steps">
+      <li>Touchez <span class="ui">Encaisser</span>.</li>
+      <li>Choisissez le <span class="ui">Moyen de paiement</span> : Espèces, MVola, Orange Money, Airtel Money, Carte bancaire, Virement, Chèque, À crédit ou Traite.</li>
+      <li>Pour tout moyen sauf les espèces et le crédit, tapez la <span class="ui">Référence de la transaction (obligatoire)</span> ; pour un chèque ou une traite, aussi la banque ou l’échéance.</li>
+      <li>Le client paie en plusieurs fois ? <span class="ui">Ajouter un moyen de paiement</span> et répartissez le montant. Le total doit faire exactement le net à payer.</li>
+      <li>En espèces, tapez le <span class="ui">Montant reçu en espèces (MGA)</span> : l’application calcule ce qu’il faut rendre.</li>
+      <li>Touchez <span class="ui">Encaisser …</span>. La facture est créée, avec son numéro.</li>
+    </ol>
+    <figure><a href="captures/37-caisse-paiement.png"><img src="captures/37-caisse-paiement.png" alt="Fenêtre d’encaissement : deux moyens de paiement, montants, référence de la transaction." loading="lazy"></a>
+      <figcaption><b>Paiement en deux moyens</b> : une partie en espèces, le reste par mobile money avec sa référence.</figcaption></figure>
+    <figure><a href="captures/38-caisse-facture.png"><img src="captures/38-caisse-facture.png" alt="Encaissement terminé : numéro de facture et bouton Ouvrir la facture." loading="lazy"></a>
+      <figcaption><b>Après l’encaissement.</b> <span class="ui">Ouvrir la facture</span> pour l’imprimer. La commande part en file livraison ; le client va au comptoir.</figcaption></figure>
+
+    <h3>6. Annuler ou rembourser une vente payée</h3>
+    <ol class="steps">
+      <li>Touchez <span class="ui">Annuler ou rembourser une vente</span> et tapez le <span class="ui">Numéro de la facture</span>.</li>
+      <li>Indiquez le motif, le moyen de remboursement et, si besoin, sa référence.</li>
+      <li>Le responsable valide sur place avec son identifiant et son mot de passe.</li>
+      <li>Un avoir est émis : rendez le montant indiqué au client et remettez-lui l’avoir.</li>
+    </ol>
+    <p>Une vente déjà livrée ne s’annule plus ici. Si le magasinier a livré partiellement, le reste à rembourser apparaît à la caisse : touchez <span class="ui">Rembourser …</span>.</p>
+
+    <h3>7. Clôturer la caisse</h3>
+    <ol class="steps">
+      <li>En fin de journée, touchez <span class="ui">Clôturer la caisse</span>. L’application montre les paiements par moyen et les <span class="ui">Espèces attendues dans le tiroir</span>.</li>
+      <li>Comptez le tiroir et tapez le résultat dans <span class="ui">Espèces comptées (MGA)</span>.</li>
+      <li>S’il y a un <span class="ui">Écart</span>, expliquez-le dans <span class="ui">Commentaire</span> (obligatoire).</li>
+      <li>Touchez <span class="ui">Clôturer définitivement</span>, puis <span class="ui">Ouvrir le rapport de clôture</span> pour l’imprimer.</li>
+    </ol>
+    <figure><a href="captures/39-caisse-cloture.png"><img src="captures/39-caisse-cloture.png" alt="Clôture de la caisse : paiements, fond de caisse, espèces attendues, espèces comptées et écart." loading="lazy"></a>
+      <figcaption><b>La clôture.</b> Une caisse clôturée ne se rouvre pas.</figcaption></figure>
+    <div class="note">
+      <b>À savoir</b>
+      <ul>
+        <li>Le panneau <span class="ui">Créances clients</span> montre ce que les clients doivent encore sur leurs achats à crédit. La vente à crédit n’est possible que dans les conditions fixées par le boss.</li>
+        <li>Si l’admin a réglé un arrondi des espèces, le net à payer en espèces est arrondi et l’application l’indique.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ LIVRAISON -->
+<section class="chapter r-warehouse" id="livraison">
+  <div class="band"><h2>Magasinier</h2><span class="seen">Vente Web<b>Livraison</b></span></div>
+  <div class="stitch"></div>
+  <div class="body">
+    <p class="who-does">Au comptoir de livraison : prendre une commande payée, la préparer, appeler le client et lui remettre chaque ligne. Plusieurs magasiniers travaillent en même temps, chacun à son comptoir.</p>
+    <figure><a href="captures/40-livraison-file.png"><img src="captures/40-livraison-file.png" alt="File livraison avec la commande payée et le bouton Prendre la suivante." loading="lazy"></a>
+      <figcaption><b>La file livraison.</b> Seules les commandes payées y apparaissent.</figcaption></figure>
+    <ol class="steps">
+      <li>Touchez <span class="ui">Prendre la suivante</span> (ou <span class="ui">Prendre A1</span>). La commande est à vous : les autres comptoirs ne la voient plus à prendre.</li>
+      <li>Préparez la marchandise avec la liste affichée : quantité, unité, désignation.</li>
+      <li>Touchez <span class="ui">Commande prête : appeler le client</span>. Le ticket s’affiche sur l’écran public.</li>
+      <li>Remettez chaque ligne au client et cochez-la (<span class="ui">Ligne N remise</span>).</li>
+      <li>Quand tout est coché, touchez <span class="ui">Livrer</span>. Le stock sort à ce moment.</li>
+    </ol>
+    <figure><a href="captures/41-livraison-preparation.png"><img src="captures/41-livraison-preparation.png" alt="Commande à préparer : lignes, bouton Commande prête : appeler le client." loading="lazy"></a>
+      <figcaption><b>La commande à préparer.</b></figcaption></figure>
+    <figure><a href="captures/42-livraison-remise.png"><img src="captures/42-livraison-remise.png" alt="Toutes les lignes cochées, bouton Livrer." loading="lazy"></a>
+      <figcaption><b>Lignes cochées.</b> L’application compte celles qui restent : <em>« Encore 1 ligne à cocher. »</em></figcaption></figure>
+    <div class="note warn">
+      <b>Un article manque ou est abîmé</b>
+      <p>Touchez <span class="ui">Signaler une anomalie</span>. Pour chaque ligne touchée, indiquez la quantité <span class="ui">Non remis</span> et la cause (manquant, abîmé), puis <span class="ui">Signaler au responsable</span>. Le responsable décide : remettre en file ou livrer partiellement. Vous pouvez prendre la commande suivante.</p>
+    </div>
+    <p>Si le client ne vient pas, <span class="ui">Client absent</span> remet la commande en fin de file.</p>
+  </div>
+</section>
+
+<!-- ============================================================ ECRAN / BORNE -->
+<section class="chapter r-public" id="ecran">
+  <div class="band"><h2>Écran public et borne</h2><span class="seen">Sans compte</span></div>
+  <div class="stitch"></div>
+  <div class="body">
+    <h3>L’écran public</h3>
+    <p>Un téléviseur ou un écran dans la salle affiche les tickets appelés : à gauche la caisse, à droite la livraison, avec le poste où se présenter. Il ne demande aucun compte.</p>
+    <figure><a href="captures/45-ecran-public.png"><img src="captures/45-ecran-public.png" alt="Écran public : ticket appelé et poste où se présenter, colonnes Caisse et Livraison." loading="lazy"></a>
+      <figcaption><b>L’écran public.</b> Le dernier appel est en grand ; les précédents restent affichés en dessous.</figcaption></figure>
+    <ol class="steps">
+      <li>L’admin déclare un poste de type <em>Écran public</em> et copie son <span class="ui">Adresse de l’écran</span>.</li>
+      <li>Ouvrez cette adresse dans le navigateur de l’écran, en plein écran.</li>
+      <li>Touchez une fois <span class="ui">Activer le son</span> : chaque appel sonne.</li>
+    </ol>
+
+    <h3>La borne libre-service</h3>
+    <p>Une tablette en libre-service à l’entrée : le client prépare seul son panier, un commercial le reprend ensuite.</p>
+    <figure><a href="captures/46-borne.png"><img src="captures/46-borne.png" alt="Borne libre-service : Préparez votre panier, recherche, articles les plus vendus, Mon panier." loading="lazy"></a>
+      <figcaption><b>La borne.</b> Elle se remet à zéro seule quand personne ne la touche.</figcaption></figure>
+    <ol class="steps">
+      <li>Le client touche les articles pour les ajouter à <span class="ui">Mon panier</span>, ou les cherche par nom, code ou code-barres.</li>
+      <li>Il touche <span class="ui">Terminer</span>, tape <span class="ui">Votre nom</span> et <span class="ui">Votre téléphone</span>, puis <span class="ui">Envoyer le panier</span>.</li>
+      <li>La borne affiche son numéro de panier : <em>« Un commercial va vous appeler. »</em></li>
+    </ol>
+    <p>Mise en place : l’admin déclare un poste de type <em>Borne libre-service</em> et ouvre son <span class="ui">Adresse de la borne</span> sur la tablette.</p>
+  </div>
+</section>
+
+<!-- ============================================================ RESPONSABLE -->
+<section class="chapter r-manager" id="responsable">
+  <div class="band"><h2>Responsable</h2><span class="seen">Vente Web<b>Supervision</b></span></div>
+  <div class="stitch"></div>
+  <div class="body">
+    <p class="who-does">Surveiller les files, régler les problèmes du jour, tenir les articles, le stock et les clients, sortir les exports.</p>
+    <figure><a href="captures/70-responsable-supervision.png"><img src="captures/70-responsable-supervision.png" alt="Supervision : indicateurs du jour, file caisse et file livraison." loading="lazy"></a>
+      <figcaption><b>La supervision.</b> En haut, les <span class="ui">Indicateurs du jour</span> : attente moyenne en caisse et en livraison, commandes en cours, payées non livrées.</figcaption></figure>
+
+    <h3>Les files</h3>
+    <ul>
+      <li><strong>Changer l’ordre</strong> : glissez la poignée d’une ligne (ou flèches haut et bas au clavier).</li>
+      <li><span class="ui">Prioritaire</span> : la commande passe devant (personne âgée, urgence…).</li>
+      <li><span class="ui">Annuler</span> une commande en file, avec un motif.</li>
+      <li><span class="ui">Remettre en file</span> une commande sortie de la file.</li>
+    </ul>
+
+    <h3>Anomalies de livraison</h3>
+    <p>Quand un magasinier signale un article manquant ou abîmé, la commande attend votre décision, sa marchandise toujours réservée : <span class="ui">Remettre en file</span> (une fois l’article trouvé) ou <span class="ui">Livrer partiellement</span> (le client se fait rembourser le reste à la caisse).</p>
+
+    <h3>Stock</h3>
+    <figure><a href="captures/71-responsable-stock.png"><img src="captures/71-responsable-stock.png" alt="Articles sous le seuil d’alerte, ajustement de stock." loading="lazy"></a>
+      <figcaption><b>Stock.</b> Les articles sous leur seuil d’alerte sont listés. Tout ajustement demande un motif et reste dans le journal.</figcaption></figure>
+
+    <h3>Articles et prix</h3>
+    <figure><a href="captures/72-responsable-articles.png"><img src="captures/72-responsable-articles.png" alt="Gestion des articles : unités de vente et prix." loading="lazy"></a>
+      <figcaption><b>Articles.</b> Chaque article a une unité de base et ses unités de vente (paquet, carton…) avec leur facteur. Un nouveau prix ne remplace pas l’ancien : il prend effet à sa date.</figcaption></figure>
+    <figure><a href="captures/73-responsable-import.png"><img src="captures/73-responsable-import.png" alt="Import Excel des articles." loading="lazy"></a>
+      <figcaption><b>Import Excel des articles.</b> Pour créer ou mettre à jour beaucoup d’articles d’un coup à partir d’un fichier Excel.</figcaption></figure>
+
+    <h3>Clients</h3>
+    <figure><a href="captures/74-responsable-clients.png"><img src="captures/74-responsable-clients.png" alt="Fiches clients : recherche, catégorie, type." loading="lazy"></a>
+      <figcaption><b>Clients.</b> Corriger une fiche, lui donner une catégorie ou un type (utile aux remises prévues et au crédit).</figcaption></figure>
+
+    <h3>Exports et journal</h3>
+    <figure><a href="captures/75-responsable-exports.png"><img src="captures/75-responsable-exports.png" alt="Exports Excel : ventes, paiements, stock… sur une période." loading="lazy"></a>
+      <figcaption><b>Exports Excel.</b> Ouvrez le panneau, choisissez la période et l’export voulu.</figcaption></figure>
+    <figure><a href="captures/76-responsable-audit.png"><img src="captures/76-responsable-audit.png" alt="Journal d’audit : qui, quand, quoi, avant et après." loading="lazy"></a>
+      <figcaption><b>Journal d’audit.</b> Toute opération sensible y est inscrite : qui, quand, quoi, avant et après. Rien ne s’y efface.</figcaption></figure>
+    <p>Plus bas sur la page : les <span class="ui">Chiffres des ventes</span> (comme le boss) et les caisses du jour avec leur rapport de clôture.</p>
+  </div>
+</section>
+
+<!-- ============================================================ BOSS -->
+<section class="chapter r-owner" id="boss">
+  <div class="band"><h2>Boss</h2><span class="seen">Vente Web<b>Tableau de bord</b></span></div>
+  <div class="stitch"></div>
+  <div class="body">
+    <p class="who-does">À distance ou au magasin : répondre aux demandes de remise, suivre les ventes, fixer les plafonds, les règles de remise, les codes promo et les articles à proposer.</p>
+    <figure><a href="captures/50-boss-accueil.png"><img src="captures/50-boss-accueil.png" alt="Tableau de bord du boss avec une demande de remise en attente." loading="lazy"></a>
+      <figcaption><b>Le tableau de bord.</b> Les demandes de remise en attente sont en tête.</figcaption></figure>
+
+    <h3>1. Répondre à une demande de remise</h3>
+    <figure><a href="captures/51-boss-demande.png"><img src="captures/51-boss-demande.png" alt="Carte d’une demande de remise : client, demandeur, commande, motif, lignes, réponse par élément, boutons Accorder et Refuser." loading="lazy"></a>
+      <figcaption><b>Une demande.</b> Client, qui demande et à quelle heure, la commande et ses lignes, le motif.</figcaption></figure>
+    <ol class="steps">
+      <li>Pour chaque élément demandé, choisissez <em>Comme demandé</em>, <em>Autre valeur</em> (tapez la vôtre) ou <em>Rien</em>.</li>
+      <li>Touchez <span class="ui">Accorder</span> : la remise s’applique aussitôt à la commande, à la caisse. Ou touchez <span class="ui">Refuser</span>.</li>
+    </ol>
+
+    <h3>2. Être prévenu sur son téléphone</h3>
+    <p>Dans <span class="ui">Notifications sur cet appareil</span>, touchez <span class="ui">Activer les notifications</span>, puis <span class="ui">Envoyer un essai</span>. Chaque demande arrive alors, même application fermée.</p>
+    <div class="note tip">
+      <b>Sur iPhone ou iPad</b>
+      <p>Ajoutez d’abord l’application à l’écran d’accueil (Partager, puis « Sur l’écran d’accueil »), ouvrez-la de là, puis activez les notifications. Avant de prêter l’appareil, touchez <span class="ui">Désactiver</span>.</p>
+    </div>
+
+    <h3>3. Suivre les ventes</h3>
+    <figure><a href="captures/52-boss-chiffres.png"><img src="captures/52-boss-chiffres.png" alt="Chiffres des ventes : total encaissé, panier moyen, remises accordées, comparaison avec la période précédente." loading="lazy"></a>
+      <figcaption><b>Chiffres des ventes.</b> Choisissez <em>Aujourd’hui</em>, <em>Hier</em>, <em>Cette semaine</em>, <em>Ce mois</em> ou une <em>Période libre</em> ; les remises sont détaillées (dans les plafonds, par règle, par code ou accord du boss).</figcaption></figure>
+
+    <h3>4. Fixer les plafonds de remise</h3>
+    <figure><a href="captures/53-boss-plafonds.png"><img src="captures/53-boss-plafonds.png" alt="Plafonds de remise : plafond général, par catégorie, par article, par unité de vente." loading="lazy"></a>
+      <figcaption><b>Plafonds de remise.</b> Le plafond d’une unité de vente l’emporte sur celui de l’article, puis de sa catégorie, puis sur le plafond général.</figcaption></figure>
+
+    <h3>5. Prévoir des remises</h3>
+    <figure><a href="captures/54-boss-regles.png"><img src="captures/54-boss-regles.png" alt="Règles de remise : par quantité achetée, catégorie ou type de client, période de promotion." loading="lazy"></a>
+      <figcaption><b>Règles de remise.</b> Par quantité achetée, catégorie ou type de client, ou période de promotion. La caisse les applique à la demande du client, même au-delà du plafond.</figcaption></figure>
+
+    <h3>6. Émettre un code promo</h3>
+    <figure><a href="captures/55-boss-codes.png"><img src="captures/55-boss-codes.png" alt="Codes promo : client, articles ou total, remise accordée, date limite." loading="lazy"></a>
+      <figcaption><b>Codes promo.</b> Pour un client et un prochain achat : choisissez le client, la remise (sur des articles et/ou le total) et la date limite, puis <span class="ui">Émettre le code promo</span>. Remettez le code au client ; il sert une seule fois.</figcaption></figure>
+
+    <h3>7. Mettre des articles en avant</h3>
+    <figure><a href="captures/56-boss-a-proposer.png"><img src="captures/56-boss-a-proposer.png" alt="Articles à proposer : article, argument, période." loading="lazy"></a>
+      <figcaption><b>Articles à proposer.</b> Ils s’affichent en tête de la tablette des commerciaux, du premier au dernier jour choisi, avec votre argument.</figcaption></figure>
+    <div class="note">
+      <b>Aussi sur la page</b>
+      <ul>
+        <li><span class="ui">Conditions de crédit</span> : l’encours maximal et le délai de paiement par type ou catégorie de client. Sans condition, la caisse ne vend pas à crédit.</li>
+        <li><span class="ui">Créances clients</span> : ce que les clients doivent encore.</li>
+        <li><span class="ui">Durée de réservation</span> : combien de jours une commande validée garde sa marchandise (0 : jusqu’à la fin de la journée), en général ou pour un client.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ ADMIN -->
+<section class="chapter r-admin" id="admin">
+  <div class="band"><h2>Admin</h2><span class="seen">Vente Web<b>Administration</b></span></div>
+  <div class="stitch"></div>
+  <div class="body">
+    <p class="who-does">Créer les comptes du personnel, déclarer et appairer les appareils, régler les paramètres du magasin.</p>
+    <figure><a href="captures/60-admin-accueil.png"><img src="captures/60-admin-accueil.png" alt="Page Administration." loading="lazy"></a>
+      <figcaption><b>La page Administration.</b></figcaption></figure>
+
+    <h3>1. Les comptes</h3>
+    <figure><a href="captures/61-admin-comptes.png"><img src="captures/61-admin-comptes.png" alt="Comptes du magasin : identifiant, nom, rôles, état ; formulaire Nouveau compte." loading="lazy"></a>
+      <figcaption><b>Comptes.</b> Un compte ne se supprime jamais : on le désactive.</figcaption></figure>
+    <ol class="steps">
+      <li>Dans <span class="ui">Nouveau compte</span>, tapez l’<span class="ui">Identifiant</span> (sans espace) et le <span class="ui">Nom complet</span>, cochez le ou les rôles.</li>
+      <li>Pour un commercial, donnez une <span class="ui">Lettre de ticket</span> qu’aucun autre commercial actif n’a.</li>
+      <li><span class="ui">Créer le compte</span>, puis <span class="ui">Définir le mot de passe</span> et remettez-le à la personne : elle en choisira un nouveau à sa première connexion.</li>
+      <li>Pour le boss, <span class="ui">Créer un code d’activation</span> à la place : le boss choisit lui-même son mot de passe.</li>
+    </ol>
+    <p>Sur un compte existant : <span class="ui">Déverrouiller</span> après trop d’essais, <span class="ui">Effacer le TOTP</span> si le téléphone d’authentification est perdu, <span class="ui">Fermer ses sessions</span> si un appareil a été oublié ouvert. Décocher <span class="ui">Compte actif</span> bloque la personne qui quitte le magasin.</p>
+
+    <h3>2. Les postes du magasin</h3>
+    <figure><a href="captures/62-admin-postes.png"><img src="captures/62-admin-postes.png" alt="Postes du magasin : tablettes, caisses, comptoirs, écran public, borne, avec leur appareil appairé." loading="lazy"></a>
+      <figcaption><b>Postes du magasin.</b> Chaque tablette, caisse, comptoir de livraison, écran public et borne.</figcaption></figure>
+    <ol class="steps">
+      <li>Déclarez le poste : son nom et son type, puis <span class="ui">Ajouter le poste</span>.</li>
+      <li>Sur l’appareil lui-même, connecté en admin, touchez <span class="ui">Appairer cet appareil</span> sur la ligne du poste.</li>
+      <li>Pour l’écran public et la borne, ouvrez sur l’appareil l’<span class="ui">Adresse de l’écran</span> ou l’<span class="ui">Adresse de la borne</span>.</li>
+    </ol>
+    <div class="note warn">
+      <b>Attention</b>
+      <p>Dès qu’un appareil est appairé, tous les autres doivent l’être pour ouvrir une session de travail. L’admin et le boss, eux, se connectent partout. Appairer à nouveau un poste remplace son appareil précédent.</p>
+    </div>
+
+    <h3>3. Les paramètres</h3>
+    <figure><a href="captures/63-admin-parametres.png"><img src="captures/63-admin-parametres.png" alt="Paramètres : facture et caisse, listes proposées, écran public, borne, verrouillage des appareils." loading="lazy"></a>
+      <figcaption><b>Paramètres.</b> Une liste s’écrit un élément par ligne.</figcaption></figure>
+    <ul>
+      <li><strong>Facture et caisse</strong> : nom, adresse, téléphone, NIF, STAT, RCS et pied de facture ; TVA (désactivée par défaut) ; arrondi des espèces ; préfixes des factures, avoirs et devis ; fin de journée ; validité d’un devis et d’un code promo.</li>
+      <li><strong>Listes proposées</strong> : catégories de client, motifs de remise, motifs d’ajustement de stock.</li>
+      <li><strong>Écran public</strong> : allumé ou non, son à chaque appel, nombre de derniers appels affichés.</li>
+      <li><strong>Borne</strong> : remise à zéro sans contact, nombre de paniers par heure.</li>
+      <li><strong>Verrouillage des appareils</strong> : minutes d’inactivité avant verrouillage, par type d’appareil.</li>
+    </ul>
+    <p>Touchez <span class="ui">Enregistrer</span> en bas du panneau.</p>
+
+    <h3>4. Les remises du commercial</h3>
+    <figure class="part"><a href="captures/64-admin-remises-commercial.png"><img src="captures/64-admin-remises-commercial.png" alt="Case Le commercial peut accorder des remises." loading="lazy"></a>
+      <figcaption><b>Remises du commercial.</b> Décochée (par défaut), le client demande sa remise à la caisse. Cochée, la tablette permet aussi au commercial de remiser dans les plafonds et de demander une remise exceptionnelle au boss.</figcaption></figure>
+    <p>L’admin règle aussi la <span class="ui">Durée de réservation</span>, comme le boss.</p>
+  </div>
+</section>
+
+<!-- ============================================================ REGLES -->
+<section class="chapter" id="regles">
+  <div class="band"><h2>Règles à connaître</h2><span class="seen">Pour tous</span></div>
+  <div class="stitch"></div>
+  <div class="body">
+    <table class="plain">
+      <tbody>
+        <tr><th>Factures</th><td>Numérotées à la suite, sans trou. Un numéro n’est jamais réutilisé ni modifié. Une vente annulée donne un avoir, jamais une facture effacée.</td></tr>
+        <tr><th>Journal</th><td>Remises, paiements, annulations, mouvements de stock et corrections sont inscrits : qui, quand, quoi, avant et après. Rien ne s’efface.</td></tr>
+        <tr><th>Stock</th><td>Réservé quand le commercial valide la commande, sorti quand le magasinier livre. Une commande non payée à la fin de sa durée de réservation libère son stock.</td></tr>
+        <tr><th>Unités</th><td>Le stock se compte dans l’unité de base de l’article (la pièce, le kg…). Un paquet de 6 retire 6 pièces.</td></tr>
+        <tr><th>Prix</th><td>Un changement de prix crée un nouveau prix daté ; l’ancien reste dans l’historique.</td></tr>
+        <tr><th>Remises</th><td>Sur une ligne et/ou sur le total, en % ou en montant, jusqu’au plafond. Au-delà : une règle prévue, un code promo ou l’accord du boss.</td></tr>
+        <tr><th>Montants</th><td>En Ariary (MGA), deux décimales : <span class="num">1&nbsp;250&nbsp;000,00&nbsp;MGA</span>. Dans un tableau, « (MGA) » figure une fois dans l’en-tête de la colonne.</td></tr>
+        <tr><th>TVA</th><td>Désactivée par défaut ; l’admin l’active dans les paramètres.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ PROBLEMES -->
+<section class="chapter" id="problemes">
+  <div class="band"><h2>Problèmes fréquents</h2><span class="seen">Ce que dit l’écran, ce qu’il faut faire</span></div>
+  <div class="stitch"></div>
+  <div class="body">
+    <dl class="faq">
+      <dt>« Serveur injoignable. Vérifiez la connexion au réseau du magasin. »</dt>
+      <dd>L’appareil n’est plus sur le Wi-Fi du magasin, ou le serveur est éteint. Vérifiez le Wi-Fi, puis touchez <span class="ui">Réessayer</span>. Si rien ne change, prévenez le responsable.</dd>
+      <dt>« Compte verrouillé après plusieurs échecs ; réessayez dans N min. »</dt>
+      <dd>Attendez le délai, ou demandez à l’admin de <span class="ui">Déverrouiller</span> le compte.</dd>
+      <dt>« Écran verrouillé après N min d’inactivité : reconnectez-vous. »</dt>
+      <dd>Normal après une pause : reconnectez-vous. Le travail enregistré est conservé.</dd>
+      <dt>La session ne s’ouvre pas sur une tablette ou une caisse</dt>
+      <dd>L’appareil n’est sans doute pas appairé. L’admin doit l’appairer depuis l’appareil (Admin, Postes du magasin).</dd>
+      <dt>« Stock insuffisant »</dt>
+      <dd>Réduisez la quantité proposée ou retirez la ligne, puis validez à nouveau (voir Commercial, étape 5).</dd>
+      <dt>« Les montants doivent faire exactement le net à payer. »</dt>
+      <dd>À l’encaissement, la somme des moyens de paiement doit égaler le net à payer. Corrigez un montant ou retirez un moyen de trop.</dd>
+      <dt>« Au plus … : au-delà, demandez la remise au boss. »</dt>
+      <dd>La remise dépasse le plafond. Ramenez-la au maximum affiché, ou utilisez <span class="ui">Demander au boss</span>.</dd>
+      <dt>« Écran public indisponible » ou « Borne indisponible »</dt>
+      <dd>L’adresse n’est plus valable, le poste est désactivé, ou l’écran est éteint dans les paramètres. L’admin vérifie le poste et redonne l’adresse.</dd>
+      <dt>« Les notifications ne sont pas configurées sur le serveur du magasin : l’admin doit le faire. »</dt>
+      <dd>Les notifications du boss se règlent une fois, à l’installation du serveur. En attendant, le boss voit les demandes en ouvrant son tableau de bord.</dd>
+      <dt>Le boss ne reçoit pas les notifications</dt>
+      <dd>Elles sont bloquées par le navigateur ou le téléphone : autorisez-les dans ses réglages, rouvrez l’application, puis <span class="ui">Envoyer un essai</span>.</dd>
+    </dl>
+  </div>
+</section>
+
+  </main>
+</div>
+
+<footer>
+  <p>Captures prises sur les données de démonstration : noms, montants et numéros sont des exemples. Touchez une capture pour l’ouvrir en grand.</p>
+</footer>
+
+</body>
+</html>

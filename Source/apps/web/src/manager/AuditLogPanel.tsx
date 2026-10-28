@@ -42,7 +42,11 @@ function Entry({ entry, refs }: { entry: AuditLogEntry; refs: Refs }) {
         </span>
       </td>
       <td className={`${ROW} text-14 break-words`}>
-        {entry.reason && <span className="block font-semibold">{text.reason(entry.reason)}</span>}
+        {entry.reason && (
+          <span className="block font-semibold">
+            {text.reason(text.values[entry.reason] ?? entry.reason)}
+          </span>
+        )}
         {changesOf(entry.before, entry.after, refs).map((change, index) => (
           <span key={index} className="block">
             {change}

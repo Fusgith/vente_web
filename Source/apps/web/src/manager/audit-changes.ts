@@ -24,8 +24,11 @@ const AMOUNTS = new Set([
   'openingFloat',
   'ceiling',
   'remaining',
+  'change',
+  'cashReceived',
+  'cashRounding',
 ]);
-const QUANTITIES = new Set(['qty', 'onHand', 'reserved', 'minQty', 'alertThreshold']);
+const QUANTITIES = new Set(['qty', 'onHand', 'reserved', 'minQty', 'alertThreshold', 'baseQty']);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);

@@ -3,6 +3,7 @@ import { EXPORT_VALUES, ROLE_LABELS, type AuditSubject } from '@vente-web/shared
 import { creditLabels } from './labels-credit.js';
 import { customersLabels } from './labels-customers.js';
 import { requestsLabels } from './labels-requests.js';
+import { stationsLabels } from './labels-stations.js';
 
 /** The audit log, read by the manager, the owner and the admin (T-014, RG-AUD-01); `labels.audit`. */
 export const auditLabels = {
@@ -113,6 +114,18 @@ export const auditLabels = {
     dueOn: 'Échéance',
     reason: 'Motif',
     value: 'Valeur',
+    stockOut: 'Sortie de stock',
+    baseQty: 'Quantité en unité de base',
+    method: 'Moyen',
+    reference: 'Référence',
+    change: 'Monnaie rendue',
+    cashReceived: 'Reçu en espèces',
+    cashRounding: 'Arrondi des espèces',
+    registerSessionId: 'Caisse',
+    requestId: 'Demande',
+    requestedPct: 'Taux demandé (%)',
+    authMethod: 'Connexion par',
+    station: 'Poste',
   } as Record<string, string>,
   /** The stored codes in the shop's words (T-097); one not listed shows as is. */
   values: {
@@ -123,6 +136,12 @@ export const auditLabels = {
     ...creditLabels.instrumentStatus,
     ...customersLabels.types,
     ...ROLE_LABELS,
+    ...stationsLabels.types,
+    PASSWORD: 'mot de passe',
+    PASSWORD_TOTP: 'mot de passe et code TOTP',
+    PIN: 'PIN',
+    CASH: 'Espèces',
+    specific_ticket: 'ticket choisi hors de l’ordre de la file',
   } as Record<string, string>,
   /** What each record is, beside the operation's name. */
   entities: {
@@ -138,6 +157,11 @@ export const auditLabels = {
     user: 'Compte',
     push_subscription: 'Appareil',
     session: 'Session',
+    station: 'Poste',
+    credit_condition: 'Conditions de crédit',
+    credit_request: 'Demande de crédit',
+    receivable: 'Créance',
+    import_batch: 'Import',
   } as Record<string, string>,
   /** The operations by their code; one not listed shows its code as is. */
   actions: {
@@ -168,10 +192,19 @@ export const auditLabels = {
     'customer.deactivated': 'Client désactivé',
     'reservation_days.set': 'Durée de réservation fixée',
     'setting.update': 'Paramètre modifié',
+    'sales_discount.set': 'Remises du commercial réglées',
+    'station.created': 'Poste ajouté',
+    'station.updated': 'Poste modifié',
+    'station.paired': 'Appareil appairé',
+    'credit_condition.created': 'Conditions de crédit fixées',
+    'credit_condition.updated': 'Conditions de crédit modifiées',
+    'credit_request.created': 'Vente à crédit demandée',
+    'receivable.settled': 'Créance réglée',
     'quote.created': 'Devis créé',
     'quote.updated': 'Devis modifié',
     'order.submitted': 'Commande validée',
     'order.reactivated': 'Commande réactivée',
+    'order.replaced': 'Nouveau numéro de document',
     'order.adjusted': 'Commande modifiée',
     'order.discounted': 'Remise appliquée à la caisse',
     'order.reopened': 'Commande expirée redevenue devis',
