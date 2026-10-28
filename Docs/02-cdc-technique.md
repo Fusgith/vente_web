@@ -286,7 +286,7 @@ Notification push (T-033e) : après la validation de la transaction d'une nouvel
 
 Node.js portable + API construite (`node_modules` à plat) · PostgreSQL 16 (binaires Windows officiels, `bin`, `lib`, `share` seulement) · Caddy avec `caddy-dns/ovh` (80/443, TLS DNS-01, sert la PWA, proxy `/api`, `/socket.io`, `/healthz`, en-têtes de sécurité et CSP) · DNS local (`dns-local.mjs`) · WireGuard (tunnel vers le relais OVH, ADR-0008) · WinSW (services Windows à démarrage automatique, relancés en cas d'arrêt) · script **Installer ou mettre a jour** ; **Sauvegarder** et **Restaurer** avec T-081. Données hors du dossier de l'application, dans `C:\ProgramData\VenteWeb` : base, fichiers émis (`FILES_DIR`), sauvegardes, certificats, journaux, `.env` (secrets créés à l'installation). Détail : ⚠️ H77 du CDC métier, `Source/infra/windows/`.
 
-**Relais OVH** (T-086, ADR-0008) : un VPS Debian 12 ou Ubuntu 24.04 partagé par les magasins. `bash relais.sh installer <IP>` (une fois) pose WireGuard (`10.66.0.1/24`, UDP 51820, pas de transfert IP) et nginx `stream` sur 443 (aiguillage par nom `ssl_preread`, protocole PROXY, TLS terminé au magasin) ; `bash relais.sh ajouter <domaine>` crée le pair du magasin et affiche ses paramètres `WG_*` / `RELAY_*` à reporter dans son fichier de paramètres. Script : `Source/infra/relais/`.
+**Relais OVH** (T-086, ADR-0008) : un VPS Debian 12 ou Ubuntu 24.04 partagé par les magasins. `bash relais.sh installer <IP>` (une fois) pose WireGuard (`10.66.0.1/24`, UDP 51820, pas de transfert IP) et nginx `stream` sur 443 (aiguillage par nom `ssl_preread`, protocole PROXY, TLS terminé au magasin) ; `bash relais.sh ajouter <domaine> [e-mails de l'admin et du boss]` crée le pair du magasin et affiche ses paramètres `WG_*` / `RELAY_*` à reporter dans son fichier de paramètres. Script : `Source/infra/relais/`.
 
 ### 10.4 Mise à jour
 
@@ -294,8 +294,8 @@ Copier le nouveau dossier à côté de l'ancien → double-clic sur son **Instal
 
 ### 10.5 Surveillance
 
-- Endpoint `/healthz` (API + base + espace disque) interrogé depuis le relais VPS OVH par le tunnel de chaque magasin, avec la fraîcheur de sa dernière sauvegarde (ADR-0008) ; alerte au développeur, et e-mail/SMS à l'admin et au boss si indisponible 5 min. Le VPS est lui-même surveillé de l'extérieur.
-- Alertes locales : disque < 15 %, sauvegarde en échec, session de caisse non clôturée (RG-CAI-05), certificat à < 15 jours.
+- Endpoint `/healthz` (base, % de disque libre, date de la dernière sauvegarde complète écrite par `sauvegarde.mjs` dans `BACKUP_STATUS_FILE` ; 503 si la base ne répond pas) interrogé chaque minute depuis le relais VPS OVH (`relais.sh surveiller`, timer systemd) par le port 443 du relais, donc par le tunnel de chaque magasin (ADR-0008, T-082).
+- Alertes par e-mail (SMTP de `/etc/vente-web/alertes.env`), seulement quand la liste des problèmes change : serveur injoignable depuis 5 min, application en panne, disque < 15 %, pas de sauvegarde complète depuis 2 h, certificat à < 15 jours. Toutes au développeur (`ALERT_TO`) ; l'admin et le boss du magasin (e-mails donnés à `relais.sh ajouter`) reçoivent l'injoignabilité et son retour (⚠️ H79). La caisse non clôturée (RG-CAI-05) est signalée dans l'application. Le VPS est surveillé de l'extérieur par la surveillance OVHcloud de l'espace client.
 - Logs JSON conservés 90 jours localement.
 
 ## 11. Tests et qualité

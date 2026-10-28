@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 23/10/2026 — T-082 : surveillance depuis le relais — agent : Claude Code (Opus 5.5)
+
+**Fait** : `/healthz` donne la base (503 si elle ne répond pas), le % de disque libre et la date de la dernière sauvegarde complète (`BACKUP_STATUS_FILE`, écrit par `sauvegarde.mjs`, posé par l'installateur) ; sur le relais, `relais.sh surveiller` (timer systemd, chaque minute) interroge chaque magasin par le tunnel et envoie un e-mail quand ses problèmes changent : tout au développeur, l'injoignabilité ≥ 5 min et son retour aussi à l'admin et au boss (`ajouter <domaine> <e-mails>`) ; H79. Vérifié ici : tests de `/healthz`, essai à blanc des cas (coupure courte, coupure de 6 min, retour, disque, sauvegarde, base, certificat). Paquets Debian ajoutés au relais : curl, jq, openssl.
+
+**Reste** : remplir `/etc/vente-web/alertes.env` (SMTP OVH) et activer la surveillance OVHcloud du VPS ; essai réel avec un magasin.
+
 ## 23/10/2026 — T-086 : relais VPS OVH partagé — agent : Claude Code (Opus 5.5)
 
 **Fait** : `Source/infra/relais/relais.sh` (bash, en root) : `installer <IP>` pose WireGuard et nginx `stream` (aiguillage HTTPS par nom sans déchiffrer, protocole PROXY, aucun transfert IP entre magasins) ; `ajouter <domaine>` crée le pair du magasin et affiche ses paramètres `WG_*` / `RELAY_*`, attendus tels quels par l'installateur Windows. Vérifié ici : syntaxe (`bash -n`) et essai à blanc (commandes système simulées : adresses, `wg0.conf`, table nginx, doublon et nom invalide refusés). Paquets Debian seulement (wireguard-tools, nginx, libnginx-mod-stream).

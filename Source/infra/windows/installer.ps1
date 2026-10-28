@@ -119,6 +119,7 @@ $values['API_PORT'] = '3000'
 $values['TZ'] = 'Indian/Antananarivo'
 $values['LOG_LEVEL'] = 'info'
 $values['FILES_DIR'] = Join-Path $Data 'fichiers'
+$values['BACKUP_STATUS_FILE'] = Join-Path $Data 'derniere-sauvegarde.txt'
 $values['DATABASE_URL'] = "postgresql://vente_web_api:$($values['API_PASSWORD'])@127.0.0.1:5432/vente_web"
 $values['MIGRATION_DATABASE_URL'] = "postgresql://vente_web:$($values['OWNER_PASSWORD'])@127.0.0.1:5432/vente_web"
 # The key of the OVH vault (rclone crypt, T-081): kept on a sealed envelope out of the shop,

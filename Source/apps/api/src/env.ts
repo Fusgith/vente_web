@@ -24,6 +24,8 @@ const envSchema = z
     DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
     /** Where issued documents are kept (`invoices/<year>/<number>.pdf`, RG-FAC-04): the `files` volume. */
     FILES_DIR: z.string().min(1).default('files'),
+    /** Date of the last complete backup, written by sauvegarde.mjs; shown by `/healthz` (T-082). */
+    BACKUP_STATUS_FILE: z.preprocess(blankAsUnset, z.string().optional()),
     /** Absolute lifetime of a session: at most the 12 h of H19, shorter allowed. */
     AUTH_SESSION_HOURS: z.coerce.number().int().min(1).max(12).default(12),
     /**

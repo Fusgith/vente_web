@@ -19,6 +19,7 @@ import {
   renameSync,
   rmSync,
   statSync,
+  writeFileSync,
 } from 'node:fs';
 import { basename, dirname, join, parse, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -28,6 +29,8 @@ const data = process.env.VW_DATA ?? join(process.env.ProgramData ?? 'C:\\Program
 const saves = join(data, 'sauvegardes');
 const files = join(data, 'fichiers');
 const logFile = join(data, 'journaux', 'sauvegarde.log');
+/** Read by the API's /healthz, watched from the OVH relay (BACKUP_STATUS_FILE, T-082). */
+const statusFile = join(data, 'derniere-sauvegarde.txt');
 const rclone = join(app, 'rclone.exe');
 const env = process.env;
 
@@ -183,6 +186,7 @@ function backup() {
       process.exitCode = 1;
     }
   }
+  if (process.exitCode !== 1) writeFileSync(statusFile, `${new Date().toISOString()}\n`);
 }
 
 /** The newest dump of the vault, into `folder`; its path is the last line printed. */

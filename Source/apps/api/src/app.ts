@@ -78,7 +78,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
   await app.register(expiryPlugin, { ...options.expiry });
   await app.register(pushPlugin, { env, ...options.push });
 
-  await app.register(healthRoutes);
+  await app.register(healthRoutes, { env });
   await app.register(apiRoutes, { env, prefix: '/api/v1' });
   return app;
 }
