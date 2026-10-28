@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 28/10/2026 — Deux logos distincts (T-010c précisée, T-099 créée) — agent : Claude Code (Opus 5.5)
+
+**Fait** : l'utilisateur précise que l'application se vend à plusieurs clients : **un logo de l'application** (icônes, T-010c, pas encore fourni) et **un logo par client** (devis, factures, reçus, RG-FAC-07, pas encore codé), le logo du client chargé par l'outil de distribution (T-099). Base de test recréée sans `fsync` (le disque de l'hôte bloquait les `TRUNCATE` plus de 80 s) ; suites API (457) et web (310) vertes, T-082 et T-098 committés.
+
+**Reste** : T-099 ; réponses de l'utilisateur sur H60 à H69 (T-001d) et sur le téléchargement de rclone.
+
 ## 26/10/2026 — T-098 : manuel d’utilisation HTML avec captures — agent : Claude Code (Opus 5.5)
 
 **Fait** : `Docs/manuel/manuel.html` (une page, s’imprime) : connexion, commercial, caisse, livraison, écran public et borne, responsable, boss, admin, règles et problèmes courants, en étapes numérotées et 44 captures du jeu de démonstration, sans aucun mot de passe. Les captures se régénèrent : `MANUEL_CAPTURES=1 DATABASE_URL=… pnpm e2e manuel-captures`. Correctifs trouvés au passage : sur l’écran public, l’appel « A2 → Caisse 1 » débordait au lieu de passer à la ligne ; le journal d’audit montrait encore des codes (`station.created`, `KIOSK`, `PASSWORD`, `CASH`, `specific_ticket`, `stockOut`…) au lieu de mots français.
