@@ -27,6 +27,7 @@ export * from './discount-rules.js';
 export * from './discount.js';
 export * from './invoices.js';
 export * from './kiosk.js';
+export * from './license.js';
 export * from './imports.js';
 export * from './orders.js';
 export * from './payments.js';

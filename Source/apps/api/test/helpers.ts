@@ -7,6 +7,7 @@ import type { AccessOrigin, AuthMe, Role } from '@vente-web/shared';
 import type { FastifyInstance, InjectOptions, LightMyRequestResponse } from 'fastify';
 
 import { buildApp } from '../src/app.js';
+import type { LicenseOptions } from '../src/plugins/license.js';
 import type { PushSend } from '../src/plugins/push.js';
 import type { Db } from '../src/db.js';
 import { loadEnv } from '../src/env.js';
@@ -40,10 +41,13 @@ export async function createTestApp(
   {
     captureLogs = false,
     push,
+    license,
   }: {
     captureLogs?: boolean;
     /** The owner's notifications go to this fake push service (T-033e). */
     push?: PushSend;
+    /** A trial license checked with the test's own vendor key (T-101). */
+    license?: LicenseOptions;
   } = {},
 ): Promise<TestApp> {
   const db = createTestDb();
@@ -66,6 +70,7 @@ export async function createTestApp(
     fastify: { logger },
     expiry: { sweepMs: 0 },
     ...(push ? { push: { send: push } } : {}),
+    ...(license ? { license } : {}),
   });
   await app.ready();
   return {

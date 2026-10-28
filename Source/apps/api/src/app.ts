@@ -14,6 +14,7 @@ import { accessOriginPlugin } from './plugins/access-origin.js';
 import { csrfPlugin } from './plugins/csrf.js';
 import { dbPlugin } from './plugins/db.js';
 import { expiryPlugin } from './plugins/expiry.js';
+import { licensePlugin, type LicenseOptions } from './plugins/license.js';
 import { pushPlugin, type PushSend } from './plugins/push.js';
 import { realtimePlugin } from './plugins/realtime.js';
 import { sessionPlugin } from './plugins/session.js';
@@ -35,6 +36,8 @@ export interface BuildAppOptions {
   expiry?: { sweepMs?: number };
   /** Tests post the notifications to a fake push service. */
   push?: { send?: PushSend };
+  /** Tests check the trial license with their own vendor key (T-101). */
+  license?: LicenseOptions;
 }
 
 function loggerOptions(env: Env): LoggerOptions {
@@ -73,6 +76,7 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     ownsClient: options.db === undefined,
   });
   await app.register(csrfPlugin);
+  await app.register(licensePlugin, { ...options.license });
   await app.register(sessionPlugin, { env });
   await app.register(realtimePlugin, { env, ...options.realtime });
   await app.register(expiryPlugin, { ...options.expiry });

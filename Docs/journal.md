@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 28/10/2026 — T-101 : licence d’essai liée au serveur — agent : Claude Code (Opus 5.5)
+
+**Fait** : clé de licence signée (Ed25519) par le vendeur pour un client, le code du PC serveur (tiré de `MachineGuid`) et une date de fin ou aucune ; sans clé valide, toute l’API répond « licence requise » et chaque écran, public compris, montre « Activation » (code du serveur à envoyer, saisie de la clé) ; horloge reculée de plus d’un jour = verrou ; les 7 derniers jours, l’écran de connexion annonce la fin. La clé publique n’existe que dans la version construite (écrite par T-102) : en développement, rien n’est vérifié. ADR-0010, H81 à H84. Vérifié : tests API (clé falsifiée, autre serveur, expirée, horloge) et web (écran, saisie, refus).
+
+**Reste** : T-102 (outil graphique qui fabrique les clés et écrit la clé publique), T-099 (logo du client).
+
 ## 28/10/2026 — T-100 : réseau local sans domaine — agent : Claude Code (Opus 5.5)
 
 **Fait** : sans `APP_DOMAIN`, l'installateur sert l'application à `https://<LAN_IP>` avec l'autorité interne de Caddy (`Caddyfile-local`), l'approuve sur le serveur, ne pose ni DNS local, ni WireGuard, ni clés OVH ; `http://<LAN_IP>` montre la page « Préparer cet appareil » (certificat + étapes Android, iPhone, Windows). `rclone` n'est plus livré sans coffre OVH (gardé dans le dossier des données sinon). H60 à H69 validées, T-005 abandonnée (aucun inventaire : marche pour n'importe quel nombre d'appareils). ADR-0009. Vérifié : les trois Caddyfile par `caddy adapt`, l'installateur par l'analyseur PowerShell.

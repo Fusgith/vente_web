@@ -179,6 +179,15 @@ export const ERROR_LABELS = {
     'Le navigateur a mis fin aux notifications de cet appareil : réactivez-les.',
   PUSH_SEND_FAILED:
     'La notification n’est pas partie : vérifiez que le serveur du magasin a accès à Internet, puis réessayez.',
+  LICENSE_REQUIRED:
+    'L’application n’est pas activée sur le serveur du magasin : saisissez la clé de licence.',
+  LICENSE_KEY_INVALID:
+    'Cette clé n’est pas valable : recopiez-la en entier, sans espace ni retour à la ligne.',
+  LICENSE_KEY_OTHER_MACHINE:
+    'Cette clé a été faite pour un autre serveur : envoyez le code de ce serveur pour en recevoir une.',
+  LICENSE_KEY_EXPIRED: 'Cette clé est expirée : demandez-en une nouvelle.',
+  LICENSE_CLOCK:
+    'L’horloge du serveur retarde : remettez la date et l’heure exactes sur le PC serveur.',
 } as const;
 
 export type ErrorCode = keyof typeof ERROR_LABELS;

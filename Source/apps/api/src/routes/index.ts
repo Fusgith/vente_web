@@ -10,6 +10,7 @@ import { creditNoteRoutes } from './credit-notes.js';
 import { customerRoutes } from './customers.js';
 import { displayRoutes } from './display.js';
 import { kioskRoutes } from './kiosk.js';
+import { licenseRoutes } from './license.js';
 import { discountCapRoutes } from './discount-caps.js';
 import { discountCodeRoutes } from './discount-codes.js';
 import { creditRequestRoutes } from './credit-requests.js';
@@ -37,6 +38,7 @@ import { userRoutes } from './users.js';
 
 /** Everything under `/api/v1` (CDC technique section 6); `/healthz` stays at the root. */
 export const apiRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) => {
+  await app.register(licenseRoutes);
   await app.register(authRoutes, { env });
   await app.register(authCredentialRoutes, { env });
   await app.register(userRoutes);

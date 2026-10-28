@@ -18,6 +18,7 @@ import { closingLabels } from './labels-closing.js';
 import { deliveryLabels } from './labels-delivery.js';
 import { displayLabels } from './labels-display.js';
 import { kioskBasketsLabels, kioskLabels } from './labels-kiosk.js';
+import { licenseLabels } from './labels-license.js';
 import { issueLabels } from './labels-issues.js';
 import { mineLabels } from './labels-mine.js';
 import { importsLabels } from './labels-imports.js';
@@ -322,6 +323,7 @@ export const labels = {
   display: displayLabels,
   /** The self-service kiosk and its baskets on the tablet (T-036, RG-BOR-01 à 06). */
   kiosk: kioskLabels,
+  license: licenseLabels,
   kioskBaskets: kioskBasketsLabels,
 
   /** Cancelling a paid sale (T-053, RG-ANN-02). */

@@ -17,6 +17,9 @@ export class ApiError extends Error {
 
 export const API_BASE = '/api/v1';
 
+/** Sent on `window` when the server is locked by its trial license: the gate shows why (T-101). */
+export const LICENSE_REQUIRED_EVENT = 'vente-web:license-required';
+
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: unknown;
@@ -55,6 +58,7 @@ export async function apiRequest(path: string, options: RequestOptions = {}): Pr
   if (!response.ok) {
     const body = typeof payload === 'object' && payload !== null ? payload : {};
     const code = 'code' in body && isErrorCode(body.code) ? body.code : 'UNEXPECTED_RESPONSE';
+    if (code === 'LICENSE_REQUIRED') window.dispatchEvent(new Event(LICENSE_REQUIRED_EVENT));
     throw new ApiError(response.status, code, 'details' in body ? body.details : undefined);
   }
   return payload;

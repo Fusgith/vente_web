@@ -288,6 +288,8 @@ Node.js portable + API construite (`node_modules` à plat) · PostgreSQL 16 (bin
 
 **Sans domaine** (ADR-0009, T-100) : paramètre `APP_DOMAIN` vide ⇒ application servie à `https://<LAN_IP>` dans le réseau du magasin seulement, certificat de l'autorité interne de Caddy (`Caddyfile-local`) ; chaque appareil l'approuve une fois depuis `http://<LAN_IP>` (page « Préparer cet appareil »). Ni DNS local, ni clés OVH, ni WireGuard ; `rclone` livré seulement avec un coffre (`BACKUP_S3_BUCKET`).
 
+**Licence d’essai** (ADR-0010, T-101) : la clé publique Ed25519 du vendeur est écrite par l’outil de distribution dans `api/dist/license-key.js` (vide dans le code source : rien n’est vérifié en développement). La clé de licence (client, code du serveur tiré de `MachineGuid`, date de fin ou aucune) se saisit sur l’écran « Activation » et se garde dans `settings.license` avec la date la plus tardive vue ; sans clé valide, l’API répond `403 LICENSE_REQUIRED` sauf `/api/v1/license` et `/healthz`.
+
 **Relais OVH** (T-086, ADR-0008) : un VPS Debian 12 ou Ubuntu 24.04 partagé par les magasins. `bash relais.sh installer <IP>` (une fois) pose WireGuard (`10.66.0.1/24`, UDP 51820, pas de transfert IP) et nginx `stream` sur 443 (aiguillage par nom `ssl_preread`, protocole PROXY, TLS terminé au magasin) ; `bash relais.sh ajouter <domaine> [e-mails de l'admin et du boss]` crée le pair du magasin et affiche ses paramètres `WG_*` / `RELAY_*` à reporter dans son fichier de paramètres. Script : `Source/infra/relais/`.
 
 ### 10.4 Mise à jour
