@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite';
@@ -16,6 +19,29 @@ const apiTarget = process.env.API_PROXY_TARGET?.trim() || 'http://localhost:3000
 const escapeHtml = (text: string) =>
   text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 
+// The application's logo (T-010c): a folder with icon-192.png and icon-512.png, made by the
+// distribution tool (T-102); without it, the Lamba mark (icons/icon.svg).
+const iconsDir = process.env.VITE_APP_ICONS?.trim() || null;
+const ICON_SIZES = [192, 512] as const;
+
+const appIcons: Plugin = {
+  name: 'app-icons',
+  generateBundle() {
+    if (iconsDir === null) return;
+    for (const size of ICON_SIZES) {
+      const source = readFileSync(join(iconsDir, `icon-${size}.png`));
+      this.emitFile({ type: 'asset', fileName: `icons/icon-${size}.png`, source });
+    }
+  },
+  transformIndexHtml: (html) =>
+    iconsDir === null
+      ? html
+      : html.replace(
+          '<link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />',
+          '<link rel="icon" href="/icons/icon-192.png" type="image/png" />',
+        ),
+};
+
 /** The page title before the app starts (install prompt, tab, task switcher). */
 const appTitle: Plugin = {
   name: 'app-title',
@@ -28,6 +54,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     appTitle,
+    appIcons,
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons/icon.svg'],
@@ -42,8 +69,15 @@ export default defineConfig({
         // Lamba identity (ADR-0005): cotton splash, ink bar.
         background_color: '#F1F3F6',
         theme_color: '#1B1E3F',
-        // TODO(T-010 follow-up): PNG 192/512 icons from the shop logo in Autres/.
-        icons: [{ src: 'icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }],
+        icons:
+          iconsDir === null
+            ? [{ src: 'icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }]
+            : ICON_SIZES.map((size) => ({
+                src: `icons/icon-${size}.png`,
+                sizes: `${size}x${size}`,
+                type: 'image/png',
+                purpose: 'any',
+              })),
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,woff2}'],

@@ -12,6 +12,7 @@ Lire d'abord `../CLAUDE.md`. Ici : commandes et structure. Détail : `../Docs/02
 - Pré-commit (T-010b) : Prettier + ESLint sur les fichiers indexés de `Source/` (`.githooks/pre-commit`, activé par `pnpm install`).
 - `pnpm lint` · `pnpm typecheck` · `pnpm test` · `pnpm format:check` · `pnpm build` ; `pnpm check` enchaîne tout.
 - `pnpm dist --nom "Épicerie Rasoa" --nom-court "Rasoa"` — version distribuable au nom voulu dans `../Dist/<nom-simplifié>/` (ADR-0006) ; sans `--nom`, le nom par défaut (`packages/shared/src/brand.json`).
+- Double-clic sur `../Outil de distribution.cmd` (`scripts/outil.mjs`, T-102) — la même chose sans terminal, dans le navigateur : logos, paramètres du magasin, construction, clés de licence (ADR-0010).
 - `pnpm --filter @vente-web/api <script>` pour cibler un paquet ; `pnpm test:watch` en développement.
 
 ## Structure

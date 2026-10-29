@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Outil de distribution</title>
+    <!-- The distribution tool's page (T-102), served by scripts/outil.mjs on 127.0.0.1 only. -->
+    <style>
+      :root {
+        --cotton: #f1f3f6;
+        --sheet: #ffffff;
+        --ink: #1b1e3f;
+        --ink-2: #474c6b;
+        --rule: #d3d8e3;
+        --indigo: #2b3a92;
+        --indigo-soft: #e6e9f6;
+        --madder: #b42318;
+        --madder-soft: #fdecea;
+        --leaf: #1e7a46;
+        --leaf-soft: #e5f4ec;
+        --saffron-soft: #fff2cc;
+        color-scheme: light;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--cotton);
+        color: var(--ink);
+        font:
+          16px/1.5 'Segoe UI',
+          system-ui,
+          sans-serif;
+      }
+      header {
+        background: var(--ink);
+        color: #fff;
+        padding: 18px 24px;
+      }
+      header h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 600;
+      }
+      header p {
+        margin: 4px 0 0;
+        color: #c9cde0;
+        font-size: 14px;
+      }
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 24px 16px 64px;
+        display: grid;
+        gap: 20px;
+      }
+      section {
+        background: var(--sheet);
+        border: 1px solid var(--rule);
+        border-radius: 10px;
+        padding: 20px 22px;
+      }
+      h2 {
+        margin: 0 0 4px;
+        font-size: 19px;
+      }
+      .lead {
+        margin: 0 0 16px;
+        color: var(--ink-2);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 14px;
+      }
+      label {
+        display: grid;
+        gap: 4px;
+        font-weight: 600;
+      }
+      label small,
+      .hint {
+        font-weight: 400;
+        color: var(--ink-2);
+        font-size: 14px;
+      }
+      input[type='text'],
+      input[type='date'],
+      select,
+      textarea {
+        font: inherit;
+        color: var(--ink);
+        border: 1px solid #b9bfd0;
+        border-radius: 6px;
+        padding: 9px 11px;
+        background: #fff;
+        width: 100%;
+      }
+      input:focus-visible,
+      select:focus-visible,
+      textarea:focus-visible,
+      button:focus-visible {
+        outline: 3px solid var(--indigo);
+        outline-offset: 1px;
+      }
+      textarea {
+        font-family: Consolas, monospace;
+        font-size: 14px;
+        word-break: break-all;
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        margin-top: 16px;
+      }
+      button {
+        font: inherit;
+        font-weight: 600;
+        border-radius: 6px;
+        padding: 10px 18px;
+        border: 1px solid var(--indigo);
+        background: #fff;
+        color: var(--indigo);
+        cursor: pointer;
+      }
+      button.primary {
+        background: var(--indigo);
+        color: #fff;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      .logo {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        padding: 12px;
+        border: 1px dashed #b9bfd0;
+        border-radius: 8px;
+      }
+      .logo img {
+        width: 96px;
+        height: 96px;
+        object-fit: contain;
+        background: repeating-conic-gradient(#eef0f5 0 25%, #fff 0 50%) 0 0 / 16px 16px;
+        border-radius: 6px;
+      }
+      .logo img[hidden] + .empty {
+        display: grid;
+      }
+      .empty {
+        display: none;
+        width: 96px;
+        height: 96px;
+        place-items: center;
+        color: var(--ink-2);
+        font-size: 13px;
+        text-align: center;
+        background: var(--cotton);
+        border-radius: 6px;
+      }
+      details {
+        margin-top: 18px;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--indigo);
+      }
+      details .grid {
+        margin-top: 12px;
+      }
+      .note {
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin: 14px 0 0;
+        background: var(--saffron-soft);
+      }
+      .error {
+        background: var(--madder-soft);
+        color: var(--madder);
+        font-weight: 600;
+      }
+      .success {
+        background: var(--leaf-soft);
+        color: var(--leaf);
+        font-weight: 600;
+      }
+      pre {
+        margin: 14px 0 0;
+        max-height: 340px;
+        overflow: auto;
+        background: var(--ink);
+        color: #e6e8f2;
+        border-radius: 8px;
+        padding: 12px 14px;
+        font-size: 13px;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Outil de distribution</h1>
+      <p>Préparer le dossier d’un magasin et ses clés de licence, sans terminal.</p>
+    </header>
+    <main>
+      <section aria-labelledby="t-app">
+        <h2 id="t-app">Logo de l’application</h2>
+        <p class="lead">Le même pour tous les clients : icône sur les tablettes et les PC.</p>
+        <div class="logo">
+          <img id="app-logo" alt="Logo de l’application" hidden />
+          <span class="empty">Logo par défaut</span>
+          <label>
+            Choisir une image (PNG, JPEG ou SVG, carrée de préférence)
+            <input id="app-logo-file" type="file" accept="image/png,image/jpeg,image/svg+xml" />
+          </label>
+        </div>
+        <p id="app-logo-msg" class="note" hidden></p>
+      </section>
+
+      <section aria-labelledby="t-client">
+        <h2 id="t-client">Dossier d’un magasin</h2>
+        <p class="lead">
+          Construit le dossier à copier sur le PC serveur du magasin (installation ou mise à jour).
+        </p>
+        <form id="build">
+          <div class="grid">
+            <label>
+              Magasin
+              <select id="client">
+                <option value="">Nouveau magasin</option>
+              </select>
+            </label>
+            <label>
+              Nom de l’application
+              <input id="nom" type="text" required />
+              <small>Ex. Épicerie Rasoa</small>
+            </label>
+            <label>
+              Nom court
+              <input id="nomCourt" type="text" required maxlength="12" />
+              <small>Sous l’icône, 12 caractères au plus</small>
+            </label>
+            <label>
+              Adresse du PC serveur
+              <input
+                id="LAN_IP"
+                type="text"
+                required
+                inputmode="decimal"
+                placeholder="192.168.1.10"
+              />
+              <small>Adresse fixe réservée sur la box</small>
+            </label>
+            <label>
+              Dossier du disque externe
+              <input id="BACKUP_DISK" type="text" placeholder="E:\VenteWeb" />
+              <small>Pour les sauvegardes ; vide si aucun</small>
+            </label>
+          </div>
+
+          <div class="logo" style="margin-top: 16px">
+            <img id="client-logo" alt="Logo du magasin" hidden />
+            <span class="empty">Aucun logo</span>
+            <label>
+              Logo du magasin (sur ses devis, factures et reçus)
+              <input
+                id="client-logo-file"
+                type="file"
+                accept="image/png,image/jpeg,image/svg+xml"
+              />
+            </label>
+          </div>
+
+          <details>
+            <summary>Plus tard : domaine OVH, accès à distance, coffre de sauvegarde</summary>
+            <p class="hint">À laisser vide tant que le magasin n’a pas de serveur OVH.</p>
+            <div class="grid" id="advanced"></div>
+          </details>
+
+          <div class="row">
+            <button class="primary" type="submit" id="build-button">Construire le dossier</button>
+            <button type="button" id="open-build" hidden>Ouvrir le dossier construit</button>
+          </div>
+          <p id="build-msg" class="note" hidden></p>
+          <pre id="build-log" hidden aria-live="polite"></pre>
+        </form>
+      </section>
+
+      <section aria-labelledby="t-key">
+        <h2 id="t-key">Clé de licence</h2>
+        <p class="lead">
+          Le magasin lit le code de son serveur sur l’écran « Activation » et vous l’envoie ; collez
+          ici ce code, puis renvoyez-lui la clé.
+        </p>
+        <form id="licence">
+          <div class="grid">
+            <label>
+              Client
+              <input id="lic-client" type="text" list="client-names" required />
+              <datalist id="client-names"></datalist>
+            </label>
+            <label>
+              Code du serveur
+              <input id="lic-machine" type="text" required placeholder="3F2C-0A91-77B4-C2D0" />
+            </label>
+            <label>
+              Dernier jour de l’essai
+              <input id="lic-fin" type="date" />
+            </label>
+            <label style="align-self: end; display: flex; gap: 8px; align-items: center">
+              <input id="lic-sans-fin" type="checkbox" />
+              Sans fin (version achetée)
+            </label>
+          </div>
+          <div class="row">
+            <button class="primary" type="submit">Créer la clé</button>
+          </div>
+          <p id="lic-msg" class="note" hidden></p>
+          <div id="lic-result" hidden>
+            <label style="margin-top: 14px">
+              Clé à envoyer au magasin
+              <textarea id="lic-key" rows="4" readonly></textarea>
+            </label>
+            <div class="row"><button type="button" id="lic-copy">Copier la clé</button></div>
+          </div>
+        </form>
+        <p class="note" id="vendor-warning" hidden></p>
+        <div class="row">
+          <button type="button" id="open-licence">Ouvrir le dossier de la clé du vendeur</button>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const TOKEN = '__JETON__';
+      const ADVANCED = [
+        ['APP_DOMAIN', 'Domaine de l’application', 'Ex. app.rasoa.mg (zone DNS chez OVH)'],
+        ['UPSTREAM_DNS', 'DNS Internet', 'La box ou 1.1.1.1'],
+        [
+          'VAPID_SUBJECT',
+          'Contact des notifications',
+          'mailto:nom@domaine ; vide : l’adresse du magasin',
+        ],
+        ['OVH_ENDPOINT', 'Point d’accès OVH', 'ovh-eu'],
+        ['OVH_APPLICATION_KEY', 'Clé d’application OVH', 'Certificat du domaine'],
+        ['OVH_APPLICATION_SECRET', 'Secret d’application OVH', ''],
+        ['OVH_CONSUMER_KEY', 'Clé client OVH', ''],
+        ['WG_PRIVATE_KEY', 'Clé privée WireGuard du magasin', 'Accès à distance par le relais'],
+        ['WG_ADDRESS', 'Adresse du magasin dans le tunnel', 'Ex. 10.66.0.2'],
+        ['RELAY_PUBLIC_KEY', 'Clé publique du relais', ''],
+        ['RELAY_ENDPOINT', 'Adresse du relais', 'IP:port'],
+        ['RELAY_WG_IP', 'Adresse du relais dans le tunnel', 'Ex. 10.66.0.1'],
+        ['BACKUP_S3_ENDPOINT', 'Coffre : adresse', 'https://s3.gra.io.cloud.ovh.net'],
+        ['BACKUP_S3_REGION', 'Coffre : région', 'gra'],
+        ['BACKUP_S3_BUCKET', 'Coffre : compartiment', 'Vide : pas de copie hors du magasin'],
+        ['BACKUP_S3_ACCESS_KEY', 'Coffre : identifiant', ''],
+        ['BACKUP_S3_SECRET_KEY', 'Coffre : secret', ''],
+      ];
+      const DEFAULTS = {
+        UPSTREAM_DNS: '1.1.1.1',
+        OVH_ENDPOINT: 'ovh-eu',
+        BACKUP_S3_ENDPOINT: 'https://s3.gra.io.cloud.ovh.net',
+        BACKUP_S3_REGION: 'gra',
+      };
+      const FIELDS = ['LAN_IP', 'BACKUP_DISK', ...ADVANCED.map(([key]) => key)];
+      const $ = (id) => document.getElementById(id);
+      let state = null;
+      let clientLogo = null;
+
+      for (const [key, title, hint] of ADVANCED) {
+        const label = document.createElement('label');
+        label.textContent = title;
+        const input = Object.assign(document.createElement('input'), { id: key, type: 'text' });
+        label.append(input);
+        if (hint)
+          label.append(Object.assign(document.createElement('small'), { textContent: hint }));
+        $('advanced').append(label);
+      }
+
+      async function call(path, body) {
+        const response = await fetch(path, {
+          method: body === undefined ? 'GET' : 'POST',
+          headers: { 'x-outil': TOKEN, 'content-type': 'application/json' },
+          ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+        });
+        return {
+          ok: response.ok,
+          response,
+          data: response.headers.get('content-type')?.includes('json')
+            ? await response.json()
+            : null,
+        };
+      }
+
+      function show(id, text, kind = '') {
+        const node = $(id);
+        node.hidden = !text;
+        node.textContent = text ?? '';
+        node.className = `note ${kind}`;
+      }
+
+      function setImage(id, dataUrl) {
+        $(id).hidden = !dataUrl;
+        if (dataUrl) $(id).src = dataUrl;
+      }
+
+      /** The image drawn into a PNG: `square` fits it into size×size, else at most size wide. */
+      function toPng(file, size, square) {
+        return new Promise((resolve, reject) => {
+          const url = URL.createObjectURL(file);
+          const image = new Image();
+          image.onload = () => {
+            const ratio = image.naturalWidth / image.naturalHeight || 1;
+            const canvas = document.createElement('canvas');
+            let width, height;
+            if (square) {
+              canvas.width = canvas.height = size;
+              width = ratio >= 1 ? size : size * ratio;
+              height = ratio >= 1 ? size / ratio : size;
+            } else {
+              width = Math.min(size, image.naturalWidth || size);
+              height = Math.round(width / ratio);
+              canvas.width = width;
+              canvas.height = height;
+            }
+            canvas
+              .getContext('2d')
+              .drawImage(
+                image,
+                (canvas.width - width) / 2,
+                (canvas.height - height) / 2,
+                width,
+                height,
+              );
+            URL.revokeObjectURL(url);
+            resolve(canvas.toDataURL('image/png'));
+          };
+          image.onerror = () => reject(new Error('Image illisible.'));
+          image.src = url;
+        });
+      }
+
+      function fill(client) {
+        $('nom').value = client?.nom ?? '';
+        $('nomCourt').value = client?.nomCourt ?? '';
+        for (const key of FIELDS) $(key).value = client?.params?.[key] ?? DEFAULTS[key] ?? '';
+        clientLogo = null;
+        $('client-logo-file').value = '';
+        setImage('client-logo', client?.logoClient ?? null);
+        $('open-build').hidden = !client?.built;
+        $('build-msg').hidden = true;
+        $('build-log').hidden = true;
+      }
+
+      function render() {
+        setImage('app-logo', state.logoApp);
+        const select = $('client');
+        const chosen = select.value;
+        select.replaceChildren(new Option('Nouveau magasin', ''));
+        $('client-names').replaceChildren();
+        for (const client of state.clients) {
+          select.append(new Option(client.nom, client.slug));
+          $('client-names').append(new Option(client.nom));
+        }
+        select.value = state.clients.some((client) => client.slug === chosen) ? chosen : '';
+        show('vendor-warning', state.vendorKey ? state.backupWarning : '');
+      }
+
+      async function load() {
+        state = (await call('/etat')).data;
+        render();
+        fill(state.clients.find((client) => client.slug === $('client').value));
+      }
+
+      $('client').addEventListener('change', () =>
+        fill(state.clients.find((client) => client.slug === $('client').value)),
+      );
+
+      $('app-logo-file').addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        try {
+          const [png192, png512] = await Promise.all([
+            toPng(file, 192, true),
+            toPng(file, 512, true),
+          ]);
+          const { ok, data } = await call('/logo-application', { 192: png192, 512: png512 });
+          if (!ok) throw new Error('Logo non enregistré.');
+          state = data;
+          render();
+          show(
+            'app-logo-msg',
+            'Logo enregistré : il sera dans les prochains dossiers construits.',
+            'success',
+          );
+        } catch (error) {
+          show('app-logo-msg', error.message, 'error');
+        }
+      });
+
+      $('client-logo-file').addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        try {
+          clientLogo = await toPng(file, 600, false);
+          setImage('client-logo', clientLogo);
+        } catch (error) {
+          show('build-msg', error.message, 'error');
+        }
+      });
+
+      $('build').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const button = $('build-button');
+        button.disabled = true;
+        show('build-msg', 'Construction en cours : quelques minutes, ne fermez pas cette page.');
+        const log = $('build-log');
+        log.hidden = false;
+        log.textContent = '';
+        const params = Object.fromEntries(FIELDS.map((key) => [key, $(key).value.trim()]));
+        try {
+          const { response, data } = await call('/construire', {
+            nom: $('nom').value,
+            nomCourt: $('nomCourt').value,
+            params,
+            logoClient: clientLogo,
+          });
+          if (data) {
+            log.hidden = true;
+            show('build-msg', (data.problems ?? ['Échec.']).join(' '), 'error');
+            return;
+          }
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let text = '';
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            text += decoder.decode(value, { stream: true });
+            log.textContent = text.replace(/\u001b\[[0-9;]*m/g, '').replace(/\n##FIN .*\n?$/, '');
+            log.scrollTop = log.scrollHeight;
+          }
+          const end = /##FIN (OK|ECHEC) (\S+)/.exec(text);
+          if (end?.[1] === 'OK') {
+            show(
+              'build-msg',
+              `Dossier prêt : Dist\\${end[2]}. Copiez-le sur le PC serveur puis double-cliquez sur « Installer ou mettre a jour ».`,
+              'success',
+            );
+          } else {
+            show(
+              'build-msg',
+              'La construction a échoué : voir les dernières lignes ci-dessous.',
+              'error',
+            );
+          }
+          const slug = end?.[2];
+          await load();
+          if (slug) {
+            $('client').value = slug;
+            $('open-build').hidden = end[1] !== 'OK';
+          }
+        } catch (error) {
+          show('build-msg', `L’outil ne répond plus : ${error.message}`, 'error');
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      $('open-build').addEventListener('click', () =>
+        call('/ouvrir', { dossier: $('client').value }),
+      );
+      $('open-licence').addEventListener('click', () => call('/ouvrir', { dossier: '.licence' }));
+
+      $('lic-sans-fin').addEventListener('change', (event) => {
+        $('lic-fin').disabled = event.target.checked;
+      });
+
+      $('licence').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        $('lic-result').hidden = true;
+        const sansFin = $('lic-sans-fin').checked;
+        if (!sansFin && !$('lic-fin').value) {
+          show('lic-msg', 'Choisissez le dernier jour de l’essai, ou « Sans fin ».', 'error');
+          return;
+        }
+        const { ok, data } = await call('/licence', {
+          client: $('lic-client').value,
+          machine: $('lic-machine').value,
+          fin: sansFin ? null : $('lic-fin').value,
+        });
+        if (!ok) {
+          show('lic-msg', (data?.problems ?? ['Échec.']).join(' '), 'error');
+          return;
+        }
+        $('lic-key').value = data.key;
+        $('lic-result').hidden = false;
+        show('lic-msg', '');
+        state.vendorKey = true;
+        render();
+      });
+
+      $('lic-copy').addEventListener('click', async () => {
+        await navigator.clipboard.writeText($('lic-key').value);
+        show('lic-msg', 'Clé copiée.', 'success');
+      });
+
+      // Thirty days of trial suggested (H81: the vendor chooses each time).
+      $('lic-fin').value = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+      load().catch(() =>
+        show('build-msg', 'L’outil ne répond pas : relancez « Outil de distribution ».', 'error'),
+      );
+    </script>
+  </body>
+</html>

@@ -1,7 +1,9 @@
 // Builds the shop's all-in-one Windows folder under a chosen application name (RG-APP-01,
 // ADR-0006, ADR-0007, T-080). From Source/:
 //   pnpm dist --nom "Épicerie Rasoa" --nom-court "Rasoa" [--client <paramètres du magasin>]
+//     [--logo-app <dossier avec icon-192.png et icon-512.png>] [--logo-client <fichier PNG>]
 // Without --client the folder updates an installed server; with it, it also installs a new one.
+// The distribution tool (`Outil de distribution.cmd`, scripts/outil.mjs, T-102) fills these in.
 // Messages are in French: this command is run by the shop's integrator, not only by developers.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -22,12 +24,14 @@ import { pipeline } from 'node:stream/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 
+import { BACKUP_WARNING, vendorPublicKey } from './licence.mjs';
+
 const source = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const distRoot = resolve(source, '..', 'Dist');
 const cache = join(distRoot, '.telechargements');
 const windows = join(source, 'infra', 'windows');
 const usage =
-  'Usage : pnpm dist --nom "Épicerie Rasoa" --nom-court "Rasoa" [--client <fichier de paramètres>]';
+  'Usage : pnpm dist --nom "Épicerie Rasoa" --nom-court "Rasoa" [--client <fichier de paramètres>] [--logo-app <dossier>] [--logo-client <fichier PNG>]';
 
 // Third-party programs of the bundle, pinned by SHA-256 (journal, T-080). Caddy needs the OVH
 // DNS module, which no official release carries: it is built once with xcaddy (Go from go.dev)
@@ -153,12 +157,26 @@ try {
       nom: { type: 'string' },
       'nom-court': { type: 'string' },
       client: { type: 'string' },
+      'logo-app': { type: 'string' },
+      'logo-client': { type: 'string' },
     },
     strict: true,
   }).values;
 } catch (error) {
   stop([error.message, usage]);
 }
+
+// The application's logo (T-010c) as PWA icons, and the shop's logo for its documents (T-099).
+const appIcons =
+  options['logo-app'] === undefined ? undefined : resolve(process.cwd(), options['logo-app']);
+for (const size of [192, 512]) {
+  if (appIcons !== undefined && !existsSync(join(appIcons, `icon-${size}.png`)))
+    stop([`icon-${size}.png manque dans ${appIcons}`, usage]);
+}
+const clientLogo =
+  options['logo-client'] === undefined ? undefined : resolve(process.cwd(), options['logo-client']);
+if (clientLogo !== undefined && !existsSync(clientLogo))
+  stop([`Logo du client introuvable : ${clientLogo}`, usage]);
 
 const client = options.client === undefined ? undefined : resolve(process.cwd(), options.client);
 if (client !== undefined) {
@@ -196,6 +214,7 @@ console.log(`Construction de « ${name} » (sous l'icône : « ${shortName} »)�
 run(['--filter', '@vente-web/web...', 'build'], {
   VITE_APP_NAME: name,
   VITE_APP_SHORT_NAME: shortName,
+  ...(appIcons === undefined ? {} : { VITE_APP_ICONS: appIcons }),
 });
 run(['--filter', '@vente-web/api...', 'build']);
 
@@ -213,6 +232,20 @@ run([
   `"${join(app, 'api')}"`,
 ]);
 cpSync(join(source, 'apps', 'web', 'dist'), join(app, 'web'), { recursive: true });
+
+// Every package is a trial bound to one server (ADR-0010): the vendor's public key goes into
+// the built API only, so a copy of the source or of another package does not unlock it.
+const { publicKey, created } = vendorPublicKey();
+const licenseModule = join(app, 'api', 'dist', 'license-key.js');
+const unlocked = readFileSync(licenseModule, 'utf8');
+const locked = unlocked.replace(
+  'LICENSE_PUBLIC_KEY = null;',
+  `LICENSE_PUBLIC_KEY = ${JSON.stringify(publicKey)};`,
+);
+if (locked === unlocked) stop([`Clé publique non écrite : ${licenseModule} a changé de forme.`]);
+writeFileSync(licenseModule, locked);
+if (created) console.log(`Clé du vendeur créée. ${BACKUP_WARNING}`);
+if (clientLogo !== undefined) copyFileSync(clientLogo, join(app, 'logo-client.png'));
 
 const unpacked = join(cache, 'extrait');
 rmSync(unpacked, { recursive: true, force: true });

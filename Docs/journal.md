@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 29/10/2026 — T-102 : outil de distribution sans terminal — agent : Claude Code (Opus 5.5)
+
+**Fait** : double-clic sur `Outil de distribution.cmd` → page dans le navigateur : logo de l’application (le même pour tous, réduit en icônes 192/512), magasins enregistrés (noms, adresse du serveur, disque externe, logo du client, options OVH repliées), « Construire le dossier » avec le déroulé affiché, « Créer la clé » de licence (client, code du serveur, dernier jour ou sans fin). Chaque dossier construit porte la clé publique du vendeur (ADR-0010) ; la clé privée se crée au premier usage dans `Dist\.licence` (à sauvegarder). Aucune dépendance ajoutée. Vérifié : clés signées relues par l’API (falsifiée refusée), page et refus de l’outil, icônes dans le manifeste ; construction complète non lancée (téléchargements non autorisés).
+
+**Reste** : T-099 (logo du client sur les PDF), logo de l’application à fournir, essai réel sur un PC et une tablette.
+
 ## 28/10/2026 — T-101 : licence d’essai liée au serveur — agent : Claude Code (Opus 5.5)
 
 **Fait** : clé de licence signée (Ed25519) par le vendeur pour un client, le code du PC serveur (tiré de `MachineGuid`) et une date de fin ou aucune ; sans clé valide, toute l’API répond « licence requise » et chaque écran, public compris, montre « Activation » (code du serveur à envoyer, saisie de la clé) ; horloge reculée de plus d’un jour = verrou ; les 7 derniers jours, l’écran de connexion annonce la fin. La clé publique n’existe que dans la version construite (écrite par T-102) : en développement, rien n’est vérifié. ADR-0010, H81 à H84. Vérifié : tests API (clé falsifiée, autre serveur, expirée, horloge) et web (écran, saisie, refus).

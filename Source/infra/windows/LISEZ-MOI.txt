@@ -12,6 +12,8 @@ Première installation
    Sans nom de domaine (réseau du magasin seulement) : sur chaque tablette, téléphone ou PC,
    une seule fois, ouvrir http://<adresse du serveur> et suivre la page (installer le
    certificat du magasin), puis « Ouvrir l'application » (https://<adresse du serveur>).
+6. Activation : l'application s'ouvre sur « Activation » et montre le code du serveur.
+   L'envoyer au vendeur, puis coller la clé reçue. Un autre PC serveur demande une autre clé.
 
 Mise à jour
 1. Copier le nouveau dossier à côté de l'ancien (exemple : C:\VenteWeb-2).
