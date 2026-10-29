@@ -81,9 +81,13 @@ function creditedBlock(credited: NonNullable<CreditNoteSnapshot['credited']>): C
  * lines credited as on the invoice, their totals, the amount credited with the reason and the
  * refund; the original invoice named, never changed (RG-ANN-05).
  */
-export function creditNoteDocument(snapshot: CreditNoteSnapshot): TDocumentDefinitions {
+export function creditNoteDocument(
+  snapshot: CreditNoteSnapshot,
+  logo: string | null = null,
+): TDocumentDefinitions {
   return documentDefinition({
     legal: snapshot.legal,
+    logo,
     title: text.title,
     number: snapshot.number,
     meta: [

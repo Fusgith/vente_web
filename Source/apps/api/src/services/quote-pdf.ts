@@ -7,6 +7,7 @@ import { loadQuote } from './quotes.js';
 import { readPositiveIntSetting } from './settings.js';
 import { shopDate } from './shop-time.js';
 import { readStoreLegal } from './store-legal.js';
+import { readStoreLogo } from './store-logo.js';
 
 /**
  * Date and validity printed on a quote (RG-FAC-06, decision H27): the shop's day it was created,
@@ -24,12 +25,17 @@ export function quoteDates(
  * The quote's PDF (RG-DEV-05, RG-FAC-06), made again at each request: a quote changes until it
  * is validated, and nothing legal hangs on it — unlike the invoice, kept as issued (RG-FAC-04).
  */
-export async function quotePdf(db: Db, id: string): Promise<{ number: string; pdf: Buffer }> {
+export async function quotePdf(
+  db: Db,
+  filesDir: string,
+  id: string,
+): Promise<{ number: string; pdf: Buffer }> {
   const quote = await loadQuote(db, id);
-  const [legal, validityDays] = await Promise.all([
+  const [legal, validityDays, logo] = await Promise.all([
     readStoreLegal(db),
     readPositiveIntSetting(db, 'quote_validity_days', 7),
+    readStoreLogo(filesDir),
   ]);
-  const doc = quoteDocument(quote, { legal, ...quoteDates(quote, validityDays) });
+  const doc = quoteDocument(quote, { legal, logo, ...quoteDates(quote, validityDays) });
   return { number: quote.number, pdf: await renderPdf(doc) };
 }

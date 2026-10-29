@@ -95,6 +95,9 @@ Check 'Droits du dossier des données'
 Check 'Droits du dossier de la base'
 & icacls (Join-Path $App 'pgsql') /grant '*S-1-5-20:(OI)(CI)RX' /Q | Out-Null
 Check 'Droits des programmes PostgreSQL'
+# The shop logo printed on its documents (H80); a folder built without one keeps the installed one.
+$logo = Join-Path $App 'logo-client.png'
+if (Test-Path $logo) { Copy-Item $logo (Join-Path $Data 'fichiers\logo-client.png') -Force }
 
 Step 'Paramètres (.env)'
 $values = Read-EnvFile $EnvFile

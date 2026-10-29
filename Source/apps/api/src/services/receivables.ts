@@ -19,6 +19,7 @@ import { receiptDocument } from '../pdf/templates/receipt.js';
 import { by, type Actor } from './actor.js';
 import { recordAudit } from './audit.js';
 import { storedPdf } from './document-files.js';
+import { readStoreLogo } from './store-logo.js';
 import { invoiceSnapshotSchema, legalSchema } from './invoices.js';
 import { lockOpenSession } from './register-sessions.js';
 import { nextSequenceValue } from './sequences.js';
@@ -298,7 +299,13 @@ export async function receiptPdf(
   const pdf = await storedPdf(
     filesDir,
     { folder: 'receipts', ...receipt },
-    () => renderPdf(receiptDocument(receiptSnapshotSchema.parse(receipt.snapshot))),
+    async () =>
+      renderPdf(
+        receiptDocument(
+          receiptSnapshotSchema.parse(receipt.snapshot),
+          await readStoreLogo(filesDir),
+        ),
+      ),
     (file) => db.receivableSettlement.update({ where: { id }, data: { pdfPath: file } }),
   );
   return { number: receipt.number, pdf };

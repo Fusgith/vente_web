@@ -46,7 +46,7 @@ export const apiRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) 
   await app.register(productRoutes);
   await app.register(importRoutes, { env });
   await app.register(customerRoutes);
-  await app.register(quoteRoutes);
+  await app.register(quoteRoutes, { env });
   await app.register(orderRoutes);
   await app.register(queueRoutes);
   await app.register(displayRoutes);

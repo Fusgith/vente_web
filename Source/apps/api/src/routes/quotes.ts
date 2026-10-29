@@ -8,6 +8,7 @@ import {
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
+import type { Env } from '../env.js';
 import { actorOf, authOf, requirePermission } from '../plugins/session.js';
 import { listOpenOrders } from '../services/order-list.js';
 import { quotePdf } from '../services/quote-pdf.js';
@@ -20,7 +21,7 @@ const paramsSchema = z.object({ id: z.uuid() });
  * cashier, the owner and the admin read. The warehouse has no access.
  */
 
-export const quoteRoutes: FastifyPluginAsync = async (app) => {
+export const quoteRoutes: FastifyPluginAsync<{ env: Env }> = async (app, { env }) => {
   // The salesperson's quotes and orders still open, the manager's everyone's (RG-DEV-02/03, H56).
   app.get(
     '/quotes',
@@ -46,7 +47,7 @@ export const quoteRoutes: FastifyPluginAsync = async (app) => {
     { preHandler: requirePermission('quotes.read') },
     async (request, reply) => {
       const { id } = paramsSchema.parse(request.params);
-      const { number, pdf } = await quotePdf(app.db, id);
+      const { number, pdf } = await quotePdf(app.db, env.FILES_DIR, id);
       // Opened, the quote is handed to the customer: changed, it takes a new number (H69).
       await app.db.order.updateMany({
         where: { id, status: 'DRAFT', handedAt: null },

@@ -21,6 +21,7 @@ import { managerApproval } from './approval.js';
 import { recordAudit } from './audit.js';
 import { partialDelivery } from './delivery-issues.js';
 import { storedPdf } from './document-files.js';
+import { readStoreLogo } from './store-logo.js';
 import { invoiceSnapshotSchema } from './invoices.js';
 import { loadOrder } from './orders.js';
 import { PAYMENT_INCLUDE, toPaymentView } from './payments.js';
@@ -229,7 +230,13 @@ export async function creditNotePdf(
   const pdf = await storedPdf(
     filesDir,
     { folder: 'credit-notes', ...note },
-    () => renderPdf(creditNoteDocument(creditNoteSnapshotSchema.parse(note.snapshot))),
+    async () =>
+      renderPdf(
+        creditNoteDocument(
+          creditNoteSnapshotSchema.parse(note.snapshot),
+          await readStoreLogo(filesDir),
+        ),
+      ),
     (file) => db.creditNote.update({ where: { id }, data: { pdfPath: file } }),
   );
   return { number: note.number, pdf };

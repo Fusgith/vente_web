@@ -2,6 +2,7 @@ import { formatAmount, formatMga, formatPhone, formatQty, type QuoteLine } from 
 import type {
   Column,
   Content,
+  ContentImage,
   ContentStack,
   ContentTable,
   TableCell,
@@ -27,16 +28,18 @@ const AMOUNTS = new Set([4, 5, 6]);
 
 export const isZero = (amount: string) => Number(amount) === 0;
 
-/** Legal mentions (RG-FAC-07): only the fields filled in, one per line. */
-function storeBlock(legal: StoreLegal): ContentStack {
+/** The shop's logo, then its legal mentions (RG-FAC-07): only the fields filled in, one per line. */
+function storeBlock(legal: StoreLegal, logo: string | null): ContentStack {
   const ids = (['nif', 'stat', 'rcs'] as const)
     .filter((key) => legal[key] !== '')
     .map((key) => `${text.legalIds[key]} ${legal[key]}`);
   const lines = [legal.address, legal.phone && text.phone(legal.phone), ...ids].filter(
     (line) => line !== '',
   );
+  const image: ContentImage[] = logo ? [{ image: logo, fit: [150, 60], margin: [0, 0, 0, 6] }] : [];
   return {
     stack: [
+      ...image,
       ...(legal.name ? [{ text: legal.name, style: 'store' }] : []),
       ...lines.map((line) => ({ text: line, color: INK_2 })),
     ],
@@ -214,6 +217,8 @@ export function totalsBlock(
 
 export interface DocumentFrame {
   legal: StoreLegal;
+  /** PNG data URL of the shop's logo (H80), null without one. */
+  logo: string | null;
   title: string;
   number: string;
   meta: [string, string][];
@@ -245,7 +250,7 @@ export function documentDefinition(frame: DocumentFrame): TDocumentDefinitions {
     content: [
       {
         columns: [
-          { width: '*', ...storeBlock(legal) },
+          { width: '*', ...storeBlock(legal, frame.logo) },
           titleBlock(frame.title, frame.number, frame.meta),
         ],
       },

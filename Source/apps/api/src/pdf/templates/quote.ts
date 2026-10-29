@@ -11,6 +11,8 @@ export interface QuoteDocumentContext {
   /** The shop's day the quote was created, then its last day of validity (RG-DEV-02, H27). */
   issuedOn: string;
   validUntil: string;
+  /** The shop's logo (H80). */
+  logo?: string | null;
 }
 
 /** RG-FAC-06: on saffron, as what is still in progress on the screens. */
@@ -38,6 +40,7 @@ function noticeBlock(validUntil: string): Content {
 export function quoteDocument(quote: Quote, context: QuoteDocumentContext): TDocumentDefinitions {
   return documentDefinition({
     legal: context.legal,
+    logo: context.logo ?? null,
     title: text.title,
     number: quote.number,
     meta: [

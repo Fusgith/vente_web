@@ -15,6 +15,7 @@ import type { Prisma } from '../generated/prisma/client.js';
 import { renderPdf } from '../pdf/render.js';
 import { invoiceDocument } from '../pdf/templates/invoice.js';
 import { storedPdf } from './document-files.js';
+import { readStoreLogo } from './store-logo.js';
 import { nextSequenceValue } from './sequences.js';
 import { readSetting } from './settings.js';
 import { shopDate, shopYear } from './shop-time.js';
@@ -201,7 +202,13 @@ export async function invoicePdf(
   const pdf = await storedPdf(
     filesDir,
     { folder: 'invoices', ...invoice },
-    () => renderPdf(invoiceDocument(invoiceSnapshotSchema.parse(invoice.snapshot))),
+    async () =>
+      renderPdf(
+        invoiceDocument(
+          invoiceSnapshotSchema.parse(invoice.snapshot),
+          await readStoreLogo(filesDir),
+        ),
+      ),
     (file) => db.invoice.update({ where: { id }, data: { pdfPath: file } }),
   );
   return { number: invoice.number, pdf };

@@ -75,7 +75,10 @@ function paymentBlock({ payment }: InvoiceSnapshot): Content {
  * The invoice in A4 (RG-FAC-02, RG-FAC-07, H33), made from its frozen content only: the same
  * table and totals as the quote and the screen, the VAT when on, how it was paid, the footer.
  */
-export function invoiceDocument(snapshot: InvoiceSnapshot): TDocumentDefinitions {
+export function invoiceDocument(
+  snapshot: InvoiceSnapshot,
+  logo: string | null = null,
+): TDocumentDefinitions {
   const paid = sumAmounts([snapshot.totals.total, snapshot.cashRounding]);
   const after: Content[] = [
     totalsBlock({ ...snapshot.totals, total: paid }, [
@@ -104,6 +107,7 @@ export function invoiceDocument(snapshot: InvoiceSnapshot): TDocumentDefinitions
   }
   return documentDefinition({
     legal: snapshot.legal,
+    logo,
     title: text.title,
     number: snapshot.number,
     meta: [

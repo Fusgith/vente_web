@@ -6,6 +6,8 @@ import { renderPdf } from '../render.js';
 import { quoteDocument, type QuoteDocumentContext } from './quote.js';
 
 const ID = '00000000-0000-4000-8000-000000000001';
+const ONE_PIXEL_PNG =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
 /** 2 packs of soap at 5 % and 3 kg of nails, 2 000 off the total. */
 function sampleQuote(): Quote {
@@ -147,5 +149,15 @@ describe('quote PDF (RG-DEV-05, RG-FAC-06, RG-FAC-07)', () => {
     const pdf = await renderPdf(quoteDocument(sampleQuote(), context));
     expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
     expect(pdf.toString('latin1')).toContain('/MediaBox [0 0 595.28 841.89]');
+  });
+
+  it('prints the shop logo above its name when there is one (H80)', async () => {
+    const logo = `data:image/png;base64,${ONE_PIXEL_PNG}`;
+    const doc = quoteDocument(sampleQuote(), { ...context, logo });
+    const [head] = doc.content as [ContentColumns];
+    expect((head.columns[0] as { stack: unknown[] }).stack[0]).toMatchObject({ image: logo });
+    expect(JSON.stringify(quoteDocument(sampleQuote(), context).content)).not.toContain('image');
+    const pdf = await renderPdf(doc);
+    expect(pdf.toString('latin1')).toContain('/Subtype /Image');
   });
 });

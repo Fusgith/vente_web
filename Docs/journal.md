@@ -2,6 +2,12 @@
 
 Entrées en ordre antichronologique (la plus récente en tête). Gabarit : `03-cdc-agent-ia.md` §5.1.
 
+## 29/10/2026 — T-099 : logo du client sur les documents — agent : Claude Code (Opus 5.5)
+
+**Fait** : le logo déposé dans l'outil de distribution est copié par l'installateur dans `C:\ProgramData\VenteWeb\fichiers` et imprimé en haut à gauche des devis, factures, avoirs et reçus, au-dessus de la raison sociale ; sans logo (ou fichier qui n'est pas un PNG), le document sort sans. Une facture déjà émise garde son PDF d'origine. H80. Vérifié : PDF rendu avec image, lecture du logo (absent, invalide), installateur par l'analyseur PowerShell, suite API. Conteneur de test recréé (Docker redémarré).
+
+**Reste** : logo de l'application à fournir (T-010c) ; essai réel sur un PC et une tablette.
+
 ## 29/10/2026 — T-102 : outil de distribution sans terminal — agent : Claude Code (Opus 5.5)
 
 **Fait** : double-clic sur `Outil de distribution.cmd` → page dans le navigateur : logo de l’application (le même pour tous, réduit en icônes 192/512), magasins enregistrés (noms, adresse du serveur, disque externe, logo du client, options OVH repliées), « Construire le dossier » avec le déroulé affiché, « Créer la clé » de licence (client, code du serveur, dernier jour ou sans fin). Chaque dossier construit porte la clé publique du vendeur (ADR-0010) ; la clé privée se crée au premier usage dans `Dist\.licence` (à sauvegarder). Aucune dépendance ajoutée. Vérifié : clés signées relues par l’API (falsifiée refusée), page et refus de l’outil, icônes dans le manifeste ; construction complète non lancée (téléchargements non autorisés).

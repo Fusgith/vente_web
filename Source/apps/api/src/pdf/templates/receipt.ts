@@ -10,13 +10,17 @@ import { documentDefinition } from './document.js';
  * The receipt of a payment towards a receivable in A4 (H67), made from its frozen content only:
  * the invoice it settles, what was owed, what this payment settles and what is left to pay.
  */
-export function receiptDocument(snapshot: ReceiptSnapshot): TDocumentDefinitions {
+export function receiptDocument(
+  snapshot: ReceiptSnapshot,
+  logo: string | null = null,
+): TDocumentDefinitions {
   const row = (label: string, value: string, bold = false) => [
     { text: label, color: INK_2 },
     { text: value, bold, alignment: 'right' as const },
   ];
   return documentDefinition({
     legal: snapshot.legal,
+    logo,
     title: text.title,
     number: snapshot.number,
     meta: [
